@@ -136,7 +136,9 @@ def run(arguments, environment, runner=subprocess.run):
     elif command == "add":
         packages = installed_packages(root)
         if packages:
-            retain_archives(real_apk, [*offline, *scope, "fetch", *packages], destination, runner)
+            # APK v3 treats NAME=VERSION as a constraint only in solver mode;
+            # ordinary fetch query matching cannot select these exact specs.
+            retain_archives(real_apk, [*offline, *scope, "fetch", "--recursive", *packages], destination, runner)
 
 
 if __name__ == "__main__":

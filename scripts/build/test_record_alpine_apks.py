@@ -1,3 +1,5 @@
+import base64
+import hashlib
 import io
 import os
 from pathlib import Path
@@ -82,6 +84,7 @@ class RecordingTests(unittest.TestCase):
         capture = self.calls[1][0]
         self.assertIn("linux-lts=6.12.1-r0", capture)
         self.assertIn("firmware-dependency=2.0-r1", capture)
+        self.assertIn("--recursive", capture)
         self.assertNotIn("--no-scripts", capture)
         self.assertEqual(len(list(self.destination.glob("*.apk"))), 2)
 
@@ -115,6 +118,50 @@ class RecordingTests(unittest.TestCase):
         next(self.destination.glob("*.apk")).write_bytes(b"changed")
         with self.assertRaises(ValueError):
             self.run_apk(["fetch", "--root", str(self.root), "syslinux"])
+
+
+@unittest.skipUnless(shutil.which("apk"), "Native APK resolver regression requires Alpine")
+class NativeApkResolverTests(unittest.TestCase):
+    setUp = RecordingTests.setUp
+    fake_apk = RecordingTests.fake_apk
+
+    def test_exact_installed_versions_resolve_against_an_offline_fixture_index(self):
+        real_apk = shutil.which("apk")
+        self.environment["HHPT_REAL_APK"] = real_apk
+        architecture = subprocess.check_output([real_apk, "--print-arch"], text=True).strip()
+        repository = self.base / "fixture-repository"
+        directory = repository / architecture
+        directory.mkdir(parents=True)
+        packages = (("fixture-kernel", "1.0-r0", "fixture-dependency=2.0-r0"),
+                    ("fixture-dependency", "2.0-r0", ""))
+        index = ""
+        for name, version, depends in packages:
+            checksum = base64.b64encode(hashlib.sha1(name.encode()).digest()).decode()
+            index += f"C:Q1{checksum}\nP:{name}\nV:{version}\nA:noarch\nS:1\nI:1\nT:Fixture\nL:MIT\n"
+            index += f"D:{depends}\n\n" if depends else "\n"
+        with tarfile.open(directory / "APKINDEX.tar.gz", "w:gz") as archive:
+            data = index.encode()
+            entry = tarfile.TarInfo("APKINDEX")
+            entry.size = len(data)
+            archive.addfile(entry, io.BytesIO(data))
+        repositories = self.base / "repositories"
+        repositories.write_text(repository.as_posix() + "\n")
+        self.database.write_text("".join(f"P:{name}\nV:{version}\n\n" for name, version, _ in packages))
+        self.archives = {name + ".apk": apk_bytes(name, version) for name, version, _ in packages}
+
+        def native_selection(arguments, **kwargs):
+            if "fetch" in arguments:
+                # Only this disposable unsigned test index is trusted; the
+                # real build retains normal signature verification. Simulation
+                # exercises native selection without any package downloads.
+                result = subprocess.run([*arguments, "--allow-untrusted", "--simulate"], capture_output=True)
+                self.assertEqual(result.returncode, 0, result.stderr.decode(errors="replace"))
+            return self.fake_apk(arguments, **kwargs)
+
+        recorder.run(["add", "--root", str(self.root), "--arch", architecture,
+                      "--repositories-file", str(repositories), "fixture-kernel"],
+                     self.environment, native_selection)
+        self.assertEqual(len(list(self.destination.glob("*.apk"))), 2)
 
 
 @unittest.skipUnless(SHELL, "Alpine SBOM integration requires a POSIX shell")

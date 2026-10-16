@@ -117,7 +117,7 @@ func runCaptureWith(ctx context.Context, arguments []string, stdout, stderr io.W
 		return 1
 	}
 	cpuEvidence := probeCPU(ctx, quick.CPUOptions{Duration: *cpuDuration, GlobalTimeout: *cpuTimeout, Root: "/", ThermalLimit: *thermalLimit * 1000})
-	cpuResult, err := app.NewTestResult("cpu.quick", 1, app.TestStatus(cpuEvidence.Status), cpuEvidence)
+	cpuResult, err := newValidatedQuickTestResult("cpu.quick", 1, app.TestStatus(cpuEvidence.Status), cpuEvidence)
 	if err != nil {
 		fmt.Fprintf(stderr, "build CPU evidence: %v\n", err)
 		return 1
@@ -126,7 +126,7 @@ func runCaptureWith(ctx context.Context, arguments []string, stdout, stderr io.W
 	if cpuEvidence.Status == quick.StatusPass {
 		memoryEvidence = probeMemory(ctx, quick.MemoryOptions{Bytes: *memoryBytes, Passes: *memoryPasses, GlobalTimeout: *memoryTimeout, Root: "/", ThermalLimit: *thermalLimit * 1000})
 	}
-	memoryResult, err := app.NewTestResult("memory.quick", 1, app.TestStatus(memoryEvidence.Status), memoryEvidence)
+	memoryResult, err := newValidatedQuickTestResult("memory.quick", 1, app.TestStatus(memoryEvidence.Status), memoryEvidence)
 	if err != nil {
 		fmt.Fprintf(stderr, "build memory evidence: %v\n", err)
 		return 1
@@ -135,7 +135,7 @@ func runCaptureWith(ctx context.Context, arguments []string, stdout, stderr io.W
 	if cpuEvidence.Status == quick.StatusPass && memoryEvidence.Status == quick.StatusPass {
 		graphicsEvidence = probeGraphics(ctx, *graphicsPatternFrames)
 	}
-	graphicsResult, err := app.NewTestResult("graphics.quick", 1, app.TestStatus(graphicsEvidence.Status), graphicsEvidence)
+	graphicsResult, err := newValidatedQuickTestResult("graphics.quick", 1, app.TestStatus(graphicsEvidence.Status), graphicsEvidence)
 	if err != nil {
 		fmt.Fprintf(stderr, "build graphics evidence: %v\n", err)
 		return 1
@@ -145,25 +145,25 @@ func runCaptureWith(ctx context.Context, arguments []string, stdout, stderr io.W
 		requestedInput = strings.Split(*inputCategories, ",")
 	}
 	inputEvidence := probeInput(ctx, inputtest.Options{Root: "/", Duration: *inputDuration, Categories: requestedInput})
-	inputResult, err := app.NewTestResult("input.readiness.quick", 1, app.TestStatus(inputEvidence.Status), inputEvidence)
+	inputResult, err := newValidatedQuickTestResult("input.readiness.quick", 1, app.TestStatus(inputEvidence.Status), inputEvidence)
 	if err != nil {
 		fmt.Fprintf(stderr, "build input evidence: %v\n", err)
 		return 1
 	}
 	networkEvidence := probeNetwork(ctx, networktest.Options{Root: "/"})
-	networkResult, err := app.NewTestResult("network.readiness.quick", 1, app.TestStatus(networkEvidence.Status), networkEvidence)
+	networkResult, err := newValidatedQuickTestResult("network.readiness.quick", 1, app.TestStatus(networkEvidence.Status), networkEvidence)
 	if err != nil {
 		fmt.Fprintf(stderr, "build network evidence: %v\n", err)
 		return 1
 	}
 	storageEvidence := probeStorage(ctx, storage.Options{Root: "/"})
-	storageResult, err := app.NewTestResult("storage.readiness.quick", 1, app.TestStatus(storageEvidence.Status), storageEvidence)
+	storageResult, err := newValidatedQuickTestResult("storage.readiness.quick", 1, app.TestStatus(storageEvidence.Status), storageEvidence)
 	if err != nil {
 		fmt.Fprintf(stderr, "build storage evidence: %v\n", err)
 		return 1
 	}
 	usbEvidence := probeUSB(ctx, usbtest.Options{Root: "/"})
-	usbResult, err := app.NewTestResult("usb.readiness.quick", 1, app.TestStatus(usbEvidence.Status), usbEvidence)
+	usbResult, err := newValidatedQuickTestResult("usb.readiness.quick", 1, app.TestStatus(usbEvidence.Status), usbEvidence)
 	if err != nil {
 		fmt.Fprintf(stderr, "build USB evidence: %v\n", err)
 		return 1

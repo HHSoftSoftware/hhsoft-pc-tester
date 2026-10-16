@@ -18,7 +18,7 @@ complete; real-hardware requirements remain open until physically tested.
 - [x] Record clean-room functionality lessons without copying reference code.
 - [x] Define a stable third-party test-adapter/test-definition API.
 - [x] Add project governance, maintainer, and merge-review rules.
-- [ ] Create and verify the public repository under `HHSoftSoftware`.
+- [x] Create and verify the public repository under `HHSoftSoftware`.
 - [ ] Publish the first signed Semantic Version release.
 
 ## Boot platforms
@@ -47,6 +47,7 @@ complete; real-hardware requirements remain open until physically tested.
   binding the ISO digest and preserving upstream license declarations.
 - [x] Run source-only CI with minimal permissions and immutable actions.
 - [ ] Consume a digest-pinned package cache as a release-build input.
+- [ ] Pin the builder toolchain and verify the host tools used for release images.
 - [x] Add cache-lock generation/verification and an offline Alpine build mode
   that refuses unreviewed cache bytes and reused apk roots.
 - [ ] Validate the offline cache mode against the preserved builder inputs and
@@ -167,6 +168,9 @@ complete; real-hardware requirements remain open until physically tested.
   GitHub secret scanning and push protection for publication.
 - [x] Exclude agent instructions/state and inspect actual staged bytes plus
   author, committer, and tag metadata before the first push.
+- [x] Audit completed readiness/reporting claims against independent failure
+  cases and add regression checks for mount authorization, zero-work results,
+  contradictory evidence, and multi-display failure preservation.
 - [ ] Separate the unprivileged UI, privileged daemon, and sandboxed workers.
 - [ ] Add thermal, hang, process-group, and global run watchdogs.
 - [x] Implement deployment-keyed, same-boot typed authorization for separate

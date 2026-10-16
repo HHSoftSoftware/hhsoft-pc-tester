@@ -57,7 +57,8 @@ Use separate physical media for each role:
 
 1. **Boot USB:** contains the selected HHSoft ISO.
 2. **Report USB:** a formatted removable partition used only to receive the
-   `.hhpcr` file. FAT32, exFAT, and ext4 are currently accepted.
+   `.hhpcr` file. Use FAT32, exFAT, or compatible ext4. Ext4 must use extents;
+   any journal must be internal, and stored mount-option overrides are rejected.
 3. **Deployment-key token:** optional, modern images only, and needed only for
    comparable return/parts-swap reports. It must not be used as the boot or
    report USB.
@@ -156,7 +157,10 @@ The console shows compact `HHPT_*` progress markers. Important markers are:
 
 The display check may require operator observations because software cannot
 reliably judge pixels, color, flicker, scaling, overscan, or visible artifacts
-by itself. A readiness result only proves that the associated kernel interface
+by itself. Every applicable display pattern and every operator criterion must
+pass for the display result to pass. A passing observation on one output cannot
+override a failed or incomplete pattern on another; partial findings remain in
+the result. A readiness result only proves that the associated kernel interface
 could be accessed, not that every key, button, port, pixel, cell, link, or
 media sector works.
 
@@ -186,6 +190,13 @@ identity; mounted, mapped, read-only, internal, boot, and token media are
 excluded. If no destination is eligible, use another separately formatted USB
 device. A report is limited to 64 MiB.
 
+Before mounting, HHSoft reads a bounded filesystem header and rejects unknown,
+ambiguous, or unsupported configurations. This recognizes the filesystem type;
+it does not check filesystem integrity or qualify the USB media. The save flow
+rechecks authorization and binds the mount to opened device and directory
+handles. Keep the selected USB connected and the setup stable throughout saving;
+these protections do not eliminate every physical hot-plug race.
+
 Select `Q` to leave without writing. The report then remains only in volatile
 RAM and is lost on power-off or reboot. If saving fails, do not assume a partial
 file is valid; rescan or use another target and preserve the machine's power
@@ -195,6 +206,14 @@ The current quick workflow creates an ephemeral **self-issued** Ed25519
 signature. It makes the saved bundle tamper-evident and binds all results to
 the frozen plan, but does not establish trusted operator identity, trusted
 time, custody, or an enrolled HHSoft/deployment signer.
+
+Before signing, capture and finalization check that worker evidence has the
+required observations and is consistent with its claimed result. A `pass`
+without sufficient work or with contradictory safety observations is rejected.
+Valid incomplete or unsuccessful observations can still be reported with their
+non-pass status. These checks establish consistency within the implemented
+check's scope; they cannot prove that hardware or a compromised collector told
+the truth.
 
 ## Interpret Results
 
@@ -234,6 +253,7 @@ Success reads:
 `verified: contents/signature valid; signer is self-issued and does not prove operator identity`.
 The verifier checks the canonical outer bundle, manifest digests, signature,
 expected files, path safety, size limits, and static view restrictions.
+It does not rerun the capture/finalization evidence checks or hardware tests.
 
 Compare two sessions made with the same deployment-key token:
 

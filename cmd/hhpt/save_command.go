@@ -91,7 +91,7 @@ func runSave(ctx context.Context, arguments []string, input io.Reader, stdout, s
 			fmt.Fprintf(stderr, "authorize report target: %v; no storage device was written\n", authorizeErr)
 			continue
 		}
-		unmount, mountErr := mountAuthorizedReportTarget(ctx, authorization)
+		unmount, mountErr := mountAuthorizedReportTarget(ctx, options, authorization)
 		if mountErr != nil {
 			fmt.Fprintf(stderr, "mount report target: %v; no report file was written\n", mountErr)
 			continue

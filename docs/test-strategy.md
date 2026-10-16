@@ -4,6 +4,11 @@ This document defines how HHSoft PC Tester selects, runs, and evaluates
 hardware tests. A run must preserve user data by default, expose missing
 coverage, and produce evidence sufficient to audit the result.
 
+The full matrix below includes intended future coverage. Use the master
+checklist for current implementation status and the
+[requirements validation process](requirements-validation.md) for milestone
+reviews and independent failure-case testing.
+
 ## Test principles
 
 - **Present-if-applicable:** inventory first and schedule a test only when its

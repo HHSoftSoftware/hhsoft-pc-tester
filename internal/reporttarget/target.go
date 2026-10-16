@@ -115,6 +115,12 @@ func Authorize(ctx context.Context, options Options, request AuthorizationReques
 	return authorizePlatform(ctx, options, request)
 }
 
+// ValidateMountAuthorization rechecks the authorization and unmounted media
+// immediately before a caller mounts its separately bound device descriptor.
+func ValidateMountAuthorization(ctx context.Context, options Options, authorization Authorization) error {
+	return validateMountAuthorizationPlatform(ctx, options, authorization)
+}
+
 func Persist(ctx context.Context, options Options, authorization Authorization, source *os.File, sourceSize int64, name string, expectedSHA256 [sha256.Size]byte) (Receipt, error) {
 	return persistPlatform(ctx, options, authorization, source, sourceSize, name, expectedSHA256)
 }

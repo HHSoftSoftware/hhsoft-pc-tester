@@ -135,6 +135,35 @@ func persistPlatform(ctx context.Context, options Options, authorization Authori
 	return persistWith(ctx, options, authorization, source, sourceSize, name, expectedSHA256, inspectDirectBlockNode)
 }
 
+func validateMountAuthorizationPlatform(ctx context.Context, options Options, authorization Authorization) error {
+	return validateMountAuthorizationWith(ctx, options, authorization, inspectDirectBlockNode)
+}
+
+func validateMountAuthorizationWith(ctx context.Context, options Options, authorization Authorization, inspectNode nodeInspector) error {
+	if err := ValidateAuthorization(authorization); err != nil {
+		return err
+	}
+	root, _, err := validateOptions(options)
+	if err != nil {
+		return err
+	}
+	if err := validateAuthorizationMAC(authorization, options.FingerprintKey); err != nil {
+		return err
+	}
+	if err := validateCurrentBoot(root, authorization); err != nil {
+		return err
+	}
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	catalog := discoverWith(ctx, options, inspectNode)
+	candidate, matches := matchingBinding(catalog.Candidates, authorization.Device)
+	if catalog.Status != StatusPass || !matches || !candidate.Eligible || !candidate.NodeReady || candidate.Exclusion != "" {
+		return errors.New("authorized report media changed or is no longer an unmounted eligible target")
+	}
+	return nil
+}
+
 func persistWith(ctx context.Context, options Options, authorization Authorization, source *os.File, sourceSize int64, name string, expectedSHA256 [sha256.Size]byte, inspectNode nodeInspector) (Receipt, error) {
 	if err := ValidateAuthorization(authorization); err != nil {
 		return Receipt{}, err
@@ -306,7 +335,7 @@ func collectCandidates(ctx context.Context, root string, fingerprintKey []byte, 
 			candidate.Eligible = false
 			candidate.EligibleReadOnly = false
 			candidate.Exclusion = "report-media parent identity is unavailable"
-		case !emptyDirectory(filepath.Join(partition.canonical, "holders")) || !emptyDirectory(filepath.Join(parentCanonical, "holders")):
+		case !unmappedReportParent(parentCanonical, blocks):
 			candidate.Eligible = false
 			candidate.EligibleReadOnly = false
 			candidate.Exclusion = "report media participates in another block mapping"
@@ -327,6 +356,43 @@ func collectCandidates(ctx context.Context, root string, fingerprintKey []byte, 
 	}
 	sort.Slice(candidates, func(i, j int) bool { return candidates[i].Device < candidates[j].Device })
 	return candidates, blocks, nil
+}
+
+// A mapping on any sibling can back mounted boot/data media while the chosen
+// partition itself appears unused. Inspect the parent's partition directories,
+// not just mount sources or the class snapshot: mapped mounts name dm/md nodes
+// and a changing/incomplete class snapshot can omit the backing sibling.
+func unmappedReportParent(parentCanonical string, blocks map[string]blockRecord) bool {
+	if !emptyDirectory(filepath.Join(parentCanonical, "holders")) {
+		return false
+	}
+	entries, err := os.ReadDir(parentCanonical)
+	if err != nil {
+		return false
+	}
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		partition := filepath.Join(parentCanonical, entry.Name())
+		if _, err := os.Lstat(filepath.Join(partition, "partition")); err != nil {
+			if errors.Is(err, os.ErrNotExist) {
+				continue
+			}
+			return false
+		}
+		device := readSmallValue(filepath.Join(partition, "dev"))
+		block, known := blocks[device]
+		if !known || !validMajorMinor(device) || block.Name != entry.Name() || block.Parent != filepath.Base(parentCanonical) {
+			// Mount exclusion cannot prove that the parent is unused if any
+			// physical sibling is absent from the device-number lookup.
+			return false
+		}
+		if !emptyDirectory(filepath.Join(partition, "holders")) {
+			return false
+		}
+	}
+	return true
 }
 
 func matchingBinding(candidates []Candidate, binding DeviceBinding) (Candidate, bool) {
@@ -414,11 +480,21 @@ func validateCurrentBoot(root string, authorization Authorization) error {
 }
 
 func mediaIdentity(fingerprintKey []byte, parentCanonical string) (string, string) {
+	// The nearest USB device owns this medium's transport. Ancestor hub/root
+	// controller serials identify shared infrastructure and must never turn a
+	// serial-less removable medium into a stable authorization target.
+	usbDevice := parentCanonical
+	for depth := 0; !usbDeviceSegment.MatchString(filepath.Base(usbDevice)); depth++ {
+		if depth >= 20 || usbControllerSegment.MatchString(filepath.Base(usbDevice)) || filepath.Dir(usbDevice) == usbDevice {
+			return "", ""
+		}
+		usbDevice = filepath.Dir(usbDevice)
+	}
 	type material struct{ name, value string }
 	seen := make(map[string]struct{})
 	var materials []material
 	current := parentCanonical
-	for depth := 0; depth < 20; depth++ {
+	for {
 		for _, name := range []string{"wwid", "serial"} {
 			value := readSmallValue(filepath.Join(current, name))
 			if !useStableValue(value) {
@@ -431,7 +507,7 @@ func mediaIdentity(fingerprintKey []byte, parentCanonical string) (string, strin
 			seen[key] = struct{}{}
 			materials = append(materials, material{name: name, value: value})
 		}
-		if filepath.Base(current) == "devices" || filepath.Dir(current) == current {
+		if current == usbDevice {
 			break
 		}
 		current = filepath.Dir(current)

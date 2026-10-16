@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/ed25519"
 	cryptorand "crypto/rand"
-	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
@@ -15,6 +14,7 @@ import (
 	"time"
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/app"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/graphics"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/plan"
 )
@@ -129,6 +129,11 @@ func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.
 			}
 			evidenceSourceStatus, statusErr := testEvidenceStatus(encoded, definition.schema)
 			evidenceStatus, normalized := normalizeOutcome(evidenceSourceStatus)
+			if errors.Is(statusErr, errDisplayFailureDowngrade) ||
+				(definition.schema == graphics.VisualSchema && statusErr == nil && evidenceStatus == app.TestFail && normalizedStatus != app.TestFail) {
+				fmt.Fprintf(stderr, "validate evidence %s: explicit display failure cannot be replaced by another outcome\n", definition.id)
+				return 1
+			}
 			if statusErr != nil || !normalized || evidenceStatus != normalizedStatus {
 				if normalizedStatus != app.TestError && normalizedStatus != app.TestAborted {
 					fmt.Fprintf(stderr, "validate evidence %s: schema or status does not match supervisor outcome\n", definition.id)
@@ -320,41 +325,4 @@ func readOptionalEvidence(path string) ([]byte, error) {
 	}
 	encoded, err := readSmallRegularFile(path, 1<<20)
 	return encoded, err
-}
-
-func testEvidenceStatus(encoded []byte, expectedSchema string) (string, error) {
-	var header struct {
-		Schema             string            `json:"schema"`
-		Status             string            `json:"status"`
-		Readiness          string            `json:"readiness"`
-		MediaStreamsOpened *bool             `json:"media_streams_opened"`
-		ReadyEndpoints     *int              `json:"ready_endpoints"`
-		Cards              []json.RawMessage `json:"cards"`
-		Endpoints          []json.RawMessage `json:"endpoints"`
-	}
-	if err := json.Unmarshal(encoded, &header); err != nil || header.Schema != expectedSchema || header.Status == "" {
-		return "", errors.New("evidence schema or status is invalid")
-	}
-	if expectedSchema == "hhsoft.pc-tester.audio-readiness/v1" {
-		if header.MediaStreamsOpened == nil || *header.MediaStreamsOpened || header.ReadyEndpoints == nil {
-			return "", errors.New("audio evidence safety fields are invalid")
-		}
-		switch header.Status {
-		case "pass":
-			if header.Readiness != "ready" || *header.ReadyEndpoints <= 0 || len(header.Cards) == 0 || len(header.Endpoints) == 0 {
-				return "", errors.New("audio pass evidence is incomplete")
-			}
-		case "inconclusive":
-			if header.Readiness != "no_device" && header.Readiness != "missing_nodes" && header.Readiness != "no_pcm" {
-				return "", errors.New("audio inconclusive evidence is inconsistent")
-			}
-		case "error", "aborted":
-			if header.Readiness != "unknown" {
-				return "", errors.New("audio error evidence is inconsistent")
-			}
-		default:
-			return "", errors.New("audio evidence status is invalid")
-		}
-	}
-	return header.Status, nil
 }

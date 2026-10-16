@@ -45,25 +45,25 @@ func TestCaptureAndVerifyRoundTrip(t *testing.T) {
 	probeCalls := 0
 	probe := func(context.Context, int) graphics.Result {
 		probeCalls++
-		return graphics.Result{Schema: graphics.Schema, Status: graphics.StatusPass}
+		return completeGraphicsEvidence()
 	}
 	probeCPU := func(context.Context, quick.CPUOptions) quick.CPUResult {
-		return quick.CPUResult{Schema: quick.CPUSchema, Status: quick.StatusPass, Iterations: 20}
+		return completeCPUEvidence()
 	}
 	probeMemory := func(context.Context, quick.MemoryOptions) quick.MemoryResult {
-		return quick.MemoryResult{Schema: quick.MemorySchema, Status: quick.StatusPass, ExaminedBytes: 4096}
+		return completeMemoryEvidence()
 	}
 	probeInput := func(context.Context, inputtest.Options) inputtest.Result {
-		return inputtest.Result{Schema: inputtest.Schema, Status: inputtest.StatusPass, Mode: "readiness"}
+		return completeInputEvidence()
 	}
 	probeNetwork := func(context.Context, networktest.Options) networktest.Result {
-		return networktest.Result{Schema: networktest.Schema, Status: networktest.StatusPass, HardwareInterfaces: 1, DriverBoundInterfaces: 1}
+		return completeNetworkEvidence()
 	}
 	probeStorage := func(context.Context, storage.Options) storage.Result {
-		return storage.Result{Schema: storage.Schema, Status: storage.StatusPass, EligibleDevices: 1, ReadableDevices: 1}
+		return completeStorageEvidence()
 	}
 	probeUSB := func(context.Context, usbtest.Options) usbtest.Result {
-		return usbtest.Result{Schema: usbtest.Schema, Status: usbtest.StatusPass, Controllers: 1, AuthorizedDevices: 1, ReadableDevices: 1}
+		return completeUSBEvidence()
 	}
 	now := time.Date(2026, time.October, 12, 13, 14, 15, 123456789, time.FixedZone("PDT", -7*60*60))
 	arguments := []string{"-fingerprint-key", fingerprintKeyPath, "-key-epoch", "lab-2", "-signing-key", privateKeyPath, "-key-id", "signer-7", "-output", reportPath, "-graphics-pattern-frames", "12"}
@@ -173,6 +173,78 @@ func TestCaptureRejectsBadKeysBeforeCollection(t *testing.T) {
 	}
 	if _, err := os.Stat(outputPath); !os.IsNotExist(err) {
 		t.Fatalf("output exists after rejected capture: %v", err)
+	}
+}
+
+func TestCaptureWillNotSignUnsupportedPassEvidence(t *testing.T) {
+	for _, target := range []string{"CPU", "memory", "graphics", "input", "network", "storage", "USB"} {
+		t.Run(target, func(t *testing.T) {
+			directory := t.TempDir()
+			fingerprint := writeTestKey(t, directory, "fingerprint.key", bytes.Repeat([]byte{0x25}, 32))
+			private := writeTestKey(t, directory, "signing.key", ed25519.NewKeyFromSeed(bytes.Repeat([]byte{0x35}, ed25519.SeedSize)))
+			output := filepath.Join(directory, "rejected.hhpcr")
+			arguments := []string{"-fingerprint-key", fingerprint, "-signing-key", private, "-key-id", "fixture", "-session-id", "fixture", "-output", output}
+			collect := func(context.Context) (inventory.Snapshot, error) { return inventory.NewSnapshot(nil), nil }
+			cpu := func(context.Context, quick.CPUOptions) quick.CPUResult {
+				result := completeCPUEvidence()
+				if target == "CPU" {
+					result.Iterations = 0
+				}
+				return result
+			}
+			memory := func(context.Context, quick.MemoryOptions) quick.MemoryResult {
+				result := completeMemoryEvidence()
+				if target == "memory" {
+					result.ExaminedBytes = 0
+				}
+				return result
+			}
+			gpu := func(context.Context, int) graphics.Result {
+				result := completeGraphicsEvidence()
+				if target == "graphics" {
+					result.Renderer.HardwareDetected = false
+				}
+				return result
+			}
+			input := func(context.Context, inputtest.Options) inputtest.Result {
+				result := completeInputEvidence()
+				if target == "input" {
+					result.Devices = nil
+				}
+				return result
+			}
+			network := func(context.Context, networktest.Options) networktest.Result {
+				result := completeNetworkEvidence()
+				if target == "network" {
+					result.ActiveNonLoopInterfaces = 1
+				}
+				return result
+			}
+			disk := func(context.Context, storage.Options) storage.Result {
+				result := completeStorageEvidence()
+				if target == "storage" {
+					result.WritableMounts = 1
+				}
+				return result
+			}
+			usb := func(context.Context, usbtest.Options) usbtest.Result {
+				result := completeUSBEvidence()
+				if target == "USB" {
+					result.Devices[0].Authorized = false
+				}
+				return result
+			}
+			var stderr bytes.Buffer
+			if result := runCaptureWith(context.Background(), arguments, bytes.NewBuffer(nil), &stderr, collect, gpu, cpu, memory, input, network, disk, usb, bytes.NewReader(nil), time.Now); result != 1 {
+				t.Fatalf("unsupported %s evidence was signed: result=%d", target, result)
+			}
+			if !strings.Contains(stderr.String(), "build "+target+" evidence") {
+				t.Fatalf("unexpected rejection: %s", stderr.String())
+			}
+			if _, err := os.Stat(output); !os.IsNotExist(err) {
+				t.Fatal("report was created for unsupported pass")
+			}
+		})
 	}
 }
 

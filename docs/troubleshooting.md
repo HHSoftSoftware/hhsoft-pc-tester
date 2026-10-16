@@ -80,6 +80,12 @@ resolution or software renderer should appear as limited graphics evidence,
 not be silently labeled as accelerated. Record connector, resolution, artifact,
 flicker, and scaling findings when the operator display pattern appears.
 
+A display pass requires every applicable pattern and all operator criteria to
+pass. Accepting a pattern on one output cannot clear a failed or incomplete
+pattern on another. Record only what was observed, retain partial findings, and
+repeat with stable connections when an output could not be checked. Automated
+fixtures do not qualify physical multi-display behavior.
+
 ## Deployment-key device is rejected
 
 The modern image accepts a separately selected removable, read-only token. It
@@ -100,9 +106,27 @@ interactive save flow. The workflow rejects boot media, internal disks, mounted
 devices, ambiguous USB trees, and destinations whose authorization changed.
 Never reformat a drive to satisfy the save flow.
 
+Use a separately prepared FAT32, exFAT, or compatible ext4 report partition.
+Ext4 must use extents; any journal must be internal, and stored mount-option
+overrides are rejected. Unknown, ambiguous, or unsupported filesystem headers
+stop the save before a writable mount. Header recognition is a bounded read,
+not a filesystem integrity check or media-health test. Try another prepared
+report USB if the type is rejected; do not bypass the check or repair customer
+media. Keep the selected destination connected throughout the save.
+
 A destination copy is not valid unless the save receipt, deterministic bundle
 digest, and final read-back verification all succeed. Preserve the report and
 its verifier output together.
+
+## Report finalization rejects evidence
+
+Worker status alone cannot authorize a signed pass. Missing required
+observations, malformed or ambiguous evidence, zero completed work, and safety
+contradictions can stop finalization. Preserve the sanitized failure marker and
+image version, then repeat from a verified image. Do not edit evidence or change
+its status to force a report. Valid partial non-pass observations remain
+reportable; an error or abort without usable worker evidence can instead carry
+an explicit supervisor execution note.
 
 ## Report verification fails
 
@@ -112,6 +136,10 @@ not equivalent to a deployment-signed release. Treat a bad signature, malformed
 archive, duplicate entry, digest mismatch, or unexpected active content as
 evidence rejection. Do not open embedded HTML/PDF views first to decide whether
 the report is trustworthy.
+
+Verification establishes bundle integrity and signature validity. It does not
+repeat the evidence checks performed during capture/finalization or prove the
+health of the tested hardware.
 
 ## Hardware changed during a run
 

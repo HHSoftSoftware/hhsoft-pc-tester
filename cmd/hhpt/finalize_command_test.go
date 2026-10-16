@@ -12,6 +12,7 @@ import (
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/app"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/bundle"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/graphics"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/plan"
 )
@@ -20,7 +21,7 @@ func TestFinalizeBuildsSelfIssuedReportFromExistingEvidence(t *testing.T) {
 	directory := t.TempDir()
 	fingerprintKey := bytes.Repeat([]byte{0x21}, 32)
 	fingerprintPath := writeTestKey(t, directory, "fingerprint.key", fingerprintKey)
-	cpuEvidence := []byte(`{"schema":"hhsoft.pc-tester.cpu/v1","status":"pass","iterations":42}`)
+	cpuEvidence := encodeEvidenceFixture(t, completeCPUEvidence())
 	if err := os.WriteFile(filepath.Join(directory, "cpu.json"), cpuEvidence, 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -103,6 +104,61 @@ func TestFinalizeRejectsEvidenceOutcomeMismatch(t *testing.T) {
 	}
 }
 
+func TestFinalizeWillNotSignUnsupportedPassEvidence(t *testing.T) {
+	for _, example := range []string{"header-only CPU", "zero-work CPU", "header-only storage", "writable storage"} {
+		t.Run(example, func(t *testing.T) {
+			directory := t.TempDir()
+			fingerprintKey := bytes.Repeat([]byte{0x29}, 32)
+			fingerprintPath := writeTestKey(t, directory, "fingerprint.key", fingerprintKey)
+			snapshot := inventory.NewSnapshot([]inventory.Component{
+				inventory.NewComponent(inventory.ComponentCPU, "cpu:0", nil),
+				inventory.NewComponent(inventory.ComponentBlock, "block:sda", map[string]string{"kind": "device"}),
+			})
+			planPath := writeFinalizeTestPlan(t, directory, snapshot, fingerprintKey)
+			cpu, disk := completeCPUEvidence(), completeStorageEvidence()
+			if example == "zero-work CPU" {
+				cpu.Iterations = 0
+			}
+			if example == "writable storage" {
+				disk.WritableMounts = 1
+			}
+			cpuJSON, diskJSON := encodeEvidenceFixture(t, cpu), encodeEvidenceFixture(t, disk)
+			if example == "header-only CPU" {
+				cpuJSON = []byte(`{"schema":"hhsoft.pc-tester.cpu/v1","status":"pass"}`)
+			}
+			if example == "header-only storage" {
+				diskJSON = []byte(`{"schema":"hhsoft.pc-tester.storage-readiness/v1","status":"pass"}`)
+			}
+			for name, contents := range map[string][]byte{"cpu.json": cpuJSON, "storage.json": diskJSON} {
+				if err := os.WriteFile(filepath.Join(directory, name), contents, 0o600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			reportPath := filepath.Join(directory, "rejected.hhpcr")
+			arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "fixture", "-output", reportPath}
+			for _, definition := range quickResultDefinitions {
+				status := "not_present"
+				if definition.id == "cpu.quick" || definition.id == "storage.readiness.quick" {
+					status = "pass"
+				}
+				arguments = append(arguments, "-outcome", definition.id+"="+status)
+			}
+			collected := false
+			collect := func(context.Context) (inventory.Snapshot, error) { collected = true; return snapshot, nil }
+			var stderr bytes.Buffer
+			if result := runFinalizeWith(context.Background(), arguments, bytes.NewBuffer(nil), &stderr, collect, bytes.NewReader(nil), time.Now); result != 1 {
+				t.Fatalf("unsupported evidence was signed: result=%d error=%s", result, stderr.String())
+			}
+			if collected || !strings.Contains(stderr.String(), "validate evidence") {
+				t.Fatalf("rejection did not occur at evidence acceptance: %s", stderr.String())
+			}
+			if _, err := os.Stat(reportPath); !os.IsNotExist(err) {
+				t.Fatal("report was created for unsupported pass")
+			}
+		})
+	}
+}
+
 func TestFinalizeRecordsHotPlugAgainstFrozenPlan(t *testing.T) {
 	directory := t.TempDir()
 	fingerprintKey := bytes.Repeat([]byte{0x41}, 32)
@@ -114,7 +170,7 @@ func TestFinalizeRecordsHotPlugAgainstFrozenPlan(t *testing.T) {
 		inventory.NewComponent(inventory.ComponentUSB, "usb:1-2", map[string]string{"vendor_id": "0001"}),
 	))
 	planPath := writeFinalizeTestPlan(t, directory, initial, fingerprintKey)
-	if err := os.WriteFile(filepath.Join(directory, "storage.json"), []byte(`{"schema":"hhsoft.pc-tester.storage-readiness/v1","status":"pass"}`), 0o600); err != nil {
+	if err := os.WriteFile(filepath.Join(directory, "storage.json"), encodeEvidenceFixture(t, completeStorageEvidence()), 0o600); err != nil {
 		t.Fatal(err)
 	}
 	reportPath := filepath.Join(directory, "session.hhpcr")
@@ -207,4 +263,94 @@ func writeFinalizeTestPlan(t *testing.T, directory string, snapshot inventory.Sn
 		t.Fatal(err)
 	}
 	return path
+}
+
+func TestFinalizeWillNotReplaceKnownDisplayFailureWithExecutionNote(t *testing.T) {
+	for _, test := range []struct{ evidence, supervisor string }{
+		{"inconclusive", "inconclusive"}, {"skip", "skip"}, {"error", "error"}, {"aborted", "aborted"},
+		{"fail", "error"}, {"fail", "aborted"},
+	} {
+		t.Run(test.evidence+"/"+test.supervisor, func(t *testing.T) {
+			display := completeDisplayEvidence()
+			display.Status = graphics.Status(test.evidence)
+			display.Findings[0].Criteria["pixels"] = graphics.StatusFail
+			arguments, snapshot, reportPath := prepareDisplayFinalization(t, display, test.supervisor)
+			collected := false
+			collect := func(context.Context) (inventory.Snapshot, error) { collected = true; return snapshot, nil }
+			var stderr bytes.Buffer
+			if result := runFinalizeWith(t.Context(), arguments, bytes.NewBuffer(nil), &stderr, collect, bytes.NewReader(nil), time.Now); result != 1 {
+				t.Fatalf("known display failure was signed under another outcome: result=%d error=%s", result, stderr.String())
+			}
+			if collected || !strings.Contains(stderr.String(), "explicit display failure") {
+				t.Fatalf("rejection did not preserve the known failure: %s", stderr.String())
+			}
+			if _, err := os.Stat(reportPath); !os.IsNotExist(err) {
+				t.Fatal("report exists after a known-failure downgrade")
+			}
+		})
+	}
+}
+
+func TestFinalizeSignsLegitimatePartialDisplayEvidence(t *testing.T) {
+	for _, status := range []graphics.Status{graphics.StatusInconclusive, "error", graphics.StatusAborted, graphics.StatusFail} {
+		t.Run(string(status), func(t *testing.T) {
+			display := graphics.VisualResult{Schema: graphics.VisualSchema, Status: status,
+				Patterns: []graphics.DisplayPattern{{Card: "/dev/dri/card0", Status: graphics.StatusInconclusive}}}
+			if status == graphics.StatusFail {
+				display.Findings = []graphics.VisualFinding{{Connector: "card1-DP-1", Criteria: map[string]graphics.Status{"pixels": graphics.StatusFail}}}
+			}
+			arguments, snapshot, reportPath := prepareDisplayFinalization(t, display, string(status))
+			collect := func(context.Context) (inventory.Snapshot, error) { return snapshot, nil }
+			var stderr bytes.Buffer
+			if result := runFinalizeWith(t.Context(), arguments, bytes.NewBuffer(nil), &stderr, collect, bytes.NewReader(bytes.Repeat([]byte{0x37}, 64)), time.Now); result != 0 {
+				t.Fatalf("partial display result was rejected: result=%d error=%s", result, stderr.String())
+			}
+			encoded, err := os.ReadFile(reportPath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			artifact, err := bundle.VerifySelfIssued(bytes.NewReader(encoded), int64(len(encoded)))
+			if err != nil {
+				t.Fatal(err)
+			}
+			var payload app.InventoryPayload
+			if err := json.Unmarshal(artifact.InventoryJSON, &payload); err != nil {
+				t.Fatal(err)
+			}
+			for _, result := range payload.TestResults {
+				if result.ID != "display.operator.quick" {
+					continue
+				}
+				if result.Status != app.TestStatus(status) || !bytes.Equal(result.Evidence, encodeEvidenceFixture(t, display)) {
+					t.Fatal("partial observations were replaced or their status changed")
+				}
+				return
+			}
+			t.Fatal("signed report omitted display evidence")
+		})
+	}
+}
+
+func prepareDisplayFinalization(t *testing.T, display graphics.VisualResult, outcome string) ([]string, inventory.Snapshot, string) {
+	t.Helper()
+	directory := t.TempDir()
+	fingerprintKey := bytes.Repeat([]byte{0x26}, 32)
+	fingerprintPath := writeTestKey(t, directory, "fingerprint.key", fingerprintKey)
+	snapshot := inventory.NewSnapshot([]inventory.Component{
+		inventory.NewComponent(inventory.ComponentVideo, "video:drm:card0-DP-1", map[string]string{"category": "display_connector"}),
+	})
+	planPath := writeFinalizeTestPlan(t, directory, snapshot, fingerprintKey)
+	if err := os.WriteFile(filepath.Join(directory, "display.json"), encodeEvidenceFixture(t, display), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	reportPath := filepath.Join(directory, "display.hhpcr")
+	arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "display-fixture", "-output", reportPath}
+	for _, definition := range quickResultDefinitions {
+		status := "not_present"
+		if definition.id == "display.operator.quick" {
+			status = outcome
+		}
+		arguments = append(arguments, "-outcome", definition.id+"="+status)
+	}
+	return arguments, snapshot, reportPath
 }

@@ -17,6 +17,10 @@ func authorizePlatform(context.Context, Options, AuthorizationRequest) (Authoriz
 	return Authorization{}, errors.New("report-target authorization is unavailable on this platform")
 }
 
+func validateMountAuthorizationPlatform(context.Context, Options, Authorization) error {
+	return errors.New("report-target mounting is unavailable on this platform")
+}
+
 func persistPlatform(context.Context, Options, Authorization, *os.File, int64, string, [sha256.Size]byte) (Receipt, error) {
 	return Receipt{}, errors.New("report persistence is unavailable on this platform")
 }

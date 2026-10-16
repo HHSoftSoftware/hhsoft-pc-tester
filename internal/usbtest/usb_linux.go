@@ -20,6 +20,10 @@ var usbPathPattern = regexp.MustCompile(`^(usb[0-9]+|[0-9]+-[0-9]+(\.[0-9]+)*)$`
 var usbSpeedPattern = regexp.MustCompile(`^[0-9]{1,6}(\.[0-9]{1,3})?$`)
 
 func runPlatform(ctx context.Context, options Options) Result {
+	return runWithNodeInspector(ctx, options, inspectUSBNode)
+}
+
+func runWithNodeInspector(ctx context.Context, options Options, inspectNode func(string, uint64, uint64) (bool, bool, string)) Result {
 	result := Result{Schema: Schema, Status: StatusError}
 	if ctx.Err() != nil {
 		result.Status = StatusAborted
@@ -82,7 +86,7 @@ func runPlatform(ctx context.Context, options Options) Result {
 			}
 			continue
 		}
-		device.NodePresent, device.Readable, device.ReadinessIssue = inspectUSBNode(root, device.BusNumber, device.DeviceNumber)
+		device.NodePresent, device.Readable, device.ReadinessIssue = inspectNode(root, device.BusNumber, device.DeviceNumber)
 		if device.Readable {
 			result.ReadableDevices++
 		}
@@ -92,7 +96,7 @@ func runPlatform(ctx context.Context, options Options) Result {
 		result.Detail = "cancelled"
 		return result
 	}
-	if result.ReadableDevices != result.AuthorizedDevices {
+	if result.AuthorizedDevices != len(result.Devices) || result.ReadableDevices != result.AuthorizedDevices {
 		result.Status = StatusInconclusive
 		result.Detail = "one or more USB devices are unauthorized or not read-only accessible"
 		return result

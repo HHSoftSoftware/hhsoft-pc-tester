@@ -99,9 +99,14 @@ func ApplyVisualFindingCodes(result *VisualResult, codes []string) error {
 		return fmt.Errorf("nil visual result")
 	}
 	connectors := make([]string, 0)
+	overall := StatusPass
 	for _, pattern := range result.Patterns {
+		overall = combineVisualStatus(overall, pattern.Status)
 		if pattern.Status != StatusPass {
 			continue
+		}
+		if len(pattern.Connectors) == 0 {
+			overall = combineVisualStatus(overall, StatusInconclusive)
 		}
 		for _, connector := range pattern.Connectors {
 			connectors = append(connectors, connector.Connector)
@@ -109,13 +114,15 @@ func ApplyVisualFindingCodes(result *VisualResult, codes []string) error {
 	}
 	sort.Strings(connectors)
 	if len(connectors) == 0 {
+		if len(result.Patterns) > 0 {
+			result.Status = overall
+		}
 		return nil
 	}
 	if len(codes) != len(connectors) {
 		return fmt.Errorf("need one visual finding code per successfully patterned connector")
 	}
 	findings := make([]VisualFinding, 0, len(connectors))
-	overall := StatusPass
 	for index, connector := range connectors {
 		code := strings.ToLower(codes[index])
 		if code == "p" || code == "i" || code == "f" {
@@ -132,22 +139,36 @@ func ApplyVisualFindingCodes(result *VisualResult, codes []string) error {
 				status = StatusPass
 			case 'f':
 				status = StatusFail
-				overall = StatusFail
 			case 'i':
 				status = StatusInconclusive
-				if overall == StatusPass {
-					overall = StatusInconclusive
-				}
 			default:
 				return fmt.Errorf("finding %d contains a status other than P/F/I", index+1)
 			}
 			finding.Criteria[criterion] = status
+			overall = combineVisualStatus(overall, status)
 		}
 		findings = append(findings, finding)
 	}
 	result.Findings = findings
 	result.Status = overall
 	return nil
+}
+
+// Every applicable pattern and operator criterion must pass. Preserve known
+// failures and interrupted/error outcomes while retaining partial findings.
+func combineVisualStatus(current, next Status) Status {
+	switch {
+	case current == StatusFail || next == StatusFail:
+		return StatusFail
+	case current == "error" || next == "error":
+		return "error"
+	case current == StatusAborted || next == StatusAborted:
+		return StatusAborted
+	case current != StatusPass || next != StatusPass:
+		return StatusInconclusive
+	default:
+		return StatusPass
+	}
 }
 
 func modesetFailure(output string) string {

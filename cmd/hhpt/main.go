@@ -26,6 +26,8 @@ func run(ctx context.Context, arguments []string, stdin io.Reader, stdout, stder
 		return 2
 	}
 	switch arguments[0] {
+	case "_mount-report":
+		return runInternalReportMount(ctx, arguments[1:], stdin, stderr)
 	case "audio":
 		return runAudio(ctx, arguments[1:], stdout, stderr)
 	case "capture":

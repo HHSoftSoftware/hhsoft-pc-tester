@@ -33,6 +33,51 @@ func TestRunReportsUnauthorizedDevice(t *testing.T) {
 	}
 }
 
+func TestReadableRootDoesNotHideUnauthorizedPeripheral(t *testing.T) {
+	for _, authorization := range []string{"0", "unknown"} {
+		t.Run(authorization, func(t *testing.T) {
+			root := t.TempDir()
+			mustUSBDevice(t, root, "usb1", "1", "1", "09", "1", "4")
+			mustUSBDevice(t, root, "1-1", "1", "2", "00", authorization, "0")
+			calls := 0
+			result := runWithNodeInspector(t.Context(), Options{Root: root}, func(_ string, bus, device uint64) (bool, bool, string) {
+				calls++
+				if bus != 1 || device != 1 {
+					t.Fatal("unauthorized peripheral must not be opened")
+				}
+				return true, true, ""
+			})
+			if result.Status != StatusInconclusive || result.ReadableDevices != 1 || calls != 1 || result.USBTransfersGenerated {
+				t.Fatalf("readable root concealed unavailable peripheral: %#v", result)
+			}
+		})
+	}
+}
+
+func TestAllUnauthorizedDevicesCannotPassWithoutWork(t *testing.T) {
+	root := t.TempDir()
+	mustUSBDevice(t, root, "usb1", "1", "1", "09", "0", "4")
+	result := runWithNodeInspector(t.Context(), Options{Root: root}, func(string, uint64, uint64) (bool, bool, string) {
+		t.Fatal("unauthorized root must not be opened")
+		return false, false, ""
+	})
+	if result.Status != StatusInconclusive || result.AuthorizedDevices != 0 || result.ReadableDevices != 0 {
+		t.Fatalf("empty work must not constitute a readiness pass: %#v", result)
+	}
+}
+
+func TestAuthorizedReadableDevicesCanPassReadiness(t *testing.T) {
+	root := t.TempDir()
+	mustUSBDevice(t, root, "usb1", "1", "1", "09", "1", "4")
+	mustUSBDevice(t, root, "1-1", "1", "2", "00", "1", "0")
+	result := runWithNodeInspector(t.Context(), Options{Root: root}, func(string, uint64, uint64) (bool, bool, string) {
+		return true, true, ""
+	})
+	if result.Status != StatusPass || result.ReadableDevices != 2 || result.AuthorizedDevices != 2 || result.USBTransfersGenerated {
+		t.Fatalf("complete readiness evidence was rejected: %#v", result)
+	}
+}
+
 func TestRunRejectsInvalidDeviceNumber(t *testing.T) {
 	root := t.TempDir()
 	mustUSBDevice(t, root, "usb1", "999", "1", "09", "1", "4")

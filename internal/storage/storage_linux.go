@@ -51,13 +51,30 @@ func runPlatform(ctx context.Context, options Options) Result {
 		result.Detail = "block device registry exceeds the supported limit"
 		return result
 	}
+	writableDevices := make(map[string]struct{})
 	for _, entry := range entries {
 		if ctx.Err() != nil {
 			result.Status = StatusAborted
 			result.Detail = "cancelled"
 			return result
 		}
-		device, include, deviceErr := inspectRegistryDevice(root, entry.Name(), mounts)
+		name := entry.Name()
+		if !validInterfaceName(name) {
+			result.Detail = "block device registry contains an invalid interface"
+			return result
+		}
+		deviceNumber, ok := readSmallValue(filepath.Join(root, "sys/class/block", name, "dev"))
+		if !ok {
+			result.Detail = "block device registry lacks a device number"
+			return result
+		}
+		state := mounts[deviceNumber]
+		// Mount safety applies to every registered block device, including
+		// mappings and loop devices excluded from hardware readiness evidence.
+		if state.writable {
+			writableDevices[deviceNumber] = struct{}{}
+		}
+		device, include, deviceErr := inspectRegistryDevice(root, name, state)
 		if deviceErr != nil {
 			result.Detail = deviceErr.Error()
 			return result
@@ -66,9 +83,6 @@ func runPlatform(ctx context.Context, options Options) Result {
 			continue
 		}
 		result.Devices = append(result.Devices, device)
-		if device.WritableMount {
-			result.WritableMounts++
-		}
 		if device.Kind != "media" {
 			continue
 		}
@@ -80,6 +94,7 @@ func runPlatform(ctx context.Context, options Options) Result {
 			return result
 		}
 	}
+	result.WritableMounts = len(writableDevices)
 	sort.Slice(result.Devices, func(i, j int) bool { return result.Devices[i].Interface < result.Devices[j].Interface })
 	if result.WritableMounts > 0 {
 		result.Detail = "one or more block devices have a writable mount"
@@ -124,16 +139,8 @@ func runPlatform(ctx context.Context, options Options) Result {
 	return result
 }
 
-func inspectRegistryDevice(root, name string, mounts map[string]mountState) (DeviceResult, bool, error) {
-	if !validInterfaceName(name) {
-		return DeviceResult{}, false, errors.New("block device registry contains an invalid interface")
-	}
+func inspectRegistryDevice(root, name string, state mountState) (DeviceResult, bool, error) {
 	base := filepath.Join(root, "sys/class/block", name)
-	deviceNumber, ok := readSmallValue(filepath.Join(base, "dev"))
-	if !ok {
-		return DeviceResult{}, false, errors.New("block device registry lacks a device number")
-	}
-	state := mounts[deviceNumber]
 	partition := fileExists(filepath.Join(base, "partition"))
 	physical := blockInterfacePattern.MatchString(name)
 	if !physical && !partition {

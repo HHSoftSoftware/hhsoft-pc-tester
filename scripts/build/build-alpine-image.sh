@@ -14,6 +14,16 @@ case $architecture in x86|x86_64|aarch64) ;; *) echo unsupported image architect
 repository_root=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
 sh "$repository_root/scripts/security/scan-source.sh"
 lock_file=$repository_root/platform/alpine/base.lock
+version_class=$(env -i PATH="$PATH" /usr/bin/python3 -I -B \
+	"$repository_root/scripts/build/builder_host_manifest.py" classify-version \
+	--version-file "$repository_root/VERSION")
+verify_builder_host() {
+	env -i PATH="$PATH" /usr/bin/python3 -I -B \
+		"$repository_root/scripts/build/builder_host_manifest.py" gate \
+		--repository "$repository_root" --profile alpine-image
+}
+# Verify before using the signer or creating image work/output directories.
+verify_builder_host
 case $output_root in
 	/*) ;;
 	*) output_root=$repository_root/$output_root ;;
@@ -51,10 +61,9 @@ if test -n "$package_cache"; then
 	# Fail before starting work if network namespace isolation is unavailable.
 	unshare --net true
 else
-	case $product_version in
-		*-dev.*) ;;
-		*) echo 'non-development images require a reviewed offline package cache' >&2; exit 1 ;;
-	esac
+	test "$version_class" = development || {
+		echo 'non-development images require a reviewed offline package cache' >&2; exit 1;
+	}
 fi
 test "$(git -c safe.directory="$aports_root" -C "$aports_root" rev-parse "$tag")" = "$tag_object"
 test "$(git -c safe.directory="$aports_root" -C "$aports_root" rev-parse "$tag^{commit}")" = "$commit"
@@ -166,3 +175,4 @@ if test -n "$package_cache"; then
 fi
 image=$output_root/hhsoft-pc-tester-$product_version-$architecture.iso
 sh "$repository_root/scripts/build/write-alpine-sbom.sh" "$architecture" "$image" "$binary" "$image_work/consumed-apks"
+verify_builder_host

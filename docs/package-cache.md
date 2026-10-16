@@ -60,7 +60,10 @@ before disconnecting the builder. The wrapper starts a real fakeroot session,
 which makes upstream `update-kernel` skip its host-package installation and
 cleanup. An additional guard refuses apk mutations outside the build's roots.
 The preinstalled host toolchain is a separate reviewed builder input; the
-target package lock does not pin those host tools.
+target package lock does not pin those host tools. Non-development image
+builds also require the [builder host inventory check](builder-host.md).
+No host manifests have been approved yet, and full builder qualification
+remains outstanding.
 
 The build-local `scanelf` launcher accepts only the four single-file ELF queries
 used by `lddtree`. It removes fakeroot's preload and session identifier only for

@@ -1,5 +1,7 @@
 #!/bin/sh
 set -eu
+PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export PATH
 
 source_archive=${1:?verified Buildroot source archive required}
 signed_manifest=${2:?Buildroot signed manifest required}
@@ -11,6 +13,13 @@ output_root=${7:-build/images}
 work_root=${8:-build/buildroot-work}
 repository_root=$(CDPATH= cd -- "$(dirname "$0")/../.." && pwd)
 sh "$repository_root/scripts/security/scan-source.sh"
+verify_builder_host() {
+	env -i PATH="$PATH" /usr/bin/python3 -I -B \
+		"$repository_root/scripts/build/builder_host_manifest.py" gate \
+		--repository "$repository_root" --profile buildroot-image
+}
+# A missing or changed reviewed host blocks before extraction or output writes.
+verify_builder_host
 
 lock_value() {
 	sed -n "s/^$1=//p" "$repository_root/platform/buildroot/base.lock"
@@ -90,3 +99,4 @@ python3 "$repository_root/scripts/build/write_buildroot_sbom.py" \
     --version "$version_label" \
     --epoch "${SOURCE_DATE_EPOCH:-$(git -C "$repository_root" show -s --format=%ct HEAD)}" \
     --output "$output_root/$artifact_name.spdx"
+verify_builder_host

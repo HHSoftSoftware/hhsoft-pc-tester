@@ -48,6 +48,9 @@ complete; real-hardware requirements remain open until physically tested.
 - [x] Run source-only CI with minimal permissions and immutable actions.
 - [ ] Consume a digest-pinned package cache as a release-build input.
 - [ ] Pin the builder toolchain and verify the host tools used for release images.
+- [x] Add a fixed-path host inventory gate before and after image builds, with
+  a strict development-version exception, native failure-case tests, and an
+  actual-host comparison; approved manifests and full qualification remain open.
 - [x] Add cache-lock generation/verification and an offline Alpine build mode
   that refuses unreviewed cache bytes and reused apk roots.
 - [ ] Validate the offline cache mode against the preserved builder inputs and

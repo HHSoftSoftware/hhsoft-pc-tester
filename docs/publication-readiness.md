@@ -80,6 +80,9 @@ and [artifact attestations](https://docs.github.com/en/actions/concepts/security
 Build from a clean, committed source revision whose `VERSION` is the proposed
 release version. Development labels such as `0.1.0-dev.0` cannot be published.
 Use reviewed package input locks with the [offline cache mode](package-cache.md).
+Require a reviewed [builder host manifest](builder-host.md) and complete the
+remaining builder qualification checks; matching that manifest alone is not
+release approval.
 Development builds that resolve live repositories do not meet that release gate.
 Do not relabel older development images as a new release.
 

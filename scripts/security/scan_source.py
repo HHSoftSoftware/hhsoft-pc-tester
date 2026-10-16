@@ -15,7 +15,7 @@ import sys
 
 
 PRIVATE_DIRS = {
-    "_reference_donotcommitorpushoutside", "private", "secret", "secrets",
+    "private", "secret", "secrets",
     "credentials", ".agents", ".codex", ".claude", ".cursor", ".gemini",
     ".windsurf", ".aws", ".ssh", ".gnupg", "__pycache__",
 }
@@ -80,7 +80,7 @@ def forbidden_path(name):
     lower = tuple(part.lower() for part in parts)
     if not parts or any(part in ("..", ".git") for part in lower):
         return True
-    if lower[0] in GENERATED_DIRS or any(part in PRIVATE_DIRS for part in lower):
+    if lower[0] in GENERATED_DIRS or any(part in PRIVATE_DIRS or part.startswith("_reference") for part in lower):
         return True
     if (PRIVATE_NAMES.fullmatch(parts[-1]) or AGENT_INSTRUCTION_NAMES.fullmatch(parts[-1])
             or SCOPED_INSTRUCTION_NAMES.fullmatch(parts[-1]) or FORBIDDEN_EXTENSIONS.search(parts[-1])):
@@ -178,7 +178,9 @@ class Scanner:
         # JSON-style escaping prevents control characters in malicious paths/logs.
         import json
         encoded = os.fsencode(location)
-        if any(pattern.search(encoded) for pattern in PATTERNS.values()) or any(
+        private_research = any(part.lower().startswith("_reference")
+                               for part in re.split(r"[\\/:\s]", location))
+        if private_research or any(pattern.search(encoded) for pattern in PATTERNS.values()) or any(
                 term in encoded.lower() for term in self.private_terms):
             location = "[redacted location]"
         self.failures.add(f"{rule}: {json.dumps(location, ensure_ascii=True)}")

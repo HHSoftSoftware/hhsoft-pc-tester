@@ -13,6 +13,7 @@ scripts/security/pre-push text eol=lf
 *.patch text eol=lf -whitespace
 
 # Defense in depth for source archives; the scanner rejects tracked copies too.
+_[Rr][Ee][Ff][Ee][Rr][Ee][Nn][Cc][Ee]* export-ignore
 [Aa][Gg][Ee][Nn][Tt][Ss].[Mm][Dd]* export-ignore
 [Aa][Gg][Ee][Nn][Tt][Ss][._-]*.[Mm][Dd]* export-ignore
 [Cc][Ll][Aa][Uu][Dd][Ee].[Mm][Dd]* export-ignore

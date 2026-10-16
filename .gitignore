@@ -23,7 +23,7 @@ hhpt-deployment-key.v1
 *.pem
 *.p12
 *.pfx
-**/_Reference_DoNotCommitOrPushOutside/
+**/_[Rr][Ee][Ff][Ee][Rr][Ee][Nn][Cc][Ee]*/
 .vscode/
 .idea/
 .DS_Store

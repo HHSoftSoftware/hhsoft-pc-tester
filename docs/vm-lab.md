@@ -7,7 +7,7 @@ attached storage is one caller-supplied ISO and one caller-supplied dynamic VDI.
 
 The provisioning script does not start the VM unless `-StartHeadless` is
 explicitly passed. It never partitions, formats, opens, or attaches a physical
-disk, including Windows `PhysicalDrive0` (Disk 0).
+disk or Windows physical-device path.
 
 ## Prerequisites
 
@@ -17,8 +17,8 @@ disk, including Windows `PhysicalDrive0` (Disk 0).
 - Windows PowerShell 5.1 or PowerShell 7.
 
 If the scratch SSD is assigned a drive letter, use a directory on that mounted
-filesystem, such as `T:\HHPT_LAB`. Never pass `\\.\PhysicalDrive0`, a raw VMDK,
-or another device path to this workflow.
+filesystem. Choose a lab directory on that filesystem for the example below.
+Never pass a physical-device path or raw VMDK to this workflow.
 
 ## Create Sparse Media
 
@@ -28,7 +28,7 @@ Standard` is VirtualBox's dynamically allocated format; do not use `Fixed` or
 
 ```powershell
 $VBoxManage = 'C:\Program Files\Oracle\VirtualBox\VBoxManage.exe'
-$LabRoot = 'T:\HHPT_LAB'
+$LabRoot = 'D:\hhpt-lab' # Example: replace with your mounted lab directory.
 $VirtualDiskPath = Join-Path $LabRoot 'media\hhpt-test.vdi'
 
 New-Item -ItemType Directory -Force -Path (Split-Path $VirtualDiskPath)

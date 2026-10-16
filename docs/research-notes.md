@@ -79,23 +79,6 @@ Sources:
 - https://github.com/ColinIanKing/stress-ng
 - https://memtest.org/readme
 
-## Local reference material
-
-The supplied Alpine ISOs match their official SHA-256 files. The proprietary
-memory-test, Parted Magic, QuickMemoryTestOK, and QSIBoot files may inform user
-expectations and device coverage but must not enter Git history or release
-images.
-
-The HHAPDG readme suggests valuable behavior: enumerate all instances rather
-than hard-coded limits, preserve user corrections, handle no-drive diskless
-systems, sanitize report filenames, cross-check inconsistent system-model
-sources, and report optical and storage-controller details. Unlike HHAPDG,
-virtual devices must be marked rather than silently filtered so VM tests remain
-auditable.
-
-ShredOS demonstrates a project-owned Buildroot appliance and multi-target
-configuration. No private reference source or configuration is copied.
-
 ## Web design anti-pattern review
 
 Current design criticism repeatedly identifies the same generic output:

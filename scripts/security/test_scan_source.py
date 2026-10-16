@@ -123,6 +123,43 @@ class PublicationScanTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertNotIn(secret, result.stdout + result.stderr)
 
+    def test_private_research_variants_stay_ignored_and_cannot_enter_history_or_archives(self):
+        project = SCRIPT.resolve().parents[2]
+        for name in (".gitignore", ".gitattributes"):
+            shutil.copyfile(project / name, self.root / name)
+        names = ("_Reference_vendor/notes.txt", "nested/_reference_archive/data.txt",
+                 "deep/nested/_REFERENCELOCAL/document.txt")
+        for name in names:
+            path = self.root / name
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text("private research fixture\n")
+        ignored = self.git("-c", "core.ignorecase=false", "check-ignore", "--no-index", "-z", "--stdin",
+                           input=("\0".join(names) + "\0").encode())
+        self.assertEqual(set(ignored.decode().rstrip("\0").split("\0")), set(names))
+        self.assertEqual(self.run_scan().returncode, 0)
+        self.commit()
+        self.git("add", "-f", "--", *names)
+        result = self.run_scan()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("[redacted location]", result.stderr)
+        for name in names:
+            self.assertNotIn(name, result.stderr)
+            self.assertNotIn(Path(name).parent.name, result.stderr)
+        self.git("commit", "-qm", "Fixture forced private research")
+        with tarfile.open(fileobj=io.BytesIO(self.git("archive", "--format=tar", "HEAD"))) as archive:
+            exported = set(archive.getnames())
+        self.assertIn("source.txt", exported)
+        self.assertFalse(exported.intersection(names))
+        self.git("rm", "--", *names)
+        self.commit()
+        result = self.run_scan()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("[redacted location]", result.stderr)
+        for name in names:
+            self.assertNotIn(name, result.stderr)
+            self.assertNotIn(Path(name).parent.name, result.stderr)
+        self.assertFalse(scanner.forbidden_path("docs/reference-guide.md"))
+
     def test_private_path_is_redacted_in_worktree_index_and_history(self):
         value = "private" + "-path-fixture"
         (self.root / ".hhpt-source-denylist").write_text(value)

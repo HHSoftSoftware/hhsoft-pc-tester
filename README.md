@@ -29,8 +29,8 @@ remain gated on the complete reviewed bootable ISO set.
   remote submission as an optional output.
 - Detect component swaps with privacy-preserving system and per-component
   fingerprints rather than exposing serial numbers by default.
-- Build images only from reviewed source packages; never redistribute the
-  local commercial or proprietary reference binaries.
+- Build images from reviewed dependencies with pinned versions, checksums,
+  and license records.
 - Apply defense in depth at the boot chain, daemon, test-worker, network,
   storage, report, build, and release layers; no single control is trusted.
 
@@ -284,13 +284,6 @@ filesystems.
 - `docs/`: architecture decisions, contributor documentation, and operations.
 
 Directories are created only when their first working artifact is added.
-
-## References and provenance
-
-The local `../_Reference_DoNotCommitOrPushOutside` directory is research input
-only. It is outside this repository, ignored defensively, and must never be
-added to releases. New dependencies require an upstream source, pinned version,
-checksum, license review, and an entry in the third-party inventory.
 
 ## License and contributions
 

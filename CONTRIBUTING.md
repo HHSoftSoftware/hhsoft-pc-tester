@@ -10,7 +10,7 @@ privately using [SECURITY.md](SECURITY.md), rather than a public issue.
 ## Requirements
 
 1. Do not commit binaries, disk images, captured serial numbers, private keys,
-   proprietary reference files, or third-party code copied without review.
+   proprietary material, or third-party code copied without review.
 2. Pin every build input and record its upstream project, checksum, source URL,
    and SPDX license identifier.
 3. Keep inventory and ordinary tests read-only. Storage-writing tests must use

@@ -1,6 +1,6 @@
 # HHSoft PC Tester Master Checklist
 
-Status date: 2026-10-15
+Status date: 2026-10-16
 
 This is the project-level source of truth derived from the original product
 requirements. Check an item only when implementation and applicable validation
@@ -197,6 +197,9 @@ complete; real-hardware requirements remain open until physically tested.
 - [x] QEMU-inject USB/block hot-plug after plan freeze and verify the signed
   run-integrity failure and component delta.
 - [x] QEMU-emulate an HDA codec and verify signed ALSA readiness evidence.
+- [x] QEMU-validate the real report-save path on disposable file-backed USB:
+  reject wrong confirmation with zero writes, then extract and independently
+  verify the authorized saved report.
 - [x] Verify image checksums and no writable tested-disk mounts.
 - [x] VM-validate USB topology and direct read-only USBFS node access on
   modern x86/x86_64, no-SSE legacy x86, and AArch64 images.

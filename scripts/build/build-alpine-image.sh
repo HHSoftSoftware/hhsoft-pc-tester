@@ -76,6 +76,7 @@ for tool in apk fakeroot update-kernel mkinitfs mksquashfs modinfo depmod openss
 done
 real_apk=$(command -v apk)
 real_scanelf=$(command -v scanelf)
+real_fakeroot=$(command -v fakeroot)
 mkdir -p "$work_root"
 if test -n "$package_cache"; then
 	cache_digest=$(sha256sum "$package_lock" | cut -d' ' -f1)
@@ -112,7 +113,8 @@ fi
 ln -s /bin/busybox "$tools/host-applets/cp"
 cp "$repository_root/scripts/build/record_alpine_apks.py" "$tools/host-applets/apk"
 cp "$repository_root/scripts/build/scanelf-readonly.sh" "$tools/host-applets/scanelf"
-chmod 0755 "$tools/host-applets/apk" "$tools/host-applets/scanelf"
+cp "$repository_root/scripts/build/fakeroot-apkovl.sh" "$tools/host-applets/fakeroot"
+chmod 0755 "$tools/host-applets/apk" "$tools/host-applets/scanelf" "$tools/host-applets/fakeroot"
 for script in mkimage.sh mkimage-yaml.sh mkimg.base.sh mkimg.standard.sh; do
 	cp "$aports_root/scripts/$script" "$tools/$script"
 done
@@ -146,11 +148,12 @@ export SOURCE_DATE_EPOCH=$(git -c safe.directory="$aports_root" -C "$aports_root
 		HHPT_SIGNING_PUBLIC_KEY="$signing_key.pub" \
 		PACKAGER_PRIVKEY="$signing_key" PACKAGER_PUBKEY="$signing_key.pub" \
 		SOURCE_DATE_EPOCH="$SOURCE_DATE_EPOCH" \
+		HHPT_APKOVL_SCRIPT="$tools/genapkovl-hhpt.sh" \
 		HHPT_REAL_SCANELF="$real_scanelf" \
 		HHPT_REAL_APK="$real_apk" HHPT_APK_OFFLINE="$offline" \
 		HHPT_APK_RECORD_DIR="$image_work/consumed-apks" \
 		HHPT_APK_BUILD_ROOT="$image_work" HHPT_APK_TMP_ROOT="$tools/tmp" \
-		fakeroot -- "$@"
+		"$real_fakeroot" -- "$@"
 	if test -n "$package_cache"; then
 		unshare --net "$@"
 	else

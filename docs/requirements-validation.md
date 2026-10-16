@@ -44,6 +44,32 @@ integration cases, which ran with pinned Gitleaks on Windows. Workflow lint,
 platform-lock checks, and the combined publication scan also passed. These
 results cover this source review milestone, not subsequent changes or images.
 
+On 2026-10-16, an x86_64 development image passed the real QEMU USB report-save
+flow. Before authorization, after a wrong code, and after the next selection,
+both QEMU write counters were zero and the whole disk image digest was unchanged.
+Correct confirmation produced a 184,105-byte report; after unmount and guest
+shutdown, mtools extracted it from a read-only partition copy. Its digest matched
+the guest receipt and the independent verifier accepted its self-issued signature.
+The MBR and bytes outside the selected partition remained unchanged. Graphics
+and display remained inconclusive; no physical-device qualification is implied.
+
+This development fixture reused independently copied, completed kernel/package
+sections after fixing a nested fakeroot overlay failure. Its ISO SHA-256 was
+`f0d33af03229fb0d3f8b798288d81b8c6b0ba1714e4772d1e766f9898fe63def`.
+The same image also booted in the preserved VirtualBox BIOS and UEFI fixtures;
+CPU, memory, storage safety, input readiness, and run integrity passed, with
+zero writable block mounts and self-issued reports. Original VM media and
+serial-log settings were restored afterward.
+It is not a fresh offline release build or a published download. The new native
+fakeroot regression verifies that the overlay inherits the outer session's fake
+ownership without changing real file ownership. All 28 build and 10 lab Python
+tests passed on Alpine; Windows skipped the three native build integrations.
+The Go suite and vet passed on both hosts, all five application targets built
+with Go 1.27.2, and a Go 1.27.2 Linux test executable also passed the save tests.
+The builder's native Go suite used Go 1.26.9. CI runs the maintained harness
+failure fixtures, including its embedded Python syntax check; full image boot
+and report-save integration still run in the separate lab.
+
 Regression coverage for these cases belongs with the corresponding feature,
 not with a blanket claim of complete product coverage. Linux mount/device
 fixtures and real APK selection require the appropriate Linux environment;

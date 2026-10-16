@@ -249,7 +249,7 @@ if /usr/bin/hhpt inventory -fingerprint-key /run/hhpt/fingerprint.key -key-epoch
 			test "\$integrity_status" = pass || test "\$integrity_status" = fail || { printf 'HHPT_FAILED run-integrity-metadata\n' > /dev/console; exit 1; }
 			test -n "\$final_component_count" || { printf 'HHPT_FAILED run-integrity-metadata\n' > /dev/console; exit 1; }
 			printf 'HHPT_READY report=/run/hhpt/session.hhpcr plan=%s components=%s integrity=%s audio=%s cpu=%s memory=%s input=%s network=%s storage=%s usb=%s graphics=%s display=%s key_epoch=%s writable_block_mounts=0 signature=self-issued\n' "\$plan_id" "\$final_component_count" "\$integrity_status" "\$audio_status" "\$cpu_status" "\$memory_status" "\$input_status" "\$network_status" "\$storage_status" "\$usb_status" "\$graphics_status" "\$display_status" "\$key_epoch" > /dev/console
-			/usr/bin/hhpt save -fingerprint-key /run/hhpt/fingerprint.key /run/hhpt/session.hhpcr <"\$ui_console" >"\$ui_console" 2>&1 || printf 'HHPT_SAVE_FAILED report-retained-in-ram\n' > /dev/console
+			/usr/bin/hhpt save -fingerprint-key /run/hhpt/fingerprint.key -audit-output /dev/console /run/hhpt/session.hhpcr <"\$ui_console" >"\$ui_console" 2>&1 || printf 'HHPT_SAVE_FAILED report-retained-in-ram\n' > /dev/console
 		else
 			printf 'HHPT_FAILED report-finalization\n' > /dev/console
 			exit 1

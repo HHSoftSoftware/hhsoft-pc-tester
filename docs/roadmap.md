@@ -1,6 +1,6 @@
 # Roadmap
 
-## Working checklist (2026-10-15)
+## Working checklist (2026-10-16)
 
 - [x] Select a diskless Alpine base, permissive source license, initial threat
   model, report contract, and staged test strategy.
@@ -35,6 +35,8 @@
   exclusive persistence to a separately inserted removable USB partition.
 - [x] Finalize automatic-profile evidence into a self-contained signed report
   and expose typed report saving through the normal console UI.
+- [x] Exercise the real removable-USB save path in QEMU, proving zero writes
+  after incorrect confirmation and independently verifying the saved artifact.
 - [x] Add preferred/native-mode whole-card output patterns, compact operator
   findings, and signed-report integration.
 - [x] Activate a purpose-separated stable fingerprint key from explicit,

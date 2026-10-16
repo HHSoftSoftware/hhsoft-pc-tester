@@ -258,6 +258,31 @@ results are not overwritten. Serial numbers, credentials, camera/audio content,
 and network identifiers are excluded or redacted unless the operator enables a
 documented private-report mode.
 
+### File-backed QEMU report-save validation
+
+On a Linux host with Python 3, QEMU x86_64, dosfstools, and mtools, run:
+
+```sh
+sh scripts/lab/test-report-save-qemu.sh IMAGE.iso HHPT_BINARY NEW_WORK_DIRECTORY
+```
+
+Use an x86_64 image with the save command's serial audit markers and a matching
+Linux `hhpt` verifier. The work directory must not exist; its parent must exist.
+The harness creates a fresh 65 MiB disk image containing one FAT32 partition,
+boots with networking disabled, and lets the safe quick run finish. It uses the
+interactive save flow to reject an incorrect typed confirmation, requires zero
+emulated disk writes and unchanged image bytes, then types the current target's
+exact confirmation. After QEMU exits, mtools extracts the saved report from a
+read-only partition copy. Its size and digest must match the save receipt, and
+`hhpt verify -self-issued` must validate its contents and signature.
+
+The guest has a 240-second deadline; host tools and child cleanup have separate
+finite timeouts. No host block device, loop device, or mount is used. Logs, disk
+images, the extracted report, and `validation.json` remain in the new directory
+for review. This exercises the live image's real report mount/persistence path
+on emulated USB storage; it does not establish physical hot-plug behavior or
+external signer identity.
+
 ## Hardware and environment limitations
 
 - The live OS cannot test memory occupied by itself; Memtest86+ supplies the

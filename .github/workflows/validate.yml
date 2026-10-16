@@ -45,6 +45,7 @@ jobs:
           python3 -m unittest discover -s scripts/security -p 'test_*.py'
           python3 -m unittest discover -s scripts/release -p 'test_*.py'
           python3 -m unittest discover -s scripts/build -p 'test_*.py'
+          python3 -m unittest discover -s scripts/lab -p 'test_*.py'
       - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
         with:
           cache: false
@@ -69,6 +70,7 @@ jobs:
             'scripts/build/build-alpine-image.sh',
             'scripts/build/build-buildroot-image.sh',
             'scripts/build/build-go.sh',
+            'scripts/build/fakeroot-apkovl.sh',
             'scripts/build/scanelf-readonly.sh',
             'scripts/security/install-gitleaks.sh',
             'scripts/security/scan-source.sh',
@@ -77,6 +79,7 @@ jobs:
             'scripts/lab/test-audio-qemu.sh',
             'scripts/lab/test-deployment-key-qemu.sh',
             'scripts/lab/test-hotplug-qemu.sh',
+            'scripts/lab/test-report-save-qemu.sh',
             'scripts/lab/prepare-alpine-builder.sh',
             'platform/alpine/mkimage/genapkovl-hhpt.sh',
             'platform/buildroot/board/legacy-x86/post-build.sh',

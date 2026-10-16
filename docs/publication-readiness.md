@@ -5,6 +5,11 @@ download release must contain the x86_64, x86, legacy x86, and beta AArch64
 bootable ISOs together with the Windows/Linux report utilities. There is no
 utilities-only release path.
 
+The initial source push and GitHub validation passed. Current repository
+protections and the single-maintainer review exception are recorded in
+[repository-protections.md](repository-protections.md). The download gates
+below remain separate from source publication.
+
 ## Before the first push
 
 1. Run `python scripts/security/publication_check.py --gitleaks PATH_TO_GITLEAKS`

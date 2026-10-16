@@ -53,13 +53,23 @@ or newer. The apk wrapper also passes `--no-network` in offline mode.
 Install builder tools during the separate networked builder preparation step.
 The build requires `apk`, `fakeroot`, `update-kernel`, `mkinitfs`, `mksquashfs`,
 `modinfo`, `depmod`, `openssl`, `xorrisofs`, `grub-mkimage`, `mformat`, `mcopy`,
-and `python3`, plus the normal Alpine abuild, BusyBox, archive, and shell tools.
+`scanelf`, `lddtree`, and `python3`, plus the normal Alpine abuild, BusyBox,
+archive, and shell tools.
 In particular, install the `mkinitfs`, `squashfs-tools`, and `kmod` packages
 before disconnecting the builder. The wrapper starts a real fakeroot session,
 which makes upstream `update-kernel` skip its host-package installation and
 cleanup. An additional guard refuses apk mutations outside the build's roots.
 The preinstalled host toolchain is a separate reviewed builder input; the
 target package lock does not pin those host tools.
+
+The build-local `scanelf` launcher accepts only the four single-file ELF queries
+used by `lddtree`. It removes fakeroot's preload and session identifier only for
+that scanner child. Scanelf's own IPC namespace would otherwise separate it
+from the fakeroot daemon and stall initramfs dependency discovery. Scanelf keeps
+its namespace sandbox; image metadata operations keep their fakeroot session.
+Other flags, write/fix operations, and multiple inputs are rejected. A native
+Alpine regression compares the real queries and dependency listing under
+fakeroot with ordinary scans, using bounded timeouts.
 
 Each invocation creates a fresh tool directory, empty HOME, and explicit
 abuild configuration. The image subprocess receives a controlled environment,

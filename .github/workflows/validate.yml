@@ -69,6 +69,7 @@ jobs:
             'scripts/build/build-alpine-image.sh',
             'scripts/build/build-buildroot-image.sh',
             'scripts/build/build-go.sh',
+            'scripts/build/scanelf-readonly.sh',
             'scripts/security/install-gitleaks.sh',
             'scripts/security/scan-source.sh',
             'scripts/build/write-alpine-sbom.sh',

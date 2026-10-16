@@ -63,6 +63,8 @@ complete; real-hardware requirements remain open until physically tested.
   replaced Git objects, and merge-only historical secrets in publication checks.
 - [ ] Configure GitHub release protections and validate the first complete
   publication run; image production and lab reviews remain external to CI.
+- [x] Publish reviewed source with passing GitHub CI, protect `main` and release
+  tags, and enable GitHub secret scanning, push protection, and immutable releases.
 - [ ] Automate supported-branch update checks and security rebuild reminders.
 
 ## User interface and profiles
@@ -212,5 +214,5 @@ complete; real-hardware requirements remain open until physically tested.
 - [ ] Define a deliberately non-generic visual system using square geometry and
   researched interface anti-examples.
 - [ ] Generate a versioned PDF documentation manual.
-- [ ] Apply the documented issue labels in GitHub after repository creation;
+- [x] Apply the documented issue labels in GitHub after repository creation;
   templates, bootstrap CODEOWNERS, and feature/test ownership are complete.

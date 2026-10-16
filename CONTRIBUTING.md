@@ -3,6 +3,10 @@
 Contributions and merge requests are welcome. Until the first public release,
 open an issue before substantial work so interfaces do not diverge.
 
+Issue templates use the labels defined in
+[.github/labels.json](.github/labels.json). Report security vulnerabilities
+privately using [SECURITY.md](SECURITY.md), rather than a public issue.
+
 ## Requirements
 
 1. Do not commit binaries, disk images, captured serial numbers, private keys,

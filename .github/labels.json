@@ -1,0 +1,32 @@
+[
+  {
+    "name": "type:bug",
+    "color": "B91C1C",
+    "description": "Existing behavior does not meet the documented requirements"
+  },
+  {
+    "name": "type:feature",
+    "color": "2563EB",
+    "description": "A proposed capability or improvement"
+  },
+  {
+    "name": "type:hardware",
+    "color": "7C3AED",
+    "description": "Hardware compatibility or qualification evidence"
+  },
+  {
+    "name": "needs:triage",
+    "color": "D97706",
+    "description": "Needs reproduction, scope, and severity assessment"
+  },
+  {
+    "name": "needs:design",
+    "color": "0891B2",
+    "description": "Needs agreed requirements, safety boundaries, and test criteria"
+  },
+  {
+    "name": "evidence:needed",
+    "color": "A16207",
+    "description": "Needs sanitized, reproducible validation evidence"
+  }
+]

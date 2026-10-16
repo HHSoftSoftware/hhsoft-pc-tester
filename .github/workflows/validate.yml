@@ -1,0 +1,87 @@
+name: Validate source
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+  workflow_call:
+    inputs:
+      ref:
+        description: Exact commit to validate
+        required: false
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: validate-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  source:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Scan custom identity, secret, and artifact rules
+        shell: bash
+        run: sh scripts/security/scan-source.sh --history
+      - name: Install pinned Gitleaks
+        shell: bash
+        run: sh scripts/security/install-gitleaks.sh "$RUNNER_TEMP/gitleaks"
+      - name: Scan generic secrets
+        shell: bash
+        run: python3 scripts/security/publication_check.py --gitleaks "$RUNNER_TEMP/gitleaks/gitleaks"
+      - name: Test publication and release guards
+        env:
+          HHPT_GITLEAKS: ${{ runner.temp }}/gitleaks/gitleaks
+        run: |
+          python3 -m unittest discover -s scripts/security -p 'test_*.py'
+          python3 -m unittest discover -s scripts/release -p 'test_*.py'
+          python3 -m unittest discover -s scripts/build -p 'test_*.py'
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          cache: false
+          go-version-file: .go-version
+      - name: Test and vet Go
+        run: |
+          go test ./...
+          go vet ./...
+      - name: Cross-compile supported application targets
+        run: |
+          sh scripts/build/build-go.sh x86_64
+          sh scripts/build/build-go.sh x86
+          sh scripts/build/build-go.sh legacy-x86
+          sh scripts/build/build-go.sh aarch64
+          sh scripts/build/build-go.sh windows-x86_64
+      - name: Validate platform locks and shell syntax
+        shell: pwsh
+        run: |
+          ./scripts/build/Test-AlpineBaseLock.ps1
+          ./scripts/build/Test-BuildrootBaseLock.ps1
+          $shellScripts = @(
+            'scripts/build/build-alpine-image.sh',
+            'scripts/build/build-buildroot-image.sh',
+            'scripts/build/build-go.sh',
+            'scripts/security/install-gitleaks.sh',
+            'scripts/security/scan-source.sh',
+            'scripts/build/write-alpine-sbom.sh',
+            'scripts/lab/test-aarch64-qemu.sh',
+            'scripts/lab/test-audio-qemu.sh',
+            'scripts/lab/test-deployment-key-qemu.sh',
+            'scripts/lab/test-hotplug-qemu.sh',
+            'scripts/lab/prepare-alpine-builder.sh',
+            'platform/alpine/mkimage/genapkovl-hhpt.sh',
+            'platform/buildroot/board/legacy-x86/post-build.sh',
+            'platform/buildroot/board/legacy-x86/rootfs-overlay/etc/init.d/S50hhpt'
+          )
+          foreach ($script in $shellScripts) {
+            & /bin/sh -n $script
+            if ($LASTEXITCODE -ne 0) { throw "Invalid shell syntax: $script" }
+          }

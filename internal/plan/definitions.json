@@ -1,0 +1,41 @@
+{
+  "capabilities": [
+    {"id":"audio","hardware":[{"type":"pci","attribute":"class","prefix":"0x04"},{"type":"usb","attribute":"class","prefix":"01"},{"type":"usb","attribute":"audio_interface","equals":"true"}],"providers":[{"type":"sound"}]},
+    {"id":"camera","providers":[{"type":"video","attribute":"category","equals":"video_capture"}]},
+    {"id":"cpu","providers":[{"type":"cpu"}]},
+    {"id":"display","hardware":[{"type":"pci","attribute":"class","prefix":"0x03"}],"providers":[{"type":"video","attribute":"category","equals":"display_connector"}]},
+    {"id":"graphics","hardware":[{"type":"pci","attribute":"class","prefix":"0x03"}],"providers":[{"type":"video","attribute":"category","equals":"display_controller"}]},
+    {"id":"input","providers":[{"type":"input"}]},
+    {"id":"input.keyboard","providers":[{"type":"input","attribute":"category","equals":"keyboard"}]},
+    {"id":"input.pointer","providers":[{"type":"input","attribute":"category","equals":"pointer"}]},
+    {"id":"input.touchpad","providers":[{"type":"input","attribute":"category","equals":"touchpad"}]},
+    {"id":"input.touchscreen","providers":[{"type":"input","attribute":"category","equals":"touchscreen"}]},
+    {"id":"memory","providers":[{"type":"memory"}]},
+    {"id":"network","hardware":[{"type":"pci","attribute":"class","prefix":"0x02"}],"providers":[{"type":"network","attribute":"name","not_equals":"lo"}]},
+    {"id":"storage","providers":[{"type":"block","attribute":"kind","equals":"device"}]},
+    {"id":"usb","providers":[{"type":"usb"}]}
+  ],
+  "tests": [
+    {"id":"audio.readiness.quick","version":1,"implemented":true,"capability":"audio","profiles":["quick","standard","extended","destructive"],"estimated_seconds":1,"timeout_seconds":5},
+    {"id":"audio.quick","version":1,"capability":"audio","profiles":["quick","standard","extended","destructive"],"estimated_seconds":45,"timeout_seconds":90},
+    {"id":"camera.quick","version":1,"capability":"camera","profiles":["quick","standard","extended","destructive"],"estimated_seconds":30,"timeout_seconds":60},
+    {"id":"cpu.quick","version":1,"implemented":true,"capability":"cpu","profiles":["quick","standard","extended","destructive"],"estimated_seconds":3,"timeout_seconds":20},
+    {"id":"cpu.stress","version":1,"capability":"cpu","profiles":["standard","extended","destructive"],"estimated_seconds":600,"timeout_seconds":660},
+    {"id":"display.operator.quick","version":1,"implemented":true,"capability":"display","profiles":["quick","standard","extended","destructive"],"estimated_seconds":20,"timeout_seconds":45},
+    {"id":"graphics.quick","version":1,"implemented":true,"capability":"graphics","profiles":["quick","standard","extended","destructive"],"estimated_seconds":20,"timeout_seconds":30},
+    {"id":"input.readiness.quick","version":1,"implemented":true,"capability":"input","profiles":["quick","standard","extended","destructive"],"estimated_seconds":1,"timeout_seconds":5},
+    {"id":"input.keyboard.quick","version":1,"capability":"input.keyboard","profiles":["quick","standard","extended","destructive"],"estimated_seconds":30,"timeout_seconds":90},
+    {"id":"input.pointer.quick","version":1,"capability":"input.pointer","profiles":["quick","standard","extended","destructive"],"estimated_seconds":30,"timeout_seconds":90},
+    {"id":"input.touchpad.quick","version":1,"capability":"input.touchpad","profiles":["quick","standard","extended","destructive"],"estimated_seconds":30,"timeout_seconds":90},
+    {"id":"input.touchscreen.quick","version":1,"capability":"input.touchscreen","profiles":["quick","standard","extended","destructive"],"estimated_seconds":45,"timeout_seconds":120},
+    {"id":"memory.quick","version":1,"implemented":true,"capability":"memory","profiles":["quick","standard","extended","destructive"],"estimated_seconds":10,"timeout_seconds":30},
+    {"id":"memory.stress","version":1,"capability":"memory","profiles":["standard","extended","destructive"],"estimated_seconds":1800,"timeout_seconds":1860},
+    {"id":"network.quick","version":1,"capability":"network","profiles":["quick","standard","extended","destructive"],"estimated_seconds":45,"timeout_seconds":90},
+    {"id":"network.readiness.quick","version":1,"implemented":true,"capability":"network","profiles":["quick","standard","extended","destructive"],"estimated_seconds":1,"timeout_seconds":5},
+    {"id":"storage.quick","version":1,"capability":"storage","profiles":["quick","standard","extended","destructive"],"estimated_seconds":120,"timeout_seconds":180},
+    {"id":"storage.readiness.quick","version":1,"implemented":true,"capability":"storage","profiles":["quick","standard","extended","destructive"],"estimated_seconds":1,"timeout_seconds":5},
+    {"id":"storage.destructive","version":1,"capability":"storage","profiles":["destructive"],"destructive":true,"estimated_seconds":1800,"timeout_seconds":1860},
+    {"id":"usb.quick","version":1,"capability":"usb","profiles":["quick","standard","extended","destructive"],"estimated_seconds":30,"timeout_seconds":90},
+    {"id":"usb.readiness.quick","version":1,"implemented":true,"capability":"usb","profiles":["quick","standard","extended","destructive"],"estimated_seconds":1,"timeout_seconds":5}
+  ]
+}

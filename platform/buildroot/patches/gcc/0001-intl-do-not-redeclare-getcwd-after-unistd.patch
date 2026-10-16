@@ -1,0 +1,7 @@
+diff --git a/intl/dcigettext.c b/intl/dcigettext.c
+--- a/intl/dcigettext.c
++++ b/intl/dcigettext.c
+@@ -151 +151,3 @@
++#  if !defined HAVE_UNISTD_H
+ char *getcwd ();
++#  endif

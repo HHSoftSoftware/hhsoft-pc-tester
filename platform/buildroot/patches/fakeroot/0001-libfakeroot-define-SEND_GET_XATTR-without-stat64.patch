@@ -1,0 +1,24 @@
+From: HHSoftSoftware Build System <noreply@hhsoft.invalid>
+Subject: [PATCH] libfakeroot: define SEND_GET_XATTR without stat64
+
+Fakeroot 1.36 defines only its stat64 xattr wrapper. Musl hosts deliberately
+disable STAT64_SUPPORT and therefore need the equivalent wrapper for struct
+stat. Match the existing function declarations and SEND_STAT handling.
+
+--- a/libfakeroot.c
++++ b/libfakeroot.c
+@@ -87,12 +87,14 @@
+ #define SEND_STAT64(a,b,c) send_stat64(a,b,c)
+ #define SEND_GET_STAT(a,b) send_get_stat(a,b)
+ #define SEND_GET_STAT64(a,b) send_get_stat64(a,b)
++#define SEND_GET_XATTR(a,b,c) send_get_xattr(a,b,c)
+ #define SEND_GET_XATTR64(a,b,c) send_get_xattr64(a,b,c)
+ #else
+ #define SEND_STAT(a,b,c) send_stat(a,b)
+ #define SEND_STAT64(a,b,c) send_stat64(a,b)
+ #define SEND_GET_STAT(a,b) send_get_stat(a)
+ #define SEND_GET_STAT64(a,b) send_get_stat64(a)
++#define SEND_GET_XATTR(a,b,c) send_get_xattr(a,b)
+ #define SEND_GET_XATTR64(a,b,c) send_get_xattr64(a,b)
+ #endif
+

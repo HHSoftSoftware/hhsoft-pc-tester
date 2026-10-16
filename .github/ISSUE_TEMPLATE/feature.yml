@@ -1,0 +1,31 @@
+name: Test or feature proposal
+description: Propose a hardware adapter or operator workflow.
+title: "feature: "
+labels: ["type:feature", "needs:design"]
+body:
+  - type: textarea
+    id: outcome
+    attributes:
+      label: Operator outcome
+      description: Explain the defect or capability the result should distinguish.
+    validations:
+      required: true
+  - type: dropdown
+    id: safety
+    attributes:
+      label: Highest operation class
+      options: ["Read-only", "Controlled write to a disposable fixture", "Destructive (typed authorization required)"]
+    validations:
+      required: true
+  - type: textarea
+    id: coverage
+    attributes:
+      label: Hardware, drivers, fixtures, and missing-driver behavior
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Report fields and privacy impact
+    validations:
+      required: true

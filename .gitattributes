@@ -1,0 +1,63 @@
+* text=auto
+*.sh text eol=lf
+*.go text eol=lf
+*.json text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+*.md text eol=lf
+VERSION text eol=lf
+*.py text eol=lf
+.go-version text eol=lf
+scripts/security/pre-push text eol=lf
+# Patch context intentionally preserves the upstream indentation it matches.
+*.patch text eol=lf -whitespace
+
+# Defense in depth for source archives; the scanner rejects tracked copies too.
+[Aa][Gg][Ee][Nn][Tt][Ss].[Mm][Dd]* export-ignore
+[Aa][Gg][Ee][Nn][Tt][Ss][._-]*.[Mm][Dd]* export-ignore
+[Cc][Ll][Aa][Uu][Dd][Ee].[Mm][Dd]* export-ignore
+[Cc][Ll][Aa][Uu][Dd][Ee][._-]*.[Mm][Dd]* export-ignore
+[Gg][Ee][Mm][Ii][Nn][Ii].[Mm][Dd]* export-ignore
+[Gg][Ee][Mm][Ii][Nn][Ii][._-]*.[Mm][Dd]* export-ignore
+[Ss][Kk][Ii][Ll][Ll].[Mm][Dd]* export-ignore
+[Ss][Kk][Ii][Ll][Ll][._-]*.[Mm][Dd]* export-ignore
+[Cc][Oo][Pp][Ii][Ll][Oo][Tt]-[Ii][Nn][Ss][Tt][Rr][Uu][Cc][Tt][Ii][Oo][Nn][Ss].[Mm][Dd]* export-ignore
+[Cc][Oo][Pp][Ii][Ll][Oo][Tt]-[Ii][Nn][Ss][Tt][Rr][Uu][Cc][Tt][Ii][Oo][Nn][Ss][._-]*.[Mm][Dd]* export-ignore
+.[Aa][Gg][Ee][Nn][Tt][Ss].[Mm][Dd]* export-ignore
+.[Aa][Gg][Ee][Nn][Tt][Ss][._-]*.[Mm][Dd]* export-ignore
+.[Cc][Ll][Aa][Uu][Dd][Ee].[Mm][Dd]* export-ignore
+.[Cc][Ll][Aa][Uu][Dd][Ee][._-]*.[Mm][Dd]* export-ignore
+.[Gg][Ee][Mm][Ii][Nn][Ii].[Mm][Dd]* export-ignore
+.[Gg][Ee][Mm][Ii][Nn][Ii][._-]*.[Mm][Dd]* export-ignore
+.[Ss][Kk][Ii][Ll][Ll].[Mm][Dd]* export-ignore
+.[Ss][Kk][Ii][Ll][Ll][._-]*.[Mm][Dd]* export-ignore
+.[Cc][Oo][Pp][Ii][Ll][Oo][Tt]-[Ii][Nn][Ss][Tt][Rr][Uu][Cc][Tt][Ii][Oo][Nn][Ss].[Mm][Dd]* export-ignore
+.[Cc][Oo][Pp][Ii][Ll][Oo][Tt]-[Ii][Nn][Ss][Tt][Rr][Uu][Cc][Tt][Ii][Oo][Nn][Ss][._-]*.[Mm][Dd]* export-ignore
+\#[Aa][Gg][Ee][Nn][Tt][Ss].[Mm][Dd]* export-ignore
+\#[Aa][Gg][Ee][Nn][Tt][Ss][._-]*.[Mm][Dd]* export-ignore
+\#[Cc][Ll][Aa][Uu][Dd][Ee].[Mm][Dd]* export-ignore
+\#[Cc][Ll][Aa][Uu][Dd][Ee][._-]*.[Mm][Dd]* export-ignore
+\#[Gg][Ee][Mm][Ii][Nn][Ii].[Mm][Dd]* export-ignore
+\#[Gg][Ee][Mm][Ii][Nn][Ii][._-]*.[Mm][Dd]* export-ignore
+\#[Ss][Kk][Ii][Ll][Ll].[Mm][Dd]* export-ignore
+\#[Ss][Kk][Ii][Ll][Ll][._-]*.[Mm][Dd]* export-ignore
+\#[Cc][Oo][Pp][Ii][Ll][Oo][Tt]-[Ii][Nn][Ss][Tt][Rr][Uu][Cc][Tt][Ii][Oo][Nn][Ss].[Mm][Dd]* export-ignore
+\#[Cc][Oo][Pp][Ii][Ll][Oo][Tt]-[Ii][Nn][Ss][Tt][Rr][Uu][Cc][Tt][Ii][Oo][Nn][Ss][._-]*.[Mm][Dd]* export-ignore
+.[Aa][Gg][Ee][Nn][Tt][Ss] export-ignore
+.[Cc][Oo][Dd][Ee][Xx] export-ignore
+.[Cc][Ll][Aa][Uu][Dd][Ee] export-ignore
+.[Cc][Uu][Rr][Ss][Oo][Rr] export-ignore
+.[Gg][Ee][Mm][Ii][Nn][Ii] export-ignore
+.[Ww][Ii][Nn][Dd][Ss][Uu][Rr][Ff] export-ignore
+.[Aa][Ii][Dd][Ee][Rr]* export-ignore
+.[Cc][Uu][Rr][Ss][Oo][Rr][Rr][Uu][Ll][Ee][Ss] export-ignore
+.[Cc][Uu][Rr][Ss][Oo][Rr][Rr][Uu][Ll][Ee][Ss][._~-]* export-ignore
+.[Ww][Ii][Nn][Dd][Ss][Uu][Rr][Ff][Rr][Uu][Ll][Ee][Ss] export-ignore
+.[Ww][Ii][Nn][Dd][Ss][Uu][Rr][Ff][Rr][Uu][Ll][Ee][Ss][._~-]* export-ignore
+.hhpt-source-denylist export-ignore
+**/.[Gg][Ii][Tt][Hh][Uu][Bb]/[Ii][Nn][Ss][Tt][Rr][Uu][Cc][Tt][Ii][Oo][Nn][Ss] export-ignore
+**/.[Gg][Ii][Tt][Hh][Uu][Bb]/[Aa][Gg][Ee][Nn][Tt][Ss] export-ignore
+**/.[Gg][Ii][Tt][Hh][Uu][Bb]/[Pp][Rr][Oo][Mm][Pp][Tt][Ss] export-ignore
+**/.[Gg][Ii][Tt][Hh][Uu][Bb]/[Ss][Kk][Ii][Ll][Ll][Ss] export-ignore
+*.[Ii][Nn][Ss][Tt][Rr][Uu][Cc][Tt][Ii][Oo][Nn][Ss] export-ignore
+*.[Ii][Nn][Ss][Tt][Rr][Uu][Cc][Tt][Ii][Oo][Nn][Ss][._-]* export-ignore

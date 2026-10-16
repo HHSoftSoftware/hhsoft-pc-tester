@@ -1,0 +1,35 @@
+name: Bug report
+description: Report incorrect behavior without private hardware identifiers.
+title: "bug: "
+labels: ["type:bug", "needs:triage"]
+body:
+  - type: markdown
+    attributes:
+      value: Do not submit report-signing issues, raw serial numbers, or exploitable storage-safety failures publicly; follow SECURITY.md.
+  - type: input
+    id: version
+    attributes:
+      label: Version and image architecture
+      placeholder: 0.1.0-dev.0 x86_64 UEFI
+    validations:
+      required: true
+  - type: textarea
+    id: behavior
+    attributes:
+      label: Expected and observed behavior
+    validations:
+      required: true
+  - type: textarea
+    id: hardware
+    attributes:
+      label: Sanitized hardware and firmware class
+      description: Include vendor/product families and boot mode, never serial numbers or private reports.
+    validations:
+      required: true
+  - type: textarea
+    id: validation
+    attributes:
+      label: Reproduction and safe test results
+      description: State whether a VM or disposable fixture was used and whether any write was authorized.
+    validations:
+      required: true

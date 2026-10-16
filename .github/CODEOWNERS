@@ -1,0 +1,13 @@
+# Bootstrap ownership; expand by test family as maintainers join.
+* @HHSoftSoftware
+
+/platform/ @HHSoftSoftware
+/scripts/build/ @HHSoftSoftware
+/scripts/security/ @HHSoftSoftware
+/scripts/release/ @HHSoftSoftware
+/.github/workflows/ @HHSoftSoftware
+/internal/bundle/ @HHSoftSoftware
+/internal/comparison/ @HHSoftSoftware
+/internal/identity/ @HHSoftSoftware
+/internal/report/ @HHSoftSoftware
+/SECURITY.md @HHSoftSoftware

@@ -1,0 +1,15 @@
+#!/bin/sh
+set -eu
+repository_root=$(git rev-parse --show-toplevel)
+cd "$repository_root"
+gitleaks=${HHPT_GITLEAKS:-build/tools/gitleaks/gitleaks.exe}
+if ! test -f "$gitleaks"; then
+    gitleaks=$(command -v gitleaks) || {
+        echo 'push blocked: install the pinned Gitleaks or set HHPT_GITLEAKS' >&2
+        exit 1
+    }
+fi
+if command -v python3 >/dev/null 2>&1 && python3 -c 'import sys' >/dev/null 2>&1; then
+    exec python3 scripts/security/publication_check.py --gitleaks "$gitleaks" --pre-push
+fi
+exec python scripts/security/publication_check.py --gitleaks "$gitleaks" --pre-push

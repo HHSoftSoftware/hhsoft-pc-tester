@@ -98,6 +98,15 @@ def validate_bindings(bindings):
         require(identity(os.stat(name, dir_fd=parent, follow_symlinks=False))[:6] == identity(os.fstat(fd))[:6])
 
 
+def validate_absent(bindings):
+    for parent, name in bindings:
+        try:
+            os.stat(name, dir_fd=parent, follow_symlinks=False)
+        except FileNotFoundError:
+            continue
+        raise Rejected("ambiguous firmware layout")
+
+
 def exact_bytes(pin, limit):
     info = os.fstat(pin)
     require(stat.S_ISREG(info.st_mode) and info.st_nlink == 1 and 0 <= info.st_size <= limit)
@@ -348,14 +357,27 @@ def apply_filter(work_parent, rootfs, modloop, architecture, receipt, policy, po
         require((os.fstat(root).st_dev, os.fstat(root).st_ino) != (os.fstat(mod).st_dev, os.fstat(mod).st_ino))
         lib = pin_at(root, "lib", stack)
         lib_info = os.fstat(lib)
-        require(stat.S_ISLNK(lib_info.st_mode) and lib_info.st_nlink == 1 and os.readlink("lib", dir_fd=root) == "usr/lib")
-        require(identity(os.stat("lib", dir_fd=root, follow_symlinks=False)) == identity(lib_info))
+        require(lib_info.st_dev == device and lib_info.st_uid == os.geteuid() and lib_info.st_gid == os.getegid())
         usr = directory_at(root, "usr", stack, device, bindings)
-        libdir = directory_at(usr, "lib", stack, device, bindings)
+        usr_lib = directory_at(usr, "lib", stack, device, bindings)
+        absent = []
+        if stat.S_ISDIR(lib_info.st_mode):
+            # The pinned Alpine packages use separate lib and usr/lib trees.
+            # Never silently omit a second firmware tree or follow its links.
+            libdir = directory_at(root, "lib", stack, device, bindings)
+            require(identity(os.fstat(libdir)) == identity(lib_info))
+            absent.append((usr_lib, "firmware"))
+        else:
+            require(stat.S_ISLNK(lib_info.st_mode) and lib_info.st_nlink == 1 and os.readlink("lib", dir_fd=root) == "usr/lib")
+            libdir = usr_lib
+        require(identity(os.stat("lib", dir_fd=root, follow_symlinks=False)) == identity(lib_info))
+        for fd in (usr, usr_lib, libdir):
+            owned(os.fstat(fd))
+        validate_absent(absent)
         root_firmware = directory_at(libdir, "firmware", stack, device, bindings)
         modules = directory_at(mod, "modules", stack, device, bindings)
         mod_firmware = directory_at(modules, "firmware", stack, device, bindings)
-        for fd in (usr, libdir, root_firmware, modules, mod_firmware):
+        for fd in (root_firmware, modules, mod_firmware):
             owned(os.fstat(fd))
         output_parent = absolute_directory("/" + "/".join(output_parts[:-1]), stack, bindings)
         owned(os.fstat(output_parent))
@@ -383,6 +405,7 @@ def apply_filter(work_parent, rootfs, modloop, architecture, receipt, policy, po
             validate_snapshot(fd, snapshots[layer])
         validate_bindings(bindings)
         require(identity(os.stat("lib", dir_fd=root, follow_symlinks=False)) == identity(lib_info))
+        validate_absent(absent)
         for parent_fd, name, pin, expected in leaves:
             require(identity(os.fstat(pin)) == expected)
             require(identity(os.stat(name, dir_fd=parent_fd, follow_symlinks=False)) == expected)
@@ -403,6 +426,7 @@ def apply_filter(work_parent, rootfs, modloop, architecture, receipt, policy, po
             require(not removal_plan(after, entries, "modloop"))
         validate_bindings(bindings)
         require(identity(os.stat("lib", dir_fd=root, follow_symlinks=False)) == identity(lib_info))
+        validate_absent(absent)
         result = {"schema": 1, "status": "firmware_exclusions_applied", "architecture": architecture,
                   "policy_sha256": policy_hash, "helper_sha256": helper_hash,
                   "source_archive_sha256": policy["source_archive"]["sha256"],

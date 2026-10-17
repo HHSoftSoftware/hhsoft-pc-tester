@@ -9,6 +9,7 @@ from pathlib import Path
 import subprocess
 import sys
 import tempfile
+from types import SimpleNamespace
 import unittest
 from unittest import mock
 
@@ -150,6 +151,150 @@ class FilesystemTests(unittest.TestCase):
             self.assertTrue(os.path.lexists(self.root_fw / (row["path"] + ".zst")))
         self.assertTrue((self.mod_fw / "adaptec/rx.bin.zst").exists())
         self.assertFalse(self.receipt.exists())
+
+    def use_real_lib_layout(self):
+        # Independent layout from the signed Alpine packages: lib is a real
+        # directory and usr/lib remains a separate, empty directory.
+        (self.root / "lib").unlink()
+        (self.root / "lib").mkdir(mode=0o755)
+        destination = self.root / "lib/firmware"
+        self.root_fw.rename(destination)
+        self.root_fw = destination
+
+    def test_real_lib_layout_filters_both_trees_and_preserves_unrelated_bytes(self):
+        self.use_real_lib_layout()
+        result = self.run_filter()
+        self.assertEqual(result["counts"], {"rootfs": 3, "modloop": 2})
+        self.assertEqual(json.loads(self.receipt.read_text()), result)
+        self.assertFalse((self.root / "lib").is_symlink())
+        self.assertFalse(os.path.lexists(self.root / "usr/lib/firmware"))
+        for folder in (self.root_fw, self.mod_fw):
+            self.assertEqual((folder / "retained.bin").read_bytes(), b"permitted unrelated firmware")
+            self.assertEqual(sorted(p.relative_to(folder).as_posix() for p in folder.rglob("*") if p.is_file()),
+                             ["retained.bin"])
+
+    def test_real_lib_rejects_any_second_tree_without_following_it(self):
+        self.use_real_lib_layout()
+        other = self.root / "usr/lib/firmware"
+        for kind in ("directory", "same-tree-link", "dangling-link", "file", "fifo"):
+            with self.subTest(kind=kind):
+                if kind == "directory":
+                    other.mkdir()
+                elif kind == "same-tree-link":
+                    other.symlink_to("../../lib/firmware")
+                elif kind == "dangling-link":
+                    other.symlink_to("missing")
+                elif kind == "file":
+                    other.write_bytes(b"preserve alternate bytes")
+                else:
+                    os.mkfifo(other)
+                with self.assertRaises(filtering.Rejected):
+                    self.run_filter()
+                self.require_no_removal()
+                self.assertTrue(os.path.lexists(other))
+                if kind == "file":
+                    self.assertEqual(other.read_bytes(), b"preserve alternate bytes")
+                if kind == "directory":
+                    other.rmdir()
+                else:
+                    other.unlink()
+
+    def test_real_lib_and_alternate_parent_reject_unsafe_write_permissions(self):
+        self.use_real_lib_layout()
+        for folder in (self.root / "lib", self.root / "usr", self.root / "usr/lib"):
+            with self.subTest(folder=folder.relative_to(self.root)):
+                folder.chmod(0o777)
+                try:
+                    with self.assertRaises(filtering.Rejected):
+                        self.run_filter()
+                    self.require_no_removal()
+                finally:
+                    folder.chmod(0o755)
+
+    def test_real_lib_rejects_foreign_owner_group_or_device_before_removal(self):
+        self.use_real_lib_layout()
+        original = os.fstat
+        before = (self.root / "lib").stat()
+        fields = ("st_dev", "st_ino", "st_mode", "st_uid", "st_gid", "st_nlink",
+                  "st_size", "st_mtime_ns", "st_ctime_ns")
+        for field in ("st_uid", "st_gid", "st_dev"):
+            def changed(fd):
+                info = original(fd)
+                if (info.st_dev, info.st_ino) == (before.st_dev, before.st_ino):
+                    values = {name: getattr(info, name) for name in fields}
+                    values[field] += 1
+                    return SimpleNamespace(**values)
+                return info
+            with self.subTest(field=field), mock.patch.object(filtering.os, "fstat", side_effect=changed):
+                with self.assertRaises(filtering.Rejected):
+                    self.run_filter()
+            self.require_no_removal()
+
+    def test_second_tree_appearing_before_first_unlink_blocks_both_removal_plans(self):
+        self.use_real_lib_layout()
+        original = filtering.validate_snapshot
+        other = self.root / "usr/lib/firmware"
+        def changed(fd, rows):
+            original(fd, rows)
+            other.mkdir(exist_ok=True)
+        with mock.patch.object(filtering, "validate_snapshot", side_effect=changed):
+            with self.assertRaises(filtering.Rejected):
+                self.run_filter()
+        self.require_no_removal()
+        self.assertTrue(other.is_dir())
+
+    def test_second_tree_appearing_after_removal_cannot_receive_a_success_receipt(self):
+        self.use_real_lib_layout()
+        original = filtering.inventory
+        calls = 0
+        other = self.root / "usr/lib/firmware"
+        def changed(*args):
+            nonlocal calls
+            result = original(*args)
+            calls += 1
+            if calls == 3:
+                other.mkdir()
+            return result
+        with mock.patch.object(filtering, "inventory", side_effect=changed):
+            with self.assertRaises(filtering.Rejected):
+                self.run_filter()
+        self.assertEqual(calls, 4)
+        self.assertFalse(self.receipt.exists())
+        self.assertTrue(other.is_dir())
+        self.assertEqual((self.root_fw / "retained.bin").read_bytes(), b"permitted unrelated firmware")
+
+    def test_real_lib_rebinding_cannot_filter_the_detached_original_tree(self):
+        self.use_real_lib_layout()
+        original = filtering.validate_snapshot
+        preserved = self.root / "preserved-lib"
+        def changed(fd, rows):
+            if not preserved.exists():
+                (self.root / "lib").rename(preserved)
+                (self.root / "lib").mkdir()
+            original(fd, rows)
+        with mock.patch.object(filtering, "validate_snapshot", side_effect=changed):
+            with self.assertRaises(filtering.Rejected):
+                self.run_filter()
+        self.assertTrue((preserved / "firmware/adaptec/rx.bin.zst").is_file())
+        self.assertTrue((self.mod_fw / "adaptec/rx.bin.zst").is_file())
+        self.assertFalse(self.receipt.exists())
+
+    def test_only_the_exact_merged_lib_link_is_an_allowed_alias(self):
+        for target in ("./usr/lib", "usr/lib/", "../outside", "missing"):
+            with self.subTest(target=target):
+                (self.root / "lib").unlink()
+                (self.root / "lib").symlink_to(target)
+                with self.assertRaises(filtering.Rejected):
+                    self.run_filter()
+                self.require_no_removal()
+
+    def test_real_lib_does_not_authorize_a_third_layout_through_usr_lib_alias(self):
+        self.use_real_lib_layout()
+        (self.root / "usr/lib").rename(self.root / "preserved-usr-lib")
+        (self.root / "usr/lib").symlink_to("../lib")
+        with self.assertRaises(filtering.Rejected):
+            self.run_filter()
+        self.require_no_removal()
 
     def test_unrelated_board_names_and_aliases_are_preserved_exactly(self):
         name = "brcm/brcmfmac43340-sdio.ASUSTeK COMPUTER INC.-TF103C.txt.zst"

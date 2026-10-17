@@ -175,7 +175,11 @@ complete; real-hardware requirements remain open until physically tested.
   author, committer, and tag metadata before the first push.
 - [x] Audit completed readiness/reporting claims against independent failure
   cases and add regression checks for mount authorization, zero-work results,
-  contradictory evidence, and multi-display failure preservation.
+  contradictory evidence, and CPU/RAM/graphics/display failure preservation.
+- [x] Gate appliance startup and ready markers on independent mount/network
+  observations, including mapped storage and software network interfaces.
+  Native metadata and supervisor fixtures pass; fresh ISO boot qualification
+  remains required for release.
 - [ ] Separate the unprivileged UI, privileged daemon, and sandboxed workers.
 - [ ] Add thermal, hang, process-group, and global run watchdogs.
 - [x] Implement deployment-keyed, same-boot typed authorization for separate

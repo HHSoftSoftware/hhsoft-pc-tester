@@ -134,6 +134,11 @@ func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.
 				fmt.Fprintf(stderr, "validate evidence %s: explicit display failure cannot be replaced by another outcome\n", definition.id)
 				return 1
 			}
+			if errors.Is(statusErr, errMemoryFailureDowngrade) || errors.Is(statusErr, errGraphicsFailureDowngrade) ||
+				(statusErr == nil && evidenceStatus == app.TestFail && normalizedStatus != app.TestFail) {
+				fmt.Fprintf(stderr, "validate evidence %s: explicit worker failure cannot be replaced by another outcome\n", definition.id)
+				return 1
+			}
 			if statusErr != nil || !normalized || evidenceStatus != normalizedStatus {
 				if normalizedStatus != app.TestError && normalizedStatus != app.TestAborted {
 					fmt.Fprintf(stderr, "validate evidence %s: schema or status does not match supervisor outcome\n", definition.id)

@@ -24,6 +24,8 @@ import (
 
 var errUnsupportedEvidence = errors.New("worker evidence is incomplete or contradicts its claimed result")
 var errDisplayFailureDowngrade = errors.New("display evidence would downgrade an explicit failure")
+var errMemoryFailureDowngrade = errors.New("memory evidence would downgrade an explicit failure")
+var errGraphicsFailureDowngrade = errors.New("graphics evidence would downgrade an explicit failure")
 
 // Worker schemas describe observations, not an authority to declare success.
 // Acceptance checks the documented quick-test guarantees independently of the
@@ -47,7 +49,14 @@ func testEvidenceStatus(encoded []byte, expectedSchema string) (string, error) {
 	case quick.CPUSchema:
 		err = acceptEvidence(encoded, validateCPUEvidence)
 	case quick.MemorySchema:
-		err = acceptEvidence(encoded, validateMemoryEvidence)
+		failureDowngrade := false
+		err = acceptEvidence(encoded, func(result quick.MemoryResult) bool {
+			failureDowngrade = result.Status != quick.StatusFail && result.ExpectedByte != result.ActualByte
+			return validateMemoryEvidence(result)
+		})
+		if failureDowngrade {
+			return "", errMemoryFailureDowngrade
+		}
 	case storage.Schema:
 		err = acceptEvidence(encoded, validateStorageEvidence)
 	case networktest.Schema:
@@ -59,7 +68,14 @@ func testEvidenceStatus(encoded []byte, expectedSchema string) (string, error) {
 	case audio.Schema:
 		err = acceptEvidence(encoded, validateAudioEvidence)
 	case graphics.Schema:
-		err = acceptEvidence(encoded, validateGraphicsEvidence)
+		failureDowngrade := false
+		err = acceptEvidence(encoded, func(result graphics.Result) bool {
+			failureDowngrade = result.Status != graphics.StatusFail && graphicsHasExplicitFailure(result)
+			return validateGraphicsEvidence(result)
+		})
+		if failureDowngrade {
+			return "", errGraphicsFailureDowngrade
+		}
 	case graphics.VisualSchema:
 		failureDowngrade := false
 		err = acceptEvidence(encoded, func(result graphics.VisualResult) bool {
@@ -200,6 +216,9 @@ func validateCPUEvidence(result quick.CPUResult) bool {
 }
 
 func validateMemoryEvidence(result quick.MemoryResult) bool {
+	if result.ExpectedByte != result.ActualByte && result.Status != quick.StatusFail {
+		return false
+	}
 	if result.Status != quick.StatusPass {
 		return true
 	}
@@ -404,7 +423,14 @@ func validateAudioEvidence(result audio.Result) bool {
 	return playback == result.PlaybackEndpoints && capture == result.CaptureEndpoints
 }
 
+func graphicsHasExplicitFailure(result graphics.Result) bool {
+	return result.Renderer.Status == graphics.StatusFail || result.Pattern.Status == graphics.StatusFail
+}
+
 func validateGraphicsEvidence(result graphics.Result) bool {
+	if result.Status != graphics.StatusFail && graphicsHasExplicitFailure(result) {
+		return false
+	}
 	if result.Status != graphics.StatusPass {
 		return true
 	}

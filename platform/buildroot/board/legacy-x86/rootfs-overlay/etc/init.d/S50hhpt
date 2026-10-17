@@ -5,6 +5,16 @@ case ${1:-start} in
 	start)
 		umask 077
 		mkdir -p /run/hhpt
+		check_safety() {
+			safety_phase=$1
+			if safety_summary=$(/usr/bin/timeout -s KILL 5 /usr/bin/hhpt safety -output "/run/hhpt/safety-$safety_phase.json" -summary 2>"/run/hhpt/safety-$safety_phase.log"); then
+				case "$safety_summary" in
+					'writable_block_mounts=0 active_non_loop_interfaces=0') return ;;
+				esac
+			fi
+			printf 'HHPT_SAFETY_FAIL stage=%s evidence=/run/hhpt/safety-%s.json detail=unsafe-or-incomplete-observations\n' "$safety_phase" "$safety_phase" > /dev/console
+			exit 1
+		}
 		head -c 32 /dev/urandom > /run/hhpt/fingerprint.key
 		ui_console=/dev/tty1
 		if ! test -c "$ui_console"; then
@@ -21,10 +31,7 @@ case ${1:-start} in
 					printf 'HHPT_SAFETY_FAIL empty-inventory\n' > /dev/console
 					exit 1
 				fi
-				if awk '$1 ~ "^/dev/" && $4 ~ "(^|,)rw(,|$)" { found=1 } END { exit found ? 0 : 1 }' /proc/mounts; then
-					printf 'HHPT_SAFETY_FAIL writable-block-mount\n' > /dev/console
-					exit 1
-				fi
+				check_safety preflight
 				if /usr/bin/hhpt plan -fingerprint-key /run/hhpt/fingerprint.key -key-epoch ephemeral-session -profile quick -architecture legacy-x86 -output /run/hhpt/plan.json; then
 					chmod 0400 /run/hhpt/plan.json || { printf 'HHPT_FAILED freeze-test-plan\n' > /dev/console; exit 1; }
 					plan_id=$(sed -n 's/^[[:space:]]*"id": "\(sha256:[^"]*\)",*$/\1/p' /run/hhpt/plan.json | head -n 1)
@@ -46,11 +53,11 @@ case ${1:-start} in
 					cpu_status=error
 				fi
 				printf 'HHPT_CPU status=%s output=/run/hhpt/cpu.json\n' "$cpu_status" > /dev/console
-				if test "$cpu_plan_status" = scheduled && test "$cpu_status" != pass; then
-					memory_status=aborted
-				elif test "$memory_plan_status" != scheduled; then
+				if test "$memory_plan_status" != scheduled; then
 					memory_status=$memory_plan_status
-				elif /usr/bin/timeout -s KILL 35 /usr/bin/hhpt memory -bytes 16777216 -passes 1 -timeout 30s -thermal-limit-c 90 -output /run/hhpt/memory.json; then
+				elif test "$cpu_plan_status" = scheduled && test "$cpu_status" != pass; then
+					memory_status=aborted
+				elif check_safety before-memory && /usr/bin/timeout -s KILL 35 /usr/bin/hhpt memory -bytes 16777216 -passes 1 -timeout 30s -thermal-limit-c 90 -output /run/hhpt/memory.json; then
 					memory_status=$(sed -n 's/^[[:space:]]*"status": "\([^"]*\)",*$/\1/p' /run/hhpt/memory.json | head -n 1)
 					test -n "$memory_status" || memory_status=error
 				else
@@ -112,6 +119,13 @@ case ${1:-start} in
 					usb_status=error
 				fi
 				printf 'HHPT_USB_READINESS status=%s output=/run/hhpt/usb.json\n' "$usb_status" > /dev/console
+				for readiness_status in "$network_status" "$storage_status"; do
+					case "$readiness_status" in
+						pass|inconclusive|not_present|missing_driver|unsupported|skip) ;;
+						*) printf 'HHPT_SAFETY_FAIL stage=readiness detail=unsafe-or-incomplete-observations\n' > /dev/console; exit 1 ;;
+					esac
+				done
+				check_safety after-readiness
 				graphics_status=$(awk '/"id": "graphics.quick"/ { wanted=1 } wanted && /"status":/ { gsub(/[,\"]/, ""); sub(/^[[:space:]]*status:[[:space:]]*/, ""); print; exit }' /run/hhpt/plan.json)
 				test -n "$graphics_status" || graphics_status=error
 				printf 'HHPT_GRAPHICS status=%s detail=legacy-not-scheduled\n' "$graphics_status" > /dev/console
@@ -124,7 +138,8 @@ case ${1:-start} in
 					final_component_count=$(sed -n 's/^HHPT_RUN_INTEGRITY .* final_components=\([0-9]*\).*$/\1/p' /run/hhpt/finalize.log)
 					test "$integrity_status" = pass || test "$integrity_status" = fail || { printf 'HHPT_FAILED run-integrity-metadata\n' > /dev/console; exit 1; }
 					test -n "$final_component_count" || { printf 'HHPT_FAILED run-integrity-metadata\n' > /dev/console; exit 1; }
-					printf 'HHPT_READY report=/run/hhpt/session.hhpcr plan=%s components=%s integrity=%s audio=%s cpu=%s memory=%s input=%s network=%s storage=%s usb=%s graphics=%s display=%s writable_block_mounts=0 assurance=legacy signature=self-issued\n' "$plan_id" "$final_component_count" "$integrity_status" "$audio_status" "$cpu_status" "$memory_status" "$input_status" "$network_status" "$storage_status" "$usb_status" "$graphics_status" "$display_status" > /dev/console
+					check_safety final
+					printf 'HHPT_READY report=/run/hhpt/session.hhpcr plan=%s components=%s integrity=%s audio=%s cpu=%s memory=%s input=%s network=%s storage=%s usb=%s graphics=%s display=%s %s assurance=legacy signature=self-issued\n' "$plan_id" "$final_component_count" "$integrity_status" "$audio_status" "$cpu_status" "$memory_status" "$input_status" "$network_status" "$storage_status" "$usb_status" "$graphics_status" "$display_status" "$safety_summary" > /dev/console
 					/usr/bin/hhpt save -fingerprint-key /run/hhpt/fingerprint.key -audit-output /dev/console /run/hhpt/session.hhpcr <"$ui_console" >"$ui_console" 2>&1 || printf 'HHPT_SAVE_FAILED report-retained-in-ram\n' > /dev/console
 				else
 					printf 'HHPT_FAILED report-finalization\n' > /dev/console

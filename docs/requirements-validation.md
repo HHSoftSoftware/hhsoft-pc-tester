@@ -94,10 +94,25 @@ known answers, complete RAM operation counts, consistent readiness inventories,
 and no contradictory storage writes or network traffic. Valid partial non-pass
 observations remain reportable. A supervisor-recorded error or abort can produce
 an explicit execution note when usable worker evidence is unavailable; it cannot
-become a pass or discard an explicit display failure. These checks do not upgrade
-readiness into physical qualification.
+become a pass or discard a valid worker failure. CPU, memory, graphics, and
+display failures cannot be replaced by a supervisor error or abort. A RAM byte
+mismatch, including at offset zero, cannot be labeled inconclusive, error, or
+aborted by either direct capture or finalization. Explicit renderer or pattern
+failures also require an overall graphics failure. Matching failure and partial
+results retain their original evidence in the signed report. These checks do
+not upgrade readiness into physical qualification.
 The standalone report verifier checks bundle integrity and signatures; it does
 not rerun the worker semantic checks or establish physical truth.
+
+Both appliance startup scripts independently inspect kernel mount and network
+metadata before active tests, between active stages, after readiness checks,
+and before announcing a ready report. Writable block mounts, active non-loopback
+interfaces, or incomplete observations block the normal ready/save path and
+retain diagnostic evidence in RAM. Device numbers identify mapped and aliased
+mounts even without an applicable storage test; software interfaces are checked
+even without a hardware readiness provider. Ready markers contain measured
+counts. These bounded snapshots do not provide continuous monitoring or replace
+the remaining watchdog and isolation work.
 
 Display regressions cover a successful pattern alongside another output's
 modeset failure, failed/error/aborted/inconclusive/skipped patterns in either

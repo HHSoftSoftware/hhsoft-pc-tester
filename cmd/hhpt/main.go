@@ -60,6 +60,8 @@ func run(ctx context.Context, arguments []string, stdin io.Reader, stdout, stder
 		return runReportTarget(ctx, arguments[1:], stdout, stderr)
 	case "save":
 		return runSave(ctx, arguments[1:], stdin, stdout, stderr)
+	case "safety":
+		return runSafety(ctx, arguments[1:], stdout, stderr)
 	case "storage":
 		return runStorage(ctx, arguments[1:], stdout, stderr)
 	case "usb":
@@ -158,6 +160,7 @@ func usage(destination io.Writer) {
 	fmt.Fprintln(destination, "       hhpt persist -authorization FILE -fingerprint-key FILE (-self-issued | -public-key FILE -key-id ID) [-name NAME.hhpcr] REPORT.hhpcr")
 	fmt.Fprintln(destination, "       hhpt graphics [-pattern-frames N] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt storage [-output FILE]")
+	fmt.Fprintln(destination, "       hhpt safety [-output FILE] [-summary]")
 	fmt.Fprintln(destination, "       hhpt usb [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt save -fingerprint-key FILE REPORT.hhpcr")
 	fmt.Fprintln(destination, "       hhpt verify (-self-issued | -public-key FILE -key-id ID) REPORT.hhpcr")

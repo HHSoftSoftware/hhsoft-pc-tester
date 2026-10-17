@@ -5,6 +5,11 @@ download release must contain the x86_64, x86, legacy x86, and beta AArch64
 bootable ISOs together with the Windows/Linux report utilities. There is no
 utilities-only release path.
 
+The first target is `0.1.0-alpha.1` after these gates pass. The alpha covers the
+implemented bounded checks and documents their limits; completion of the full
+roadmap is the later `1.0` milestone. The alpha label does not waive source,
+image, signing, licensing, or validation requirements.
+
 The initial source push and GitHub validation passed. Current repository
 protections and the single-maintainer review exception are recorded in
 [repository-protections.md](repository-protections.md). The download gates

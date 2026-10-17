@@ -64,6 +64,16 @@ set -eu
 umask 077
 sed -i 's/^root:[^:]*:/root:*:/' /etc/shadow
 mkdir -p /run/hhpt
+check_safety() {
+	safety_phase=\$1
+	if safety_summary=\$(/usr/bin/timeout -s KILL 5 /usr/bin/hhpt safety -output "/run/hhpt/safety-\$safety_phase.json" -summary 2>"/run/hhpt/safety-\$safety_phase.log"); then
+		case "\$safety_summary" in
+			'writable_block_mounts=0 active_non_loop_interfaces=0') return ;;
+		esac
+	fi
+	printf 'HHPT_SAFETY_FAIL stage=%s evidence=/run/hhpt/safety-%s.json detail=unsafe-or-incomplete-observations\n' "\$safety_phase" "\$safety_phase" > /dev/console
+	exit 1
+}
 ui_console=/dev/tty0
 if ! test -c "\$ui_console"; then
 	ui_console=/dev/console
@@ -116,10 +126,7 @@ if /usr/bin/hhpt inventory -fingerprint-key /run/hhpt/fingerprint.key -key-epoch
 			printf 'HHPT_SAFETY_FAIL empty-inventory\n' > /dev/console
 			exit 1
 		fi
-		if awk '\$1 ~ "^/dev/" && \$4 ~ "(^|,)rw(,|$)" { found=1 } END { exit found ? 0 : 1 }' /proc/mounts; then
-			printf 'HHPT_SAFETY_FAIL writable-block-mount\n' > /dev/console
-			exit 1
-		fi
+		check_safety preflight
 		if /usr/bin/hhpt plan -fingerprint-key /run/hhpt/fingerprint.key -key-epoch "\$key_epoch" \$fixture_flag -profile quick -architecture $target_architecture -output /run/hhpt/plan.json; then
 			chmod 0400 /run/hhpt/plan.json || { printf 'HHPT_FAILED freeze-test-plan\n' > /dev/console; exit 1; }
 			plan_id=\$(sed -n 's/^[[:space:]]*"id": "\(sha256:[^"]*\)",*$/\1/p' /run/hhpt/plan.json | head -n 1)
@@ -141,11 +148,11 @@ if /usr/bin/hhpt inventory -fingerprint-key /run/hhpt/fingerprint.key -key-epoch
 			cpu_status=error
 		fi
 		printf 'HHPT_CPU status=%s output=/run/hhpt/cpu.json\n' "\$cpu_status" > /dev/console
-		if test "\$cpu_plan_status" = scheduled && test "\$cpu_status" != pass; then
-			memory_status=aborted
-		elif test "\$memory_plan_status" != scheduled; then
+		if test "\$memory_plan_status" != scheduled; then
 			memory_status=\$memory_plan_status
-		elif /usr/bin/timeout -s KILL 35 /usr/bin/hhpt memory -passes 2 -timeout 30s -thermal-limit-c 90 -output /run/hhpt/memory.json; then
+		elif test "\$cpu_plan_status" = scheduled && test "\$cpu_status" != pass; then
+			memory_status=aborted
+		elif check_safety before-memory && /usr/bin/timeout -s KILL 35 /usr/bin/hhpt memory -passes 2 -timeout 30s -thermal-limit-c 90 -output /run/hhpt/memory.json; then
 			memory_status=\$(sed -n 's/^[[:space:]]*"status": "\([^"]*\)",*$/\1/p' /run/hhpt/memory.json | head -n 1)
 			test -n "\$memory_status" || memory_status=error
 		else
@@ -207,21 +214,30 @@ if /usr/bin/hhpt inventory -fingerprint-key /run/hhpt/fingerprint.key -key-epoch
 			usb_status=error
 		fi
 		printf 'HHPT_USB_READINESS status=%s output=/run/hhpt/usb.json\n' "\$usb_status" > /dev/console
+		# A readiness safety error must survive even if the unsafe state clears
+		# before the fresh check. Do not continue active tests or claim readiness.
+		for readiness_status in "\$network_status" "\$storage_status"; do
+			case "\$readiness_status" in
+				pass|inconclusive|not_present|missing_driver|unsupported|skip) ;;
+				*) printf 'HHPT_SAFETY_FAIL stage=readiness detail=unsafe-or-incomplete-observations\n' > /dev/console; exit 1 ;;
+			esac
+		done
+		check_safety after-readiness
 		graphics_plan_status=\$(awk '/"id": "graphics.quick"/ { wanted=1 } wanted && /"status":/ { gsub(/[,\"]/, ""); sub(/^[[:space:]]*status:[[:space:]]*/, ""); print; exit }' /run/hhpt/plan.json)
 		test -n "\$graphics_plan_status" || graphics_plan_status=error
 		active_stop=0
 		if test "\$cpu_plan_status" = scheduled && test "\$cpu_status" != pass; then active_stop=1; fi
 		if test "\$memory_plan_status" = scheduled && test "\$memory_status" != pass; then active_stop=1; fi
-		if test "\$active_stop" -eq 1; then
-			graphics_status=aborted
-			printf 'HHPT_GRAPHICS status=aborted detail=earlier-safety-or-correctness-stop\n' > /dev/console
-		elif test "\$graphics_plan_status" != scheduled; then
+		if test "\$graphics_plan_status" != scheduled; then
 			graphics_status=\$graphics_plan_status
 			printf 'HHPT_GRAPHICS status=%s detail=not-scheduled\n' "\$graphics_status" > /dev/console
+		elif test "\$active_stop" -eq 1; then
+			graphics_status=aborted
+			printf 'HHPT_GRAPHICS status=aborted detail=earlier-safety-or-correctness-stop\n' > /dev/console
 		elif ! test -x /usr/bin/eglinfo || ! test -x /usr/bin/kmscube; then
 			graphics_status=error
 			printf 'HHPT_GRAPHICS status=error detail=missing-tools\n' > /dev/console
-		elif /usr/bin/hhpt graphics -pattern-frames 120 -output /run/hhpt/graphics.json; then
+		elif check_safety before-graphics && /usr/bin/hhpt graphics -pattern-frames 120 -output /run/hhpt/graphics.json; then
 			graphics_status=\$(sed -n 's/^[[:space:]]*"status": "\([^"]*\)",*$/\1/p' /run/hhpt/graphics.json | head -n 1)
 			test -n "\$graphics_status" || graphics_status=error
 			printf 'HHPT_GRAPHICS status=%s output=/run/hhpt/graphics.json\n' "\$graphics_status" > /dev/console
@@ -231,11 +247,11 @@ if /usr/bin/hhpt inventory -fingerprint-key /run/hhpt/fingerprint.key -key-epoch
 		fi
 		display_plan_status=\$(awk '/"id": "display.operator.quick"/ { wanted=1 } wanted && /"status":/ { gsub(/[,"]/, ""); sub(/^[[:space:]]*status:[[:space:]]*/, ""); print; exit }' /run/hhpt/plan.json)
 		test -n "\$display_plan_status" || display_plan_status=error
-		if test "\$active_stop" -eq 1; then
-			display_status=aborted
-		elif test "\$display_plan_status" != scheduled; then
+		if test "\$display_plan_status" != scheduled; then
 			display_status=\$display_plan_status
-		elif /usr/bin/hhpt display -pattern-duration 5s -finding-timeout 15s -output /run/hhpt/display.json <"\$ui_console" >"\$ui_console" 2>&1; then
+		elif test "\$active_stop" -eq 1; then
+			display_status=aborted
+		elif check_safety before-display && /usr/bin/hhpt display -pattern-duration 5s -finding-timeout 15s -output /run/hhpt/display.json <"\$ui_console" >"\$ui_console" 2>&1; then
 			display_status=\$(sed -n 's/^[[:space:]]*"status": "\([^"]*\)",*$/\1/p' /run/hhpt/display.json | head -n 1)
 			test -n "\$display_status" || display_status=error
 		else
@@ -248,7 +264,8 @@ if /usr/bin/hhpt inventory -fingerprint-key /run/hhpt/fingerprint.key -key-epoch
 			final_component_count=\$(sed -n 's/^HHPT_RUN_INTEGRITY .* final_components=\([0-9]*\).*$/\1/p' /run/hhpt/finalize.log)
 			test "\$integrity_status" = pass || test "\$integrity_status" = fail || { printf 'HHPT_FAILED run-integrity-metadata\n' > /dev/console; exit 1; }
 			test -n "\$final_component_count" || { printf 'HHPT_FAILED run-integrity-metadata\n' > /dev/console; exit 1; }
-			printf 'HHPT_READY report=/run/hhpt/session.hhpcr plan=%s components=%s integrity=%s audio=%s cpu=%s memory=%s input=%s network=%s storage=%s usb=%s graphics=%s display=%s key_epoch=%s writable_block_mounts=0 signature=self-issued\n' "\$plan_id" "\$final_component_count" "\$integrity_status" "\$audio_status" "\$cpu_status" "\$memory_status" "\$input_status" "\$network_status" "\$storage_status" "\$usb_status" "\$graphics_status" "\$display_status" "\$key_epoch" > /dev/console
+			check_safety final
+			printf 'HHPT_READY report=/run/hhpt/session.hhpcr plan=%s components=%s integrity=%s audio=%s cpu=%s memory=%s input=%s network=%s storage=%s usb=%s graphics=%s display=%s key_epoch=%s %s signature=self-issued\n' "\$plan_id" "\$final_component_count" "\$integrity_status" "\$audio_status" "\$cpu_status" "\$memory_status" "\$input_status" "\$network_status" "\$storage_status" "\$usb_status" "\$graphics_status" "\$display_status" "\$key_epoch" "\$safety_summary" > /dev/console
 			/usr/bin/hhpt save -fingerprint-key /run/hhpt/fingerprint.key -audit-output /dev/console /run/hhpt/session.hhpcr <"\$ui_console" >"\$ui_console" 2>&1 || printf 'HHPT_SAVE_FAILED report-retained-in-ram\n' > /dev/console
 		else
 			printf 'HHPT_FAILED report-finalization\n' > /dev/console

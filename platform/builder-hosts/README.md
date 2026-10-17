@@ -9,12 +9,19 @@ This is an input baseline, not full builder qualification or release approval.
 | Manifest | SHA-256 |
 | --- | --- |
 | [alpine-image-x86_64.json](alpine-image-x86_64.json) | `ec82f960563044597dd125ec2abc9b26e69df3c30219eadc3161285c7388f923` |
-| [buildroot-image-x86_64.json](buildroot-image-x86_64.json) | `1ad1e578c5a7672ca1713995d60b77c91bf21cefd0b7f80d313776031cdaaa1c` |
+| [buildroot-image-x86_64.json](buildroot-image-x86_64.json) | `803c44db311d6f0fbe4c46b8f8339bcc4c9dfc52c2bdea7451bf84fc6668d5ed` |
 
 Both require inventory policy SHA-256
 `fe082782fb4d30fd44be1d63476f70a37a3b875842fcdee705e30ef86d0fcd00`
 for `scripts/build/builder_host_manifest.py`. Preserve these manifest bytes;
 a different policy or host requires a separately reviewed baseline.
+
+The Buildroot manifest was regenerated and verified for the authenticated
+Linux 6.12.113 input refresh. Independent comparison found only its project
+base-lock digest changed; the installed package database, runtime paths,
+tool resolution and inventory policy remain identical. The refreshed source
+cache and host manifest approve controlled build inputs. Fresh ISO construction,
+extraction, boot and report-save checks remain separate requirements.
 
 [provenance.json](provenance.json) records the exact preparation inputs:
 

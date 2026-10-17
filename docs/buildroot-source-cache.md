@@ -106,6 +106,15 @@ staged payloads again after Make, before copying image artifacts to the output
 directory. Only bounded, zero-byte `.lock` metadata may have appeared. Changed
 or additional payloads fail the build. Failed work remains available for review.
 
+The legacy BusyBox fragment retains its applet privilege-drop handling. The
+project permission table follows Buildroot's default table and overrides the
+package's BusyBox installation mode to `0755` during final root-filesystem
+creation. A post-build `chmod` alone would precede Buildroot's package
+permission processing. Final ISO
+inspection must still confirm `/bin/busybox` is owned by root with mode `0755`
+and no setuid/setgid bits, followed by boot and report-save validation. These
+declarative settings do not establish those finished-image results.
+
 The existing [builder host gate](builder-host.md) and clean execution environment
 remain mandatory. Source-cache hashes do not establish upstream authenticity,
 a trusted compiler, an immutable builder, complete license fulfillment, or

@@ -51,19 +51,31 @@ SHA-256 pins; it does not rely on a nonexistent Git signature.
 
 ## Legacy source cache
 
-The [legacy lock](../platform/buildroot/source-cache-lock.json) binds 29 source
-archives totaling 339,789,441 bytes and 21 build-policy files. Buildroot
-2025.02.18 and Linux 6.12.112 retain their pinned source hashes and verified
-upstream signatures. Archive hashes were checked against the authenticated
-Buildroot definitions and project kernel pins. Review also checked 49 declared
-license-file hashes and the three pinned Linux license-file paths.
+The kernel policy now selects Linux 6.12.113 alongside Buildroot 2025.02.18.
+The Linux archive's hash and detached signature over the complete uncompressed
+tar stream were verified against the pinned upstream signing fingerprint.
+Replacing the previous kernel archive adds 37,524 bytes, giving 29 source
+archives totaling 339,826,965 bytes. The [legacy cache lock](../platform/buildroot/source-cache-lock.json)
+was regenerated and independently reviewed against all 22 build-policy files.
+Only the Linux archive changed; the other 28 source archives retain their
+reviewed bytes. The Buildroot host manifest was also regenerated and verified:
+only its base-lock digest changed, with all covered host inputs unchanged.
+These approvals permit controlled offline builds; they do not qualify new ISOs.
+
+The preceding source review checked archive hashes against authenticated
+Buildroot definitions and project kernel pins, plus 49 declared license-file
+hashes and three Linux license-file paths. The three license members in the
+authenticated 6.12.113 archive were separately checked against the earlier
+audit and retain identical sizes and SHA-256 hashes. This does not re-audit
+the other package licenses or establish complete source fulfillment.
 
 The source-policy review includes the fresh application binding and actual
 installed-file receipt. Kernel builds use fixed public account and host names;
-the refreshed policy lock retains the same 29 source archives. An offline
-prerequisite check found all seven required
-Perl modules. The complete configuration, compiler build, image creation, and
-`legal-info` stages must still succeed from fresh work directories. A source
+the refreshed policy adds the final BusyBox permission table and replaces only
+the Linux archive among the 29 source inputs. An offline prerequisite check
+found all seven required Perl modules. The complete configuration, compiler
+build, image creation, and `legal-info` stages must still succeed from fresh
+work directories. A source
 inventory and license-file checks do not fulfill all distribution obligations.
 See [legacy source cache use](buildroot-source-cache.md).
 

@@ -64,9 +64,9 @@
       "sha256": "d7a0654783a4da529d1bb793b7ad9c3318020af77667bcae35f95d0e42a792f3",
       "size": 1320064
     },
-    "linux/linux-6.12.112.tar.xz": {
-      "sha256": "164dc9d1f6c93c61a15e1f071c48379b467f2b17c469cce7223471968208ed03",
-      "size": 148648524
+    "linux/linux-6.12.113.tar.xz": {
+      "sha256": "e09b6727e5c521253f0d41694900b9c38fb7604db7d35238a8197aa9f7de2428",
+      "size": 148686048
     },
     "m4/m4-1.4.21.tar.xz": {
       "sha256": "f25c6ab51548a73a75558742fb031e0625d6485fe5f9155949d6486a2408ab66",
@@ -127,12 +127,12 @@
       "size": 48
     },
     "platform/buildroot/base.lock": {
-      "sha256": "be4e09d1d7bdaf1faf554ce7732cbe3cdf78d977742f49738c1f9e6cfc40069c",
+      "sha256": "79a3bff41854d4b21b05b16b2b2d0217a3ed3fa334a5c0ebbf531dde63373096",
       "size": 609
     },
     "platform/buildroot/board/legacy-x86/busybox.config": {
-      "sha256": "3a70a87fc331a622ae04a8a0244873fa89eead465c8488cb36841c14ce44f2d2",
-      "size": 17
+      "sha256": "b6583f8550970f1891fe431748b151a8a8dbaf8f9d6745bcf2206067179ae062",
+      "size": 39
     },
     "platform/buildroot/board/legacy-x86/isolinux.cfg": {
       "sha256": "5047a6873b05fe9f17588aa468bc29fce8d827473cfd6525fdf5c974432dfb1e",
@@ -141,6 +141,10 @@
     "platform/buildroot/board/legacy-x86/linux.config": {
       "sha256": "8f38784e13628ee155ed72c1ae8d8853138b9a7a5db8bb66c4e05461def39eff",
       "size": 1602
+    },
+    "platform/buildroot/board/legacy-x86/permissions.txt": {
+      "sha256": "434eb15c9411b43f296d44634c14337573a73d4adbac8599a48510b33b8c77f0",
+      "size": 34
     },
     "platform/buildroot/board/legacy-x86/post-build.sh": {
       "sha256": "67fe613132e0c4563cc8c2b2dac8b1701206a6487a5e5788a735fdf364b18cc6",
@@ -155,8 +159,8 @@
       "size": 577
     },
     "platform/buildroot/configs/hhpt_legacy_x86_defconfig": {
-      "sha256": "4b3d3f4598f10fd82ad196cde9d1d32e6274b36062a1812e7996c256288b7588",
-      "size": 1254
+      "sha256": "3966d3742aa464e24bb4d057b0ce1904ff65d9786b518ecc1b4554be34282bc5",
+      "size": 1363
     },
     "platform/buildroot/external.desc": {
       "sha256": "ad174d4b9d2f06490773afb9a2cabae4201a81198913e98d5e901aea6bf3a2fb",
@@ -179,11 +183,11 @@
       "size": 175
     },
     "platform/buildroot/patches/linux-headers/linux-headers.hash": {
-      "sha256": "b069ff69760536e81e8eb98127ac5bde56bca71a64c22eae5e0a795ae006eb13",
+      "sha256": "ead4fe06a16b71ae2434eb52fcecde7d68e2e805fcc1f3ffb34231f9ad248e3d",
       "size": 164
     },
     "platform/buildroot/patches/linux/linux.hash": {
-      "sha256": "b069ff69760536e81e8eb98127ac5bde56bca71a64c22eae5e0a795ae006eb13",
+      "sha256": "ead4fe06a16b71ae2434eb52fcecde7d68e2e805fcc1f3ffb34231f9ad248e3d",
       "size": 164
     },
     "platform/buildroot/patches/uclibc/0001-getconf-support-musl-host-compilers.patch": {

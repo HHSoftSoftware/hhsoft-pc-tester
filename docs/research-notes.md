@@ -16,12 +16,15 @@ Checked 2026-10-12. Sources are official project documentation unless noted.
   BIOS and UEFI reference but its current image is x86_64. Buildroot creates
   controlled Linux appliances and live CD images across broad CPU targets, but
   requires more project-owned packaging.
-- The legacy fallback uses Buildroot LTS 2025.02.18, Linux 6.12.112, an i586
+- The legacy fallback uses Buildroot LTS 2025.02.18, Linux 6.12.113, an i586
   userspace baseline, and Go `GO386=softfloat`. This supports Pentium MMX-class
   CPUs without requiring SSE2. Buildroot can create an Isolinux hybrid live CD
   that boots as optical media or a BIOS USB disk. The Linux archive's detached
   signature was verified against Greg Kroah-Hartman's exact kernel.org signing
   fingerprint before it was locked.
+  The kernel pin was refreshed on 2026-10-17 after reviewing applicable stable
+  fixes, including [short-response handling in the enabled USB-storage code](https://www.kernel.org/pub/linux/kernel/v6.x/ChangeLog-6.12.113).
+  Fresh final-image validation remains required after the input refresh.
 - WSL 2 still enables the Microsoft Hyper-V architecture. Oracle documents
   that VirtualBox 7.2 can use Hyper-V as its engine but may degrade
   significantly. Microsoft still describes VirtualBox plus WSL 2 as unsupported

@@ -224,13 +224,13 @@
       "inventoried_paths": 15909,
       "package_count": 245,
       "policy": {
-        "base_lock_sha256": "be4e09d1d7bdaf1faf554ce7732cbe3cdf78d977742f49738c1f9e6cfc40069c",
+        "base_lock_sha256": "79a3bff41854d4b21b05b16b2b2d0217a3ed3fa334a5c0ebbf531dde63373096",
         "go_version": "1.27.2",
         "go_version_sha256": "6c075150045fda9bac31bb93cf5a0a0bc91622a75c1f10fb2971e6f994c6d4d6",
         "inventory_sha256": "fe082782fb4d30fd44be1d63476f70a37a3b875842fcdee705e30ef86d0fcd00"
       },
       "profile": "buildroot-image",
-      "sha256": "1ad1e578c5a7672ca1713995d60b77c91bf21cefd0b7f80d313776031cdaaa1c",
+      "sha256": "803c44db311d6f0fbe4c46b8f8339bcc4c9dfc52c2bdea7451bf84fc6668d5ed",
       "size": 3897403
     }
   },

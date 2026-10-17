@@ -13,6 +13,11 @@ Use protected `main`, short-lived pull-request branches, and signed tags.
 `VERSION`, image metadata, Go build metadata, report schema, and GitHub release
 must agree. A tag has form `vMAJOR.MINOR.PATCH` or a valid SemVer prerelease.
 
+The first qualification target is `0.1.0-alpha.1`. Its
+[reviewed build inputs](build-input-baseline.md) permit fresh offline builds.
+No tag or download release is authorized by the version change alone; all four
+image checks and the protected publication requirements must pass first.
+
 Use a Developer Certificate of Origin rather than a CLA. Require review from
 owners of platform, storage policy, report security, and release workflows for
 changes in those areas.

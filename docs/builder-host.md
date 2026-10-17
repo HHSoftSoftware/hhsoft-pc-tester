@@ -3,8 +3,10 @@
 Non-development image builds require a reviewed manifest of the Alpine host
 running the build. This is a first check on host files and installed packages;
 it does not qualify a builder or establish the provenance of its contents.
-There are no approved host manifests in the repository yet. Release builds
-remain blocked until review and the remaining qualification work are complete.
+The reviewed x86_64 input baseline is recorded in
+[`platform/builder-hosts`](../platform/builder-hosts/README.md). These inputs
+permit controlled qualification builds; publication still requires the
+remaining image, boot, security, and release checks.
 
 ## Prepare a review candidate
 
@@ -101,9 +103,10 @@ replace the [target package cache lock](package-cache.md).
 Matching files do not prove a trusted kernel, immutable filesystem, complete
 semantic configuration closure, reproducibility, or authentic upstream inputs.
 Changes made and reverted between checks are outside this comparison. The
-remaining work includes qualifying the full execution environment, pinning
-and authenticating its preparation inputs, and validating fresh offline builds
-and their resulting images. Cleared environments and matching compiler versions
+preparation inputs and their authentication evidence are recorded in the
+[input baseline](build-input-baseline.md). Remaining work includes qualifying
+the full execution environment and validating fresh offline builds and their
+resulting images. Cleared environments and matching compiler versions
 do not authenticate tools or configuration on disk. The modern application
 binding checks committed source, fresh compilation, and the bytes copied into
 the overlay; independent extraction of the finished ISO and approval of its

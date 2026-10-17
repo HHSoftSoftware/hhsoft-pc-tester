@@ -50,7 +50,8 @@ complete; real-hardware requirements remain open until physically tested.
 - [ ] Pin the builder toolchain and verify the host tools used for release images.
 - [x] Add a fixed-path host inventory gate before and after image builds, with
   a strict development-version exception, native failure-case tests, and an
-  actual-host comparison; approved manifests and full qualification remain open.
+  actual-host comparison. Reviewed input manifests are committed; full builder
+  and image qualification remain open.
 - [x] Compile modern image applications from verified committed source during
   each invocation, bind source/compiler-policy/target/binary records, and verify
   the actual overlay copy. Native failure-case fixtures and fresh offline
@@ -59,8 +60,9 @@ complete; real-hardware requirements remain open until physically tested.
 - [x] Bind legacy application compilation to exact committed source, run its
   Go tests and build offline with a source cache, and recheck the installed
   executable and its exclusive receipt after image stages. The full 178-test
-  native build suite passes with no skips; fresh legacy image construction,
-  embedded-version inspection, and finished-ISO extraction remain open.
+  native build suite passes with no skips. Fresh offline compilation, embedded
+  version/target inspection, and real post-build installation checks pass;
+  fresh legacy image construction and finished-ISO extraction remain open.
 - [x] Require the pinned Go package for both image-host profiles, observe fixed
   global download/loader configuration, and reject extended attributes,
   capabilities, and ACLs in the bounded host inventory. All 42 native inventory
@@ -74,7 +76,12 @@ complete; real-hardware requirements remain open until physically tested.
 - [x] Require a reviewed legacy source cache and network-isolated Make phases,
   with fresh independent copies, policy binding, and pre/post-build checks.
   Native failure-case fixtures and the pinned upstream license-copy helper
-  pass; source-cache approval and a complete fresh image build remain open.
+  pass. The 29-archive source input lock is reviewed and committed; a complete
+  fresh image build remains open.
+- [x] Review and freeze the initial alpha host, modern package, and legacy
+  source inputs with upstream authentication, independent byte checks, and
+  native offline installation evidence. This approves controlled build inputs;
+  it does not approve images or release publication.
 - [ ] Validate the offline cache mode against the preserved builder inputs and
   boot every resulting image before completing the release-input milestone.
 - [ ] Build and boot images automatically in CI rather than only cross-building

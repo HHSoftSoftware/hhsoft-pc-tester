@@ -1,0 +1,939 @@
+{
+  "architecture": "x86",
+  "base_lock_sha256": "f96365f28e3b784323d16f584d7c952880bae1e11d8fa66291864d934d86176b",
+  "files": {
+    "community/x86/APKINDEX.tar.gz": {
+      "sha256": "5c8534aee1775168853137f04d340f9daa30e15a245a298b42b0e6e1b5e9f25b",
+      "size": 2310430
+    },
+    "community/x86/kmscube-0_git20220902-r1.apk": {
+      "sha256": "1e753d982f369811bcb1089780fc0d714a669d113e8934b8778bd26f9691c05e",
+      "size": 98784
+    },
+    "community/x86/mesa-utils-9.0.0-r6.apk": {
+      "sha256": "599e846bfeab136b3780cd5c4daac2c01dff3fbda16fa04bbde4333b55488694",
+      "size": 135133
+    },
+    "main/x86/APKINDEX.tar.gz": {
+      "sha256": "2b3a5c4be3f5a875bb2eb80de9d91713fcbbde109b7a4cfd272aae135aca222a",
+      "size": 525960
+    },
+    "main/x86/agetty-2.42.3-r1.apk": {
+      "sha256": "01629ce57100a4b9c42d7b7f427af06e196ad482182935fc4089066617432514",
+      "size": 26068
+    },
+    "main/x86/agetty-openrc-0.63.2-r0.apk": {
+      "sha256": "fd079f34a051bf8cd3d211d4bb567dcb13e5a0a654047d8a1a3e7e877f9893e7",
+      "size": 2502
+    },
+    "main/x86/alpine-base-3.24.2-r0.apk": {
+      "sha256": "8b69cbe9d807760a892ee3411b5e4c80cd10c5948e62afb010f753f4e7a54f93",
+      "size": 1318
+    },
+    "main/x86/alpine-baselayout-3.7.2-r1.apk": {
+      "sha256": "52bd91d095b23e08ee6c5b624f17882770b3d1b96ced2a68ff01a772dc87eeb6",
+      "size": 8277
+    },
+    "main/x86/alpine-baselayout-data-3.7.2-r1.apk": {
+      "sha256": "f7a4461f1aba0196a9997678cb7a0a71461b81e15fe76ea0c2ad5c868255d1fc",
+      "size": 10794
+    },
+    "main/x86/alpine-conf-3.22.0-r0.apk": {
+      "sha256": "304a672609b9004c974fa36373276254742b59a68038e638629d92b1fe5c1778",
+      "size": 66332
+    },
+    "main/x86/alpine-keys-2.6-r0.apk": {
+      "sha256": "1cac6815dcea1460880f4aec4541550ef2e2bc80cea19632f045db70f2bf7be1",
+      "size": 12751
+    },
+    "main/x86/alpine-release-3.24.2-r0.apk": {
+      "sha256": "6c1f131add9703aedc1c773132ed793215dca444c05f7dcf26411226e5a48f1e",
+      "size": 2094
+    },
+    "main/x86/apk-tools-3.0.8-r0.apk": {
+      "sha256": "5a034f0b648773626f265b1bec04374fc0f22c97dfd659658f57c594231bae99",
+      "size": 58220
+    },
+    "main/x86/blkid-2.42.3-r1.apk": {
+      "sha256": "518ba0023c4e6f14aa56eb0622e5307f188368f99a33291fb42afa5bf0f012cb",
+      "size": 21315
+    },
+    "main/x86/bridge-1.5-r5.apk": {
+      "sha256": "f64118ee92421bda5e9832b75811c226c0ebea07fb6f518f5548ae52ae540e37",
+      "size": 2866
+    },
+    "main/x86/busybox-1.37.0-r31.apk": {
+      "sha256": "be105938251366981416cdd35e5d8d529cc95ba624957bef217376ac7f502127",
+      "size": 507000
+    },
+    "main/x86/busybox-binsh-1.37.0-r31.apk": {
+      "sha256": "36509d5658811fe026a17b72c10749179c93b69f6f2e3ed6f5b01995c7015bc2",
+      "size": 1568
+    },
+    "main/x86/busybox-mdev-openrc-1.37.0-r31.apk": {
+      "sha256": "11eb3d29951ec55045709bb73b15f2715ed1fc346c6454ae932d260292432077",
+      "size": 2037
+    },
+    "main/x86/busybox-openrc-1.37.0-r31.apk": {
+      "sha256": "d2b799459712d74131ee328ee8d73f2641a46b7c4f0e56ba271bc0dc2db385b2",
+      "size": 3755
+    },
+    "main/x86/busybox-suid-1.37.0-r31.apk": {
+      "sha256": "2c6982d41e940fd72d1cbaf1c5baf6e10bb47027cca1dece31f1e75ab3397a7b",
+      "size": 4188
+    },
+    "main/x86/ca-certificates-bundle-20260909-r0.apk": {
+      "sha256": "e5ca6f839e7ec5c54a27f3f5f4ae107ebb9a159add328e44cf2fe93a5afa0c22",
+      "size": 108541
+    },
+    "main/x86/cfdisk-2.42.3-r1.apk": {
+      "sha256": "a2eb769a416edd726fd34dac1b08b1edb0d3c7c43b1d839bee6889b690dd660a",
+      "size": 33621
+    },
+    "main/x86/cryptsetup-libs-2.8.6-r0.apk": {
+      "sha256": "0bdd56b0c0122cdab4d252344b74023de92d7d710d8c708345c6383c16eaa367",
+      "size": 236753
+    },
+    "main/x86/device-mapper-libs-2.03.35-r3.apk": {
+      "sha256": "d53be78833c5a6c52a4f54ec69940442f47e521d34bdee22f506b7ca4c0636b4",
+      "size": 136364
+    },
+    "main/x86/dmesg-2.42.3-r1.apk": {
+      "sha256": "52ca41b5823df8feeb16c6b43cbd98494fe49c7e3bc85b62c91358ea3a3f10e5",
+      "size": 25631
+    },
+    "main/x86/eudev-libs-3.2.14-r6.apk": {
+      "sha256": "58a280005e8696eb438f70eab7a1c8bf753fc90f28c7f03720abd496541f9b0d",
+      "size": 27484
+    },
+    "main/x86/findmnt-2.42.3-r1.apk": {
+      "sha256": "10961f19b5488dcbeac434bbd20b1b0e1f7c5b8af38b8d490ba8c386246313e8",
+      "size": 26252
+    },
+    "main/x86/flock-2.42.3-r1.apk": {
+      "sha256": "775409360650327ecbfad5fdd0db1ed3674e59a18d1fdfe1afd84acbc97c5623",
+      "size": 9999
+    },
+    "main/x86/fstrim-2.42.3-r1.apk": {
+      "sha256": "e16e80f6f79cd457ec054dec081f3e5f767cb930d82fe805cc4a33969bc58180",
+      "size": 15068
+    },
+    "main/x86/grub-2.14-r0.apk": {
+      "sha256": "6372cc79d2d3f14f4c2ed51eb03e65173a94e35142212e4074a224dff4c0a004",
+      "size": 7079341
+    },
+    "main/x86/grub-efi-2.14-r0.apk": {
+      "sha256": "8378ec75ee6fcc478a5b9f15b8ec6d410cec52e445af0ed89218b367277a8125",
+      "size": 1440694
+    },
+    "main/x86/hexdump-2.42.3-r1.apk": {
+      "sha256": "7f5649f42fa6381df21c4043e3d902f5c2bb791a7e7517a6f79c7f699d07da75",
+      "size": 18888
+    },
+    "main/x86/hwdata-pci-0.408-r0.apk": {
+      "sha256": "acb24de3999a93065d8bd8118d12f02974164473d8880e5b5385d18d2e95649b",
+      "size": 369104
+    },
+    "main/x86/hwdata-usb-0.408-r0.apk": {
+      "sha256": "35447778bbb3536d411d2e9a8ccdc23ba52efed66b574548d7a6e01ac2c5502d",
+      "size": 256349
+    },
+    "main/x86/ifupdown-ng-0.13.0-r0.apk": {
+      "sha256": "b61e5bd63992c08bb80e42cb5f7965004cb051191583f47ebf47bc4e8ddd386a",
+      "size": 68145
+    },
+    "main/x86/json-c-0.18-r1.apk": {
+      "sha256": "0f00295eff0625bfb43ba746a3c10cd7ca1a50b1203d10541204ceb1810547f3",
+      "size": 28563
+    },
+    "main/x86/kbd-bkeymaps-2.8.0-r0.apk": {
+      "sha256": "38bcdb02c1d872ed1f45fcf66ae5fea92423ce059be3f866f4d55598f1eb128d",
+      "size": 746914
+    },
+    "main/x86/kmod-34.2-r1.apk": {
+      "sha256": "cdb7441022e742764bf9e5dc26aadbaef2176ba9c16b9be8d28b670421077824",
+      "size": 67408
+    },
+    "main/x86/kmod-libs-34.2-r1.apk": {
+      "sha256": "4cc85e4912b07965323872ab01c43f5c8a2d56920ec069758a93a1a723f6bc63",
+      "size": 42138
+    },
+    "main/x86/lddtree-1.27-r0.apk": {
+      "sha256": "e297793457eceb691aaeafe4e265c4ef4f319466fb303409d37f8e557aa3dce0",
+      "size": 5446
+    },
+    "main/x86/libapk-3.0.8-r0.apk": {
+      "sha256": "26f489ffcf19ad4edc03bd44ecd36d8c64ea474ebc23332a290631d4b96f489f",
+      "size": 144484
+    },
+    "main/x86/libblkid-2.42.3-r1.apk": {
+      "sha256": "f20a934f1b94e8477b9ecd333ab4ffe7a8fa8184e281257103b26190110f8c1b",
+      "size": 103108
+    },
+    "main/x86/libbsd-0.12.2-r0.apk": {
+      "sha256": "2a1096151b5c7b6bc73f93d72e195223ebf341e35ca04ec78cb9e34e38a2669f",
+      "size": 32787
+    },
+    "main/x86/libcap-ng-0.8.5-r2.apk": {
+      "sha256": "cd6579d81e394a88d269bae9b4f6868825c14316cfc56541b116d6d9077a36a9",
+      "size": 11553
+    },
+    "main/x86/libcap2-2.78-r0.apk": {
+      "sha256": "aa62a597eea39d4b5b0b887c96c1d37506545e73a85cab31cbe69fe55db378f6",
+      "size": 23250
+    },
+    "main/x86/libcrypto3-3.5.9-r0.apk": {
+      "sha256": "fefdfbd558fb994eb32d1f20fdad9791efd9021312f5183163e29b8d9fc940b2",
+      "size": 1788677
+    },
+    "main/x86/libdrm-2.4.134-r0.apk": {
+      "sha256": "79cd76079c47bfcd8655cbf85c41734bdc8c79533c82497e78db90d54811851c",
+      "size": 227939
+    },
+    "main/x86/libdrm-tests-2.4.134-r0.apk": {
+      "sha256": "3e93ffc3ea4df7a9a6eec9617a0e1ea77baaa855b9c215b97813ec44c37967ab",
+      "size": 104078
+    },
+    "main/x86/libeconf-0.8.3-r0.apk": {
+      "sha256": "bb358db18f9caf33cac36e03f17371ead7bd420a3e39594e594ecb94a585cf1d",
+      "size": 26720
+    },
+    "main/x86/libelf-0.195-r0.apk": {
+      "sha256": "1c33af51635927f3890aa8edd4fe996b35a9fc999800923d4526c788b6c571da",
+      "size": 48247
+    },
+    "main/x86/libexpat-2.8.5-r0.apk": {
+      "sha256": "49fe8fcd2a8eba8fbebf005612950440bd0287c6ccf7c0b4128ff136ca001b34",
+      "size": 63746
+    },
+    "main/x86/libfdisk-2.42.3-r1.apk": {
+      "sha256": "cbe12823d3cad210f64e2640d19d1fca10fc7acbcae4f788523ff2533becdb37",
+      "size": 129267
+    },
+    "main/x86/libffi-3.5.2-r1.apk": {
+      "sha256": "b1c7cbf073a96066a84eb28fb15071e20838320f860df83d6609fa50af21cf97",
+      "size": 16064
+    },
+    "main/x86/libgcc-15.2.0-r5.apk": {
+      "sha256": "8c7854c5671b7bec32768d47cb4086b3e78b9ff347a24cad5cf42e8c6e9b9551",
+      "size": 99881
+    },
+    "main/x86/libmd-1.2.0-r0.apk": {
+      "sha256": "e06620533ad3b4fc5f409763dc182e89f888d6bbc3419897a3dca8fe311b2af7",
+      "size": 29650
+    },
+    "main/x86/libmount-2.42.3-r1.apk": {
+      "sha256": "84b8249c2bb9c83c21dcb3b5b004dfbaf69f97fc349962129f3fc9f32d018b4a",
+      "size": 130327
+    },
+    "main/x86/libncursesw-6.6_p20260516-r0.apk": {
+      "sha256": "49a048c29a93046b3fc5e72a21bb55ef537558d026f1064a42d25f42f19a90e9",
+      "size": 162671
+    },
+    "main/x86/libpciaccess-0.19-r0.apk": {
+      "sha256": "44656dd0be05a33b404c6d0c482360859ac5f7c721b63c06d6f4a3ce1b83f122",
+      "size": 16145
+    },
+    "main/x86/libpng-1.6.59-r0.apk": {
+      "sha256": "c9e89d20c21b411b7bf1bdf5d30b9c4c5356e990f45b24c97753a2661e001232",
+      "size": 98812
+    },
+    "main/x86/libsmartcols-2.42.3-r1.apk": {
+      "sha256": "abed4a7567fe6af3419e27fe36007a1273da89411f3c8eed5b43a11af4817f59",
+      "size": 56842
+    },
+    "main/x86/libssl3-3.5.9-r0.apk": {
+      "sha256": "07371c13c19e5c7cdcc5b6e9476dab3f26d565ca8e3dc5d598b2ee3411e81d2f",
+      "size": 400752
+    },
+    "main/x86/libstdc++-15.2.0-r5.apk": {
+      "sha256": "84bcdc89b255412fdf4ea3284be1953560ba5567e6ca972f356452c583f10de8",
+      "size": 1052063
+    },
+    "main/x86/libusb-1.0.30-r0.apk": {
+      "sha256": "abd60ca3dc44892db260c052b68f193e781e51db8e7d53b67c96a61906c21e4f",
+      "size": 50004
+    },
+    "main/x86/libuuid-2.42.3-r1.apk": {
+      "sha256": "20a7d5789558c6c9864efef1b575ce1789bb514c5b82d98ce7ec2e5e454e3a6b",
+      "size": 16193
+    },
+    "main/x86/libx11-1.8.13-r0.apk": {
+      "sha256": "1c0db2656e212b94d4e88854290172e56adf47bfc0e9dca3c2a61eec8d896237",
+      "size": 874562
+    },
+    "main/x86/libxau-1.0.12-r0.apk": {
+      "sha256": "692c4b54626ecf0d1142c47226ac95c025db9dbe50f095cf8c05398110370264",
+      "size": 5858
+    },
+    "main/x86/libxcb-1.17.0-r2.apk": {
+      "sha256": "ff6cff640c4754011f674f4100fb6da3bfc48271e29b80e18461116a3c4e9f6a",
+      "size": 256405
+    },
+    "main/x86/libxdmcp-1.1.5-r1.apk": {
+      "sha256": "c4dc1b7c78a16bcde0e83f7b8ac569bfbfb4faddde77b49ca2c8226fd7459c29",
+      "size": 9879
+    },
+    "main/x86/libxext-1.3.7-r0.apk": {
+      "sha256": "2cd6c2261eb3f267d5f575dfb5f96eaccc88b43766f4b21305f8d98bf009c0d4",
+      "size": 26767
+    },
+    "main/x86/libxml2-2.13.9-r2.apk": {
+      "sha256": "3983f4d0d8439378b113e50b1699b20dea20ff6bf4f555b33af22ff04df5bde5",
+      "size": 499479
+    },
+    "main/x86/libxshmfence-1.3.3-r0.apk": {
+      "sha256": "fe0798e1dd4cd872fa1353c4fb93375c6563d3fb32934524296b14050ab6ac57",
+      "size": 4243
+    },
+    "main/x86/libxxf86vm-1.1.7-r0.apk": {
+      "sha256": "21ccd17d3887d7e17a25fe552a401ea909c6a14b4b7996d34fa22491e0f29f2b",
+      "size": 8441
+    },
+    "main/x86/linux-firmware-20260519-r0.apk": {
+      "sha256": "dbbd6b8dd8dc3f16ba03576a1f859bbecfd0936d18c349d355b6d82492a8b8a6",
+      "size": 1872
+    },
+    "main/x86/linux-firmware-3com-20260519-r0.apk": {
+      "sha256": "67384488e4b21f645f72711a32b5e27d6c9eaa01031e6e4fee325242674cc858",
+      "size": 31456
+    },
+    "main/x86/linux-firmware-acenic-20260519-r0.apk": {
+      "sha256": "da4c6b2d3418b264342d3722854a335712ad0e0e3203de477b4c0427db88a0bc",
+      "size": 47233
+    },
+    "main/x86/linux-firmware-adaptec-20260519-r0.apk": {
+      "sha256": "613fab2e55f52cb76f55a782bd809d4254457207782da8c53784a97e08b82c6e",
+      "size": 2163
+    },
+    "main/x86/linux-firmware-advansys-20260519-r0.apk": {
+      "sha256": "fd88700395ec63e462853a6b144f0fe688b25fb7a8128c8c635dee7206aec977",
+      "size": 16374
+    },
+    "main/x86/linux-firmware-aeonsemi-20260519-r0.apk": {
+      "sha256": "efdc36b0d34845b9932f2178877539a2090786f93832b6a9d4969ca413bf5da1",
+      "size": 167985
+    },
+    "main/x86/linux-firmware-airoha-20260519-r0.apk": {
+      "sha256": "0172fcfe4dbdd5c53e32880c6e692a4701d06e17e1d4ccec5dcc4178965874d7",
+      "size": 322914
+    },
+    "main/x86/linux-firmware-amd-20260519-r0.apk": {
+      "sha256": "5840b55aa1f610f5382d8a48710020633a257ddd571679312cdfe9798aabc36b",
+      "size": 327840
+    },
+    "main/x86/linux-firmware-amd-ucode-20260519-r0.apk": {
+      "sha256": "9d0a43e631eb931dd6c48163f563d7cecbf1d211e1cbf5cd204ad4d7e9d9e27a",
+      "size": 249048
+    },
+    "main/x86/linux-firmware-amdgpu-20260519-r0.apk": {
+      "sha256": "100f1a24733bcf9cc4cc4fe541e5b4e00caf2fd98f83f4221def2e86fdfd2dac",
+      "size": 27485690
+    },
+    "main/x86/linux-firmware-amdnpu-20260519-r0.apk": {
+      "sha256": "450e81174d183036b1625b074385c31745fff2e9a024fbd927fad347fd5fb057",
+      "size": 549207
+    },
+    "main/x86/linux-firmware-amdtee-20260519-r0.apk": {
+      "sha256": "26aa6313b0f7d6ed130dac20f21a99da1b58b815ae87a2cf2386a4a53160e030",
+      "size": 15333
+    },
+    "main/x86/linux-firmware-amlogic-20260519-r0.apk": {
+      "sha256": "f6227b3dfa03791a35891f051e7df60745f5064588ecf2fb75592e7beeb8cd1a",
+      "size": 833621
+    },
+    "main/x86/linux-firmware-amphion-20260519-r0.apk": {
+      "sha256": "9c7edefe03ac76199e58d9b2798036731965e4ec5b68531d5b736e32264b6b67",
+      "size": 343260
+    },
+    "main/x86/linux-firmware-ar3k-20260519-r0.apk": {
+      "sha256": "fdbab5f9d2a9491da0bbd974046ac2ee48fde1c9768dd748fa9e173eae0b240a",
+      "size": 283279
+    },
+    "main/x86/linux-firmware-arm-20260519-r0.apk": {
+      "sha256": "fac89aa74bd4f681418b2f52e5680c232588267d8427ec8dc28fa28cc140d339",
+      "size": 259765
+    },
+    "main/x86/linux-firmware-ath10k-20260519-r0.apk": {
+      "sha256": "4830e05dfa0a5d40089575661d0267edf758a057670b7406c43f860b4606b820",
+      "size": 9205280
+    },
+    "main/x86/linux-firmware-ath11k-20260519-r0.apk": {
+      "sha256": "b0405a115b03ebef94b14d84e129d32d6408bbe4a58978724510d71abf501f90",
+      "size": 23597896
+    },
+    "main/x86/linux-firmware-ath12k-20260519-r0.apk": {
+      "sha256": "2a245f00ec74ed212a10cc2bd4bb431d2397f1bf5061c15bdd4f121096d5d6d2",
+      "size": 16648845
+    },
+    "main/x86/linux-firmware-ath6k-20260519-r0.apk": {
+      "sha256": "e0f0b012ffc628cb178ed7fd91c7176814078152c55f72e9232cb7f282b63055",
+      "size": 711718
+    },
+    "main/x86/linux-firmware-ath9k_htc-20260519-r0.apk": {
+      "sha256": "10f00aa9baa07df3bf5b23ef8153feae3d44ef719a7ac9e1f07b0abcf7c2e7e1",
+      "size": 62079
+    },
+    "main/x86/linux-firmware-atmel-20260519-r0.apk": {
+      "sha256": "ebc3e8af95a81b78d96a3cf7089c14bc4d036f0d30b7e8308b03c95e0d423343",
+      "size": 464384
+    },
+    "main/x86/linux-firmware-atusb-20260519-r0.apk": {
+      "sha256": "81ef2b2446977afd346cee0a641a8e4d92b58dbf929aa02d6be75fec89bb2428",
+      "size": 13565
+    },
+    "main/x86/linux-firmware-av7110-20260519-r0.apk": {
+      "sha256": "69952517b486a82ff4cf41309a4e70389844bbe12af92e526e8c1a57f2470117",
+      "size": 1882
+    },
+    "main/x86/linux-firmware-bnx2-20260519-r0.apk": {
+      "sha256": "ec7486da54249562d6f004acefa03a13c55e5bb0799570a4c1a65cdd30d784b2",
+      "size": 104329
+    },
+    "main/x86/linux-firmware-bnx2x-20260519-r0.apk": {
+      "sha256": "55445d0d54955dcb874aa37daeefc760d52347316c14e0c9ae4a504c5205bfd4",
+      "size": 2386662
+    },
+    "main/x86/linux-firmware-brcm-20260519-r0.apk": {
+      "sha256": "379ddf9ae5b3f0ef1d72585d8f246a3c24c1869cf7c76679fbb60a199f2e219f",
+      "size": 8219759
+    },
+    "main/x86/linux-firmware-cadence-20260519-r0.apk": {
+      "sha256": "abbe8fa69312182d85dc80ffab40743a615e6e46ef8e3bc4c4808e8d99178f8f",
+      "size": 24696
+    },
+    "main/x86/linux-firmware-cavium-20260519-r0.apk": {
+      "sha256": "ad17fcd865ce1eb4d7896e51716d0492a4152bb9684a327806eb96bcfae1fb1f",
+      "size": 36956
+    },
+    "main/x86/linux-firmware-cirrus-20260519-r0.apk": {
+      "sha256": "a08823dbb4ba54dbcda5af7ad464b0910e2a07391c8aeba0752f0140eefff6f0",
+      "size": 2975366
+    },
+    "main/x86/linux-firmware-cis-20260519-r0.apk": {
+      "sha256": "b0d523ae8f52f03943bf5211bfb1139da030f56c2be41fab2118c6183217d05b",
+      "size": 4188
+    },
+    "main/x86/linux-firmware-cnm-20260519-r0.apk": {
+      "sha256": "78ffce3eaefa506e11e4b4ea887ed6bec17859c40d23729ba9cf476027c32c09",
+      "size": 429312
+    },
+    "main/x86/linux-firmware-cpia2-20260519-r0.apk": {
+      "sha256": "0e866f46abdb3baf739b567a3311033d1b903a9dc560db710988bb17c2bb4656",
+      "size": 2417
+    },
+    "main/x86/linux-firmware-cxgb3-20260519-r0.apk": {
+      "sha256": "8a71fabfc50442da7ba87dedb22854458b405974202c0ef2e8317c792ac29d22",
+      "size": 126886
+    },
+    "main/x86/linux-firmware-cxgb4-20260519-r0.apk": {
+      "sha256": "e4358f52eb75d3472157af66fadf6af587fe8a0d98a8d7c29a61ec99eb7554c3",
+      "size": 2840070
+    },
+    "main/x86/linux-firmware-cypress-20260519-r0.apk": {
+      "sha256": "e0c1f246107bfde4d032ff2bad7717911fae9cb0601e4cc6534b5fac9061cec0",
+      "size": 5113162
+    },
+    "main/x86/linux-firmware-dabusb-20260519-r0.apk": {
+      "sha256": "c9bf538812cb38425b2451dd4ef228369853db6645fa28dc8c668ef9e5fd06d2",
+      "size": 13862
+    },
+    "main/x86/linux-firmware-dell-20260519-r0.apk": {
+      "sha256": "f8d28c9a914797ecdc65a14146108a6c36e267fecba61cfb6e905156e4483187",
+      "size": 1002388
+    },
+    "main/x86/linux-firmware-dpaa2-20260519-r0.apk": {
+      "sha256": "f5a1af21c29952211096cba72cd7654f4a836fcd5048c01f2c6a674cc5a7a6d4",
+      "size": 5622979
+    },
+    "main/x86/linux-firmware-dsp56k-20260519-r0.apk": {
+      "sha256": "e4ba3f2edb55cb300543a1316010787f45018aac3c8f446f59f96195fb82ba08",
+      "size": 1849
+    },
+    "main/x86/linux-firmware-e100-20260519-r0.apk": {
+      "sha256": "cb22fef53dbff64f0732a7f5792b4b7865e53e10455f33098ca081a23f824608",
+      "size": 2655
+    },
+    "main/x86/linux-firmware-edgeport-20260519-r0.apk": {
+      "sha256": "54038a2d19bc2c0cdb8fee4ecb3b4f8e8b0b6a9a18f7eb80622394b08b3a7999",
+      "size": 30886
+    },
+    "main/x86/linux-firmware-emi26-20260519-r0.apk": {
+      "sha256": "3d384c0b505a4fdf477de231fcd13df3821b95e3e0c6bd592acf781b3dba1c7a",
+      "size": 62130
+    },
+    "main/x86/linux-firmware-emi62-20260519-r0.apk": {
+      "sha256": "30d4f06e3148fd9f97fbb51b712d4e77eaebf48e086bd7f647152722876c2aec",
+      "size": 100472
+    },
+    "main/x86/linux-firmware-ene-ub6250-20260519-r0.apk": {
+      "sha256": "1df160a1520bc497c858e5a3ed52118c58872784c76b09311460c6fcd0eb8f03",
+      "size": 7227
+    },
+    "main/x86/linux-firmware-ess-20260519-r0.apk": {
+      "sha256": "81008529637e203c2ad57dae39931f5e11bdfaa301079270c3068dd88ec60fe1",
+      "size": 3686
+    },
+    "main/x86/linux-firmware-go7007-20260519-r0.apk": {
+      "sha256": "e3ee71aa621361866713eb2e90ea174d11630f833caa325e27602a5802f8ef48",
+      "size": 59076
+    },
+    "main/x86/linux-firmware-hp-20260519-r0.apk": {
+      "sha256": "51049372b5a6e6103ea7fbe97c3987db492c2e6fa54c300b76bd543dd1bfaed7",
+      "size": 693871
+    },
+    "main/x86/linux-firmware-i915-20260519-r0.apk": {
+      "sha256": "b14ebdf700c63bccedc9658632fecc72af0f67c56fbdf244be0cd061de48d5b7",
+      "size": 9779343
+    },
+    "main/x86/linux-firmware-imx-20260519-r0.apk": {
+      "sha256": "5927bbf98c4de8b31ca6fa5abcae0e5ee0f0ad16867b4bcc6ba4a155ed6ab3d4",
+      "size": 5318
+    },
+    "main/x86/linux-firmware-inside-secure-20260519-r0.apk": {
+      "sha256": "5b7f2fb189acc8ef8708c6dfe48e6eb65656a668eb9b089bf96c319db2b63a14",
+      "size": 2044
+    },
+    "main/x86/linux-firmware-intel-20260519-r0.apk": {
+      "sha256": "a8e7a061a1c25e4eae905403f839f77c00b971c9294932d74167e19f7b9021c5",
+      "size": 121770218
+    },
+    "main/x86/linux-firmware-isci-20260519-r0.apk": {
+      "sha256": "9089b1ae97ff1406c8021e9c7ba8be6385043fd4b0e202c1e4cf8621afbd522d",
+      "size": 1726
+    },
+    "main/x86/linux-firmware-ixp4xx-20260519-r0.apk": {
+      "sha256": "8392c6a9aa6359c9575af63a4eebcc474cc233f3635e7481f02dfadf43f67a86",
+      "size": 22443
+    },
+    "main/x86/linux-firmware-kaweth-20260519-r0.apk": {
+      "sha256": "ed2ada28611cb31c6101c6351aafd4636ab75d2d583b1ccb3629f82981819adb",
+      "size": 4808
+    },
+    "main/x86/linux-firmware-keyspan-20260519-r0.apk": {
+      "sha256": "7cb57ab02b0282d361c5ef3bb409cd843f988a7f1ccabb4eb39312e8b811f991",
+      "size": 41404
+    },
+    "main/x86/linux-firmware-keyspan_pda-20260519-r0.apk": {
+      "sha256": "844325a83ab28dd4a46761ef18cc7b8705d3c1bf70c2819649c183691e30ccaa",
+      "size": 4289
+    },
+    "main/x86/linux-firmware-korg-20260519-r0.apk": {
+      "sha256": "031c55877ab7a9c949c73dac012984280980394d29dc68b6b89a3c138578fb27",
+      "size": 4747
+    },
+    "main/x86/linux-firmware-lenovo-20260519-r0.apk": {
+      "sha256": "ddf7875ff5f48efd2967d1a31624e1ccde69d2b423ec8b75f76fb4e6b727aee7",
+      "size": 1515423
+    },
+    "main/x86/linux-firmware-libertas-20260519-r0.apk": {
+      "sha256": "bd3d1c70d9f01ebe6e16ccb7883b6c71ace7586607dc7dbf851754455b898973",
+      "size": 1492507
+    },
+    "main/x86/linux-firmware-liquidio-20260519-r0.apk": {
+      "sha256": "fce88bdc9beaac4dfdc30594209613c35484d87487224c026722d01b745f2a6a",
+      "size": 1658998
+    },
+    "main/x86/linux-firmware-lontium-20260519-r0.apk": {
+      "sha256": "f2b6479c47310b9bc54012776390c30d5120c4d073f314f52e61b53fb5868d68",
+      "size": 91445
+    },
+    "main/x86/linux-firmware-matrox-20260519-r0.apk": {
+      "sha256": "f6e346e0607b87b4014928af6970e9a338b263e062c26f709120917b53947f94",
+      "size": 5332
+    },
+    "main/x86/linux-firmware-mediatek-20260519-r0.apk": {
+      "sha256": "339313a33e9455732344d4ce0ed537c782f5501d7f42d0985b0f5836979fdc0b",
+      "size": 29607011
+    },
+    "main/x86/linux-firmware-mellanox-20260519-r0.apk": {
+      "sha256": "6ea2f6f7963aa3a638b35c6527f08233747b8e67ae78e70518b0c57b278b0b4a",
+      "size": 106605175
+    },
+    "main/x86/linux-firmware-meson-20260519-r0.apk": {
+      "sha256": "c2475b8af50f23872a3ff63e2b1dadc52e8cf411c1a608eed58da0079314a2d4",
+      "size": 110124
+    },
+    "main/x86/linux-firmware-microchip-20260519-r0.apk": {
+      "sha256": "9f9afc6d5ed004d130f63a220481bceb37507072c2ce8e59ad3df90beb5e4c98",
+      "size": 3251
+    },
+    "main/x86/linux-firmware-moxa-20260519-r0.apk": {
+      "sha256": "2ca311ac55ae95e7ac5342110e8f4ad573cdd389b6fb3e1351eeedbb37ae56e6",
+      "size": 209740
+    },
+    "main/x86/linux-firmware-mrvl-20260519-r0.apk": {
+      "sha256": "e02399efe5fea064f5f7a1e9911fd2af7daca7d53473dd20930dcf98668abbd3",
+      "size": 81022247
+    },
+    "main/x86/linux-firmware-mwl8k-20260519-r0.apk": {
+      "sha256": "935b80b6c3eeefac7322733d9a785c8d7c84f9f9bb67ae93c45869993030ad43",
+      "size": 410873
+    },
+    "main/x86/linux-firmware-mwlwifi-20260519-r0.apk": {
+      "sha256": "23cd74889b84da133e97c2c69707ce217994af0917e6f603451935a64fe4b39a",
+      "size": 406057
+    },
+    "main/x86/linux-firmware-myricom-20260519-r0.apk": {
+      "sha256": "f3dd4d7f3c7988e7785a2b03373f6374788d087793cee67186c84fdfe9791a07",
+      "size": 24479
+    },
+    "main/x86/linux-firmware-netronome-20260519-r0.apk": {
+      "sha256": "7d06749d106c20160e0e467b9ae8cfb82eb8169c0491c36d76e43b3215ef5986",
+      "size": 5542901
+    },
+    "main/x86/linux-firmware-nvidia-20260519-r0.apk": {
+      "sha256": "774ad373a798991a49aec94a28c4663474c3a6005f4fe2a46e1b846026b395ca",
+      "size": 108574903
+    },
+    "main/x86/linux-firmware-nxp-20260519-r0.apk": {
+      "sha256": "8e44627eda7a3ee14d865e5ebe790ab048973447f2796c6da2037c49ae66d58d",
+      "size": 962961
+    },
+    "main/x86/linux-firmware-ositech-20260519-r0.apk": {
+      "sha256": "a42e51e545e2ac65543dbd69e3edff030091f4de24c95dc82fa2882a07c4903b",
+      "size": 2978
+    },
+    "main/x86/linux-firmware-other-20260519-r0.apk": {
+      "sha256": "a0f14e81bba584244333f6a0074af6b7bda302913f87123e558ba3635fefbec3",
+      "size": 5621670
+    },
+    "main/x86/linux-firmware-powervr-20260519-r0.apk": {
+      "sha256": "8db517586dd11d16894f85258ab21a13928339e7102d35757ccf131f88e9988d",
+      "size": 124866
+    },
+    "main/x86/linux-firmware-qca-20260519-r0.apk": {
+      "sha256": "e8ae38bfeff10cb82f4b23cf92bfb141de97e7c5da5fa6ce91d8683a130be284",
+      "size": 2409048
+    },
+    "main/x86/linux-firmware-qcom-20260519-r0.apk": {
+      "sha256": "d696f2e901532b4f040bfd355fd583a97efd302add3506cd13560e62a64f8324",
+      "size": 171147777
+    },
+    "main/x86/linux-firmware-qed-20260519-r0.apk": {
+      "sha256": "e73250a93e63bf29bc5032ce2b653bf02c82c195aca217ce43e287f6ef232265",
+      "size": 10567015
+    },
+    "main/x86/linux-firmware-qlogic-20260519-r0.apk": {
+      "sha256": "ef3372b07fbdc7cfb1fd5a5c29cb5689ccb46c7c83ee13d9b85f8a1889358d95",
+      "size": 72047
+    },
+    "main/x86/linux-firmware-r128-20260519-r0.apk": {
+      "sha256": "5e6e294ec2c2e5d8360af4d641a7c8b23793dc2b358cb253686a1b17ac14c9cb",
+      "size": 2354
+    },
+    "main/x86/linux-firmware-radeon-20260519-r0.apk": {
+      "sha256": "fa78c218f64cccf7fed96e8ab3fecf9a6afd20200ec2fd045ec867774baba360",
+      "size": 1649859
+    },
+    "main/x86/linux-firmware-realtek-20260519-r0.apk": {
+      "sha256": "238d9bd54121b6c63ed5506c237872d00e669531b6ada78cb877de8d4584e6a0",
+      "size": 13361
+    },
+    "main/x86/linux-firmware-rockchip-20260519-r0.apk": {
+      "sha256": "2c47e2b4d93730f417ebfcf4996b8e01721fb945ac4738da6b619b45cffe53df",
+      "size": 34555
+    },
+    "main/x86/linux-firmware-rsi-20260519-r0.apk": {
+      "sha256": "5ff2b57b23018d1d4e8b7ff2f6b7cc9892485b065c4ba404b2dca8a442654481",
+      "size": 633666
+    },
+    "main/x86/linux-firmware-rtl_bt-20260519-r0.apk": {
+      "sha256": "2d9d9ad28b64c6f1ce6a0fe92977b442f412a896d024f447e54becab639dcc01",
+      "size": 868962
+    },
+    "main/x86/linux-firmware-rtl_nic-20260519-r0.apk": {
+      "sha256": "a9a86221931d928b72075c57919eb23687213cacce95210a05974c79ebd81998",
+      "size": 74949
+    },
+    "main/x86/linux-firmware-rtlwifi-20260519-r0.apk": {
+      "sha256": "e631f5aa706ec328f90bd090840978c83b75b75be7b5d86c4282e6ad3f7d8ece",
+      "size": 603097
+    },
+    "main/x86/linux-firmware-rtw88-20260519-r0.apk": {
+      "sha256": "cf9daae3008a0234b7df1a7e5b110d607f051c43a4287e25644be5dc45368fa6",
+      "size": 409052
+    },
+    "main/x86/linux-firmware-rtw89-20260519-r0.apk": {
+      "sha256": "2cad7a6cf2c4331363c3284b2448bf55ed13286598c0de06a1aa4a0c47871306",
+      "size": 5184485
+    },
+    "main/x86/linux-firmware-s5p-mfc-20260519-r0.apk": {
+      "sha256": "1fb00d446a02f45db9ec9c9c090d0fb40508a88827e341baab1085889381560b",
+      "size": 1086433
+    },
+    "main/x86/linux-firmware-sb16-20260519-r0.apk": {
+      "sha256": "ac54d101e6fd4b2b657306dff4b0963e199869d4f100da4572825bb8cbaa1c26",
+      "size": 6264
+    },
+    "main/x86/linux-firmware-sdca-20260519-r0.apk": {
+      "sha256": "92b143ed200906675c4d439f9f1a2ed2dce0b1f298b66bcbe51aeffc622d6f2a",
+      "size": 46516
+    },
+    "main/x86/linux-firmware-slicoss-20260519-r0.apk": {
+      "sha256": "78835317ab3e7f4872ea385afd31caf3ae91178b51277a3fcfdbcd23a72a83b1",
+      "size": 75499
+    },
+    "main/x86/linux-firmware-sun-20260519-r0.apk": {
+      "sha256": "0532727c804d7a7dcbd7f107a8141ea3cfebafd38146483901957cf62f24aff6",
+      "size": 3252
+    },
+    "main/x86/linux-firmware-sxg-20260519-r0.apk": {
+      "sha256": "8cbd2f8b4d5d028abc1cd82bffb7ca11350e800851e1bb4f2a5062112d401065",
+      "size": 37779
+    },
+    "main/x86/linux-firmware-synaptics-20260519-r0.apk": {
+      "sha256": "5990a6d7f8428c4e30464c4d0bd58203061e416ed299e85f9f36d99d3050e229",
+      "size": 67025
+    },
+    "main/x86/linux-firmware-tehuti-20260519-r0.apk": {
+      "sha256": "1f3a04788e51180ddada0246f931fb2b65dcefd9f152a16d1705ab50fec57d84",
+      "size": 6843
+    },
+    "main/x86/linux-firmware-ti-20260519-r0.apk": {
+      "sha256": "aaa346aa3df7353c9344e242f81c3d3eaaa19fddb32700a2243c7dbe0762c84b",
+      "size": 824322
+    },
+    "main/x86/linux-firmware-ti-connectivity-20260519-r0.apk": {
+      "sha256": "544435aa0853b37daa6c0fe3084fcd7c40c8faead6058f4fc4bbd329af5eb9f8",
+      "size": 5204084
+    },
+    "main/x86/linux-firmware-ti-keystone-20260519-r0.apk": {
+      "sha256": "f760a9dcabe228804eaa9a4383a60802fcaa49afb2c0aa00ed351f555de6b9c6",
+      "size": 2960
+    },
+    "main/x86/linux-firmware-tigon-20260519-r0.apk": {
+      "sha256": "61adb234037d1b39928bd9d7a11e11f7a48678156ee9aae80251c2c05d1107ac",
+      "size": 8731
+    },
+    "main/x86/linux-firmware-ttusb-budget-20260519-r0.apk": {
+      "sha256": "78981abdf50b38d0adc08ed92a0b6b4b978b3b4741b1d018c9e22919713bfc02",
+      "size": 8132
+    },
+    "main/x86/linux-firmware-ueagle-atm-20260519-r0.apk": {
+      "sha256": "cf44bf0adf2a9ca6230b2dff41744a8d94280a4354322a3e89a8bc82e61deb88",
+      "size": 786916
+    },
+    "main/x86/linux-firmware-vicam-20260519-r0.apk": {
+      "sha256": "d0bbbee93084bfdb66e89fba8102c67bc16ae452b4807612f447cc641e88d633",
+      "size": 2977
+    },
+    "main/x86/linux-firmware-vxge-20260519-r0.apk": {
+      "sha256": "6d3a49e370f30d53dfea1fb9bd5669cd6396ce35bfd13d221fdf0d5355a16ba3",
+      "size": 841574
+    },
+    "main/x86/linux-firmware-wfx-20260519-r0.apk": {
+      "sha256": "3e8ef4228be87f05dd79d1e6bdee6003d6abb8352dede64c4f42458f9b8e4667",
+      "size": 315054
+    },
+    "main/x86/linux-firmware-xe-20260519-r0.apk": {
+      "sha256": "f8f4daac1fdb9f212a137867f3ad01e8d0e80f299adce502e129afd6ef89f355",
+      "size": 3376266
+    },
+    "main/x86/linux-firmware-yam-20260519-r0.apk": {
+      "sha256": "68b9c125f42b5718a05dbd23ad6158dc6baf4fd43a948c24f9fbaedfb5f4e865",
+      "size": 7262
+    },
+    "main/x86/linux-firmware-yamaha-20260519-r0.apk": {
+      "sha256": "5a64d9d20092ff2514a62e3000f405ad3f53afc8ab42ff5c041aeebc99409dd5",
+      "size": 10619
+    },
+    "main/x86/linux-lts-6.18.57-r0.apk": {
+      "sha256": "6a7ddd53dd1b4486ba6dc69484688470c7758fbc83c4b347c04ac08fbf7175eb",
+      "size": 72321711
+    },
+    "main/x86/linux-pam-1.7.1-r2.apk": {
+      "sha256": "c6b5711e5be62446fc1f5d3479cc4134c3160f765a6fcfe1c0bdb8a95c6958f2",
+      "size": 212316
+    },
+    "main/x86/llvm22-libs-22.1.3-r1.apk": {
+      "sha256": "9d62932bdad5add3a9d3136b317261211acea712598f517ab9153bae22563351",
+      "size": 72966656
+    },
+    "main/x86/logger-2.42.3-r1.apk": {
+      "sha256": "6898eefe6888c5cde650964c44047fb5d3784f08211824dd91d7267752d911f3",
+      "size": 14276
+    },
+    "main/x86/losetup-2.42.3-r1.apk": {
+      "sha256": "408da45c199dccba9939be13b5968584b46a1a972eee134b31a4e5cecd5299af",
+      "size": 26650
+    },
+    "main/x86/lsblk-2.42.3-r1.apk": {
+      "sha256": "67cc588e51585918c6a82f7e5bd8a8a2b862f3024409d0cf4ca6bb0b52c8ac48",
+      "size": 55055
+    },
+    "main/x86/lscpu-2.42.3-r1.apk": {
+      "sha256": "adffc5bd190e59e272c64a7bee3a087b9e70782a253657804f265e16133097c2",
+      "size": 43321
+    },
+    "main/x86/mcookie-2.42.3-r1.apk": {
+      "sha256": "304981e66b13aae91e49a25fcc6387cc9bbdd8d799d9946cf8f99bae97b5e339",
+      "size": 9984
+    },
+    "main/x86/mdev-conf-4.10-r0.apk": {
+      "sha256": "7dce47cf7206ab359d02fc5646660e636c2a61020db8a28b7552baefa4f51194",
+      "size": 5414
+    },
+    "main/x86/mesa-26.1.6-r0.apk": {
+      "sha256": "199c407465fc1d33be238013755e65dafc6ec3d000f864f2ecaf1fe2cb5036e2",
+      "size": 14624396
+    },
+    "main/x86/mesa-dri-gallium-26.1.6-r0.apk": {
+      "sha256": "4d3ac74d86c6781d6a890e4456c50169f7d5bfb25437e047066920e4f40ba33f",
+      "size": 22173
+    },
+    "main/x86/mesa-egl-26.1.6-r0.apk": {
+      "sha256": "0fdc12bd6a658a4adb5e4f9af0255c3a412e9e07432137d3b514aae89ba22722",
+      "size": 143622
+    },
+    "main/x86/mesa-gbm-26.1.6-r0.apk": {
+      "sha256": "7b8148b3015fb42c77f46d0be4579e65f4719ddbb877d1cbbcb9f474e4db8b19",
+      "size": 7897
+    },
+    "main/x86/mesa-gl-26.1.6-r0.apk": {
+      "sha256": "c8f3c4f731e82a4378c57464e6d9176db4ff319628db1d623dcb3adfaf1b52ef",
+      "size": 205104
+    },
+    "main/x86/mesa-gles-26.1.6-r0.apk": {
+      "sha256": "901bac3f46ab7cd77dc7b282a54904c758d9eb1eaa2f0fd6c69560af06ffea38",
+      "size": 23256
+    },
+    "main/x86/mkinitfs-3.14.1-r0.apk": {
+      "sha256": "0102ba0ccf50d9b18a1ec3f5ff9a950948a80a52e9b3407a055fd3cecef45f1f",
+      "size": 37917
+    },
+    "main/x86/mount-2.42.3-r1.apk": {
+      "sha256": "0913edf21650d36cb2c032b671538ed7a20450c0d1897421f2b3808a459197f3",
+      "size": 15804
+    },
+    "main/x86/mtools-4.0.49-r0.apk": {
+      "sha256": "466f212c0c98b8fef74aa66c5feff394daa34cded23660d1c6e22976b8e25448",
+      "size": 99137
+    },
+    "main/x86/musl-1.2.6-r2.apk": {
+      "sha256": "3af0584621a51826e6320ad294b09ebc42907186fd99c9571d9d7bbcf1589752",
+      "size": 415823
+    },
+    "main/x86/musl-utils-1.2.6-r2.apk": {
+      "sha256": "42679995654005a28ce85c5dce49afc1ca33b836cf38b590b666d8483f0a87c1",
+      "size": 13518
+    },
+    "main/x86/ncurses-terminfo-base-6.6_p20260516-r0.apk": {
+      "sha256": "dbb8268b7a8c9e98b109dc6bd1a989f846bd49b71a186308a2224f3195620501",
+      "size": 22173
+    },
+    "main/x86/openrc-0.63.2-r0.apk": {
+      "sha256": "6fe44cd6ba919109b4f3e821a550fef8040a9f432d1ad7fe16e47392b6898ce0",
+      "size": 223441
+    },
+    "main/x86/openrc-user-0.63.2-r0.apk": {
+      "sha256": "bd6a7cecf2e2b3f343949417ee0004d3c6993cd7cab28d1b9dd5f440f6fd6328",
+      "size": 6407
+    },
+    "main/x86/openssl-3.5.9-r0.apk": {
+      "sha256": "dc73b57886cd6565ca1753c6fc23bafab12e93d9c2cbd518265e68c195e398a9",
+      "size": 337097
+    },
+    "main/x86/partx-2.42.3-r1.apk": {
+      "sha256": "c16aa0ddcca091111b7e53ce60dbee9ff4a3e9d1e795eaa7c9b187c6a4d2783c",
+      "size": 22442
+    },
+    "main/x86/pciutils-3.15.0-r0.apk": {
+      "sha256": "264fb433f97a5880b323e56758cd6cc0a390c0f6257c429b39604dcaa8d8cb37",
+      "size": 74856
+    },
+    "main/x86/pciutils-libs-3.15.0-r0.apk": {
+      "sha256": "f0ab1c1dfd3356d8275a9bb8feb49e3eebc2bb5b2adbe5236063c7d3e60fd776",
+      "size": 32768
+    },
+    "main/x86/runuser-2.42.3-r1.apk": {
+      "sha256": "603be716c62d96f6906258390aebefe47c0ad433f71efcb1a107cbd2b8889f79",
+      "size": 20902
+    },
+    "main/x86/scanelf-1.3.9-r1.apk": {
+      "sha256": "e286945d1f186bb6ae225069b7e161639409764da3454fcc2211fa7a0c6cb858",
+      "size": 32662
+    },
+    "main/x86/setarch-2.42.3-r1.apk": {
+      "sha256": "95cc09838ad1d20da90beef19179837290d5ec2b30ec4a75e1a5a4850da0425d",
+      "size": 8910
+    },
+    "main/x86/setpriv-2.42.3-r1.apk": {
+      "sha256": "96c8e1a7427c500930900918ab281e2fd551beb19cb41a7b6e847704160b8f8b",
+      "size": 15917
+    },
+    "main/x86/sfdisk-2.42.3-r1.apk": {
+      "sha256": "63e1aebc1a6795c5467c3d613c0a6ef7d8c79520de1667f1da8185fe0571218a",
+      "size": 37493
+    },
+    "main/x86/skalibs-libs-2.15.0.0-r0.apk": {
+      "sha256": "fc48c928a0e1fc83447cde4e3d5afb2494a9f3cdb238bc21ef1f0cec1825af69",
+      "size": 95246
+    },
+    "main/x86/spirv-tools-1.4.341.0-r0.apk": {
+      "sha256": "d98d38961aa19154a165ae4607d1da3c642c49c64a57dd15998fcb3607f406b9",
+      "size": 1920570
+    },
+    "main/x86/ssl_client-1.37.0-r31.apk": {
+      "sha256": "74e8392e77f9cf74244a2659170139432b3e7ea2adc5b4169c63ba6dfc323eac",
+      "size": 5008
+    },
+    "main/x86/syslinux-6.04_pre1-r19.apk": {
+      "sha256": "8f23e6fe43b56a861fa4079ce677ca6f40d14edfac371a782ffb1fda189db784",
+      "size": 2078724
+    },
+    "main/x86/umount-2.42.3-r1.apk": {
+      "sha256": "dff66d6d2ee7c3ba7eb6341b7d0a3d3ea12f46671399d1744fee5cf607453237",
+      "size": 12062
+    },
+    "main/x86/usbutils-019-r0.apk": {
+      "sha256": "c258f99661e30e2b8aa5c4de71693bbc71136ed767ba6181e09cc6397f040f2b",
+      "size": 73209
+    },
+    "main/x86/util-linux-2.42.3-r1.apk": {
+      "sha256": "feb23e5fedae35d7ab650d83ecd9a39959320c569e1192afcae01beaaac50b2b",
+      "size": 1530
+    },
+    "main/x86/util-linux-misc-2.42.3-r1.apk": {
+      "sha256": "2e0d2d9d35edbb53146e1de63529af15c87f587d3448bf3dfcb6ced2f9ebaacd",
+      "size": 756744
+    },
+    "main/x86/util-linux-openrc-2.42.3-r1.apk": {
+      "sha256": "e495972eab6def66ea2f2790780e520ad3871de45f9cc6b09d26b8efc9a96aad",
+      "size": 2279
+    },
+    "main/x86/utmps-libs-0.1.3.3-r0.apk": {
+      "sha256": "8b75262151ebd102ecb1d89430e50ba93986fff4ecd61b57f14ba997f5816c76",
+      "size": 5796
+    },
+    "main/x86/uuidgen-2.42.3-r1.apk": {
+      "sha256": "b5254ff6b956a53e1faa2b6c9d04fa61dca76875fdc94a350ed7139166985e82",
+      "size": 6589
+    },
+    "main/x86/wayland-libs-client-1.25.0-r0.apk": {
+      "sha256": "d9135be575b078e6a47147a5d89f5b35beef9fabe90f0486a591dd4c5a2ab57b",
+      "size": 23158
+    },
+    "main/x86/wipefs-2.42.3-r1.apk": {
+      "sha256": "17ea96038d0bf2baaa7d46ef0db3ae8c180e0df88346f1df7c9ee6237fb639ca",
+      "size": 13533
+    },
+    "main/x86/wireless-regdb-2025.10.07-r0.apk": {
+      "sha256": "078bd7ba092c081142fba1f76b62cc7e48d1ced55911c931ee78462dff72b9ba",
+      "size": 8618
+    },
+    "main/x86/xz-libs-5.8.4-r0.apk": {
+      "sha256": "180d250c97ef95f7fec5d7190d64d39ebfbd8f6247c8b4d45a6295aa087372d2",
+      "size": 134098
+    },
+    "main/x86/zlib-1.3.2-r1.apk": {
+      "sha256": "39b98adc03ef82e3c895521a1329c0cb08357a6089dd1c212f7589501c3f63ec",
+      "size": 55303
+    },
+    "main/x86/zstd-libs-1.5.7-r2.apk": {
+      "sha256": "3808b97766907956179fe94ce61ead63220e957dc7789f81eb961a6e94dd8f61",
+      "size": 370035
+    }
+  },
+  "schema": 1
+}

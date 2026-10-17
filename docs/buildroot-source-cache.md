@@ -10,8 +10,10 @@ Prepare dependencies separately from image production. Preserve the original
 download archive bytes, upstream signature/hash review, licenses, and the
 configuration used to collect them. A usable cache contains the complete host
 and target dependency closure for the selected Buildroot configuration. Copying
-only the Linux archive is insufficient. This repository has no approved legacy
-source cache lock yet.
+only the Linux archive is insufficient. The initial 29-archive
+[source lock](../platform/buildroot/source-cache-lock.json) is approved as a
+controlled build input. Its [review scope](build-input-baseline.md#legacy-source-cache)
+does not establish a complete fresh image or release qualification.
 
 ## Prepare a candidate
 

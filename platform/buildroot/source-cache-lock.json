@@ -1,0 +1,208 @@
+{
+  "files": {
+    "acl/acl-2.3.2.tar.xz": {
+      "sha256": "97203a72cae99ab89a067fe2210c1cbf052bc492b479eca7d226d9830883b0bd",
+      "size": 371680
+    },
+    "attr/attr-2.5.2.tar.xz": {
+      "sha256": "f2e97b0ab7ce293681ab701915766190d607a1dba7fae8a718138150b700a70b",
+      "size": 334180
+    },
+    "autoconf-archive/autoconf-archive-2023.02.20.tar.xz": {
+      "sha256": "71d4048479ae28f1f5794619c3d72df9c01df49b1c628ef85fde37596dc31a33",
+      "size": 678184
+    },
+    "autoconf/autoconf-2.72.tar.xz": {
+      "sha256": "ba885c1319578d6c94d46e9b0dceb4014caafe2490e437a0dbca3f270a223f5a",
+      "size": 1389680
+    },
+    "automake/automake-1.16.5.tar.xz": {
+      "sha256": "f01d58cd6d9d77fbdca9eb4bbd5ead1988228fdb73d6f7a201f5f8d6b118b469",
+      "size": 1601740
+    },
+    "binutils/binutils-2.43.1.tar.xz": {
+      "sha256": "13f74202a3c4c51118b797a39ea4200d3f6cfbe224da6d1d95bb938480132dfd",
+      "size": 28174300
+    },
+    "busybox/busybox-1.37.0.tar.bz2": {
+      "sha256": "3311dff32e746499f4df0d5df04d7eb396382d7e108bb9250e7b519b837043a4",
+      "size": 2565764
+    },
+    "cmake/cmake-3.31.12.tar.gz": {
+      "sha256": "5f3fd5a54dfa65602bdbed64f981a72673cc19f2d304cc2955cf0dfa0cfd8272",
+      "size": 11715065
+    },
+    "expat/expat-2.8.4.tar.xz": {
+      "sha256": "656ae1cc8da3b4ea513bb4e254f33e6243938084c0ec6239da873376b09985a7",
+      "size": 519688
+    },
+    "fakeroot/fakeroot_1.36.orig.tar.gz": {
+      "sha256": "7fe3cf3daf95ee93b47e568e85f4d341a1f9ae91766b4f9a9cdc29737dea4988",
+      "size": 573364
+    },
+    "gcc/gcc-13.4.0.tar.xz": {
+      "sha256": "9c4ce6dbb040568fdc545588ac03c5cbc95a8dbf0c7aa490170843afb59ca8f5",
+      "size": 88530720
+    },
+    "gmp/gmp-6.3.0.tar.xz": {
+      "sha256": "a3c2b80201b89e68616f4ad30bc66aee4927c3ce50e33929ca819d5c43538898",
+      "size": 2094196
+    },
+    "kmod/kmod-33.tar.xz": {
+      "sha256": "dc768b3155172091f56dc69430b5481f2d76ecd9ccb54ead8c2540dbcf5ea9bc",
+      "size": 514428
+    },
+    "libffi/libffi-3.4.6.tar.gz": {
+      "sha256": "b0dea9df23c863a7a50e825440f3ebffabd65df1497108e5d437747843895a4e",
+      "size": 1391684
+    },
+    "libtool/libtool-2.4.6.tar.xz": {
+      "sha256": "7c87a8c2c8c0fc9cd5019e402bed4292462d00a718a7cd5f11218153bf28b26f",
+      "size": 973080
+    },
+    "libzlib/zlib-1.3.2.tar.xz": {
+      "sha256": "d7a0654783a4da529d1bb793b7ad9c3318020af77667bcae35f95d0e42a792f3",
+      "size": 1320064
+    },
+    "linux/linux-6.12.112.tar.xz": {
+      "sha256": "164dc9d1f6c93c61a15e1f071c48379b467f2b17c469cce7223471968208ed03",
+      "size": 148648524
+    },
+    "m4/m4-1.4.21.tar.xz": {
+      "sha256": "f25c6ab51548a73a75558742fb031e0625d6485fe5f9155949d6486a2408ab66",
+      "size": 2080016
+    },
+    "mpc/mpc-1.3.1.tar.gz": {
+      "sha256": "ab642492f5cf882b74aa0cb730cd410a81edcdbec895183ce930e706c1c759b8",
+      "size": 773573
+    },
+    "mpfr/mpfr-4.1.1.tar.xz": {
+      "sha256": "ffd195bd567dbaffc3b98b23fd00aad0537680c9896171e44fe3ff79e28ac33d",
+      "size": 1429836
+    },
+    "nasm/nasm-2.16.03.tar.xz": {
+      "sha256": "1412a1c760bbd05db026b6c0d1657affd6631cd0a63cddb6f73cc6d4aa616148",
+      "size": 1032388
+    },
+    "patchelf/patchelf-0.13.tar.bz2": {
+      "sha256": "4c7ed4bcfc1a114d6286e4a0d3c1a90db147a4c3adda1814ee0eee0f9ee917ed",
+      "size": 172499
+    },
+    "pkgconf/pkgconf-2.3.0.tar.xz": {
+      "sha256": "3a9080ac51d03615e7c1910a0a2a8df08424892b5f13b0628a204d3fcce0ea8b",
+      "size": 316160
+    },
+    "python3/Python-3.12.14.tar.xz": {
+      "sha256": "5c8462af5790baf43a321a1559dbe0db06d1be4300fb85fb53c40060668e548a",
+      "size": 20820300
+    },
+    "syslinux/syslinux-6.03.tar.xz": {
+      "sha256": "26d3986d2bea109d5dc0e4f8c4822a459276cf021125e8c9f23c3cca5d8c850e",
+      "size": 6855224
+    },
+    "uclibc/uClibc-ng-1.0.59.tar.xz": {
+      "sha256": "86c6f15971bfb14156850f2e36906dac5a69df7b3e688216d1aea09d2db54174",
+      "size": 2002020
+    },
+    "upx/upx-4.2.1-src.tar.xz": {
+      "sha256": "cc562ea7dbd8cec4505edea68736e04030ec5891c1e2a300e3c0d0eac6364479",
+      "size": 1278288
+    },
+    "util-linux/util-linux-2.40.4.tar.xz": {
+      "sha256": "5c1daf733b04e9859afdc3bd87cc481180ee0f88b5c0946b16fdec931975fb79",
+      "size": 8848216
+    },
+    "xorriso/xorriso-1.5.4.pl02.tar.gz": {
+      "sha256": "3ec7393d4a9dcbf5f74309c28a415f55227ec62770b95ae993ac8d7a3b152972",
+      "size": 2784580
+    }
+  },
+  "policy": {
+    ".go-version": {
+      "sha256": "6c075150045fda9bac31bb93cf5a0a0bc91622a75c1f10fb2971e6f994c6d4d6",
+      "size": 7
+    },
+    "platform/buildroot/Config.in": {
+      "sha256": "02c3b93b456b9f3de8207b40dde038920e07515a90c4084a5869819eaa3f60b2",
+      "size": 48
+    },
+    "platform/buildroot/base.lock": {
+      "sha256": "be4e09d1d7bdaf1faf554ce7732cbe3cdf78d977742f49738c1f9e6cfc40069c",
+      "size": 609
+    },
+    "platform/buildroot/board/legacy-x86/busybox.config": {
+      "sha256": "3a70a87fc331a622ae04a8a0244873fa89eead465c8488cb36841c14ce44f2d2",
+      "size": 17
+    },
+    "platform/buildroot/board/legacy-x86/isolinux.cfg": {
+      "sha256": "5047a6873b05fe9f17588aa468bc29fce8d827473cfd6525fdf5c974432dfb1e",
+      "size": 185
+    },
+    "platform/buildroot/board/legacy-x86/linux.config": {
+      "sha256": "8f38784e13628ee155ed72c1ae8d8853138b9a7a5db8bb66c4e05461def39eff",
+      "size": 1602
+    },
+    "platform/buildroot/board/legacy-x86/post-build.sh": {
+      "sha256": "67fe613132e0c4563cc8c2b2dac8b1701206a6487a5e5788a735fdf364b18cc6",
+      "size": 1080
+    },
+    "platform/buildroot/board/legacy-x86/rootfs-overlay/etc/init.d/S50hhpt": {
+      "sha256": "ed7cbeb208d0597bbaa08daa86afd56b1be85f646fd8d251d88109681e1ce716",
+      "size": 10895
+    },
+    "platform/buildroot/board/legacy-x86/rootfs-overlay/etc/inittab": {
+      "sha256": "b1582d7d9ef36fcc77f981edd7d1514f8bdb8741d89bd8ba35fec4b391154986",
+      "size": 577
+    },
+    "platform/buildroot/configs/hhpt_legacy_x86_defconfig": {
+      "sha256": "4b3d3f4598f10fd82ad196cde9d1d32e6274b36062a1812e7996c256288b7588",
+      "size": 1254
+    },
+    "platform/buildroot/external.desc": {
+      "sha256": "ad174d4b9d2f06490773afb9a2cabae4201a81198913e98d5e901aea6bf3a2fb",
+      "size": 59
+    },
+    "platform/buildroot/external.mk": {
+      "sha256": "5d753b87dc63a3466575bf71389f79a86dc990a9bdb7493f120de1abd1d4225d",
+      "size": 76
+    },
+    "platform/buildroot/host-patches/0001-legal-info-copy-sources.patch": {
+      "sha256": "a7889b702006a24afc6959af84a86f863ee389b7969080e40c73c7ae66d409da",
+      "size": 689
+    },
+    "platform/buildroot/patches/fakeroot/0001-libfakeroot-define-SEND_GET_XATTR-without-stat64.patch": {
+      "sha256": "eddffd7e3df6d86199f8c64bc16e59fa5e92e2bdb719dfc712697e38eab3d8dd",
+      "size": 969
+    },
+    "platform/buildroot/patches/gcc/0001-intl-do-not-redeclare-getcwd-after-unistd.patch": {
+      "sha256": "6049e8783b4574cf26a54478055a7cc86facb4c563e904a09ae1904450197b94",
+      "size": 175
+    },
+    "platform/buildroot/patches/linux-headers/linux-headers.hash": {
+      "sha256": "b069ff69760536e81e8eb98127ac5bde56bca71a64c22eae5e0a795ae006eb13",
+      "size": 164
+    },
+    "platform/buildroot/patches/linux/linux.hash": {
+      "sha256": "b069ff69760536e81e8eb98127ac5bde56bca71a64c22eae5e0a795ae006eb13",
+      "size": 164
+    },
+    "platform/buildroot/patches/uclibc/0001-getconf-support-musl-host-compilers.patch": {
+      "sha256": "74241ade312973c4b7167e4639540c28ab913a0472b1ceeadc9653996be847f5",
+      "size": 1259
+    },
+    "scripts/build/build-buildroot-image.sh": {
+      "sha256": "f86def35705930b1932ce106c57c858dc6060c78946a58245365b5b4efee145d",
+      "size": 10642
+    },
+    "scripts/build/build-go.sh": {
+      "sha256": "4fed176868334f2aef8b4b7d41c1d2e838e8770ee83db051c37a722dcf402f78",
+      "size": 3860
+    },
+    "scripts/build/buildroot_source_cache.py": {
+      "sha256": "15db60a9adda90836181d031aca46732517f65ca5d250f23d0fd73db18d899fe",
+      "size": 16374
+    }
+  },
+  "profile": "legacy-x86",
+  "schema": 1
+}

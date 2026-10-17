@@ -70,6 +70,16 @@ class PolicyTests(unittest.TestCase):
         with self.assertRaises(filtering.Rejected):
             filtering.validate_policy(policy)
 
+    def test_upstream_board_names_allow_spaces_and_commas_without_path_controls(self):
+        for name in ("brcm/BCM4345C0.raspberrypi,4-model-b.hcd.zst",
+                     "brcm/brcmfmac43340-sdio.ASUSTeK COMPUTER INC.-TF103C.txt.zst"):
+            self.assertEqual(filtering.safe_relative(name), name)
+        for name in ("../board, model", "brcm/../board, model", "brcm//board, model",
+                     "/brcm/board, model", "brcm/board\tmodel", "brcm/board\nmodel",
+                     "brcm/board\x00model", "brcm/board\\model", "brcm/board;command"):
+            with self.subTest(name=name), self.assertRaises(filtering.Rejected):
+                filtering.safe_relative(name)
+
     def test_architecture_policy_must_be_known_unique_and_sorted(self):
         for values in (["unknown"], ["x86", "x86"], ["x86_64", "x86"], "x86", [1]):
             with self.subTest(values=values):
@@ -140,6 +150,34 @@ class FilesystemTests(unittest.TestCase):
             self.assertTrue(os.path.lexists(self.root_fw / (row["path"] + ".zst")))
         self.assertTrue((self.mod_fw / "adaptec/rx.bin.zst").exists())
         self.assertFalse(self.receipt.exists())
+
+    def test_unrelated_board_names_and_aliases_are_preserved_exactly(self):
+        name = "brcm/brcmfmac43340-sdio.ASUSTeK COMPUTER INC.-TF103C.txt.zst"
+        alias = "brcm/board,vendor model.txt.zst"
+        data = b"unrelated board-specific configuration"
+        for folder in (self.root_fw, self.mod_fw):
+            path = folder / name
+            path.parent.mkdir()
+            path.write_bytes(data)
+            path.chmod(0o644)
+            (folder / alias).symlink_to(Path(name).name)
+        self.run_filter()
+        for folder in (self.root_fw, self.mod_fw):
+            self.assertEqual((folder / name).read_bytes(), data)
+            self.assertEqual((folder / alias).read_bytes(), data)
+            self.assertEqual(os.readlink(folder / alias), Path(name).name)
+
+    def test_board_name_does_not_hide_an_excluded_payload_or_alias(self):
+        path = self.root_fw / "board,vendor model.bin.zst"
+        path.write_bytes(b"reviewed-rx")
+        with self.assertRaises(filtering.Rejected):
+            self.run_filter()
+        self.require_no_removal()
+        path.unlink()
+        path.symlink_to("adaptec/rx.bin.zst")
+        with self.assertRaises(filtering.Rejected):
+            self.run_filter()
+        self.require_no_removal()
 
     def test_both_output_trees_filtered_including_root_only_firmware(self):
         result = self.run_filter()

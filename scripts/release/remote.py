@@ -18,6 +18,7 @@ import tempfile
 
 from release import ROOT, digest, expected_candidate, regular_files, require, strict_json, version_for
 from signatures import verify_detached
+from source_assets import part_count
 
 REPOSITORY = "HHSoftSoftware/hhsoft-pc-tester"
 
@@ -118,7 +119,8 @@ def check_state(command, tag, tag_object, state_file=None, candidate=None):
     current["tag_object"] = tag_object
     require(state_file is not None, "saved draft identity required")
     if command == "snapshot":
-        names = expected_candidate(version_for(tag))
+        version = version_for(tag)
+        names = expected_candidate(version, part_count(version, {a["name"] for a in current["assets"]}))
         require({a["name"] for a in current["assets"]} == names and len(current["assets"]) == len(names),
                 "draft asset set incomplete or unexpected")
         with state_file.open("x", encoding="utf-8", newline="\n") as stream:

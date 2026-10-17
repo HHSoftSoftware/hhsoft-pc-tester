@@ -100,9 +100,17 @@ Place only these files in an ignored candidate directory:
 | Each modern ISO plus `.packages.lock` | Exact package inventory |
 | Legacy ISO plus `.packages.csv` | Buildroot target package inventory |
 | Each ISO plus `.validation.json` | Reviewed boot and release checks |
+| Each ISO plus `.application.json` and `.inspection.json` | Exact source/application binding and independent finished-image inspection |
+| Each modern ISO plus `.firmware-exclusions.json` | Actual filter receipt matching committed policy |
+| `hhsoft-pc-tester-VERSION.sources-NN.tar` | One to 16 consecutive standard source parts, each at most 1 GiB |
+| `SOURCE-MANIFEST.json` | Exact part/member bytes, tagged project source, package provenance, source/license/build references and notice spans |
 | `THIRD-PARTY-NOTICES.txt` | Complete redistribution notices |
 | `SOURCE-OFFER.md` | Working source fulfillment information for included software |
 | `lab-evidence.json` | Sanitized, complete result records referenced by validation files |
+
+The [source asset and inspection contract](release-source-assets.md) defines
+the exact schemas, canonical tar layout, package coverage and privacy review.
+All source parts must be supplied; an external link alone is not a substitute.
 
 Each `.validation.json` uses this shape. Replace placeholder values with the
 actual source commit, image digest, and digests of supplied lab records. Keep
@@ -111,7 +119,7 @@ sanitized tool output and no hardware identifiers.
 
 ```json
 {
-  "schema": 1,
+  "schema": 2,
   "source_commit": "FULL_COMMIT",
   "image_sha256": "ISO_SHA256",
   "boot": {
@@ -123,7 +131,10 @@ sanitized tool output and no hardware identifiers.
     "image-secret-scan": {"status": "pass", "evidence_sha256": "LAB_RECORD_SHA256"},
     "license-and-source-review": {"status": "pass", "evidence_sha256": "LAB_RECORD_SHA256"},
     "offline-and-storage-safety": {"status": "pass", "evidence_sha256": "LAB_RECORD_SHA256"},
-    "report-integrity": {"status": "pass", "evidence_sha256": "LAB_RECORD_SHA256"}
+    "report-integrity": {"status": "pass", "evidence_sha256": "LAB_RECORD_SHA256"},
+    "source-content-scan": {"status": "pass", "evidence_sha256": "LAB_RECORD_SHA256"},
+    "application-inspection": {"status": "pass", "evidence_sha256": "LAB_RECORD_SHA256"},
+    "firmware-exclusion": {"status": "pass", "evidence_sha256": "LAB_RECORD_SHA256"}
   }
 }
 ```
@@ -133,6 +144,8 @@ legacy x86, and `uefi` for AArch64. Beta, release-candidate, and stable releases
 also require a `physical-qualification` review for every image. This preserves
 the real-hardware gate in the master checklist. IA32 UEFI and broad ARM laptop
 compatibility remain outside the initial alpha's claims.
+The example above is for a modern x86_64 image. Legacy validation omits only
+the `firmware-exclusion` review; its separate no-SSE2 boot evidence is required.
 
 The image-secret review must inspect extracted image contents, including
 initramfs, overlays, filesystems, embedded application metadata, and boot
@@ -140,12 +153,14 @@ configuration. Scanning compressed ISO bytes alone is insufficient. The
 locked-input review must establish what exact package bytes the build consumed;
 an inventory generated after resolving a live repository does not establish it.
 
-`lab-evidence.json` has exactly `schema: 1` and `records`, a mapping from each
+`lab-evidence.json` has exactly `schema: 2` and `records`, a mapping from each
 referenced SHA-256 to its complete result. Each result contains exactly:
-`schema: 1`, `source_commit`, `image_sha256`, `check`, `status: "pass"`,
-`tool`, `tool_version`, and `output`. Checks use `boot:bios`, `boot:uefi`,
+`schema: 2`, `source_commit`, `image_sha256`, `check`, `status: "pass"`,
+`tool`, `tool_version`, `output`, and `assets`. The exact `assets` digest map
+binds the supplied source and image-inspection records as specified in the
+[source contract](release-source-assets.md). Checks use `boot:bios`, `boot:uefi`,
 `boot:bios-nosse2`, or `review:` followed by the review name above. The final
-three fields are nonempty strings; retain sanitized evidence in `output`.
+three text fields are nonempty strings; retain sanitized evidence in `output`.
 Record hashes use the SHA-256 of ASCII JSON with sorted keys, no whitespace,
 and ASCII escapes (`release.record_digest`). Missing, changed, unrelated,
 and unreferenced records are rejected. A status flag and an arbitrary hash
@@ -163,14 +178,15 @@ python3 scripts/release/release.py check --candidate build/candidate \
   --tag v0.1.0-alpha.1 --commit FULL_COMMIT
 ```
 
-Sealing adds `release-evidence.json`, which binds every candidate file, the
+Sealing adds schema-2 `release-evidence.json`, which binds every candidate file, the
 source commit, and both platform locks. It validates supplied records but does
 not perform VM/hardware tests. Signing adds `release-evidence.json.asc`.
 The independent check verifies that signature against the configured lab key
 in an isolated keyring with automatic key retrieval disabled. The environment
 reviewer must inspect the actual evidence before approving any attestations.
-CI authenticates the lab's statement; it does not rerun the extracted-image
-secret scan or establish that a dishonest lab signer told the truth.
+CI authenticates the lab's statement and validates structured bindings and
+source-part bytes; it does not rerun the extracted-image or nested-source secret
+scan or establish that a dishonest lab signer told the truth.
 
 ## Publishing downloads
 

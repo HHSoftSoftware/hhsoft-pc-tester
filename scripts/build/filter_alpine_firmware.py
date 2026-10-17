@@ -47,7 +47,9 @@ def owned(info):
 
 def safe_relative(value):
     require(isinstance(value, str) and 0 < len(value) <= 1024)
-    require(re.fullmatch(r"[A-Za-z0-9_.+@=-]+(?:/[A-Za-z0-9_.+@=-]+)*", value) is not None)
+    # Upstream board names include commas and spaces. These names are passed
+    # only to descriptor-relative filesystem calls, never a shell or pattern.
+    require(re.fullmatch(r"[A-Za-z0-9_.+@=, -]+(?:/[A-Za-z0-9_.+@=, -]+)*", value) is not None)
     require(all(part not in (".", "..") for part in value.split("/")))
     require(len(value.split("/")) <= MAX_DEPTH)
     return value

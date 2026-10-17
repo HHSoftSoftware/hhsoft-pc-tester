@@ -7,6 +7,7 @@ from unittest import mock
 
 import release
 import remote
+import release_fixtures
 
 
 class ReleaseGateTests(unittest.TestCase):
@@ -14,41 +15,13 @@ class ReleaseGateTests(unittest.TestCase):
         self.temporary = tempfile.TemporaryDirectory()
         self.addCleanup(self.temporary.cleanup)
         self.root = Path(self.temporary.name)
-        self.candidate = self.root / "candidate"
-        self.candidate.mkdir()
         self.tag = "v0.1.0-alpha.1"
         self.version = "0.1.0-alpha.1"
         self.commit = "a" * 40
-        (self.root / "VERSION").write_text(self.version + "\n")
-        for platform in ("alpine", "buildroot"):
-            lock = self.root / f"platform/{platform}/base.lock"
-            lock.parent.mkdir(parents=True)
-            lock.write_text("fixture lock\n")
-        records = {}
-        for arch in release.ARCHES:
-            name = release.image_name(self.version, arch)
-            # Synthetic ISO header only: tests exercise publication validation,
-            # not bootability. Real release records come from the lab.
-            (self.candidate / name).write_bytes(b"\0" * 32769 + b"CD001" + b"\0" * 2048)
-            (self.candidate / (name + ".spdx")).write_text("SPDXVersion: SPDX-2.3\nPackageName: fixture\n")
-            suffix = ".packages.csv" if arch == "legacy-x86" else ".packages.lock"
-            (self.candidate / (name + suffix)).write_text("fixture inventory\n")
-            def result(check):
-                detail = {"schema": 1, "source_commit": self.commit,
-                          "image_sha256": release.digest(self.candidate / name), "check": check,
-                          "status": "pass", "tool": "synthetic test fixture", "tool_version": "1",
-                          "output": "Fixture only; no real boot or security validation."}
-                record_hash = release.record_digest(detail)
-                records[record_hash] = detail
-                return {"status": "pass", "evidence_sha256": record_hash}
-            validation = {"schema": 1, "source_commit": self.commit,
-                          "image_sha256": release.digest(self.candidate / name),
-                          "boot": {mode: result("boot:" + mode) for mode in release.BOOT_MODES[arch]},
-                          "reviews": {gate: result("review:" + gate) for gate in release.REVIEW_GATES}}
-            (self.candidate / (name + ".validation.json")).write_text(json.dumps(validation))
-        (self.candidate / "lab-evidence.json").write_text(json.dumps({"schema": 1, "records": records}))
-        for name in ("THIRD-PARTY-NOTICES.txt", "SOURCE-OFFER.md"):
-            (self.candidate / name).write_text("Fixture review content\n")
+        self.candidate, project, _payloads = release_fixtures.candidate(self.root, self.version, self.commit)
+        identity = mock.patch.object(release.source_assets, "project_inventory", return_value=project)
+        identity.start()
+        self.addCleanup(identity.stop)
         self.reseal()
         signature = mock.patch.object(release, "verify_detached")
         self.verifier = signature.start()
@@ -153,6 +126,54 @@ class ReleaseGateTests(unittest.TestCase):
         path.write_text('{"schema":1,"schema":1}')
         with self.assertRaises(ValueError):
             self.check()
+
+    def test_mutated_notices_cannot_reuse_authenticated_lab_asset_bindings(self):
+        path = self.candidate / "SOURCE-OFFER.md"
+        path.write_text("changed source instructions\n")
+        with self.assertRaises(ValueError):
+            self.reseal()
+        self.assertFalse((self.candidate / "release-evidence.json").exists())
+
+    def test_old_schema_and_unreferenced_lab_claims_fail(self):
+        path = self.candidate / "lab-evidence.json"
+        original = path.read_bytes()
+        lab = json.loads(original)
+        lab["schema"] = 1
+        release_fixtures.write_json(path, lab)
+        with self.assertRaises(ValueError):
+            self.reseal()
+        lab = json.loads(original)
+        lab["records"]["c" * 64] = next(iter(lab["records"].values()))
+        release_fixtures.write_json(path, lab)
+        with self.assertRaises(ValueError):
+            self.reseal()
+
+    def test_source_privacy_and_finished_firmware_checks_are_mandatory(self):
+        path = self.candidate / (release.image_name(self.version, "x86_64") + ".validation.json")
+        original = path.read_bytes()
+        for gate in ("source-content-scan", "application-inspection", "firmware-exclusion"):
+            record = json.loads(original)
+            del record["reviews"][gate]
+            release_fixtures.write_json(path, record)
+            with self.assertRaises(ValueError):
+                self.reseal()
+        path.write_bytes(original)
+
+    def test_metadata_scan_includes_new_records_but_never_treats_tar_as_text(self):
+        destination = self.root / "metadata"
+        release.metadata(self.candidate, destination)
+        names = {path.name for path in destination.iterdir()}
+        self.assertIn("SOURCE-MANIFEST.json", names)
+        self.assertIn(release.image_name(self.version, "x86") + ".firmware-exclusions.json", names)
+        self.assertFalse(any(name.endswith((".iso", ".tar")) for name in names))
+
+    def test_source_parts_are_covered_by_final_checksum_manifest(self):
+        for name in release.companion_names(self.version) | {"utilities.intoto.jsonl"}:
+            (self.candidate / name).write_text("fixture download")
+        release.manifest(self.candidate, self.tag, self.commit, self.root)
+        checksums = (self.candidate / "SHA256SUMS").read_text()
+        part = release.source_assets.part_names(self.version, 1)[0]
+        self.assertIn(release.digest(self.candidate / part) + "  " + part, checksums)
 
     def test_unsigned_tag_is_rejected(self):
         responses = [{"object": {"type": "tag", "sha": "c" * 40}},

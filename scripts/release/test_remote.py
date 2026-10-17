@@ -159,8 +159,22 @@ class RemoteReleaseTests(unittest.TestCase):
     def test_snapshot_will_not_overwrite_previous_approval_state(self):
         current = self.saved_state()
         with mock.patch.object(remote, "expected_candidate", return_value={"example.iso"}), \
+             mock.patch.object(remote, "part_count", return_value=1), \
              mock.patch.object(remote, "release_state", return_value=current), self.assertRaises(FileExistsError):
             remote.check_state("snapshot", self.tag, self.tag_object, self.state_file)
+
+    def test_snapshot_accepts_only_complete_sequential_source_part_set(self):
+        for count in (1, 2, 16):
+            names = remote.expected_candidate("0.1.0-alpha.1", count)
+            state = {"id": 1, "tag": self.tag, "assets": [{"name": name} for name in names]}
+            with mock.patch.object(remote, "release_state", return_value=state):
+                remote.check_state("snapshot", self.tag, self.tag_object, self.root / ("snapshot-" + str(count)))
+        names = remote.expected_candidate("0.1.0-alpha.1", 2)
+        names.remove("hhsoft-pc-tester-0.1.0-alpha.1.sources-01.tar")
+        for changed in (names, names | {"unreviewed.tar"}):
+            state = {"id": 1, "tag": self.tag, "assets": [{"name": name} for name in changed]}
+            with mock.patch.object(remote, "release_state", return_value=state), self.assertRaises(ValueError):
+                remote.check_state("snapshot", self.tag, self.tag_object, self.root / "invalid-snapshot")
 
 
 if __name__ == "__main__":

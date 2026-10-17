@@ -84,7 +84,9 @@ jobs:
           python3 scripts/release/remote.py snapshot --tag "$RELEASE_TAG" --commit "$SOURCE_COMMIT" --state build/release/state.json
           gh release download "$RELEASE_TAG" --repo "$GITHUB_REPOSITORY" --dir build/release/assets
           python3 scripts/release/release.py check --candidate build/release/assets --tag "$RELEASE_TAG" --commit "$SOURCE_COMMIT"
-      - name: Scan public image metadata with both engines
+      # Canonical tar/member bytes are checked by release.py. Nested upstream
+      # archives require the authenticated source-content-scan lab review.
+      - name: Scan public image and source metadata with both engines
         run: |
           python3 scripts/release/release.py metadata --candidate build/release/assets --tag "$RELEASE_TAG" --commit "$SOURCE_COMMIT" --destination build/release-metadata
           python3 scripts/security/scan_source.py --root build/release-metadata
@@ -180,7 +182,7 @@ jobs:
 
           Verify SHA256SUMS using checksums.intoto.jsonl and the documented GitHub attestation command, then verify the downloaded files against that manifest. The checksum signature records validation of externally built lab images. The companion utility archives also carry GitHub build provenance in utilities.intoto.jsonl.
 
-          See operator-guide.md, THIRD-PARTY-NOTICES.txt, and SOURCE-OFFER.md. The signed source tag and release-evidence.json identify the reviewed source and image validation records.
+          See operator-guide.md, THIRD-PARTY-NOTICES.txt, SOURCE-OFFER.md, and SOURCE-MANIFEST.json. Download every numbered sources tar part for the included source, licenses, configurations, patches and build scripts. The signed source tag and release-evidence.json identify the reviewed source and image validation records.
           EOF
           prerelease=false
           case "$RELEASE_TAG" in *-*) prerelease=true ;; esac

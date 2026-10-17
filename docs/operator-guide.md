@@ -2,7 +2,8 @@
 
 ## Current Release Status
 
-This guide covers the current `0.1.0-dev.0` implementation. It is an alpha
+This guide covers the `0.1.0-alpha.1` qualification target. Downloads remain
+unpublished until the release checks and approval pass. It is an alpha
 hardware-inspection appliance, not a complete certification, repair, data
 recovery, erase, or burn-in product. Use it only on equipment you are
 authorized to inspect.
@@ -22,7 +23,7 @@ boot USB.
 | Image suffix | Use for | Firmware | Current coverage and limits |
 | --- | --- | --- | --- |
 | `x86_64` | Most 64-bit Intel/AMD PCs | Legacy BIOS or native x64 UEFI | Preferred modern image; full current quick workflow and the broadest open-driver set |
-| `x86` | 32-bit PCs with CMOV and SSE2, and unusual IA32-UEFI PCs | Legacy BIOS or IA32 UEFI where firmware supports it | Modern workflow, but 32-bit firmware and driver compatibility varies |
+| `x86` | 32-bit PCs with CMOV and SSE2 | Legacy BIOS | Modern workflow; IA32 UEFI is not qualified or claimed for this alpha |
 | `legacy-x86` | Pentium MMX-class or newer x86 PCs without SSE2 | Legacy BIOS, or UEFI with CSM/legacy support enabled | Reduced-coverage, lower-assurance fallback; no deployment-key mode and no active graphics/display quick tests |
 | `aarch64` | ARMv8+ systems with standards-compliant AArch64 UEFI | Native AArch64 UEFI | Beta; generic QEMU boot is validated, but representative Snapdragon/X Elite hardware and device drivers are not yet qualified |
 

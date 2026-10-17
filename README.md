@@ -235,7 +235,7 @@ Linux binary using the repository `VERSION`. Use `x86`, `legacy-x86`, or
 floating point and is reserved for the minimal BIOS/CSM fallback. These are
 development binaries, not bootable release images.
 
-Every build first runs `scripts/security/scan-source.sh`. CI scans full Git
+Every build first runs the custom source scanner. CI scans full Git
 history too, including private identity terms, captured authentication codes,
 common credential forms, private-key headers, local paths/endpoints, and
 forbidden generated artifacts.

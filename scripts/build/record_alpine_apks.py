@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python3 -IB
 """Run apk and retain the exact archives consumed by successful image steps.
 
 Installed databases include dependency and install_if selections. Recording

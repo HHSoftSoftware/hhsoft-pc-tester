@@ -101,7 +101,7 @@ secrets, and report samples. The first push contains source and documentation
 only. GitHub release storage receives built images later; third-party upstream
 binaries are image inputs, not repository commits.
 
-`scripts/security/scan-source.sh` runs automatically before each application or
+The custom source scanner runs automatically before each application or
 image build. CI runs it with `--history` after a full-depth checkout, so terms
 such as the private owner identity and captured authentication codes fail the
 source gate even if removed from the current tree. It also rejects common token

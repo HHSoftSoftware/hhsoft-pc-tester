@@ -1,7 +1,17 @@
 #!/bin/sh
 set -eu
-PATH=/usr/sbin:/usr/bin:/sbin:/bin
-export PATH
+jobs=${HHPT_JOBS:-2}
+case $jobs in [1-9]|[1-9][0-9]) ;; *) echo 'HHPT_JOBS must be an integer from 1 to 64' >&2; exit 2 ;; esac
+test "$jobs" -le 64 || { echo 'HHPT_JOBS must be an integer from 1 to 64' >&2; exit 2; }
+exec /usr/bin/env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin HOME=/dev/null LC_ALL=C TZ=UTC \
+	GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null \
+	/bin/sh -s -- "$0" "$jobs" "$@" <<'HHPT_BUILD'
+set -eu
+umask 077
+script_path=$1
+jobs=$2
+shift 2
+test "$#" -ge 6 && test "$#" -le 8 || { echo 'expected six to eight legacy image arguments' >&2; exit 2; }
 
 source_archive=${1:?verified Buildroot source archive required}
 signed_manifest=${2:?Buildroot signed manifest required}
@@ -11,8 +21,8 @@ linux_signature=${5:?Linux release signature required}
 linux_release_key=${6:?Linux release public key required}
 output_root=${7:-build/images}
 work_root=${8:-build/buildroot-work}
-repository_root=$(CDPATH= cd -- "$(dirname "$0")/../.." && pwd)
-sh "$repository_root/scripts/security/scan-source.sh"
+repository_root=$(CDPATH= cd -- "$(dirname "$script_path")/../.." && pwd)
+/usr/bin/python3 -I -B "$repository_root/scripts/security/scan_source.py"
 verify_builder_host() {
 	env -i PATH="$PATH" /usr/bin/python3 -I -B \
 		"$repository_root/scripts/build/builder_host_manifest.py" gate \
@@ -20,6 +30,17 @@ verify_builder_host() {
 }
 # A missing or changed reviewed host blocks before extraction or output writes.
 verify_builder_host
+
+# Inputs keep their caller-relative meaning; work and output paths must be
+# absolute because upstream make changes its working directory.
+case $source_archive in /*) ;; *) source_archive=$PWD/$source_archive ;; esac
+case $signed_manifest in /*) ;; *) signed_manifest=$PWD/$signed_manifest ;; esac
+case $release_key in /*) ;; *) release_key=$PWD/$release_key ;; esac
+case $linux_archive in /*) ;; *) linux_archive=$PWD/$linux_archive ;; esac
+case $linux_signature in /*) ;; *) linux_signature=$PWD/$linux_signature ;; esac
+case $linux_release_key in /*) ;; *) linux_release_key=$PWD/$linux_release_key ;; esac
+case $output_root in /*) ;; *) output_root=$repository_root/$output_root ;; esac
+case $work_root in /*) ;; *) work_root=$repository_root/$work_root ;; esac
 
 lock_value() {
 	sed -n "s/^$1=//p" "$repository_root/platform/buildroot/base.lock"
@@ -49,6 +70,16 @@ for kernel_hash_file in linux/linux.hash linux-headers/linux-headers.hash; do
 done
 
 mkdir -p "$work_root"
+build_environment=$(mktemp -d "$work_root/environment.XXXXXX")
+HOME=$build_environment/home
+TMPDIR=$build_environment/tmp
+XDG_CONFIG_HOME=$build_environment/config
+XDG_CACHE_HOME=$build_environment/cache
+mkdir -p "$HOME" "$TMPDIR" "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME"
+export HOME TMPDIR XDG_CONFIG_HOME XDG_CACHE_HOME
+SOURCE_DATE_EPOCH=$(git -c safe.directory="$repository_root" -C "$repository_root" show -s --format=%ct HEAD)
+case $SOURCE_DATE_EPOCH in ''|*[!0-9]*) echo 'invalid source timestamp' >&2; exit 1 ;; esac
+export SOURCE_DATE_EPOCH
 gnupg_home=$(mktemp -d "$work_root/gnupg.XXXXXX")
 cleanup() {
 	rm -rf -- "$gnupg_home"
@@ -82,7 +113,7 @@ cp "$linux_archive" "$work_root/downloads/linux/$linux_source"
 sh "$repository_root/scripts/build/build-go.sh" legacy-x86 "$work_root/hhpt-bin"
 binary=$work_root/hhpt-bin/linux_legacy-x86/hhpt
 make -C "$source_root" O="$build_root" BR2_DL_DIR="$work_root/downloads" BR2_EXTERNAL="$repository_root/platform/buildroot" hhpt_legacy_x86_defconfig
-HHPT_BINARY=$binary make -C "$source_root" -j"${HHPT_JOBS:-2}" O="$build_root" BR2_DL_DIR="$work_root/downloads" BR2_EXTERNAL="$repository_root/platform/buildroot"
+HHPT_BINARY=$binary make -C "$source_root" -j"$jobs" O="$build_root" BR2_DL_DIR="$work_root/downloads" BR2_EXTERNAL="$repository_root/platform/buildroot"
 HHPT_BINARY=$binary make -C "$source_root" O="$build_root" BR2_DL_DIR="$work_root/downloads" BR2_EXTERNAL="$repository_root/platform/buildroot" legal-info
 
 artifact_name=hhsoft-pc-tester-$version_label-legacy-x86.iso
@@ -93,10 +124,11 @@ printf '"hhsoft-pc-tester","%s","BSD-3-Clause","LICENSE","NOASSERTION","https://
 cp "$build_root/legal-info/host-manifest.csv" "$output_root/$artifact_name.host-packages.csv"
 cp "$repository_root/LICENSE" "$output_root/$artifact_name.LICENSE.txt"
 (cd "$output_root" && sha256sum "$artifact_name" > "$artifact_name.sha256")
-python3 "$repository_root/scripts/build/write_buildroot_sbom.py" \
+/usr/bin/python3 -I -B "$repository_root/scripts/build/write_buildroot_sbom.py" \
     --manifest "$output_root/$artifact_name.packages.csv" \
     --image "$output_root/$artifact_name" \
     --version "$version_label" \
-    --epoch "${SOURCE_DATE_EPOCH:-$(git -C "$repository_root" show -s --format=%ct HEAD)}" \
+    --epoch "$SOURCE_DATE_EPOCH" \
     --output "$output_root/$artifact_name.spdx"
 verify_builder_host
+HHPT_BUILD

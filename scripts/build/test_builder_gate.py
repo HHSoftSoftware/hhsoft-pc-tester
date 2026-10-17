@@ -72,13 +72,14 @@ except (OSError, ValueError, TypeError, UnicodeError, RecursionError):
 '''
 
 
-# Source the unchanged wrapper so shell functions can replace expensive external
-# tools. Its $0 and arguments still identify the copied wrapper normally. The
-# real env/Python invocation, version parsing, and shell failure handling run.
+# The copied wrapper keeps its real unconditional environment boundary and
+# complete build body. Inject inert tool functions into that body's fixture
+# copy; caller-supplied shell functions cannot cross the real exec boundary.
 DRIVER = r'''
 set -eu
 fixture_root=FIXTURE_ROOT
 event() { printf '%s\n' "$1" >> "$fixture_root/events"; }
+phase() { /usr/bin/python3 -I -B "$fixture_root/repository/scripts/build/phase.py" "$@"; }
 command() {
     if test "$1" = -v && test -x "$fixture_root/tool-stubs/$2"; then
         printf '%s\n' "$fixture_root/tool-stubs/$2"
@@ -88,8 +89,18 @@ command() {
 }
 git() {
     case "$*" in
-        *'show -s --format=%ct'*) printf '1700000000\n' ;;
-        *) printf 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n' ;;
+        *'show -s --format=%ct'*)
+            test ! -f "$fixture_root/fail-source-time" || return 29
+            if test -f "$fixture_root/bad-source-time"; then printf 'invalid\n'; else printf '1700000000\n'; fi
+            ;;
+        *)
+            printf 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\n'
+            if test -f "$fixture_root/fail-aports-query"; then
+                last_argument=
+                for argument do last_argument=$argument; done
+                test "$last_argument" != "$(cat "$fixture_root/fail-aports-query")" || return 31
+            fi
+            ;;
     esac
 }
 sha256sum() {
@@ -101,6 +112,7 @@ cp() {
     /bin/cp "$@"
 }
 openssl() {
+    phase openssl
     destination=
     while test "$#" -gt 0; do
         if test "$1" = -out; then shift; destination=$1; fi
@@ -111,19 +123,30 @@ openssl() {
 }
 unshare() { test "$1" = --net; shift; "$@"; }
 gpg() {
+    phase gpg "$@"
     event signing-input-check
     case "$*" in *--list-keys*) printf 'fpr:::::::::BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB:\n' ;; esac
 }
 xz() { printf 'fixture archive stream\n'; }
 tar() { event archive-extraction; }
 make() {
+    phase make "$@"
     event build-image
     mkdir -p "$build_root/images" "$build_root/legal-info"
     printf 'synthetic image\n' > "$build_root/images/rootfs.iso9660"
     printf 'synthetic manifest\n' > "$build_root/legal-info/manifest.csv"
     printf 'synthetic host manifest\n' > "$build_root/legal-info/host-manifest.csv"
 }
-. "$0"
+'''
+
+PHASE = r'''import json
+import os
+from pathlib import Path
+import sys
+fixture = Path(__file__).resolve().parents[3]
+with (fixture / "phases.jsonl").open("a") as stream:
+    stream.write(json.dumps({"phase": sys.argv[1], "arguments": sys.argv[2:], "cwd": os.getcwd(),
+                            "environment": dict(os.environ)}) + "\n")
 '''
 
 
@@ -140,12 +163,17 @@ class BuilderGateIntegrationTests(unittest.TestCase):
         self.inputs = self.root / "inputs"
         self.inputs.mkdir()
         for name in ("build-alpine-image.sh", "build-buildroot-image.sh"):
-            self.write("scripts/build/" + name, (SOURCE / name).read_text())
+            content = (SOURCE / name).read_text()
+            boundary = "<<'HHPT_BUILD'\n"
+            self.assertEqual(content.count(boundary), 1)
+            fixture_tools = DRIVER.replace("FIXTURE_ROOT", shlex.quote(str(self.root)))
+            self.write("scripts/build/" + name, content.replace(boundary, boundary + fixture_tools))
         self.write("scripts/build/policy.py", (SOURCE / "builder_host_manifest.py").read_text())
         self.write("scripts/build/builder_host_manifest.py", ADAPTER)
         self.write(".go-version", "1.27.2\n")
         self.write("LICENSE", "Synthetic license fixture\n")
-        self.write("scripts/security/scan-source.sh", "#!/bin/sh\nexit 0\n")
+        self.write("scripts/security/scan_source.py", "# Synthetic source scanner.\n")
+        self.write("scripts/build/phase.py", PHASE)
         self.write("scripts/build/alpine_package_cache.py", "# Synthetic cache fixture; no host/package access.\n")
         self.write("scripts/build/write-alpine-sbom.sh", "#!/bin/sh\nexit 0\n")
         self.write("scripts/build/write_buildroot_sbom.py", "# Synthetic SBOM fixture.\n")
@@ -214,7 +242,8 @@ class BuilderGateIntegrationTests(unittest.TestCase):
         path = self.root / "events"
         return path.read_text().splitlines() if path.exists() else []
 
-    def invoke(self, profile, version="1.2.3-alpha.1", approved=True, cache=True, environment=None):
+    def invoke(self, profile, version="1.2.3-alpha.1", approved=True, cache=True, environment=None,
+               working_directory=None, override_arguments=None):
         # A fresh fixture per invocation prevents earlier output from hiding an
         # unintended build effect. Callers with a matrix use separate setUps.
         self.write("VERSION", version + "\n")
@@ -233,9 +262,10 @@ class BuilderGateIntegrationTests(unittest.TestCase):
             arguments += [str(self.output), str(self.work)]
         process_environment = {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LC_ALL": "C", "TZ": "UTC"}
         process_environment.update(environment or {})
-        driver = DRIVER.replace("FIXTURE_ROOT", shlex.quote(str(self.root)))
-        return subprocess.run(["/bin/sh", "-c", driver, str(script), *arguments],
-                              cwd=self.repository, env=process_environment, capture_output=True,
+        if override_arguments is not None:
+            arguments = override_arguments
+        return subprocess.run(["/bin/sh", str(script), *arguments],
+                              cwd=working_directory or self.repository, env=process_environment, capture_output=True,
                               text=True, timeout=15)
 
     def no_build_effects(self):
@@ -345,6 +375,89 @@ class BuilderGateIntegrationTests(unittest.TestCase):
             self.assertIn("build-image", self.events())
             self.assertEqual(self.events()[-1], "host-check")
         self.for_profiles(check)
+
+    def test_failed_aports_queries_cannot_pass_by_printing_matching_identifiers(self):
+        for query in ("v3.24.2", "v3.24.2^{commit}", "HEAD"):
+            with self.subTest(query=query):
+                self.setUp()
+                (self.root / "fail-aports-query").write_text(query + "\n")
+                result = self.invoke("alpine-image")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(len(self.records("verify")), 1)
+                self.no_build_effects()
+
+    def test_image_build_stages_discard_ambient_tools_configuration_and_user_state(self):
+        def check(profile):
+            poison = self.root / "unreviewed-user-state"
+            poison.mkdir()
+            environment = {name: str(poison) for name in (
+                "HOME", "TMPDIR", "XDG_CONFIG_HOME", "XDG_CACHE_HOME", "PYTHONHOME", "PYTHONPATH",
+                "MAKEFILES", "MAKEFLAGS", "GNUMAKEFLAGS", "MAKEOVERRIDES", "MFLAGS", "BASH_ENV", "ENV",
+                "CC", "CXX", "HOSTCC", "HOSTCXX", "CFLAGS", "CXXFLAGS", "LDFLAGS", "CONFIG_SITE",
+                "CPATH", "LIBRARY_PATH", "PKG_CONFIG_PATH", "OPENSSL_CONF", "OPENSSL_MODULES",
+                "GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM", "GIT_CONFIG_COUNT", "GOENV", "GOWORK",
+                "GOTOOLCHAIN", "GOFLAGS", "GOCACHEPROG")}
+            environment.update(SOURCE_DATE_EPOCH="123", HHPT_JOBS="3")
+            result = self.invoke(profile, environment=environment)
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            phases = [json.loads(line) for line in (self.root / "phases.jsonl").read_text().splitlines()]
+            self.assertIn("openssl" if profile == "alpine-image" else "make", [phase["phase"] for phase in phases])
+            for phase in phases:
+                actual = phase["environment"]
+                for name, value in environment.items():
+                    self.assertNotEqual(actual.get(name), value, (phase["phase"], name))
+                self.assertEqual(actual["PATH"], "/usr/sbin:/usr/bin:/sbin:/bin")
+                self.assertEqual(actual["GIT_CONFIG_GLOBAL"], "/dev/null")
+                for name in ("HOME", "TMPDIR", "XDG_CONFIG_HOME", "XDG_CACHE_HOME"):
+                    self.assertTrue(Path(actual[name]).is_relative_to(self.work), (phase["phase"], name))
+                if phase["phase"] == "make":
+                    self.assertEqual(actual["SOURCE_DATE_EPOCH"], "1700000000")
+            if profile == "buildroot-image":
+                self.assertTrue(any("-j3" in phase["arguments"] for phase in phases if phase["phase"] == "make"))
+        self.for_profiles(check)
+
+    def test_missing_or_invalid_source_timestamp_prevents_image_production(self):
+        for profile in PROFILES:
+            for failure in ("fail-source-time", "bad-source-time"):
+                with self.subTest(profile=profile, failure=failure):
+                    self.setUp()
+                    (self.root / failure).touch()
+                    result = self.invoke(profile)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertNotIn("build-image", self.events())
+
+    def test_legacy_inputs_follow_caller_directory_but_relative_outputs_follow_checkout(self):
+        foreign = self.root / "foreign-working-directory"
+        foreign.mkdir()
+        self.work = self.repository / "relative-work"
+        self.output = self.repository / "relative-output"
+        names = ("buildroot-2026.02.1.tar.xz", "buildroot.sign", "release-public-key",
+                 "linux-6.12.1.tar.xz", "linux-6.12.1.tar.sign", "linux-public-key")
+        arguments = ["../inputs/" + name for name in names] + ["relative-output", "relative-work"]
+        result = self.invoke("buildroot-image", working_directory=foreign, override_arguments=arguments)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        phases = [json.loads(line) for line in (self.root / "phases.jsonl").read_text().splitlines()]
+        make_calls = [phase["arguments"] for phase in phases if phase["phase"] == "make"]
+        self.assertEqual(len(make_calls), 3)
+        for call in make_calls:
+            self.assertEqual(call[call.index("-C") + 1], str(self.work / "source-2026.02.1"))
+            self.assertIn("O=" + str(self.work / "output-1.2.3-alpha.1-legacy-x86"), call)
+            self.assertIn("BR2_DL_DIR=" + str(self.work / "downloads"), call)
+        imported_keys = [Path(phase["arguments"][-1]).resolve() for phase in phases
+                         if phase["phase"] == "gpg" and "--import" in phase["arguments"]]
+        self.assertEqual(imported_keys, [self.inputs / "release-public-key", self.inputs / "linux-public-key"])
+        self.assertTrue((self.output / "hhsoft-pc-tester-1.2.3-alpha.1-legacy-x86.iso").is_file())
+        self.assertFalse((foreign / "relative-work").exists())
+        self.assertFalse((foreign / "relative-output").exists())
+
+    def test_invalid_parallelism_fails_before_host_or_build_steps(self):
+        for jobs in ("0", "-1", "65", "99999999999999999999", "2 -f extra", "02", "two"):
+            with self.subTest(jobs=jobs):
+                self.setUp()
+                result = self.invoke("buildroot-image", environment={"HHPT_JOBS": jobs})
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(self.records(), [])
+                self.no_build_effects()
 
 
 if __name__ == "__main__":

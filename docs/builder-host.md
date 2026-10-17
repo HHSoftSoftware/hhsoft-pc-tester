@@ -44,6 +44,39 @@ approved location is `platform/builder-hosts/PROFILE-HOSTARCH.json`, for example
 builder host, not the target ISO. Never create an approved file merely by
 renaming a candidate to make a failed release build proceed.
 
+## Controlled build execution
+
+The public Go, Alpine, and Buildroot build scripts start their build bodies in
+a new shell with a cleared environment and the fixed system tool path
+`/usr/sbin:/usr/bin:/sbin:/bin`. There is no caller flag to skip that boundary.
+Source scanning and Python build helpers use isolated Python execution. Make,
+compiler, shell, OpenSSL, Git, and Python overrides from the caller are removed
+before the tools run. Image preflight checks use an inaccessible user home;
+build stages use fresh HOME, temporary, configuration, and cache directories
+under their work root. Existing work and evidence are retained.
+
+The image scripts preserve their documented path arguments. Buildroot also
+accepts `HHPT_JOBS` as a canonical integer from 1 through 64, defaulting to 2;
+other build configuration comes from reviewed source and the selected host.
+Source timestamps come from the pinned aports commit for Alpine images and
+the source checkout commit for Buildroot. Caller timestamps are ignored.
+
+`build-go.sh` selects one absolute Go executable from the incoming PATH, then
+uses that same executable with cleared configuration. Its reported toolchain
+version must equal `.go-version`; automatic toolchain switching, module
+downloads, workspace discovery, and persisted Go settings are disabled. Tests
+and compilation run in the script's source checkout regardless of the caller's
+working directory. Relative output paths are relative to that checkout;
+absolute output paths remain explicit. Each invocation receives fresh build
+and module caches. Checksum sidecars contain only the artifact filename.
+
+The five utility targets retain their CPU baselines: x86 uses SSE2, legacy x86
+uses soft float, x86_64 and Windows x86_64 use AMD64 v1, and AArch64 uses ARMv8.0.
+These shell entrypoints require a Linux build host with `/usr/bin/python3`.
+CRLF-terminated version files are accepted, but embedded version lines are not.
+Install the matching Go toolchain during reviewed builder preparation; a
+different installed compiler must fail rather than download a replacement.
+
 ## Verification and limits
 
 The image wrappers select the approved path themselves and verify the actual
@@ -63,10 +96,13 @@ semantic configuration closure, reproducibility, or authentic upstream inputs.
 Changes made and reverted between checks are outside this comparison. The
 remaining work includes qualifying the full execution environment, pinning
 and authenticating its preparation inputs, and validating fresh offline builds
-and their resulting images. In particular, Buildroot/Go compiler and Make
-environment selection still needs qualification beyond this file inventory.
-The full builder-toolchain checklist item remains open until that work is
-complete.
+and their resulting images. Cleared environments and matching compiler versions
+do not authenticate tools or configuration on disk. The modern image still
+needs evidence binding its supplied application binary to reviewed source and
+compiler inputs. The legacy builder still needs a complete verified source
+closure and enforced offline execution; seeding the Linux archive alone does
+not provide those guarantees. The full builder-toolchain checklist item remains
+open until that work is complete.
 
 ## Validation evidence
 
@@ -82,3 +118,10 @@ while a changed manifest and a legacy host Go version differing from the
 repository pin were rejected. The candidate and detailed lab evidence remain
 local. These checks validate the gate's behavior; they do not approve that
 builder or complete the fresh offline image-build milestone.
+
+Additional copied-source fixtures exercise the real environment boundary with
+inert tools. They cover inherited configuration overrides, compilation from a
+foreign working directory, wrong installed Go versions, all five target
+baselines, fresh caches, source-scan and test failures, and checksum path
+privacy. These tests do not qualify the selected compiler or produce release
+images.

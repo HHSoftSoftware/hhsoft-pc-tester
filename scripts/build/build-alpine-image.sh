@@ -1,8 +1,13 @@
 #!/bin/sh
 set -eu
+exec /usr/bin/env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin HOME=/dev/null LC_ALL=C TZ=UTC \
+	GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null \
+	/bin/sh -s -- "$0" "$@" <<'HHPT_BUILD'
+set -eu
 umask 077
-PATH=/usr/sbin:/usr/bin:/sbin:/bin
-export PATH
+script_path=$1
+shift
+test "$#" -ge 4 && test "$#" -le 6 || { echo 'expected four to six Alpine image arguments' >&2; exit 2; }
 
 architecture=${1:-x86_64}
 output_root=${2:-build/images}
@@ -11,8 +16,8 @@ signing_key=${4:?signing key path required}
 work_root=${5:-/tmp/hhpt-image-work}
 package_cache=${6:-}
 case $architecture in x86|x86_64|aarch64) ;; *) echo unsupported image architecture >&2; exit 2 ;; esac
-repository_root=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
-sh "$repository_root/scripts/security/scan-source.sh"
+repository_root=$(CDPATH= cd -- "$(dirname -- "$script_path")/../.." && pwd)
+/usr/bin/python3 -I -B "$repository_root/scripts/security/scan_source.py"
 lock_file=$repository_root/platform/alpine/base.lock
 version_class=$(env -i PATH="$PATH" /usr/bin/python3 -I -B \
 	"$repository_root/scripts/build/builder_host_manifest.py" classify-version \
@@ -54,7 +59,7 @@ if test -n "$package_cache"; then
 	# apk's repository syntax requires an unambiguous local path.
 	case $package_cache in *[!A-Za-z0-9_./-]*) echo unsupported package cache path >&2; exit 2 ;; esac
 	package_lock=$repository_root/platform/alpine/package-locks/$architecture.json
-	python3 "$repository_root/scripts/build/alpine_package_cache.py" verify \
+	/usr/bin/python3 -I -B "$repository_root/scripts/build/alpine_package_cache.py" verify \
 		--cache "$package_cache" --arch "$architecture" --base-lock "$lock_file" --lock "$package_lock"
 	main_repository=$package_cache/main
 	community_repository=$package_cache/community
@@ -65,9 +70,12 @@ else
 		echo 'non-development images require a reviewed offline package cache' >&2; exit 1;
 	}
 fi
-test "$(git -c safe.directory="$aports_root" -C "$aports_root" rev-parse "$tag")" = "$tag_object"
-test "$(git -c safe.directory="$aports_root" -C "$aports_root" rev-parse "$tag^{commit}")" = "$commit"
-test "$(git -c safe.directory="$aports_root" -C "$aports_root" rev-parse HEAD)" = "$commit"
+actual_tag_object=$(git -c safe.directory="$aports_root" -C "$aports_root" rev-parse "$tag")
+test "$actual_tag_object" = "$tag_object"
+actual_tag_commit=$(git -c safe.directory="$aports_root" -C "$aports_root" rev-parse "$tag^{commit}")
+test "$actual_tag_commit" = "$commit"
+actual_aports_head=$(git -c safe.directory="$aports_root" -C "$aports_root" rev-parse HEAD)
+test "$actual_aports_head" = "$commit"
 (
 	cd "$aports_root"
 	sha256sum -c "$repository_root/platform/alpine/mkimage/upstream-scripts.sha256"
@@ -98,6 +106,12 @@ else
 fi
 tools=$(mktemp -d "$work_root/tools-$architecture.XXXXXX")
 mkdir -p "$tools/host-applets" "$tools/user-config/.abuild" "$tools/tmp" "$output_root" "$image_work/consumed-apks"
+HOME=$tools/user-config
+TMPDIR=$tools/tmp
+XDG_CONFIG_HOME=$tools/user-config/.config
+XDG_CACHE_HOME=$tools/cache
+mkdir -p "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME"
+export HOME TMPDIR XDG_CONFIG_HOME XDG_CACHE_HOME
 # Compare public encodings without exposing private key bytes to logs.
 openssl pkey -in "$signing_key" -pubout -out "$tools/derived.pub"
 openssl pkey -pubin -in "$tools/derived.pub" -outform DER -out "$tools/derived.der"
@@ -131,7 +145,9 @@ cp "$repository_root/platform/alpine/mkimage/mkimg.hhpt.sh" "$tools/mkimg.zz-hhp
 cp "$repository_root/platform/alpine/mkimage/genapkovl-hhpt.sh" "$tools/"
 chmod 0755 "$tools/mkimage.sh" "$tools/mkimage-yaml.sh" "$tools/genapkovl-hhpt.sh"
 
-export SOURCE_DATE_EPOCH=$(git -c safe.directory="$aports_root" -C "$aports_root" show -s --format=%ct "$commit")
+SOURCE_DATE_EPOCH=$(git -c safe.directory="$aports_root" -C "$aports_root" show -s --format=%ct "$commit")
+case $SOURCE_DATE_EPOCH in ''|*[!0-9]*) echo 'invalid source timestamp' >&2; exit 1 ;; esac
+export SOURCE_DATE_EPOCH
 (
 	cd "$tools"
 	set -- ./mkimage.sh \
@@ -170,9 +186,10 @@ export SOURCE_DATE_EPOCH=$(git -c safe.directory="$aports_root" -C "$aports_root
 	fi
 )
 if test -n "$package_cache"; then
-	python3 "$repository_root/scripts/build/alpine_package_cache.py" verify \
+	/usr/bin/python3 -I -B "$repository_root/scripts/build/alpine_package_cache.py" verify \
 		--cache "$package_cache" --arch "$architecture" --base-lock "$lock_file" --lock "$package_lock"
 fi
 image=$output_root/hhsoft-pc-tester-$product_version-$architecture.iso
 sh "$repository_root/scripts/build/write-alpine-sbom.sh" "$architecture" "$image" "$binary" "$image_work/consumed-apks"
 verify_builder_host
+HHPT_BUILD

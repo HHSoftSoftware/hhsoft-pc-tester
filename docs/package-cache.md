@@ -74,13 +74,21 @@ Other flags, write/fix operations, and multiple inputs are rejected. A native
 Alpine regression compares the real queries and dependency listing under
 fakeroot with ordinary scans, using bounded timeouts.
 
-Each invocation creates a fresh tool directory, empty HOME, and explicit
-abuild configuration. The image subprocess receives a controlled environment,
+Each invocation starts in a cleared environment with a fixed system PATH,
+then creates a fresh tool directory, empty HOME, temporary/cache directories,
+and explicit abuild configuration. Source scanning, cache checks, signing-tool
+preflight, and post-build steps share this controlled execution boundary.
+The image subprocess receives an explicit environment,
 including the supplied private/public signing-key paths; the wrapper verifies
 that the two keys match. User mkimage plugins, user abuild configuration, and
 ambient signing-key overrides are excluded. Development builds use fresh
 section directories too, retaining old work and evidence rather than reusing
 possibly stale package records.
+
+These entrypoints require a Linux builder and fixed `/usr/bin/python3`;
+ambient Python startup files and module paths are excluded. The controlled
+execution policy and its remaining qualification limits are described in
+[builder host inventory](builder-host.md#controlled-build-execution).
 
 During image creation, the apk wrapper retains successful fetch selections and
 the exact installed versions after target-root additions. The installed

@@ -1,8 +1,10 @@
 import copy
+import errno
 import json
 import os
 from pathlib import Path
 import stat
+import struct
 import subprocess
 import sys
 import tempfile
@@ -26,7 +28,7 @@ class HostManifestTests(unittest.TestCase):
         # Windows synthesizes executable bits from the .exe extension. These
         # files are never executed; Linux fixtures use the real required names.
         self.suffix = ".exe" if os.name == "nt" else ""
-        fixture_tools = {"alpine-image": ("sh", "mksquashfs"), "buildroot-image": ("sh", "go", "make")}
+        fixture_tools = {"alpine-image": ("sh", "go", "mksquashfs"), "buildroot-image": ("sh", "go", "make")}
         self.tools = {profile: tuple(tool + self.suffix for tool in tools)
                       for profile, tools in fixture_tools.items()}
         patcher = mock.patch.object(inventory, "PROFILE_TOOLS", self.tools)
@@ -149,22 +151,164 @@ class HostManifestTests(unittest.TestCase):
         self.go_version.write_text("1.27.3\n")
         self.rejected()
 
-    def test_legacy_builder_go_version_must_match_policy(self):
-        self.approve_fixture("buildroot-image")
-        self.verify("buildroot-image")
+    def test_every_image_compiler_package_must_match_the_go_policy(self):
+        for profile in ("alpine-image", "buildroot-image"):
+            self.approve_fixture(profile)
+            self.verify(profile)
         database = self.path("/lib/apk/db/installed")
-        database.write_bytes(database.read_bytes().replace(b"V:1.27.2-r0", b"V:1.26.9-r0"))
-        with self.assertRaisesRegex(ValueError, "host Go package"):
-            self.snapshot("buildroot-image")
-        # Modern image assembly uses a separately supplied application binary.
-        # Its host Go is still inventoried, but is not the compiler for that step.
-        self.snapshot("alpine-image")
+        original = database.read_bytes()
+        for invalid in (original.replace(b"V:1.27.2-r0", b"V:1.26.9-r0"),
+                        original.replace(b"P:go\nV:1.27.2-r0\nA:x86_64\n\n", b"")):
+            database.write_bytes(invalid)
+            for profile in ("alpine-image", "buildroot-image"):
+                with self.subTest(profile=profile), self.assertRaisesRegex(ValueError, "host Go package"):
+                    self.snapshot(profile)
+
+    def test_modern_image_requires_an_inventoried_go_executable(self):
+        self.path("/usr/bin/go" + self.suffix).unlink()
+        with self.assertRaisesRegex(ValueError, "required builder tool missing"):
+            self.snapshot("alpine-image")
 
     def test_public_configuration_change_rejected(self):
         self.write("/etc/mkinitfs/mkinitfs.conf", b'features="base ext4"\n')
         self.approve_fixture()
         self.write("/etc/mkinitfs/mkinitfs.conf", b'features="base ext4 nvme"\n')
         self.rejected()
+
+    def test_selected_global_config_presence_and_bytes_are_bound(self):
+        ordinary = ("/etc/wgetrc", "/usr/local/etc/wgetrc",
+                    "/etc/gnupg/common.conf", "/etc/gnupg/gpg.conf")
+        loaders = ("/etc/ld-musl-x86_64.path", "/etc/ld-musl-i386.path", "/etc/ld-musl-aarch64.path")
+        for name in ordinary + loaders:
+            with self.subTest(config=name):
+                self.setUp()
+                self.assertEqual(self.snapshot()["files"][name], {"type": "absent"})
+                content = b"/lib:/usr/lib\n" if name in loaders else b"# fixture config A\n"
+                path = self.write(name, content)
+                self.rejected()
+                self.approve_fixture()
+                self.verify()
+                changed = b"/usr/lib:/lib\n" if name in loaders else b"# fixture config B\n"
+                path.write_bytes(changed)
+                self.rejected()
+
+    def test_new_dynamic_loader_name_is_still_detected(self):
+        name = "/etc/ld-musl-fixture.path"
+        path = self.write(name, b"/lib:/usr/lib\n")
+        self.rejected()
+        self.approve_fixture()
+        self.verify()
+        self.assertEqual(self.snapshot()["files"][name]["type"], "file")
+        path.unlink()
+        self.rejected()
+
+    def set_fixture_xattr(self, path, name="user.hhpt-fixture", value=b"synthetic metadata"):
+        try:
+            os.setxattr(path, name, value, follow_symlinks=False)
+        except OSError as error:
+            if error.errno in {errno.ENOTSUP, errno.EOPNOTSUPP, errno.EPERM, errno.EACCES}:
+                self.skipTest("fixture filesystem does not permit this extended attribute")
+            raise
+
+    @unittest.skipUnless(inventory.LINUX_PINNING and hasattr(os, "setxattr"),
+                         "native Linux extended attribute fixture required")
+    def test_file_directory_parent_and_policy_xattrs_fail_without_reading_values(self):
+        paths = (self.path("/usr/lib/libfixture.so.1"), self.path("/usr/lib"),
+                 self.path("/etc"), self.root, self.base)
+        for path in paths:
+            with self.subTest(kind="file" if path.is_file() else "directory"):
+                content = path.read_bytes() if path.is_file() else None
+                mode = stat.S_IMODE(path.stat().st_mode)
+                self.set_fixture_xattr(path)
+                try:
+                    self.assertEqual(stat.S_IMODE(path.stat().st_mode), mode)
+                    if content is not None:
+                        self.assertEqual(path.read_bytes(), content)
+                    with mock.patch.object(inventory.os, "getxattr", side_effect=AssertionError("attribute values must not be read")):
+                        with self.assertRaisesRegex(ValueError, "extended attributes"):
+                            self.snapshot()
+                finally:
+                    os.removexattr(path, "user.hhpt-fixture", follow_symlinks=False)
+                self.verify()
+
+    @unittest.skipUnless(inventory.LINUX_PINNING and hasattr(os, "setxattr"),
+                         "native Linux POSIX ACL fixture required")
+    def test_named_user_acl_is_rejected_even_when_bytes_and_unix_mode_match(self):
+        path = self.path("/usr/lib/libfixture.so.1")
+        original = path.read_bytes(), stat.S_IMODE(path.stat().st_mode)
+        # Version 2 POSIX ACL: owner rw, named synthetic user denied, group r,
+        # mask r, other r. Named-user access changes without changing this
+        # fixture's ordinary 0644 mode or file bytes.
+        entries = ((1, 6, 0xffffffff), (2, 0, 12345), (4, 4, 0xffffffff),
+                   (16, 4, 0xffffffff), (32, 4, 0xffffffff))
+        acl = struct.pack("<I", 2) + b"".join(struct.pack("<HHI", *entry) for entry in entries)
+        self.set_fixture_xattr(path, "system.posix_acl_access", acl)
+        self.assertEqual((path.read_bytes(), stat.S_IMODE(path.stat().st_mode)), original)
+        with mock.patch.object(inventory.os, "getxattr", side_effect=AssertionError("ACL values must not be read")):
+            with self.assertRaisesRegex(ValueError, "extended attributes"):
+                self.snapshot()
+
+    @unittest.skipUnless(inventory.LINUX_PINNING and hasattr(os, "setxattr"),
+                         "native Linux no-follow extended attribute fixture required")
+    def test_private_link_metadata_does_not_inspect_target_attributes(self):
+        target = self.path("/etc/ssl/private")
+        target.mkdir(parents=True)
+        self.set_fixture_xattr(target)
+        self.symlink("/etc/ssl/private", "/usr/lib/ssl/private", directory=True)
+        original = inventory.os.listxattr
+        inspected_links = []
+
+        def inspect(path, *args, **kwargs):
+            if isinstance(path, str):
+                self.assertTrue(path.startswith("/proc/self/fd/"))
+                self.assertIs(kwargs.get("follow_symlinks"), False)
+                inspected_links.append(path)
+            return original(path, *args, **kwargs)
+
+        with mock.patch.object(inventory.os, "listxattr", side_effect=inspect), \
+                mock.patch.object(inventory.os, "getxattr", side_effect=AssertionError("attribute values must not be read")):
+            self.approve_fixture()
+            self.verify()
+        self.assertTrue(inspected_links)
+        self.assertNotIn("/etc/ssl/private", self.snapshot()["files"])
+
+    @unittest.skipUnless(inventory.LINUX_PINNING, "native Linux symlink metadata fixture required")
+    def test_unsupported_or_nonempty_symlink_attributes_fail_closed_and_redacted(self):
+        self.symlink("/etc/ssl/private", "/usr/lib/ssl/private", directory=True)
+        original = inventory.os.listxattr
+        for unsupported in (False, True):
+            with self.subTest(unsupported=unsupported):
+                def inspect(path, *args, **kwargs):
+                    if isinstance(path, str):
+                        self.assertIs(kwargs.get("follow_symlinks"), False)
+                        if unsupported:
+                            raise NotImplementedError("private-attribute-sentinel")
+                        return ["user.private-attribute-sentinel"]
+                    return original(path, *args, **kwargs)
+                with mock.patch.object(inventory.os, "listxattr", side_effect=inspect):
+                    with self.assertRaises(ValueError) as failure:
+                        self.snapshot()
+                self.assertNotIn("private-attribute-sentinel", str(failure.exception))
+
+    @unittest.skipUnless(inventory.LINUX_PINNING, "native Linux symlink replacement fixture required")
+    def test_symlink_replacement_during_metadata_check_is_rejected_without_target_io(self):
+        link = self.symlink("/etc/ssl/private", "/usr/lib/ssl/private", directory=True)
+        original = inventory.os.listxattr
+        replaced = False
+
+        def inspect(path, *args, **kwargs):
+            nonlocal replaced
+            if isinstance(path, str) and not replaced:
+                self.assertIs(kwargs.get("follow_symlinks"), False)
+                replaced = True
+                link.unlink()
+                os.mkfifo(link)
+            return original(path, *args, **kwargs)
+
+        with mock.patch.object(inventory.os, "listxattr", side_effect=inspect):
+            with self.assertRaisesRegex(ValueError, "metadata changed"):
+                self.snapshot()
+        self.assertTrue(replaced)
 
     def test_unsupported_execution_configuration_rejected(self):
         for name in ("/etc/ld.so.preload", "/etc/ld.so.conf", "/etc/gitconfig", "/etc/apk/extra.conf"):

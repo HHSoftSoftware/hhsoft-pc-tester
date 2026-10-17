@@ -50,16 +50,23 @@ sh scripts/build/build-alpine-image.sh x86_64 build/images \
 ```
 
 The wrapper verifies the cache before and after image creation, refuses reused
-apk roots, uses only local repositories, and runs `mkimage` in a new network
-namespace with no external network interfaces. Normal apk signature verification
+apk roots, uses only local repositories, and runs both application compilation
+and `mkimage` in new network namespaces with no external network interfaces.
+Failure to create a namespace stops the build without an online retry.
+Normal apk signature verification
 still applies. This needs Linux with `unshare --net` permitted and Python 3.11
 or newer. The apk wrapper also passes `--no-network` in offline mode.
 
 Install builder tools during the separate networked builder preparation step.
 The build requires `apk`, `fakeroot`, `update-kernel`, `mkinitfs`, `mksquashfs`,
 `modinfo`, `depmod`, `openssl`, `xorrisofs`, `grub-mkimage`, `mformat`, `mcopy`,
-`scanelf`, `lddtree`, and `python3`, plus the normal Alpine abuild, BusyBox,
+`scanelf`, `lddtree`, `go`, and `python3`, plus the normal Alpine abuild, BusyBox,
 archive, and shell tools.
+Install the Go version pinned in `.go-version`; the builder must not download
+a substitute compiler. The image invocation compiles a fresh application from
+a standalone committed source checkout. Existing `build/bin` outputs are never
+used. See [modern application binding](modern-application-binding.md) for the
+source, binary, and overlay receipt checks and their qualification limits.
 In particular, install the `mkinitfs`, `squashfs-tools`, and `kmod` packages
 before disconnecting the builder. The wrapper starts a real fakeroot session,
 which makes upstream `update-kernel` skip its host-package installation and

@@ -20,15 +20,22 @@ env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin LC_ALL=C TZ=UTC \
 
 For the legacy image use `--profile buildroot-image` and
 `--base-lock platform/buildroot/base.lock`. The installed Alpine Go package
-must match `.go-version` for that profile. The modern image profile consumes
-an application binary built separately; its host inventory does not attest
-to how that binary was produced.
+must match `.go-version` for both profiles. Modern images compile their application
+from committed source during the image invocation, using that pinned compiler.
+The [application binding record](modern-application-binding.md) identifies the
+source and resulting binary; host qualification remains a separate review.
 
 The inventory records the complete installed APK database digest, package
 identities and dependency fields, fixed-path tool resolution, and the selected
 runtime and public configuration trees. File digests, sizes, ownership,
 permissions, symlink targets, and hardlink groups are compared. It also binds
 the base lock, Go version policy, and inventory policy source.
+The bounded profile rejects nonempty extended attributes, including file
+capabilities and POSIX ACLs; attribute values are never collected. Metadata
+inspection must be supported on the production Linux host. Wget and GnuPG's
+fixed global configuration files and the x86, x86_64, and AArch64 musl loader
+path files are observed even when absent, so later appearance changes the
+inventory. Supported additional musl loader paths are inventoried too.
 
 Candidate creation does not execute installed tools or source configuration.
 It excludes user homes, work directories, private key storage, and host kernel
@@ -97,9 +104,10 @@ Changes made and reverted between checks are outside this comparison. The
 remaining work includes qualifying the full execution environment, pinning
 and authenticating its preparation inputs, and validating fresh offline builds
 and their resulting images. Cleared environments and matching compiler versions
-do not authenticate tools or configuration on disk. The modern image still
-needs evidence binding its supplied application binary to reviewed source and
-compiler inputs. The legacy wrapper now requires a reviewed
+do not authenticate tools or configuration on disk. The modern application
+binding checks committed source, fresh compilation, and the bytes copied into
+the overlay; independent extraction of the finished ISO and approval of its
+source/compiler provenance remain required. The legacy wrapper requires a reviewed
 [offline source cache](buildroot-source-cache.md) and network-isolated Make
 phases for non-development builds. Its complete source closure and fresh
 offline image still need qualification; seeding the Linux archive alone does
@@ -127,3 +135,9 @@ foreign working directory, wrong installed Go versions, all five target
 baselines, fresh caches, source-scan and test failures, and checksum path
 privacy. These tests do not qualify the selected compiler or produce release
 images.
+
+The stricter inventory profile passed 42 native Alpine tests with no skips.
+These include both-profile Go requirements, changed global configuration,
+previously absent configuration appearing, added extended attributes and ACLs,
+private link targets, and link replacement with a FIFO during metadata checks.
+Passing these fixtures does not approve a candidate host manifest.

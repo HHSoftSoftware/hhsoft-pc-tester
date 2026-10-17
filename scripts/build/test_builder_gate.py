@@ -3,6 +3,8 @@
 The copied policy keeps its CLI, version classification, and approved-path
 selection. Only host observation and manifest comparison are fixture boundaries;
 their independent file/security tests live in test_builder_host_manifest.py.
+Application source authentication and byte receipts use a small fixture double;
+raw committed-object and binary checks live in test_modern_image_binding.py.
 Image production uses inert sentinels confined to a temporary directory. The
 legacy source extraction, reviewed host patch, and legal-info copy helper run
 against a small synthetic source tree using the real tools.
@@ -26,7 +28,7 @@ SOURCE = Path(__file__).resolve().parent
 PROFILES = ("alpine-image", "buildroot-image")
 TOOLS = ("apk", "fakeroot", "update-kernel", "mkinitfs", "mksquashfs", "modinfo",
          "depmod", "openssl", "xorrisofs", "grub-mkimage", "mformat", "mcopy",
-         "python3", "scanelf", "lddtree")
+         "python3", "scanelf", "lddtree", "go")
 LEGACY_VERSION = "2025.02.18"
 HOST_PATCH = "platform/buildroot/host-patches/0001-legal-info-copy-sources.patch"
 UPSTREAM_HELPER_HASH = "521e9b58758395b7eb5d9109a42d5db972f3cc5f3b117f0a43c1562295d20384"
@@ -103,6 +105,44 @@ except (OSError, ValueError, TypeError, UnicodeError, RecursionError):
 '''
 
 
+BINDING = r'''import argparse
+import hashlib
+import json
+from pathlib import Path
+import shutil
+
+parser = argparse.ArgumentParser()
+parser.add_argument("command", choices=("prepare", "complete", "verify"))
+parser.add_argument("--repository", type=Path, required=True)
+parser.add_argument("--work", type=Path, required=True)
+parser.add_argument("--arch", choices=("x86", "x86_64", "aarch64"), required=True)
+parser.add_argument("--overlay", action="store_true")
+args = parser.parse_args()
+fixture = args.repository.parent
+with (fixture / "events").open("a") as stream:
+    stream.write("binding-" + args.command + "\n")
+binary = args.work / "application-bin" / ("linux_" + args.arch) / "hhpt"
+record = args.work / "application-binding.json"
+version = (args.repository / "VERSION").read_text()
+if args.command == "prepare":
+    source = args.work / "application-source"
+    (source / "scripts/build").mkdir(parents=True)
+    (source / "scripts/security").mkdir()
+    shutil.copyfile(args.repository / "scripts/build/build-go.sh", source / "scripts/build/build-go.sh")
+    shutil.copyfile(args.repository / "scripts/security/scan_source.py", source / "scripts/security/scan_source.py")
+    shutil.copyfile(args.repository / "VERSION", source / "VERSION")
+elif args.command == "complete":
+    record.write_text(json.dumps({"architecture": args.arch, "version": version,
+                                "sha256": hashlib.sha256(binary.read_bytes()).hexdigest()}))
+else:
+    value = json.loads(record.read_text())
+    assert value == {"architecture": args.arch, "version": version,
+                     "sha256": hashlib.sha256(binary.read_bytes()).hexdigest()}
+    if args.overlay:
+        assert (args.work / "application-overlay.sha256").read_text() == value["sha256"] + "\n"
+'''
+
+
 # The copied wrapper keeps its real unconditional environment boundary and
 # complete build body. Inject inert tool functions into that body's fixture
 # copy; caller-supplied shell functions cannot cross the real exec boundary.
@@ -119,6 +159,10 @@ command() {
     fi
 }
 git() {
+    case "$script_path" in */build-alpine-image.sh)
+        test "${GIT_NO_LAZY_FETCH:-}" = 1 && test "${GIT_NO_REPLACE_OBJECTS:-}" = 1 || return 92
+        ;;
+    esac
     case "$*" in
         *'show -s --format=%ct'*)
             test ! -f "$fixture_root/fail-source-time" || return 29
@@ -137,6 +181,10 @@ git() {
 sha256sum() {
     if test "$1" = -c; then return 0; fi
     /bin/sh -c 'sha256sum "$@"' fixture-hash "$@"
+    case "$1" in */application-bin/*/hhpt)
+        test ! -f "$fixture_root/fail-application-hash" || return 86
+        ;;
+    esac
     case "$1" in */support/scripts/hardlink-or-copy)
         helper_hash_calls=0
         if test -f "$fixture_root/helper-hash-calls"; then helper_hash_calls=$(cat "$fixture_root/helper-hash-calls"); fi
@@ -168,6 +216,7 @@ unshare() {
     event network-isolation
     test ! -f "$fixture_root/fail-network-isolation" || return 77
     if test "$1" = make && test -f "$fixture_root/fail-build-namespace"; then return 78; fi
+    if test "$1" = /bin/sh && test -f "$fixture_root/fail-application-namespace"; then return 79; fi
     HHPT_FIXTURE_NETWORK_ISOLATED=1 "$@"
 }
 gpg() {
@@ -241,6 +290,7 @@ class BuilderGateIntegrationTests(unittest.TestCase):
             self.write("scripts/build/" + name, content.replace(boundary, boundary + fixture_tools))
         self.write("scripts/build/policy.py", (SOURCE / "builder_host_manifest.py").read_text())
         self.write("scripts/build/builder_host_manifest.py", ADAPTER)
+        self.write("scripts/build/modern_image_binding.py", BINDING)
         self.write("scripts/build/buildroot_source_cache.py", (SOURCE / "buildroot_source_cache.py").read_text())
         self.write(HOST_PATCH, (SOURCE.parents[1] / HOST_PATCH).read_text())
         self.write(".go-version", "1.27.2\n")
@@ -250,8 +300,13 @@ class BuilderGateIntegrationTests(unittest.TestCase):
         self.write("scripts/build/alpine_package_cache.py", "# Synthetic cache fixture; no host/package access.\n")
         self.write("scripts/build/write-alpine-sbom.sh", "#!/bin/sh\nexit 0\n")
         self.write("scripts/build/write_buildroot_sbom.py", "# Synthetic SBOM fixture.\n")
-        self.write("scripts/build/build-go.sh", '#!/bin/sh\nmkdir -p "$2/linux_legacy-x86"\n'
-                   'printf "synthetic executable\\n" > "$2/linux_legacy-x86/hhpt"\n')
+        self.write("scripts/build/build-go.sh", '#!/bin/sh\nset -eu\nfixture=' + shlex.quote(str(self.root)) + '\n'
+                   'printf "build-application\\n" >> "$fixture/events"\n'
+                   '/usr/bin/python3 -I -B "$fixture/repository/scripts/build/phase.py" application "$@"\n'
+                   'version=$(cat "$(dirname "$0")/../../VERSION")\n'
+                   'mkdir -p "$2/linux_$1"\n'
+                   'printf "fresh application target=%s version=%s\\n" "$1" "$version" > "$2/linux_$1/hhpt"\n'
+                   'chmod 755 "$2/linux_$1/hhpt"\n')
         for name in ("record_alpine_apks.py", "scanelf-readonly.sh", "fakeroot-apkovl.sh"):
             self.write("scripts/build/" + name, "#!/bin/sh\nexit 97\n")
         for name in ("mkimg.hhpt.sh", "genapkovl-hhpt.sh"):
@@ -260,7 +315,7 @@ class BuilderGateIntegrationTests(unittest.TestCase):
         self.write("platform/alpine/base.lock", "BRANCH=v3.24\nAPORTS_TAG=v3.24.2\n"
                    "APORTS_TAG_OBJECT=" + "a" * 40 + "\nAPORTS_COMMIT=" + "a" * 40 + "\n")
         self.write("platform/alpine/package-locks/aarch64.json", "{}\n")
-        self.write("build/bin/linux_aarch64/hhpt", "synthetic executable\n", 0o755)
+        self.write("build/bin/linux_aarch64/hhpt", "POISON: unrelated old application\n", 0o755)
         self.aports = self.inputs / "aports"
         (self.aports / "scripts").mkdir(parents=True)
         for name in ("mkimage.sh", "mkimage-yaml.sh", "mkimg.base.sh", "mkimg.standard.sh"):
@@ -300,6 +355,13 @@ class BuilderGateIntegrationTests(unittest.TestCase):
         (self.root / "tool-stubs/fakeroot").write_text(
             "#!/bin/sh\nset -eu\nfixture=" + shlex.quote(str(self.root)) + "\n"
             'printf "build-image\\n" >> "$fixture/events"\n'
+            'cp "$HHPT_BINARY" "$fixture/image-application"\n'
+            'printf "%s\\n" "$HHPT_BINARY" > "$fixture/image-application-path"\n'
+            'actual=$(sha256sum "$HHPT_BINARY"); actual=${actual%% *}\n'
+            'test "$actual" = "$HHPT_BINARY_SHA256"\n'
+            '(set -C; printf "%s\\n" "$actual" > "$HHPT_OVERLAY_RECEIPT")\n'
+            'if test -f "$fixture/change-compiled-application"; then printf "changed\\n" >> "$HHPT_BINARY"; fi\n'
+            'if test -f "$fixture/change-overlay-receipt"; then printf "changed\\n" > "$HHPT_OVERLAY_RECEIPT"; fi\n'
             'mkdir -p "$fixture/output"\n'
             'version=$(cat "$fixture/repository/VERSION")\n'
             'printf "synthetic image\\n" > "$fixture/output/hhsoft-pc-tester-$version-aarch64.iso"\n')
@@ -492,7 +554,8 @@ class BuilderGateIntegrationTests(unittest.TestCase):
                 "MAKEFILES", "MAKEFLAGS", "GNUMAKEFLAGS", "MAKEOVERRIDES", "MFLAGS", "BASH_ENV", "ENV",
                 "CC", "CXX", "HOSTCC", "HOSTCXX", "CFLAGS", "CXXFLAGS", "LDFLAGS", "CONFIG_SITE",
                 "CPATH", "LIBRARY_PATH", "PKG_CONFIG_PATH", "OPENSSL_CONF", "OPENSSL_MODULES",
-                "GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM", "GIT_CONFIG_COUNT", "GOENV", "GOWORK",
+                "GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM", "GIT_CONFIG_COUNT", "GIT_NO_LAZY_FETCH",
+                "GIT_NO_REPLACE_OBJECTS", "GOENV", "GOWORK",
                 "GOTOOLCHAIN", "GOFLAGS", "GOCACHEPROG", "HHPT_SOURCE_CACHE", "HHPT_SOURCE_CACHE_LOCK",
                 "BR2_DL_DIR", "BR2_PRIMARY_SITE", "BR2_WGET", "BR2_GIT")}
             environment.update(SOURCE_DATE_EPOCH="123", HHPT_JOBS="3")
@@ -651,6 +714,78 @@ class BuilderGateIntegrationTests(unittest.TestCase):
         self.assertNotIn("build-image", self.events())
         self.assertEqual(self.events().count("network-isolation"), 2)
         self.assertFalse(self.output.exists())
+
+    def test_modern_image_compiles_requested_application_and_never_consumes_old_binary(self):
+        # The fixture scanner records its actual location. Restoring the old
+        # pre-prepare original-checkout scan therefore fails this requirement.
+        self.write("scripts/security/scan_source.py", 'from pathlib import Path\n'
+                   'root = Path(__file__).resolve().parents[2]\n'
+                   'with Path(' + repr(str(self.root / "source-scans")) + ').open("a") as stream:\n'
+                   '    stream.write(str(root) + "\\n")\n')
+        result = self.invoke("alpine-image", environment={
+            "HHPT_BINARY": str(self.repository / "build/bin/linux_aarch64/hhpt"),
+            "HHPT_BINARY_SHA256": "0" * 64, "HHPT_OVERLAY_RECEIPT": str(self.root / "ambient-receipt")})
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        expected = b"fresh application target=aarch64 version=1.2.3-alpha.1\n"
+        self.assertEqual((self.root / "image-application").read_bytes(), expected)
+        selected = Path((self.root / "image-application-path").read_text().strip())
+        self.assertTrue(selected.is_relative_to(self.work))
+        self.assertEqual(selected.parts[-3:], ("application-bin", "linux_aarch64", "hhpt"))
+        self.assertEqual((self.repository / "build/bin/linux_aarch64/hhpt").read_bytes(),
+                         b"POISON: unrelated old application\n")
+        self.assertFalse((self.root / "ambient-receipt").exists())
+        self.assertEqual((self.root / "source-scans").read_text().splitlines(),
+                         [str(selected.parents[2] / "application-source")])
+        phases = [json.loads(line) for line in (self.root / "phases.jsonl").read_text().splitlines()]
+        compiled = [phase for phase in phases if phase["phase"] == "application"]
+        self.assertEqual(len(compiled), 1)
+        self.assertEqual(compiled[0]["arguments"], ["aarch64", str(selected.parents[1])])
+        self.assertEqual(compiled[0]["environment"].get("HHPT_FIXTURE_NETWORK_ISOLATED"), "1")
+        events = self.events()
+        self.assertLess(events.index("binding-prepare"), events.index("build-application"))
+        self.assertLess(events.index("build-application"), events.index("binding-complete"))
+        self.assertLess(events.index("binding-complete"), events.index("build-image"))
+        self.assertEqual(events.count("binding-verify"), 2)
+
+    def test_failed_modern_compiler_namespace_never_retries_or_uses_old_binary(self):
+        (self.root / "fail-application-namespace").touch()
+        result = self.invoke("alpine-image")
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("binding-prepare", self.events())
+        self.assertNotIn("build-application", self.events())
+        self.assertNotIn("build-image", self.events())
+        self.assertNotIn("binding-complete", self.events())
+        self.assertFalse((self.root / "phases.jsonl").exists())
+
+    def test_exported_source_scan_failure_prevents_compiler_signer_and_image_work(self):
+        self.write("scripts/security/scan_source.py", 'raise SystemExit(43)\n')
+        result = self.invoke("alpine-image")
+        self.assertEqual(result.returncode, 43, result.stdout + result.stderr)
+        self.assertIn("binding-prepare", self.events())
+        self.assertNotIn("build-application", self.events())
+        self.assertNotIn("build-image", self.events())
+        self.assertNotIn("binding-complete", self.events())
+        self.assertFalse((self.root / "phases.jsonl").exists())
+
+    def test_matching_application_digest_output_cannot_hide_checksum_failure(self):
+        (self.root / "fail-application-hash").touch()
+        result = self.invoke("alpine-image")
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("binding-complete", self.events())
+        self.assertNotIn("build-image", self.events())
+        phases = [json.loads(line) for line in (self.root / "phases.jsonl").read_text().splitlines()]
+        self.assertEqual([phase["phase"] for phase in phases], ["application"])
+
+    def test_changed_modern_binary_or_overlay_receipt_cannot_finish_successfully(self):
+        for marker in ("change-compiled-application", "change-overlay-receipt"):
+            with self.subTest(marker=marker):
+                self.setUp()
+                (self.root / marker).touch()
+                result = self.invoke("alpine-image")
+                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertIn("build-image", self.events())
+                self.assertEqual(self.events()[-1], "binding-verify")
+                self.assertEqual(len(self.records("verify")), 1)
 
     def test_invalid_parallelism_fails_before_host_or_build_steps(self):
         for jobs in ("0", "-1", "65", "99999999999999999999", "2 -f extra", "02", "two"):

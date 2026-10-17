@@ -279,6 +279,16 @@ fi
 EOF
 
 install -D -m 0755 -o root -g root "$binary" "$temporary_directory/usr/bin/hhpt"
+test -f "$temporary_directory/usr/bin/hhpt"
+test ! -L "$temporary_directory/usr/bin/hhpt"
+installed_binary_checksum=$(sha256sum "$temporary_directory/usr/bin/hhpt")
+installed_binary_checksum=${installed_binary_checksum%% *}
+test "${#installed_binary_checksum}" -eq 64
+case $installed_binary_checksum in *[!0-9a-f]*) echo invalid installed application digest >&2; exit 1 ;; esac
+test "$installed_binary_checksum" = "${HHPT_BINARY_SHA256:?bound binary checksum required}"
+# The image wrapper supplies a fresh invocation-only destination. noclobber
+# rejects an old file or link; this records the bytes installed in the overlay.
+(set -C; printf '%s\n' "$installed_binary_checksum" > "${HHPT_OVERLAY_RECEIPT:?overlay receipt required}")
 
 for service_and_level in \
 	devfs:sysinit dmesg:sysinit mdev:sysinit hwdrivers:sysinit modloop:sysinit \

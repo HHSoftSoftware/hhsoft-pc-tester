@@ -30,7 +30,10 @@ CONFIG_TREES = ("/etc/apk/keys", "/etc/apk/protected_paths.d", "/etc/alternative
                 "/etc/ssl/openssl.cnf.d")
 CONFIG_FILES = ("/etc/alpine-release", "/etc/apk/arch", "/etc/apk/world",
                 "/etc/apk/repositories", "/etc/mtools.conf", "/etc/ssl/openssl.cnf",
-                "/etc/ssl/ct_log_list.cnf", "/etc/ssl/cert.pem")
+                "/etc/ssl/ct_log_list.cnf", "/etc/ssl/cert.pem", "/etc/wgetrc",
+                "/usr/local/etc/wgetrc", "/etc/gnupg/common.conf", "/etc/gnupg/gpg.conf")
+MUSL_LOADER_FILES = ("/etc/ld-musl-x86_64.path", "/etc/ld-musl-i386.path",
+                     "/etc/ld-musl-aarch64.path")
 PRIVATE_LINKS = {"/usr/lib/ssl/private": "/etc/ssl/private"}
 EXCLUDED = ("/lib/modules", "/lib/firmware", "/usr/lib/modules", "/usr/lib/firmware")
 FORBIDDEN_CONFIG = ("/etc/ld.so.preload", "/etc/ld.so.conf", "/etc/ld.so.conf.d",
@@ -39,7 +42,7 @@ COMMON_TOOLS = ("sh", "env", "id", "awk", "sed", "grep", "find", "sort", "cut", 
                 "cat", "cp", "mv", "rm", "mkdir", "mktemp", "chmod", "chown", "ln",
                 "readlink", "tar", "gzip", "sha256sum", "sha1sum", "git", "openssl", "python3")
 PROFILE_TOOLS = {
-    "alpine-image": COMMON_TOOLS + ("apk", "fakeroot", "update-kernel", "mkinitfs", "mksquashfs",
+    "alpine-image": COMMON_TOOLS + ("apk", "go", "fakeroot", "update-kernel", "mkinitfs", "mksquashfs",
                                     "modinfo", "depmod", "xorrisofs", "grub-mkimage", "mformat",
                                     "mcopy", "scanelf", "lddtree", "unshare"),
     "buildroot-image": COMMON_TOOLS + ("apk", "go", "make", "gcc", "g++", "ld", "ar", "as",
@@ -91,7 +94,7 @@ class HostInventory:
         self.files = {}
         self.total_bytes = 0
         self.hardlinks = {}
-        self.loader_files = []
+        self.loader_files = list(MUSL_LOADER_FILES)
 
     def local(self, path):
         return self.root / valid_path(path).lstrip("/")
@@ -131,12 +134,59 @@ class HostInventory:
         finally:
             os.close(descriptor)
 
+    def no_xattrs(self, path, expected):
+        # The portable branch supports synthetic fixtures only. Production
+        # Linux must inspect metadata safely; an unsupported operation fails.
+        if not LINUX_PINNING:
+            return
+        require(hasattr(os, "listxattr"), "host extended attribute inspection is unsupported")
+        descriptor = self.pin(path)
+        readable = parent = None
+        try:
+            before = os.fstat(descriptor)
+            require(identity(before) == identity(expected), "host metadata changed before inspection")
+            if stat.S_ISLNK(before.st_mode):
+                # O_PATH cannot service flistxattr. Pin the parent and inspect
+                # only its leaf with llistxattr semantics, never the target.
+                parent = self.pin(posixpath.dirname(path))
+                require(stat.S_ISDIR(os.fstat(parent).st_mode), "host link parent changed")
+                name = posixpath.basename(path)
+                require(identity(os.stat(name, dir_fd=parent, follow_symlinks=False)) == identity(before),
+                        "host metadata changed before inspection")
+                attributes = os.listxattr("/proc/self/fd/" + str(parent) + "/" + name,
+                                          follow_symlinks=False)
+                require(identity(os.stat(name, dir_fd=parent, follow_symlinks=False)) == identity(before),
+                        "host metadata changed during inspection")
+            else:
+                require(stat.S_ISREG(before.st_mode) or stat.S_ISDIR(before.st_mode),
+                        "unsupported host metadata type")
+                flags = os.O_RDONLY | os.O_NONBLOCK
+                if stat.S_ISDIR(before.st_mode):
+                    flags |= os.O_DIRECTORY
+                readable = os.open("/proc/self/fd/" + str(descriptor), flags)
+                require(identity(os.fstat(readable)) == identity(before), "host metadata changed before inspection")
+                attributes = os.listxattr(readable)
+                require(identity(os.fstat(readable)) == identity(before), "host metadata changed during inspection")
+            # ACLs and file capabilities are included. Never retrieve attribute
+            # values or expose attribute names in a manifest or diagnostic.
+            require(not attributes, "host extended attributes are unsupported")
+            require(identity(os.fstat(descriptor)) == identity(before) == identity(self.info(path)),
+                    "host metadata changed during inspection")
+        except (AttributeError, NotImplementedError):
+            raise ValueError("host extended attribute inspection is unsupported") from None
+        finally:
+            for opened in (readable, parent, descriptor):
+                if opened is not None:
+                    os.close(opened)
+
     def link(self, path):
         if not LINUX_PINNING:
             return os.readlink(self.local(path))
         descriptor = self.pin(path)
         try:
-            require(stat.S_ISLNK(os.fstat(descriptor).st_mode), "host input link changed")
+            info = os.fstat(descriptor)
+            require(stat.S_ISLNK(info.st_mode), "host input link changed")
+            self.no_xattrs(path, info)
             return os.readlink("", dir_fd=descriptor)
         finally:
             os.close(descriptor)
@@ -156,6 +206,7 @@ class HostInventory:
         try:
             before = os.fstat(descriptor)
             require(stat.S_ISDIR(before.st_mode), "host input directory changed")
+            self.no_xattrs(path, before)
             readable = os.open("/proc/self/fd/" + str(descriptor), os.O_RDONLY | os.O_DIRECTORY)
             try:
                 require(identity(os.fstat(readable)) == identity(before), "host input directory changed")
@@ -217,6 +268,7 @@ class HostInventory:
         resolved = self.resolve(path)
         before = self.info(resolved)
         require(stat.S_ISREG(before.st_mode) and before.st_size <= limit, "invalid host input file")
+        self.no_xattrs(resolved, before)
         flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0) | getattr(os, "O_BINARY", 0) | getattr(os, "O_NONBLOCK", 0)
         if LINUX_PINNING:
             pinned = self.pin(resolved)
@@ -303,6 +355,7 @@ class HostInventory:
                 self.files[path] = {"type": "absent"}
                 continue
             require(stat.S_ISDIR(info.st_mode), "unsupported host runtime parent")
+            self.no_xattrs(path, info)
             self.files[path] = {"type": "directory", "mode": stat.S_IMODE(info.st_mode),
                                 "uid": info.st_uid, "gid": info.st_gid}
 
@@ -311,9 +364,13 @@ class HostInventory:
             require(stat.S_ISDIR(self.info(path).st_mode), "invalid host configuration directory")
         for path in FORBIDDEN_CONFIG:
             require(not os.path.lexists(self.local(path)), "unsupported host execution configuration")
-        self.loader_files = sorted("/etc/" + name for name in self.children("/etc")
-                                   if re.fullmatch(r"ld-musl-[A-Za-z0-9_-]+\.path", name))
+        self.loader_files = sorted(set(MUSL_LOADER_FILES) | {"/etc/" + name for name in self.children("/etc")
+                                   if re.fullmatch(r"ld-musl-[A-Za-z0-9_-]+\.path", name)})
         for path in self.loader_files:
+            try:
+                self.info(path)
+            except FileNotFoundError:
+                continue
             text = self.bytes(path, 65536).decode("utf-8")
             for directory in re.split(r"[:\n]", text):
                 directory = directory.strip()
@@ -390,10 +447,9 @@ def create_manifest(root, profile, base_lock, go_version):
     go_policy = policy_bytes(go_version, 64)
     go_pin = go_policy.decode("ascii").strip()
     require(re.fullmatch(r"[1-9][0-9]*\.[0-9]+\.[0-9]+", go_pin), "invalid pinned Go version")
-    if profile == "buildroot-image":
-        require(any(package["name"] == "go" and
-                    re.fullmatch(re.escape(go_pin) + r"-r[0-9]+", package["version"])
-                    for package in packages), "host Go package does not match the repository Go version")
+    require(any(package["name"] == "go" and
+                re.fullmatch(re.escape(go_pin) + r"-r[0-9]+", package["version"])
+                for package in packages), "host Go package does not match the repository Go version")
     for path in RUNTIME_TREES:
         host.add(path, optional=True)
     for path, content in (("/lib/apk/db/installed", database),

@@ -2,6 +2,7 @@
 set -eu
 exec /usr/bin/env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin HOME=/dev/null LC_ALL=C TZ=UTC \
 	GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null \
+	GIT_NO_LAZY_FETCH=1 GIT_NO_REPLACE_OBJECTS=1 \
 	/bin/sh -s -- "$0" "$@" <<'HHPT_BUILD'
 set -eu
 umask 077
@@ -17,7 +18,6 @@ work_root=${5:-/tmp/hhpt-image-work}
 package_cache=${6:-}
 case $architecture in x86|x86_64|aarch64) ;; *) echo unsupported image architecture >&2; exit 2 ;; esac
 repository_root=$(CDPATH= cd -- "$(dirname -- "$script_path")/../.." && pwd)
-/usr/bin/python3 -I -B "$repository_root/scripts/security/scan_source.py"
 lock_file=$repository_root/platform/alpine/base.lock
 version_class=$(env -i PATH="$PATH" /usr/bin/python3 -I -B \
 	"$repository_root/scripts/build/builder_host_manifest.py" classify-version \
@@ -81,13 +81,11 @@ test "$actual_aports_head" = "$commit"
 	sha256sum -c "$repository_root/platform/alpine/mkimage/upstream-scripts.sha256"
 )
 
-binary=$repository_root/build/bin/linux_$architecture/hhpt
-test -x "$binary"
 test -f "$signing_key"
 test -f "$signing_key.pub"
 
 # The image step must use already-installed builder tools, never host apk add.
-for tool in apk fakeroot update-kernel mkinitfs mksquashfs modinfo depmod openssl \
+for tool in apk go fakeroot update-kernel mkinitfs mksquashfs modinfo depmod openssl \
 	xorrisofs grub-mkimage mformat mcopy python3 scanelf lddtree; do
 	command -v "$tool" >/dev/null || { echo missing image builder tool >&2; exit 1; }
 done
@@ -112,6 +110,29 @@ XDG_CONFIG_HOME=$tools/user-config/.config
 XDG_CACHE_HOME=$tools/cache
 mkdir -p "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME"
 export HOME TMPDIR XDG_CONFIG_HOME XDG_CACHE_HOME
+application_binding() {
+	/usr/bin/python3 -I -B "$repository_root/scripts/build/modern_image_binding.py" "$@" \
+		--repository "$repository_root" --work "$image_work" --arch "$architecture"
+}
+# Only a new compilation of verified committed source may enter the overlay.
+# The prior build/bin directory is deliberately never an input to this step.
+application_binding prepare
+# Scan the verified export without consulting checkout-local Git configuration.
+# Publication still scans the original worktree, index, and history separately.
+/usr/bin/python3 -I -B "$image_work/application-source/scripts/security/scan_source.py"
+set -- /bin/sh "$image_work/application-source/scripts/build/build-go.sh" \
+	"$architecture" "$image_work/application-bin"
+if test -n "$package_cache"; then unshare --net "$@"; else "$@"; fi
+binary=$image_work/application-bin/linux_$architecture/hhpt
+test -x "$binary"
+application_binding complete
+binary_checksum=$(sha256sum "$binary")
+binary_checksum=${binary_checksum%% *}
+test "${#binary_checksum}" -eq 64
+case $binary_checksum in *[!0-9a-f]*) echo invalid application digest >&2; exit 1 ;; esac
+overlay_receipt=$image_work/application-overlay.sha256
+test ! -e "$overlay_receipt"
+test ! -L "$overlay_receipt"
 # Compare public encodings without exposing private key bytes to logs.
 openssl pkey -in "$signing_key" -pubout -out "$tools/derived.pub"
 openssl pkey -pubin -in "$tools/derived.pub" -outform DER -out "$tools/derived.der"
@@ -170,6 +191,7 @@ export SOURCE_DATE_EPOCH
 		ABUILD_CONF="$tools/abuild.conf" ABUILD_USERDIR="$tools/user-config/.abuild" \
 		ABUILD_USERCONF="$tools/abuild.conf" ABUILD_SHAREDIR=/usr/share/abuild \
 		HHPT_BINARY="$binary" HHPT_SIGNING_KEY="$signing_key" \
+		HHPT_BINARY_SHA256="$binary_checksum" HHPT_OVERLAY_RECEIPT="$overlay_receipt" \
 		HHPT_SIGNING_PUBLIC_KEY="$signing_key.pub" \
 		PACKAGER_PRIVKEY="$signing_key" PACKAGER_PUBKEY="$signing_key.pub" \
 		SOURCE_DATE_EPOCH="$SOURCE_DATE_EPOCH" \
@@ -185,11 +207,13 @@ export SOURCE_DATE_EPOCH
 		"$@"
 	fi
 )
+application_binding verify --overlay
 if test -n "$package_cache"; then
 	/usr/bin/python3 -I -B "$repository_root/scripts/build/alpine_package_cache.py" verify \
 		--cache "$package_cache" --arch "$architecture" --base-lock "$lock_file" --lock "$package_lock"
 fi
 image=$output_root/hhsoft-pc-tester-$product_version-$architecture.iso
 sh "$repository_root/scripts/build/write-alpine-sbom.sh" "$architecture" "$image" "$binary" "$image_work/consumed-apks"
+application_binding verify --overlay
 verify_builder_host
 HHPT_BUILD

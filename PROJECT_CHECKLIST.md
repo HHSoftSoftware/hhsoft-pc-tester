@@ -51,6 +51,14 @@ complete; real-hardware requirements remain open until physically tested.
 - [x] Add a fixed-path host inventory gate before and after image builds, with
   a strict development-version exception, native failure-case tests, and an
   actual-host comparison; approved manifests and full qualification remain open.
+- [x] Compile modern image applications from verified committed source during
+  each invocation, bind source/compiler-policy/target/binary records, and verify
+  the actual overlay copy. Native failure-case fixtures pass; fresh real
+  compilation evidence and independent finished-ISO extraction remain open.
+- [x] Require the pinned Go package for both image-host profiles, observe fixed
+  global download/loader configuration, and reject extended attributes,
+  capabilities, and ACLs in the bounded host inventory. All 42 native inventory
+  tests pass; this does not approve a host or complete toolchain qualification.
 - [x] Add cache-lock generation/verification and an offline Alpine build mode
   that refuses unreviewed cache bytes and reused apk roots.
 - [x] Assemble unchanged Alpine package inputs from original indexes with

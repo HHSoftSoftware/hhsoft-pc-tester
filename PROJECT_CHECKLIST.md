@@ -53,6 +53,14 @@ complete; real-hardware requirements remain open until physically tested.
   actual-host comparison; approved manifests and full qualification remain open.
 - [x] Add cache-lock generation/verification and an offline Alpine build mode
   that refuses unreviewed cache bytes and reused apk roots.
+- [x] Assemble unchanged Alpine package inputs from original indexes with
+  metadata/checksum validation, explicit gap reports, and independent native
+  checks against authentic upstream archives; signature trust and dependency
+  closure remain separate requirements.
+- [x] Require a reviewed legacy source cache and network-isolated Make phases,
+  with fresh independent copies, policy binding, and pre/post-build checks.
+  Native failure-case fixtures and the pinned upstream license-copy helper
+  pass; source-cache approval and a complete fresh image build remain open.
 - [ ] Validate the offline cache mode against the preserved builder inputs and
   boot every resulting image before completing the release-input milestone.
 - [ ] Build and boot images automatically in CI rather than only cross-building

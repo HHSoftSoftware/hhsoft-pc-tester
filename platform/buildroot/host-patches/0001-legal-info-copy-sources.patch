@@ -1,0 +1,19 @@
+Buildroot 2025.02.18: preserve independent source inputs during legal-info.
+
+The offline cache and external patch policy require single-link regular files.
+Creating legal-info copies must not add hardlinks to those reviewed inputs.
+The image wrapper checks the exact upstream and patched helper SHA-256 values.
+
+--- a/support/scripts/hardlink-or-copy
++++ b/support/scripts/hardlink-or-copy
+@@ -27,8 +27,8 @@
+ 
+     mkdir -p "${dst_dir}"
+     rm -f "${dst_file}"
+-    ln -f "${src_file}" "${dst_file}" 2>/dev/null \
+-    || cp -f "${src_file}" "${dst_file}"
++    # HHPT: keep cache archives and external patches independently owned.
++    cp -f "${src_file}" "${dst_file}"
+ }
+ 
+ main "${@}"

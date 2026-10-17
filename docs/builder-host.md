@@ -99,8 +99,10 @@ and authenticating its preparation inputs, and validating fresh offline builds
 and their resulting images. Cleared environments and matching compiler versions
 do not authenticate tools or configuration on disk. The modern image still
 needs evidence binding its supplied application binary to reviewed source and
-compiler inputs. The legacy builder still needs a complete verified source
-closure and enforced offline execution; seeding the Linux archive alone does
+compiler inputs. The legacy wrapper now requires a reviewed
+[offline source cache](buildroot-source-cache.md) and network-isolated Make
+phases for non-development builds. Its complete source closure and fresh
+offline image still need qualification; seeding the Linux archive alone does
 not provide those guarantees. The full builder-toolchain checklist item remains
 open until that work is complete.
 

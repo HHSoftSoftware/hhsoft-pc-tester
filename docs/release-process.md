@@ -71,6 +71,12 @@ emulated i586 CPU that has no SSE/SSE2. Keep the legacy image offline,
 BIOS/CSM-only, visibly reduced in coverage, and independent of modern release
 gates except report-schema compatibility.
 
+Non-development legacy builds require the reviewed
+[offline source cache](buildroot-source-cache.md) as the wrapper's ninth
+argument. Cache preparation and upstream authenticity review happen separately;
+the image's configuration, build, and license collection run without network
+access against fresh copies of the approved inputs.
+
 ## Update cadence
 
 - Build and scan `main` weekly.

@@ -11,7 +11,7 @@ umask 077
 script_path=$1
 jobs=$2
 shift 2
-test "$#" -ge 6 && test "$#" -le 8 || { echo 'expected six to eight legacy image arguments' >&2; exit 2; }
+test "$#" -ge 6 && test "$#" -le 9 || { echo 'expected six to nine legacy image arguments' >&2; exit 2; }
 
 source_archive=${1:?verified Buildroot source archive required}
 signed_manifest=${2:?Buildroot signed manifest required}
@@ -21,8 +21,12 @@ linux_signature=${5:?Linux release signature required}
 linux_release_key=${6:?Linux release public key required}
 output_root=${7:-build/images}
 work_root=${8:-build/buildroot-work}
+source_cache=${9:-}
 repository_root=$(CDPATH= cd -- "$(dirname "$script_path")/../.." && pwd)
 /usr/bin/python3 -I -B "$repository_root/scripts/security/scan_source.py"
+version_class=$(env -i PATH="$PATH" /usr/bin/python3 -I -B \
+	"$repository_root/scripts/build/builder_host_manifest.py" classify-version \
+	--version-file "$repository_root/VERSION")
 verify_builder_host() {
 	env -i PATH="$PATH" /usr/bin/python3 -I -B \
 		"$repository_root/scripts/build/builder_host_manifest.py" gate \
@@ -30,6 +34,21 @@ verify_builder_host() {
 }
 # A missing or changed reviewed host blocks before extraction or output writes.
 verify_builder_host
+
+verify_source_cache() {
+	/usr/bin/python3 -I -B "$repository_root/scripts/build/buildroot_source_cache.py" verify \
+		--cache "$1" --repository "$repository_root"
+}
+if test -n "$source_cache"; then
+	case $source_cache in /*) ;; *) source_cache=$PWD/$source_cache ;; esac
+	verify_source_cache "$source_cache"
+	# Namespace creation must work before signer checks or new build work.
+	unshare --net true
+else
+	test "$version_class" = development || {
+		echo 'non-development legacy images require a reviewed offline source cache' >&2; exit 1;
+	}
+fi
 
 # Inputs keep their caller-relative meaning; work and output paths must be
 # absolute because upstream make changes its working directory.
@@ -105,16 +124,47 @@ build_root=$work_root/output-$version_label-legacy-x86
 test ! -e "$source_root"
 test ! -e "$build_root"
 mkdir -p "$source_root" "$build_root"
+downloads=$work_root/downloads
+if test -n "$source_cache"; then
+	/usr/bin/python3 -I -B "$repository_root/scripts/build/buildroot_source_cache.py" stage \
+		--cache "$source_cache" --repository "$repository_root" --destination "$downloads"
+else
+	# Even unqualified builds cannot inherit a previous invocation's downloads.
+	test ! -e "$downloads"
+	mkdir -p "$downloads/linux"
+	cp "$linux_archive" "$downloads/linux/$linux_source"
+fi
 tar -xJf "$source_archive" --strip-components=1 -C "$source_root"
+# Buildroot's legal-info helper otherwise hardlinks both downloaded archives
+# and external patches, changing the reviewed inputs' link counts. Apply the
+# copy-only host patch to this exact authenticated upstream helper before Make.
+test "$version" = 2025.02.18
+legal_copy_helper=$source_root/support/scripts/hardlink-or-copy
+test -f "$legal_copy_helper" && test ! -L "$legal_copy_helper"
+legal_copy_hash=$(sha256sum "$legal_copy_helper")
+test "${legal_copy_hash%% *}" = 521e9b58758395b7eb5d9109a42d5db972f3cc5f3b117f0a43c1562295d20384
+patch --batch --forward --fuzz=0 -p1 -d "$source_root" \
+	< "$repository_root/platform/buildroot/host-patches/0001-legal-info-copy-sources.patch"
+legal_copy_hash=$(sha256sum "$legal_copy_helper")
+test "${legal_copy_hash%% *}" = 367b0615bd8479c4baa1fd87705749d4f7f1da548ad14f8eb7614074ea6baadc
 chmod 0755 "$repository_root/platform/buildroot/board/legacy-x86/post-build.sh"
-mkdir -p "$work_root/downloads/linux"
-cp "$linux_archive" "$work_root/downloads/linux/$linux_source"
 
 sh "$repository_root/scripts/build/build-go.sh" legacy-x86 "$work_root/hhpt-bin"
 binary=$work_root/hhpt-bin/linux_legacy-x86/hhpt
-make -C "$source_root" O="$build_root" BR2_DL_DIR="$work_root/downloads" BR2_EXTERNAL="$repository_root/platform/buildroot" hhpt_legacy_x86_defconfig
-HHPT_BINARY=$binary make -C "$source_root" -j"$jobs" O="$build_root" BR2_DL_DIR="$work_root/downloads" BR2_EXTERNAL="$repository_root/platform/buildroot"
-HHPT_BINARY=$binary make -C "$source_root" O="$build_root" BR2_DL_DIR="$work_root/downloads" BR2_EXTERNAL="$repository_root/platform/buildroot" legal-info
+run_make() {
+	if test -n "$source_cache"; then
+		unshare --net make "$@"
+	else
+		make "$@"
+	fi
+}
+run_make -C "$source_root" O="$build_root" BR2_DL_DIR="$downloads" BR2_EXTERNAL="$repository_root/platform/buildroot" hhpt_legacy_x86_defconfig
+HHPT_BINARY=$binary run_make -C "$source_root" -j"$jobs" O="$build_root" BR2_DL_DIR="$downloads" BR2_EXTERNAL="$repository_root/platform/buildroot"
+HHPT_BINARY=$binary run_make -C "$source_root" O="$build_root" BR2_DL_DIR="$downloads" BR2_EXTERNAL="$repository_root/platform/buildroot" legal-info
+if test -n "$source_cache"; then
+	verify_source_cache "$source_cache"
+	verify_source_cache "$downloads"
+fi
 
 artifact_name=hhsoft-pc-tester-$version_label-legacy-x86.iso
 mkdir -p "$output_root"

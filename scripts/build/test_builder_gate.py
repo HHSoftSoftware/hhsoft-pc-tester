@@ -3,17 +3,23 @@
 The copied policy keeps its CLI, version classification, and approved-path
 selection. Only host observation and manifest comparison are fixture boundaries;
 their independent file/security tests live in test_builder_host_manifest.py.
-All image tools below are inert sentinels confined to a temporary directory.
+Image production uses inert sentinels confined to a temporary directory. The
+legacy source extraction, reviewed host patch, and legal-info copy helper run
+against a small synthetic source tree using the real tools.
 """
 
 import hashlib
+import io
 import json
 from pathlib import Path
 import shlex
 import subprocess
 import sys
+import tarfile
 import tempfile
 import unittest
+
+import buildroot_source_cache as source_cache_policy
 
 
 SOURCE = Path(__file__).resolve().parent
@@ -21,6 +27,31 @@ PROFILES = ("alpine-image", "buildroot-image")
 TOOLS = ("apk", "fakeroot", "update-kernel", "mkinitfs", "mksquashfs", "modinfo",
          "depmod", "openssl", "xorrisofs", "grub-mkimage", "mformat", "mcopy",
          "python3", "scanelf", "lddtree")
+LEGACY_VERSION = "2025.02.18"
+HOST_PATCH = "platform/buildroot/host-patches/0001-legal-info-copy-sources.patch"
+UPSTREAM_HELPER_HASH = "521e9b58758395b7eb5d9109a42d5db972f3cc5f3b117f0a43c1562295d20384"
+PATCHED_HELPER_HASH = "367b0615bd8479c4baa1fd87705749d4f7f1da548ad14f8eb7614074ea6baadc"
+# This is an independently authored fixture, not a vendored upstream helper.
+# Its small link/copy block is the context consumed by the real reviewed patch.
+LEGACY_HELPER = r'''#!/bin/sh
+set -eu
+src_file=$1
+dst_dir=$2
+dst_file=$dst_dir/${3:-${src_file##*/}}
+main() {
+
+    mkdir -p "${dst_dir}"
+    rm -f "${dst_file}"
+    ln -f "${src_file}" "${dst_file}" 2>/dev/null \
+    || cp -f "${src_file}" "${dst_file}"
+}
+
+main "${@}"
+'''
+COPY_HELPER = LEGACY_HELPER.replace(
+    '    ln -f "${src_file}" "${dst_file}" 2>/dev/null \\\n    || cp -f "${src_file}" "${dst_file}"',
+    '    # HHPT: keep cache archives and external patches independently owned.\n'
+    '    cp -f "${src_file}" "${dst_file}"')
 
 ADAPTER = r'''import importlib.util
 import json
@@ -106,6 +137,16 @@ git() {
 sha256sum() {
     if test "$1" = -c; then return 0; fi
     /bin/sh -c 'sha256sum "$@"' fixture-hash "$@"
+    case "$1" in */support/scripts/hardlink-or-copy)
+        helper_hash_calls=0
+        if test -f "$fixture_root/helper-hash-calls"; then helper_hash_calls=$(cat "$fixture_root/helper-hash-calls"); fi
+        helper_hash_calls=$((helper_hash_calls + 1))
+        printf '%s\n' "$helper_hash_calls" > "$fixture_root/helper-hash-calls"
+        if test -f "$fixture_root/fail-helper-hash"; then
+            test "$helper_hash_calls" != "$(cat "$fixture_root/fail-helper-hash")" || return 85
+        fi
+        ;;
+    esac
 }
 cp() {
     case "$1" in /usr/share/apk/keys/*) return 0 ;; esac
@@ -121,21 +162,44 @@ openssl() {
     test -n "$destination"
     printf 'fixture public encoding\n' > "$destination"
 }
-unshare() { test "$1" = --net; shift; "$@"; }
+unshare() {
+    test "$1" = --net
+    shift
+    event network-isolation
+    test ! -f "$fixture_root/fail-network-isolation" || return 77
+    if test "$1" = make && test -f "$fixture_root/fail-build-namespace"; then return 78; fi
+    HHPT_FIXTURE_NETWORK_ISOLATED=1 "$@"
+}
 gpg() {
     phase gpg "$@"
     event signing-input-check
     case "$*" in *--list-keys*) printf 'fpr:::::::::BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB:\n' ;; esac
 }
 xz() { printf 'fixture archive stream\n'; }
-tar() { event archive-extraction; }
+tar() { event archive-extraction; /bin/tar "$@"; }
 make() {
     phase make "$@"
     event build-image
+    if test -f "$fixture_root/change-input-cache"; then
+        printf 'changed original\n' > "$fixture_root/inputs/legacy-cache/busybox/busybox-1.tar.bz2"
+    fi
+    if test -f "$fixture_root/change-staged-cache"; then
+        for argument do
+            case $argument in BR2_DL_DIR=*) printf 'changed staged\n' > "${argument#BR2_DL_DIR=}/busybox/busybox-1.tar.bz2" ;; esac
+        done
+    fi
     mkdir -p "$build_root/images" "$build_root/legal-info"
     printf 'synthetic image\n' > "$build_root/images/rootfs.iso9660"
     printf 'synthetic manifest\n' > "$build_root/legal-info/manifest.csv"
     printf 'synthetic host manifest\n' > "$build_root/legal-info/host-manifest.csv"
+    case " $* " in *' legal-info '*)
+        sh "$source_root/support/scripts/hardlink-or-copy" \
+            "$downloads/linux/linux-6.12.1.tar.xz" "$build_root/legal-info/sources/linux"
+        sh "$source_root/support/scripts/hardlink-or-copy" \
+            "$repository_root/platform/buildroot/patches/linux/0001-fixture.patch" \
+            "$build_root/legal-info/sources/linux" 0001-external.patch
+        ;;
+    esac
 }
 '''
 
@@ -164,12 +228,21 @@ class BuilderGateIntegrationTests(unittest.TestCase):
         self.inputs.mkdir()
         for name in ("build-alpine-image.sh", "build-buildroot-image.sh"):
             content = (SOURCE / name).read_text()
+            if name == "build-buildroot-image.sh":
+                # Only the fixture copy pins its own helper bytes. Production
+                # remains bound to the authenticated upstream before/after pair.
+                for original, synthetic in ((UPSTREAM_HELPER_HASH, LEGACY_HELPER),
+                                             (PATCHED_HELPER_HASH, COPY_HELPER)):
+                    self.assertEqual(content.count(original), 1)
+                    content = content.replace(original, hashlib.sha256(synthetic.encode()).hexdigest())
             boundary = "<<'HHPT_BUILD'\n"
             self.assertEqual(content.count(boundary), 1)
             fixture_tools = DRIVER.replace("FIXTURE_ROOT", shlex.quote(str(self.root)))
             self.write("scripts/build/" + name, content.replace(boundary, boundary + fixture_tools))
         self.write("scripts/build/policy.py", (SOURCE / "builder_host_manifest.py").read_text())
         self.write("scripts/build/builder_host_manifest.py", ADAPTER)
+        self.write("scripts/build/buildroot_source_cache.py", (SOURCE / "buildroot_source_cache.py").read_text())
+        self.write(HOST_PATCH, (SOURCE.parents[1] / HOST_PATCH).read_text())
         self.write(".go-version", "1.27.2\n")
         self.write("LICENSE", "Synthetic license fixture\n")
         self.write("scripts/security/scan_source.py", "# Synthetic source scanner.\n")
@@ -197,14 +270,17 @@ class BuilderGateIntegrationTests(unittest.TestCase):
         self.signing_key.with_suffix(".pub").write_text("Synthetic public fixture.\n")
         self.cache = self.inputs / "cache"
         self.cache.mkdir()
-        for name in ("buildroot-2026.02.1.tar.xz", "linux-6.12.1.tar.xz", "linux-6.12.1.tar.sign",
+        self.legacy_cache = self.inputs / "legacy-cache"
+        (self.legacy_cache / "linux").mkdir(parents=True)
+        (self.legacy_cache / "linux/linux-6.12.1.tar.xz").write_text("Synthetic input only.\n")
+        (self.legacy_cache / "busybox").mkdir()
+        (self.legacy_cache / "busybox/busybox-1.tar.bz2").write_text("Synthetic dependency archive.\n")
+        for name in ("linux-6.12.1.tar.xz", "linux-6.12.1.tar.sign",
                      "release-public-key", "linux-public-key"):
             (self.inputs / name).write_text("Synthetic input only.\n")
         archive_hash = hashlib.sha256(b"Synthetic input only.\n").hexdigest()
-        (self.inputs / "buildroot.sign").write_text(
-            "SHA256: " + archive_hash + "  buildroot-2026.02.1.tar.xz\n")
-        self.write("platform/buildroot/base.lock", "VERSION=2026.02.1\nSOURCE=buildroot-2026.02.1.tar.xz\n"
-                   "SHA256=" + archive_hash + "\nUPSTREAM_GPG_FINGERPRINT=" + "B" * 40 + "\n"
+        self.write("platform/buildroot/base.lock", "VERSION=" + LEGACY_VERSION + "\nSOURCE=buildroot-" + LEGACY_VERSION + ".tar.xz\n"
+                   "SHA256=" + "0" * 64 + "\nUPSTREAM_GPG_FINGERPRINT=" + "B" * 40 + "\n"
                    "LINUX_VERSION=6.12.1\nLINUX_SOURCE=linux-6.12.1.tar.xz\nLINUX_SHA256=" + archive_hash + "\n"
                    "LINUX_SIGNATURE=linux-6.12.1.tar.sign\nLINUX_SIGNER_FINGERPRINT=" + "B" * 40 + "\n")
         self.write("platform/buildroot/configs/hhpt_legacy_x86_defconfig",
@@ -212,6 +288,8 @@ class BuilderGateIntegrationTests(unittest.TestCase):
         for name in ("linux/linux.hash", "linux-headers/linux-headers.hash"):
             self.write("platform/buildroot/patches/" + name,
                        "sha256  " + archive_hash + "  linux-6.12.1.tar.xz\n")
+        self.write("platform/buildroot/patches/linux/0001-fixture.patch", "Synthetic external patch bytes.\n")
+        self.prepare_legacy_archive()
         self.write("platform/buildroot/board/legacy-x86/post-build.sh", "#!/bin/sh\nexit 97\n")
         (self.root / "tool-stubs").mkdir()
         for name in TOOLS:
@@ -233,6 +311,19 @@ class BuilderGateIntegrationTests(unittest.TestCase):
         path.chmod(mode)
         return path
 
+    def prepare_legacy_archive(self, helper=LEGACY_HELPER):
+        archive = self.inputs / ("buildroot-" + LEGACY_VERSION + ".tar.xz")
+        with tarfile.open(archive, "w:xz") as stream:
+            entry = tarfile.TarInfo("buildroot-" + LEGACY_VERSION + "/support/scripts/hardlink-or-copy")
+            entry.size = len(helper.encode())
+            entry.mode = 0o755
+            stream.addfile(entry, io.BytesIO(helper.encode()))
+        archive_hash = hashlib.sha256(archive.read_bytes()).hexdigest()
+        (self.inputs / "buildroot.sign").write_text("SHA256: " + archive_hash + "  " + archive.name + "\n")
+        lock = self.repository / "platform/buildroot/base.lock"
+        lines = lock.read_text().splitlines()
+        lock.write_text("\n".join("SHA256=" + archive_hash if line.startswith("SHA256=") else line for line in lines) + "\n")
+
     def records(self, kind=None):
         path = self.root / "calls.jsonl"
         records = [json.loads(line) for line in path.read_text().splitlines()] if path.exists() else []
@@ -243,7 +334,7 @@ class BuilderGateIntegrationTests(unittest.TestCase):
         return path.read_text().splitlines() if path.exists() else []
 
     def invoke(self, profile, version="1.2.3-alpha.1", approved=True, cache=True, environment=None,
-               working_directory=None, override_arguments=None):
+               working_directory=None, override_arguments=None, source_approved=True):
         # A fresh fixture per invocation prevents earlier output from hiding an
         # unintended build effect. Callers with a matrix use separate setUps.
         self.write("VERSION", version + "\n")
@@ -257,9 +348,14 @@ class BuilderGateIntegrationTests(unittest.TestCase):
         else:
             script = self.repository / "scripts/build/build-buildroot-image.sh"
             arguments = [str(self.inputs / name) for name in
-                         ("buildroot-2026.02.1.tar.xz", "buildroot.sign", "release-public-key",
+                         ("buildroot-" + LEGACY_VERSION + ".tar.xz", "buildroot.sign", "release-public-key",
                           "linux-6.12.1.tar.xz", "linux-6.12.1.tar.sign", "linux-public-key")]
             arguments += [str(self.output), str(self.work)]
+            if cache:
+                arguments.append(str(self.legacy_cache))
+                approved_source = self.repository / source_cache_policy.APPROVED
+                if source_approved and not approved_source.exists():
+                    approved_source.write_text(json.dumps(source_cache_policy.create_lock(self.legacy_cache, self.repository)))
         process_environment = {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LC_ALL": "C", "TZ": "UTC"}
         process_environment.update(environment or {})
         if override_arguments is not None:
@@ -315,13 +411,14 @@ class BuilderGateIntegrationTests(unittest.TestCase):
                     self.no_build_effects()
 
     def test_approved_host_does_not_remove_non_development_offline_cache_requirement(self):
-        for version in ("1.2.3-alpha.1", "1.2.3-alpha.1-dev.0", "1.2.3-dev.0+metadata"):
-            with self.subTest(version=version):
-                self.setUp()
-                result = self.invoke("alpine-image", version, cache=False)
-                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
-                self.assertEqual(len(self.records("verify")), 1)
-                self.no_build_effects()
+        for profile in PROFILES:
+            for version in ("1.2.3-alpha.1", "1.2.3-alpha.1-dev.0", "1.2.3-dev.0+metadata"):
+                with self.subTest(profile=profile, version=version):
+                    self.setUp()
+                    result = self.invoke(profile, version, cache=False)
+                    self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assertEqual(len(self.records("verify")), 1)
+                    self.no_build_effects()
 
     def test_fixed_host_architecture_profile_policy_paths_and_actual_root_are_used_twice(self):
         def check(profile):
@@ -396,7 +493,8 @@ class BuilderGateIntegrationTests(unittest.TestCase):
                 "CC", "CXX", "HOSTCC", "HOSTCXX", "CFLAGS", "CXXFLAGS", "LDFLAGS", "CONFIG_SITE",
                 "CPATH", "LIBRARY_PATH", "PKG_CONFIG_PATH", "OPENSSL_CONF", "OPENSSL_MODULES",
                 "GIT_CONFIG_GLOBAL", "GIT_CONFIG_SYSTEM", "GIT_CONFIG_COUNT", "GOENV", "GOWORK",
-                "GOTOOLCHAIN", "GOFLAGS", "GOCACHEPROG")}
+                "GOTOOLCHAIN", "GOFLAGS", "GOCACHEPROG", "HHPT_SOURCE_CACHE", "HHPT_SOURCE_CACHE_LOCK",
+                "BR2_DL_DIR", "BR2_PRIMARY_SITE", "BR2_WGET", "BR2_GIT")}
             environment.update(SOURCE_DATE_EPOCH="123", HHPT_JOBS="3")
             result = self.invoke(profile, environment=environment)
             self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
@@ -431,16 +529,16 @@ class BuilderGateIntegrationTests(unittest.TestCase):
         foreign.mkdir()
         self.work = self.repository / "relative-work"
         self.output = self.repository / "relative-output"
-        names = ("buildroot-2026.02.1.tar.xz", "buildroot.sign", "release-public-key",
+        names = ("buildroot-" + LEGACY_VERSION + ".tar.xz", "buildroot.sign", "release-public-key",
                  "linux-6.12.1.tar.xz", "linux-6.12.1.tar.sign", "linux-public-key")
-        arguments = ["../inputs/" + name for name in names] + ["relative-output", "relative-work"]
+        arguments = ["../inputs/" + name for name in names] + ["relative-output", "relative-work", str(self.legacy_cache)]
         result = self.invoke("buildroot-image", working_directory=foreign, override_arguments=arguments)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         phases = [json.loads(line) for line in (self.root / "phases.jsonl").read_text().splitlines()]
         make_calls = [phase["arguments"] for phase in phases if phase["phase"] == "make"]
         self.assertEqual(len(make_calls), 3)
         for call in make_calls:
-            self.assertEqual(call[call.index("-C") + 1], str(self.work / "source-2026.02.1"))
+            self.assertEqual(call[call.index("-C") + 1], str(self.work / ("source-" + LEGACY_VERSION)))
             self.assertIn("O=" + str(self.work / "output-1.2.3-alpha.1-legacy-x86"), call)
             self.assertIn("BR2_DL_DIR=" + str(self.work / "downloads"), call)
         imported_keys = [Path(phase["arguments"][-1]).resolve() for phase in phases
@@ -449,6 +547,110 @@ class BuilderGateIntegrationTests(unittest.TestCase):
         self.assertTrue((self.output / "hhsoft-pc-tester-1.2.3-alpha.1-legacy-x86.iso").is_file())
         self.assertFalse((foreign / "relative-work").exists())
         self.assertFalse((foreign / "relative-output").exists())
+
+    def test_unapproved_legacy_cache_and_unavailable_namespace_prevent_all_work(self):
+        for failure in ("approval", "namespace"):
+            with self.subTest(failure=failure):
+                self.setUp()
+                if failure == "namespace":
+                    (self.root / "fail-network-isolation").touch()
+                result = self.invoke("buildroot-image", source_approved=failure != "approval")
+                self.assertNotEqual(result.returncode, 0)
+                self.no_build_effects()
+
+    def test_every_legacy_make_phase_is_isolated_and_uses_a_fresh_verified_copy(self):
+        (self.legacy_cache / "busybox/.lock").touch()
+        result = self.invoke("buildroot-image")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        phases = [json.loads(line) for line in (self.root / "phases.jsonl").read_text().splitlines()]
+        make_calls = [phase for phase in phases if phase["phase"] == "make"]
+        self.assertEqual(len(make_calls), 3)
+        for phase in make_calls:
+            self.assertEqual(phase["environment"].get("HHPT_FIXTURE_NETWORK_ISOLATED"), "1")
+            self.assertIn("BR2_DL_DIR=" + str(self.work / "downloads"), phase["arguments"])
+        self.assertEqual(self.events().count("network-isolation"), 4)
+        self.assertEqual(source_cache_policy.inventory(self.legacy_cache),
+                         source_cache_policy.inventory(self.work / "downloads"))
+        self.assertFalse((self.work / "downloads/busybox/.lock").exists())
+        self.assertTrue((self.legacy_cache / "busybox/.lock").is_file())
+
+    def test_legal_info_copies_preserve_archive_and_external_patch_bytes_and_ownership(self):
+        original = self.legacy_cache / "linux/linux-6.12.1.tar.xz"
+        external_patch = self.repository / "platform/buildroot/patches/linux/0001-fixture.patch"
+
+        def identity(path):
+            value = path.stat()
+            return (path.read_bytes(), value.st_ino, value.st_nlink, value.st_mtime_ns, value.st_ctime_ns)
+
+        preserved = {path: identity(path) for path in (original, external_patch)}
+        result = self.invoke("buildroot-image")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        helper = self.work / ("source-" + LEGACY_VERSION) / "support/scripts/hardlink-or-copy"
+        self.assertEqual(helper.read_text(), COPY_HELPER)
+        staged = self.work / "downloads/linux/linux-6.12.1.tar.xz"
+        license_sources = self.work / "output-1.2.3-alpha.1-legacy-x86/legal-info/sources/linux"
+        for source, copied in ((staged, license_sources / original.name),
+                               (external_patch, license_sources / "0001-external.patch")):
+            self.assertEqual(source.read_bytes(), copied.read_bytes())
+            self.assertEqual(source.stat().st_nlink, 1)
+            self.assertEqual(copied.stat().st_nlink, 1)
+            self.assertNotEqual(source.stat().st_ino, copied.stat().st_ino)
+            copied.write_bytes(b"changed license-copy fixture\n")
+        for path, before in preserved.items():
+            self.assertEqual(identity(path), before)
+        source_cache_policy.verify(self.legacy_cache, self.repository)
+        source_cache_policy.verify(self.work / "downloads", self.repository)
+
+    def test_changed_host_helper_patch_or_version_blocks_all_make_commands(self):
+        for failure in ("version", "helper", "patch-context", "patch-result"):
+            with self.subTest(failure=failure):
+                self.setUp()
+                if failure == "version":
+                    lock = self.repository / "platform/buildroot/base.lock"
+                    lock.write_text(lock.read_text().replace("VERSION=" + LEGACY_VERSION + "\n", "VERSION=2025.02.19\n"))
+                elif failure == "helper":
+                    self.prepare_legacy_archive(LEGACY_HELPER + "# Unreviewed helper change.\n")
+                else:
+                    patch = self.repository / HOST_PATCH
+                    if failure == "patch-context":
+                        patch.write_text(patch.read_text().replace('     mkdir -p "${dst_dir}"', '     mkdir -p "${different}"'))
+                    else:
+                        patch.write_text(patch.read_text().replace("independently owned.", "unexpectedly changed."))
+                result = self.invoke("buildroot-image")
+                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertIn("archive-extraction", self.events())
+                self.assertNotIn("build-image", self.events())
+                self.assertFalse(self.output.exists())
+
+    def test_helper_hash_query_failure_cannot_pass_with_matching_output(self):
+        for call in (1, 2):
+            with self.subTest(call=call):
+                self.setUp()
+                (self.root / "fail-helper-hash").write_text(str(call) + "\n")
+                result = self.invoke("buildroot-image")
+                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertEqual((self.root / "helper-hash-calls").read_text(), str(call) + "\n")
+                self.assertNotIn("build-image", self.events())
+                self.assertFalse(self.output.exists())
+
+    def test_changed_original_or_staged_cache_blocks_image_artifact_copy(self):
+        for marker in ("change-input-cache", "change-staged-cache"):
+            with self.subTest(marker=marker):
+                self.setUp()
+                (self.root / marker).touch()
+                result = self.invoke("buildroot-image")
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("build-image", self.events())
+                self.assertFalse(self.output.exists())
+
+    def test_failed_build_namespace_does_not_retry_make_online(self):
+        (self.root / "fail-build-namespace").touch()
+        result = self.invoke("buildroot-image")
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("archive-extraction", self.events())
+        self.assertNotIn("build-image", self.events())
+        self.assertEqual(self.events().count("network-isolation"), 2)
+        self.assertFalse(self.output.exists())
 
     def test_invalid_parallelism_fails_before_host_or_build_steps(self):
         for jobs in ("0", "-1", "65", "99999999999999999999", "2 -f extra", "02", "two"):

@@ -19,6 +19,11 @@ separate networked dependency-refresh job. Missing packages must fail the
 offline build; it must never fetch a replacement from a live repository.
 Do not include private keys, work roots, or source checkouts in this cache.
 
+Use the [original-input assembler](alpine-cache-assembly.md) to collect preserved
+archives into this layout and detect missing or inconsistent selections.
+Assembly checks structure and index membership; trusted signature verification,
+dependency closure, and approval remain separate steps.
+
 Generate a review candidate under ignored `build/`:
 
 ```sh

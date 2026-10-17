@@ -40,13 +40,16 @@ func runDisplayWith(ctx context.Context, arguments []string, input io.Reader, st
 		fmt.Fprintln(stdout, "Enter P/F/I or a seven-letter P/F/I code per display, comma-separated; Enter means inconclusive.")
 		fmt.Fprint(stdout, "Pixels Geometry Color Flicker Scaling Overscan Artifacts: ")
 		line, timedOut, readErr := readFindingLine(ctx, input, *findingTimeout)
-		codes := parseFindingCodes(line, len(connectors))
+		var codes []string
 		if timedOut {
 			fmt.Fprintln(stdout, "Operator finding timed out; visual quality is inconclusive.")
 		} else if readErr != nil {
 			fmt.Fprintf(stderr, "read operator finding: %v; visual quality is inconclusive\n", readErr)
-		} else if line != "" && codes == nil {
-			fmt.Fprintln(stderr, "Invalid finding code; visual quality is inconclusive.")
+		} else {
+			codes = parseFindingCodes(line, len(connectors))
+			if line != "" && codes == nil {
+				fmt.Fprintln(stderr, "Invalid finding code; visual quality is inconclusive.")
+			}
 		}
 		if codes == nil {
 			codes = make([]string, len(connectors))

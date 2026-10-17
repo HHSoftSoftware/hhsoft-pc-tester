@@ -58,6 +58,9 @@ func (runner *ExecRunner) run(ctx context.Context, inputHold time.Duration, name
 }
 
 func commandResult(result workerexec.Result, err error) (string, error) {
+	if result.StdoutTruncated || result.StderrTruncated {
+		err = errors.Join(err, errors.New("graphics tool output was truncated"))
+	}
 	parts := make([]string, 0, 2)
 	if stdout := strings.TrimSpace(string(result.Stdout)); stdout != "" {
 		parts = append(parts, stdout)

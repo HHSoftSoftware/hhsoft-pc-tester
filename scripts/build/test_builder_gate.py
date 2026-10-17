@@ -5,6 +5,8 @@ selection. Only host observation and manifest comparison are fixture boundaries;
 their independent file/security tests live in test_builder_host_manifest.py.
 Application source authentication and byte receipts use a small fixture double;
 raw committed-object and binary checks live in test_modern_image_binding.py.
+The firmware prepare/receipt boundary uses a controlled adapter; actual tree
+filtering, policy rows and upstream patching have separate focused fixtures.
 Image production uses inert sentinels confined to a temporary directory. The
 legacy source extraction, reviewed host patch, and legal-info copy helper run
 against a small synthetic source tree using the real tools.
@@ -141,6 +143,8 @@ elif args.command == "complete":
                                 "sha256": hashlib.sha256(binary.read_bytes()).hexdigest()}))
     if (fixture / "stale-legacy-receipt").exists():
         (args.work / "application-overlay.sha256").write_text(hashlib.sha256(binary.read_bytes()).hexdigest() + "\n")
+    if (fixture / "stale-firmware-receipt").exists():
+        (args.work / "firmware-exclusions.json").write_text("preserved old firmware receipt\n")
 else:
     value = json.loads(record.read_text())
     assert value == {"architecture": args.arch, "version": version,
@@ -154,6 +158,71 @@ else:
         assert (args.work / "application-overlay.sha256").read_text() == value["sha256"] + "\n"
         if args.arch == "legacy-x86":
             assert (args.installed_root / "usr/bin/hhpt").read_bytes() == binary.read_bytes()
+'''
+
+
+FIRMWARE_GATE = r'''import argparse
+import json
+import os
+from pathlib import Path
+import sys
+
+fixture = Path(FIXTURE_ROOT)
+parser = argparse.ArgumentParser()
+parser.add_argument("command", choices=("prepare", "verify"))
+for name in ("tools", "work-parent", "receipt"):
+    parser.add_argument("--" + name, type=Path, required=True)
+parser.add_argument("--architecture", required=True)
+args = parser.parse_args()
+source = Path(__file__).resolve().parents[2]
+with (fixture / "events").open("a") as stream:
+    stream.write("firmware-" + args.command + "\n")
+call = {"command": args.command, "source": str(source), "tools": str(args.tools),
+        "work_parent": str(args.work_parent), "receipt": str(args.receipt), "architecture": args.architecture,
+        "isolated": sys.flags.isolated, "no_bytecode": sys.dont_write_bytecode}
+with (fixture / "firmware-calls.jsonl").open("a") as stream:
+    stream.write(json.dumps(call) + "\n")
+assert source.name == "application-source" and source.parent.parent == fixture / "image-work"
+assert args.tools.name == "host-applets" and args.tools.parent.parent == source.parent.parent
+assert args.tools.parent.name.startswith("tools-aarch64.")
+assert args.work_parent == args.tools.parent / "tmp"
+assert args.receipt == source.parent / "firmware-exclusions.json"
+assert args.architecture == "aarch64"
+prepared = fixture / "firmware-prepared.json"
+identity = {key: value for key, value in call.items() if key != "command"}
+if args.command == "prepare":
+    if (fixture / "fail-firmware-prepare").exists():
+        raise SystemExit(88)
+    assert not os.path.lexists(args.receipt)
+    with prepared.open("x") as stream:
+        json.dump(identity, stream)
+    shim = args.tools / "update-kernel"
+    with shim.open("x") as stream:
+        stream.write("#!/bin/sh\nexit 97\n")
+    shim.chmod(0o700)
+else:
+    assert json.loads(prepared.read_text()) == identity
+    if (fixture / "fail-firmware-verify").exists():
+        raise SystemExit(89)
+    assert json.loads(args.receipt.read_text()) == {
+        "status": "synthetic-filter-completed", "architecture": args.architecture}
+'''
+
+
+FIRMWARE_IMAGE = r'''import json
+import os
+from pathlib import Path
+
+fixture = Path(FIXTURE_ROOT)
+prepared = json.loads((fixture / "firmware-prepared.json").read_text())
+# Model only the image-production boundary, never a firmware filesystem or
+# a real update-kernel invocation. The private tool directory must be first.
+assert os.environ["PATH"].split(":")[0] == prepared["tools"]
+assert (Path(prepared["tools"]) / "update-kernel").is_file()
+if not (fixture / "omit-firmware-receipt").exists():
+    status = "failed" if (fixture / "failed-firmware-receipt").exists() else "synthetic-filter-completed"
+    with Path(prepared["receipt"]).open("x") as stream:
+        json.dump({"status": status, "architecture": prepared["architecture"]}, stream)
 '''
 
 
@@ -325,6 +394,10 @@ class BuilderGateIntegrationTests(unittest.TestCase):
         self.write("scripts/build/policy.py", (SOURCE / "builder_host_manifest.py").read_text())
         self.write("scripts/build/builder_host_manifest.py", ADAPTER)
         self.write("scripts/build/modern_image_binding.py", BINDING)
+        self.write("scripts/build/prepare_alpine_kernel.py", FIRMWARE_GATE.replace("FIXTURE_ROOT", repr(str(self.root))))
+        self.write("scripts/build/firmware-image-fixture.py", FIRMWARE_IMAGE.replace("FIXTURE_ROOT", repr(str(self.root))))
+        self.write("scripts/build/filter_alpine_firmware.py", "# Tree filtering is exercised by its focused fixture suite.\n")
+        self.write("platform/alpine/firmware-exclusions.json", '{"synthetic_fixture_only":true}\n')
         self.write("scripts/build/buildroot_source_cache.py", (SOURCE / "buildroot_source_cache.py").read_text())
         self.write(HOST_PATCH, (SOURCE.parents[1] / HOST_PATCH).read_text())
         self.write(".go-version", "1.27.2\n")
@@ -332,7 +405,8 @@ class BuilderGateIntegrationTests(unittest.TestCase):
         self.write("scripts/security/scan_source.py", "# Synthetic source scanner.\n")
         self.write("scripts/build/phase.py", PHASE)
         self.write("scripts/build/alpine_package_cache.py", "# Synthetic cache fixture; no host/package access.\n")
-        self.write("scripts/build/write-alpine-sbom.sh", "#!/bin/sh\nexit 0\n")
+        self.write("scripts/build/write-alpine-sbom.sh", "#!/bin/sh\nprintf 'sbom-output\\n' >> " +
+                   shlex.quote(str(self.root / "events")) + "\n")
         self.write("scripts/build/write_buildroot_sbom.py", 'from pathlib import Path\n'
                    'fixture = Path(' + repr(str(self.root)) + ')\n'
                    'with (fixture / "events").open("a") as stream: stream.write("sbom-output\\n")\n'
@@ -395,6 +469,7 @@ class BuilderGateIntegrationTests(unittest.TestCase):
         (self.root / "tool-stubs/fakeroot").write_text(
             "#!/bin/sh\nset -eu\nfixture=" + shlex.quote(str(self.root)) + "\n"
             'printf "build-image\\n" >> "$fixture/events"\n'
+            '/usr/bin/python3 -I -B "$fixture/repository/scripts/build/firmware-image-fixture.py"\n'
             'cp "$HHPT_BINARY" "$fixture/image-application"\n'
             'printf "%s\\n" "$HHPT_BINARY" > "$fixture/image-application-path"\n'
             'actual=$(sha256sum "$HHPT_BINARY"); actual=${actual%% *}\n'
@@ -885,6 +960,85 @@ class BuilderGateIntegrationTests(unittest.TestCase):
         self.assertLess(events.index("build-application"), events.index("binding-complete"))
         self.assertLess(events.index("binding-complete"), events.index("build-image"))
         self.assertEqual(events.count("binding-verify"), 2)
+
+    def test_modern_firmware_gate_uses_verified_export_before_image_and_checks_receipt_before_output(self):
+        result = self.invoke("alpine-image")
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        calls = [json.loads(line) for line in (self.root / "firmware-calls.jsonl").read_text().splitlines()]
+        self.assertEqual([call["command"] for call in calls], ["prepare", "verify"])
+        selected = Path((self.root / "image-application-path").read_text().strip())
+        invocation = selected.parents[2]
+        for call in calls:
+            self.assertEqual(call["source"], str(invocation / "application-source"))
+            self.assertEqual(call["receipt"], str(invocation / "firmware-exclusions.json"))
+            self.assertEqual(call["architecture"], "aarch64")
+            self.assertEqual(call["isolated"], 1)
+            self.assertTrue(call["no_bytecode"])
+            tools = Path(call["tools"])
+            self.assertEqual(tools.name, "host-applets")
+            self.assertEqual(tools.parent.parent, self.work)
+            self.assertEqual(call["work_parent"], str(tools.parent / "tmp"))
+        events = self.events()
+        self.assertLess(events.index("binding-complete"), events.index("firmware-prepare"))
+        self.assertLess(events.index("firmware-prepare"), events.index("build-image"))
+        self.assertLess(events.index("build-image"), events.index("firmware-verify"))
+        self.assertLess(events.index("firmware-verify"), events.index("binding-verify"))
+        self.assertLess(events.index("firmware-verify"), events.index("sbom-output"))
+        self.assertEqual(events[-1], "host-check")
+
+    def test_firmware_prepare_failure_prevents_image_and_completion(self):
+        (self.root / "fail-firmware-prepare").touch()
+        result = self.invoke("alpine-image")
+        self.assertEqual(result.returncode, 88, result.stdout + result.stderr)
+        self.assertIn("firmware-prepare", self.events())
+        for event in ("build-image", "firmware-verify", "binding-verify", "sbom-output"):
+            self.assertNotIn(event, self.events())
+        self.assertEqual(len(self.records("verify")), 1)
+        self.assertEqual(list(self.output.glob("*.iso")), [])
+
+    def test_missing_failed_or_rejected_firmware_receipt_blocks_completion_and_keeps_partial_image(self):
+        for marker in ("omit-firmware-receipt", "failed-firmware-receipt", "fail-firmware-verify"):
+            with self.subTest(marker=marker):
+                self.setUp()
+                (self.root / marker).touch()
+                result = self.invoke("alpine-image")
+                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertIn("firmware-prepare", self.events())
+                self.assertIn("build-image", self.events())
+                self.assertEqual(self.events()[-1], "firmware-verify")
+                self.assertNotIn("binding-verify", self.events())
+                self.assertNotIn("sbom-output", self.events())
+                self.assertEqual(len(self.records("verify")), 1)
+                self.assertEqual((self.output / "hhsoft-pc-tester-1.2.3-alpha.1-aarch64.iso").read_bytes(),
+                                 b"synthetic image\n")
+
+    def test_stale_firmware_receipt_is_preserved_and_prevents_new_image(self):
+        (self.root / "stale-firmware-receipt").touch()
+        result = self.invoke("alpine-image")
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual(self.events()[-1], "firmware-prepare")
+        self.assertNotIn("build-image", self.events())
+        receipts = list(self.work.glob("locked-*/firmware-exclusions.json"))
+        self.assertEqual(len(receipts), 1)
+        self.assertEqual(receipts[0].read_bytes(), b"preserved old firmware receipt\n")
+        self.assertEqual(list(self.output.glob("*.iso")), [])
+
+    def test_existing_locked_kernel_work_cannot_bypass_fresh_firmware_gate(self):
+        lock = self.repository / "platform/alpine/package-locks/aarch64.json"
+        digest = hashlib.sha256(lock.read_bytes()).hexdigest()
+        old = self.work / ("locked-aarch64-1.2.3-alpha.1-" + digest)
+        old.mkdir(parents=True)
+        cache = old / "kernel-old-section"
+        cache.write_bytes(b"preserved old kernel section\n")
+        receipt = old / "firmware-exclusions.json"
+        receipt.write_bytes(b"preserved old firmware receipt\n")
+        result = self.invoke("alpine-image")
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        for event in ("binding-prepare", "build-application", "firmware-prepare", "build-image", "sbom-output"):
+            self.assertNotIn(event, self.events())
+        self.assertFalse(self.output.exists())
+        self.assertEqual(cache.read_bytes(), b"preserved old kernel section\n")
+        self.assertEqual(receipt.read_bytes(), b"preserved old firmware receipt\n")
 
     def test_failed_modern_compiler_namespace_never_retries_or_uses_old_binary(self):
         (self.root / "fail-application-namespace").touch()

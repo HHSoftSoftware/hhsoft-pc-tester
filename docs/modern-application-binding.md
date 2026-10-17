@@ -74,6 +74,34 @@ presence as a completed release gate. A matching host manifest also does not
 establish upstream trust, kernel integrity, or full builder qualification.
 Changes made and reverted between observations remain outside these checks.
 
+## Firmware exclusions
+
+The modern image build omits the exact firmware entries in
+[`platform/alpine/firmware-exclusions.json`](../platform/alpine/firmware-exclusions.json)
+while their redistribution or corresponding-source evidence remains unresolved.
+An upstream `Unknown` label is treated as missing evidence, not a finding that
+redistribution is prohibited. Firmware with reviewed alternative or conditional
+license grants is evaluated separately.
+
+The pinned input has 41 excluded paths. Before either the initramfs or modloop
+is created, the wrapper runs a source-bound filter on both temporary firmware
+trees. It requires the expected bytes and paths, including 29 selected modloop
+entries for x86/x86_64 or 26 for AArch64. Unexpected compression variants,
+matching payloads under another name, changed inputs, unsafe filesystem nodes,
+or a missing or inconsistent receipt stop the build. The wrapper patches a
+fresh private copy of the reviewed `update-kernel`; it does not alter the
+installed host script. The build retains `firmware-exclusions.json` with the
+removed paths, hashes, policy and helper digests.
+
+Some older network adapters, sound devices, cameras, USB serial adapters and
+other devices depend on these files. Their firmware-dependent functions may
+therefore be unavailable in these images. Hardware detection alone must not be
+reported as successful device qualification. The exact path list is the
+compatibility reference; the filter does not remove an entire vendor's firmware.
+Independent inspection of the finished images must confirm the omissions and
+remaining notices before publication. The exclusion receipt does not replace
+that inspection or authorize distributing an unreviewed upstream firmware archive.
+
 ## Remaining image checks
 
 An independent check must extract the application from the finished ISO and

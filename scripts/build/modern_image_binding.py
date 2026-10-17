@@ -86,6 +86,8 @@ POLICIES = ("VERSION", ".go-version", "go.mod", "scripts/build/build-go.sh",
             "scripts/build/build-alpine-image.sh", "scripts/build/modern_image_binding.py",
             "scripts/build/buildroot_source_cache.py", "scripts/build/builder_host_manifest.py",
             "scripts/build/alpine_package_cache.py", "scripts/build/record_alpine_apks.py",
+            "scripts/build/prepare_alpine_kernel.py", "scripts/build/filter_alpine_firmware.py",
+            "platform/alpine/firmware-exclusions.json",
             "scripts/build/write-alpine-sbom.sh", "scripts/security/scan_source.py",
             "platform/alpine/base.lock", "platform/alpine/mkimage/genapkovl-hhpt.sh",
             "platform/alpine/mkimage/mkimg.hhpt.sh", "platform/alpine/mkimage/upstream-scripts.sha256")

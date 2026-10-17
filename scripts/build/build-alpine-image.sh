@@ -166,6 +166,15 @@ cp "$repository_root/platform/alpine/mkimage/mkimg.hhpt.sh" "$tools/mkimg.zz-hhp
 cp "$repository_root/platform/alpine/mkimage/genapkovl-hhpt.sh" "$tools/"
 chmod 0755 "$tools/mkimage.sh" "$tools/mkimage-yaml.sh" "$tools/genapkovl-hhpt.sh"
 
+firmware_filter() {
+	/usr/bin/python3 -I -B "$image_work/application-source/scripts/build/prepare_alpine_kernel.py" "$@" \
+		--tools "$tools/host-applets" --work-parent "$tools/tmp" \
+		--architecture "$architecture" --receipt "$image_work/firmware-exclusions.json"
+}
+# image_work is exclusive to this invocation, so no earlier kernel section can
+# bypass the required filter. The installed update-kernel remains unchanged.
+firmware_filter prepare
+
 SOURCE_DATE_EPOCH=$(git -c safe.directory="$aports_root" -C "$aports_root" show -s --format=%ct "$commit")
 case $SOURCE_DATE_EPOCH in ''|*[!0-9]*) echo 'invalid source timestamp' >&2; exit 1 ;; esac
 export SOURCE_DATE_EPOCH
@@ -207,6 +216,7 @@ export SOURCE_DATE_EPOCH
 		"$@"
 	fi
 )
+firmware_filter verify
 application_binding verify --overlay
 if test -n "$package_cache"; then
 	/usr/bin/python3 -I -B "$repository_root/scripts/build/alpine_package_cache.py" verify \

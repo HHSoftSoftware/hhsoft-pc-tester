@@ -1,0 +1,1240 @@
+{
+  "WHENCE": {
+    "sha256": "93a059ebbd333245a587778663c17d3df09421da30ae6b3e2d18ac2741f506c0",
+    "url": "https://gitlab.com/kernel-firmware/linux-firmware/-/blob/20260519/WHENCE"
+  },
+  "aports_commit": "0d703a66341886130fe4e46c51cd4f161d8b96b8",
+  "entries": [
+    {
+      "WHENCE_lines": [
+        [
+          497,
+          507
+        ]
+      ],
+      "hardware": [
+        "acenic - Alteon AceNIC Gigabit Ethernet card"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-acenic",
+      "path": "acenic/tg1.bin",
+      "reason": [
+        "unknown_redistribution_evidence"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "76459b62a4e71864b2b31be1d8889e74cb9a50acc8cfc6cf19c4cff7a3db319c",
+        "size": 73116
+      },
+      "stored": {
+        "sha256": "ea5ba7762f80f7ec524f8c5449fe55caa0a5d5538e7a3850698d2351206affd9",
+        "size": 20006
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          497,
+          507
+        ]
+      ],
+      "hardware": [
+        "acenic - Alteon AceNIC Gigabit Ethernet card"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-acenic",
+      "path": "acenic/tg2.bin",
+      "reason": [
+        "unknown_redistribution_evidence"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "59d266488bbde0e3eb2cb5effeb40ea492c3ef64a7be932035b3aa7074f766af",
+        "size": 77452
+      },
+      "stored": {
+        "sha256": "3904baff1a8f3ab9538742204341a427d1ec1324da454b14c28e309fdd573b69",
+        "size": 25278
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          522,
+          539
+        ]
+      ],
+      "hardware": [
+        "starfire - Adaptec Starfire/DuraLAN support"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-adaptec",
+      "path": "adaptec/starfire_rx.bin",
+      "reason": [
+        "claimed_copyleft_without_visible_source"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "2fadd0f3fd9bc0053ae42f175dff887290bb3d2020a8ad7679f5fe7299524f91",
+        "size": 832
+      },
+      "stored": {
+        "sha256": "9936e30e61eba92d79df46b7ce0e8a60c2c75d764b6c0e501f719c55fd7a80c0",
+        "size": 388
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          522,
+          539
+        ]
+      ],
+      "hardware": [
+        "starfire - Adaptec Starfire/DuraLAN support"
+      ],
+      "link_target": "starfire_rx.bin.zst",
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-adaptec",
+      "path": "adaptec/starfire_tx.bin",
+      "reason": [
+        "claimed_copyleft_without_visible_source"
+      ],
+      "rootfs_kind": "symlink",
+      "rootfs_mode": 511,
+      "source": {
+        "sha256": "2fadd0f3fd9bc0053ae42f175dff887290bb3d2020a8ad7679f5fe7299524f91",
+        "size": 832
+      },
+      "stored": {
+        "sha256": "9936e30e61eba92d79df46b7ce0e8a60c2c75d764b6c0e501f719c55fd7a80c0",
+        "size": 388
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          239,
+          250
+        ]
+      ],
+      "hardware": [
+        "cpia2 - cameras based on Vision's CPiA2"
+      ],
+      "modloop_architectures": [],
+      "package": "linux-firmware-cpia2",
+      "path": "cpia2/stv0672_vp4.bin",
+      "reason": [
+        "claimed_copyleft_without_visible_source"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "f6417864fe59435ab357a2c0d155284e002b9b8ff89cb39c808f58dad48cf62c",
+        "size": 824
+      },
+      "stored": {
+        "sha256": "cf91d7c914d5888a78bf2ea89b4b14c7bc6ad182b2a025088fe98fe30bcf1611",
+        "size": 723
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          271,
+          287
+        ]
+      ],
+      "hardware": [
+        "io_edgeport - USB Inside Out Edgeport Serial Driver"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-edgeport",
+      "path": "edgeport/boot.fw",
+      "reason": [
+        "claimed_copyleft_without_visible_source"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "dacaefbe3b0ce5347794bf4649f99c141074536b21eb74075c8bea45cd2ece70",
+        "size": 7250
+      },
+      "stored": {
+        "sha256": "3969b41f2c9b0412cc34191757c982b997aa8071eb77c23d1f5abdf403d517c2",
+        "size": 3883
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          271,
+          287
+        ]
+      ],
+      "hardware": [
+        "io_edgeport - USB Inside Out Edgeport Serial Driver"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-edgeport",
+      "path": "edgeport/boot2.fw",
+      "reason": [
+        "claimed_copyleft_without_visible_source"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "8b565f69b49d266702998426812dcba1d542e393f2ab62f3ec56e30ef6750d60",
+        "size": 7042
+      },
+      "stored": {
+        "sha256": "8fefa0c6064798cb624b421b33e1b9b711eada5c11162c9ca06345036b958268",
+        "size": 3553
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          271,
+          287
+        ]
+      ],
+      "hardware": [
+        "io_edgeport - USB Inside Out Edgeport Serial Driver"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-edgeport",
+      "path": "edgeport/down.fw",
+      "reason": [
+        "claimed_copyleft_without_visible_source"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "f263048a5e8c95220fc178efc0e474105cb71037cdbc96e936ba1c12cdeb3035",
+        "size": 18098
+      },
+      "stored": {
+        "sha256": "9263ffabc32e7317523992ed0e699619b7cb3f4928abf90583ace6c8a3d841d2",
+        "size": 6881
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          271,
+          287
+        ]
+      ],
+      "hardware": [
+        "io_edgeport - USB Inside Out Edgeport Serial Driver"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-edgeport",
+      "path": "edgeport/down2.fw",
+      "reason": [
+        "claimed_copyleft_without_visible_source"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "2b7908c5ab80cf16f7c50863f9ac6bd08767a7521dcfc42a2225c0d45ef8c61b",
+        "size": 16566
+      },
+      "stored": {
+        "sha256": "05c30412150241a22267198486e0ee9164cb1040623e603eb0b0cb0004b2f95c",
+        "size": 6363
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          289,
+          303
+        ]
+      ],
+      "hardware": [
+        "io_ti - USB Inside Out Edgeport Serial Driver"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-edgeport",
+      "path": "edgeport/down3.bin",
+      "reason": [
+        "claimed_copyleft_without_visible_source"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "70ac9aace66a62f663e2a5dad3a14ce2ceb72752535fe8afb1503baae4a46274",
+        "size": 12942
+      },
+      "stored": {
+        "sha256": "4ce709ebfbbdbd5a0d0e5deb733c2dae9f8d36f01d85313ac544dc642a3112b6",
+        "size": 7989
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          157,
+          179
+        ]
+      ],
+      "hardware": [
+        "emi62 - EMI 6|2m USB Audio interface"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-emi62",
+      "path": "emi62/bitstream.fw",
+      "reason": [
+        "unknown_redistribution_evidence"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "b15599a64ff4743b8c4b316767f61f2f74d9f86adb7e479cfa513babaebb9293",
+        "size": 146490
+      },
+      "stored": {
+        "sha256": "449ae5d63e0014e7713b8b0e79becb050faa46128a4f3ad2b723c2727ec43601",
+        "size": 75117
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          157,
+          179
+        ]
+      ],
+      "hardware": [
+        "emi62 - EMI 6|2m USB Audio interface"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-emi62",
+      "path": "emi62/loader.fw",
+      "reason": [
+        "unknown_redistribution_evidence"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "f1d67e700b77723649972bfd59c86d24e60f3a2cfce3d31e98a4fdbf05605a34",
+        "size": 1910
+      },
+      "stored": {
+        "sha256": "284aa856ea52719616d7fcce03b1bbf7abc8d2a8bfeb96f51ffe2a076998dbcc",
+        "size": 1132
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          157,
+          179
+        ]
+      ],
+      "hardware": [
+        "emi62 - EMI 6|2m USB Audio interface"
+      ],
+      "modloop_architectures": [],
+      "package": "linux-firmware-emi62",
+      "path": "emi62/midi.fw",
+      "reason": [
+        "unknown_redistribution_evidence"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "d68a50f6b44549767e5db8df86e7bb1e2e56a13d1ec24e60ae51c0a63047c549",
+        "size": 28798
+      },
+      "stored": {
+        "sha256": "99237259665f14e613614bdeb25b59102b56fd2350c883ca5797eeec600f4cee",
+        "size": 11057
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          157,
+          179
+        ]
+      ],
+      "hardware": [
+        "emi62 - EMI 6|2m USB Audio interface"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-emi62",
+      "path": "emi62/spdif.fw",
+      "reason": [
+        "unknown_redistribution_evidence"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "bb1d5b2d4ec91bb77af31a36fdbf62f3e2525d7e75ac9814bdfbdf1f5b5759a5",
+        "size": 28606
+      },
+      "stored": {
+        "sha256": "f2e2bbb80e05e65df7b702555ea9763b8515816ab21935d32eaf05d88878fb14",
+        "size": 10951
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          29,
+          41
+        ]
+      ],
+      "hardware": [
+        "snd-maestro3 - ESS Allegro Maestro3 audio device"
+      ],
+      "modloop_architectures": [
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-ess",
+      "path": "ess/maestro3_assp_kernel.fw",
+      "reason": [
+        "unknown_redistribution_evidence"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "ab3eaddf365746e2e148b41993170703cb9e366136ed9f97ffe44dd0826b5699",
+        "size": 1898
+      },
+      "stored": {
+        "sha256": "c287a19027271cd62b3754f68383f39c27463649eb5a45673e94de843a1fb16e",
+        "size": 1231
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          29,
+          41
+        ]
+      ],
+      "hardware": [
+        "snd-maestro3 - ESS Allegro Maestro3 audio device"
+      ],
+      "modloop_architectures": [
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-ess",
+      "path": "ess/maestro3_assp_minisrc.fw",
+      "reason": [
+        "unknown_redistribution_evidence"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "60fc961eeecf8c08113d5a0211209403c411bbd30b08e919d19d4b0851826552",
+        "size": 786
+      },
+      "stored": {
+        "sha256": "8ad09d782898887d043c89826bfd9382e0ebdb3a37220a3273edb87bd0096aa9",
+        "size": 592
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          19,
+          27
+        ]
+      ],
+      "hardware": [
+        "snd-korg1212 - Korg 1212 IO audio device"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-korg",
+      "path": "korg/k1212.dsp",
+      "reason": [
+        "unknown_redistribution_evidence"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "1c7d0a9d43909dcf4cec1b60db7ce6b73bc8cbcb530d55fe4794218cc16fb766",
+        "size": 15764
+      },
+      "stored": {
+        "sha256": "e5e71db968b47b95146a7b3e7910afc1e05be94da21210564f912b4498b0c911",
+        "size": 3006
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          2945,
+          2951
+        ]
+      ],
+      "hardware": [
+        "lgs8gxx - Legend Silicon GB20600 demodulator driver"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-other",
+      "path": "lgs8g75.fw",
+      "reason": [
+        "unknown_redistribution_evidence"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "5c51680c3c491257b3a180a5babe67a979cdaba1b2626ac3eaa160d315d87ac2",
+        "size": 262
+      },
+      "stored": {
+        "sha256": "3fef60652b3097c38f1859b6212a598d03dbc0b8a3bf3f2a2788d3c949e42d8f",
+        "size": 210
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          210,
+          217
+        ]
+      ],
+      "hardware": [
+        "ti_usb_3410_5052 - Multi-Tech USB fax modems"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-other",
+      "path": "mts_mt9234mu.fw",
+      "reason": [
+        "unknown_redistribution_evidence"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "e2917e96a05f7c4b366978f1657b3228fee65bf66cd13833c214a6b5b0fceb57",
+        "size": 13769
+      },
+      "stored": {
+        "sha256": "f5e7ed8c5ec4c8147b35fa9606b1a97b35bcd91db339d6be35147a627777adb2",
+        "size": 7407
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          210,
+          217
+        ]
+      ],
+      "hardware": [
+        "ti_usb_3410_5052 - Multi-Tech USB fax modems"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-other",
+      "path": "mts_mt9234zba.fw",
+      "reason": [
+        "unknown_redistribution_evidence"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "76fbe7aba462ca4a86a1fbac851f607947e86ad9c34b1a914cc0a90adab211b5",
+        "size": 13769
+      },
+      "stored": {
+        "sha256": "8202912eedf6734a935eb8cf2cae8317e071904159441455eaffede529f2abec",
+        "size": 7407
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          1671,
+          1679
+        ]
+      ],
+      "hardware": [
+        "myri_sbus - MyriCOM Gigabit Ethernet"
+      ],
+      "modloop_architectures": [],
+      "package": "linux-firmware-myricom",
+      "path": "myricom/lanai.bin",
+      "reason": [
+        "unknown_redistribution_evidence"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "ed15551dea92d48e660c7b767f1cf58a5378274538e5089e8082b54065b8f6a1",
+        "size": 76258
+      },
+      "stored": {
+        "sha256": "112e75ba7a04d5eb71fa020ae27fcf449397adc197166b4d4f519d49b81c584d",
+        "size": 22678
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          1627,
+          1637
+        ]
+      ],
+      "hardware": [
+        "smc91c92_cs - SMC 91Cxx PCMCIA"
+      ],
+      "modloop_architectures": [
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-ositech",
+      "path": "ositech/Xilinx7OD.bin",
+      "reason": [
+        "claimed_copyleft_without_visible_source"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "15b8edaca6024c814c8b4cfcf232435607cb5568c1919d0f9d8a629f6da27abf",
+        "size": 2778
+      },
+      "stored": {
+        "sha256": "813d737595ad941d97170d7ad7d525b9120628fc05e14f6b228d109fbd91108d",
+        "size": 1237
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          1661,
+          1669
+        ]
+      ],
+      "hardware": [
+        "qlogicpti - PTI Qlogic, ISP Driver"
+      ],
+      "modloop_architectures": [],
+      "package": "linux-firmware-qlogic",
+      "path": "qlogic/isp1000.bin",
+      "reason": [
+        "unknown_redistribution_evidence"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "e779682138839f887d83dc430e81e70505b775001006ddd606164b6c85410f13",
+        "size": 18482
+      },
+      "stored": {
+        "sha256": "90005b038f9a2bbfb040d990022882b78ada901c39448a2d55e46f44d58e3a95",
+        "size": 10793
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          319,
+          335
+        ]
+      ],
+      "hardware": [
+        "snd-sb16-csp - Sound Blaster 16/AWE CSP support"
+      ],
+      "modloop_architectures": [],
+      "package": "linux-firmware-sb16",
+      "path": "sb16/alaw_main.csp",
+      "reason": [
+        "claimed_copyleft_without_visible_source"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "80c412c663d0c254e9b2a1866a736fcc12b976e2149b68fe14369ee64457152b",
+        "size": 1304
+      },
+      "stored": {
+        "sha256": "da0d6e23b3b472bbd2780b78a46e960ab3b8aab1e2dd27ebc63ae5d872a4c9d3",
+        "size": 872
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          319,
+          335
+        ]
+      ],
+      "hardware": [
+        "snd-sb16-csp - Sound Blaster 16/AWE CSP support"
+      ],
+      "modloop_architectures": [],
+      "package": "linux-firmware-sb16",
+      "path": "sb16/ima_adpcm_capture.csp",
+      "reason": [
+        "claimed_copyleft_without_visible_source"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "8b71b4c92f15b1248716819b863f878c6e3c2ddb798b6ec6b8230b38d2e0fa13",
+        "size": 1844
+      },
+      "stored": {
+        "sha256": "477606f276c904fdcc16e6ff166fcff2c96f26c0db5b42bb1584aefb9faf2455",
+        "size": 1065
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          319,
+          335
+        ]
+      ],
+      "hardware": [
+        "snd-sb16-csp - Sound Blaster 16/AWE CSP support"
+      ],
+      "modloop_architectures": [],
+      "package": "linux-firmware-sb16",
+      "path": "sb16/ima_adpcm_init.csp",
+      "reason": [
+        "claimed_copyleft_without_visible_source"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "4c6b1125a3211c38bbfcabdf2984449b81be97deed3ad8e903a1d001481672ce",
+        "size": 1032
+      },
+      "stored": {
+        "sha256": "ac49ad1260d85cdecb1314e09b12ce57b3749d122dc068c7aee9e528fc14c94a",
+        "size": 327
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          319,
+          335
+        ]
+      ],
+      "hardware": [
+        "snd-sb16-csp - Sound Blaster 16/AWE CSP support"
+      ],
+      "modloop_architectures": [],
+      "package": "linux-firmware-sb16",
+      "path": "sb16/ima_adpcm_playback.csp",
+      "reason": [
+        "claimed_copyleft_without_visible_source"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "8d11cf98fd9f518629dc5f5a21639f1a62565db5ddc3ae5a65bd95808392b377",
+        "size": 1872
+      },
+      "stored": {
+        "sha256": "9db048092df5264baf7fed2bd065c92a413da614e00fc47a2cb7cb16d5c731e6",
+        "size": 1058
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          319,
+          335
+        ]
+      ],
+      "hardware": [
+        "snd-sb16-csp - Sound Blaster 16/AWE CSP support"
+      ],
+      "modloop_architectures": [],
+      "package": "linux-firmware-sb16",
+      "path": "sb16/mulaw_main.csp",
+      "reason": [
+        "claimed_copyleft_without_visible_source"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "43d509a43a1429ca5a7b8245847870e5cc3434ba4bf176674a6501ff991656bf",
+        "size": 1256
+      },
+      "stored": {
+        "sha256": "97322eb7e02832e03be3c6319b145572118f7f0289c4f156655da0ba74a76eb7",
+        "size": 839
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          399,
+          407
+        ]
+      ],
+      "hardware": [
+        "cassini - Sun Cassini"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-sun",
+      "path": "sun/cassini.bin",
+      "reason": [
+        "unknown_redistribution_evidence"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "12312ce7996bc70b460ba7a8aeeab0a48a4cdebc0b8df5d9026b3f0117bfceb2",
+        "size": 2253
+      },
+      "stored": {
+        "sha256": "753f587414c2f43849d3b2af8ec75501dee8e8e148a49b3b067903bd09027e79",
+        "size": 1518
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          181,
+          194
+        ]
+      ],
+      "hardware": [
+        "ti_usb_3410_5052 - USB TI 3410/5052 serial device"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-other",
+      "path": "ti_3410.fw",
+      "reason": [
+        "claimed_copyleft_without_visible_source"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "c1178bd1acbdf86dac7898733c79f0cdcfdbfd4455c8c680ebd9ca76f2a5369c",
+        "size": 13765
+      },
+      "stored": {
+        "sha256": "31075188b69eb48b940ec5b7ee1e4d112f07bf7e901ac3d0948cc7f8d54ed91c",
+        "size": 7413
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          181,
+          194
+        ]
+      ],
+      "hardware": [
+        "ti_usb_3410_5052 - USB TI 3410/5052 serial device"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-other",
+      "path": "ti_5052.fw",
+      "reason": [
+        "claimed_copyleft_without_visible_source"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "6b4e3780c74df06ecfbeca819e7a36c3736dac73c9dce1224603cdfa7beefe2f",
+        "size": 13764
+      },
+      "stored": {
+        "sha256": "85c3fe4d68be53726d103017201244841b720ef5376bc675ff081915bdfdf890",
+        "size": 7380
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          92,
+          100
+        ]
+      ],
+      "hardware": [
+        "dvb-ttusb-budget - Technotrend/Hauppauge Nova-USB devices"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-ttusb-budget",
+      "path": "ttusb-budget/dspbootcode.bin",
+      "reason": [
+        "unknown_redistribution_evidence"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "29566ee6f8337fa7b3822d233735316124e4f6397ca528d61d3a3efa414fa4a5",
+        "size": 13104
+      },
+      "stored": {
+        "sha256": "33b3eafc303d84125813169c294aca5f8d54f5768079f9d7504dc7b03c9c4e82",
+        "size": 6323
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          261,
+          269
+        ]
+      ],
+      "hardware": [
+        "vicam - USB 3com HomeConnect (aka vicam)"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-vicam",
+      "path": "vicam/firmware.fw",
+      "reason": [
+        "unknown_redistribution_evidence"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "093324744bc41f8c338589d383027e42197b4731d243b70dabf91df5f4bf4d78",
+        "size": 2106
+      },
+      "stored": {
+        "sha256": "4e7788737a4c0dcd58570869644b0a5cced9b49e745a8379e1bdfe2b9c7e67fb",
+        "size": 1248
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          219,
+          237
+        ]
+      ],
+      "hardware": [
+        "whiteheat - USB ConnectTech WhiteHEAT serial device"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-other",
+      "path": "whiteheat.fw",
+      "reason": [
+        "claimed_copyleft_without_visible_source"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "10ce367b0f949bc08a3ede051dcadd726d33b05e8f8f0978c784ee890c4d9dcf",
+        "size": 23554
+      },
+      "stored": {
+        "sha256": "cd5ad8ec3a97a2149cea275afd3d281ae9c075130a2beea33b5ed3b939a4ebe7",
+        "size": 12207
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          219,
+          237
+        ]
+      ],
+      "hardware": [
+        "whiteheat - USB ConnectTech WhiteHEAT serial device"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-other",
+      "path": "whiteheat_loader.fw",
+      "reason": [
+        "claimed_copyleft_without_visible_source"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "6df305daf7e01671e7ce663bcc1be5b55caaff88666df9f1fb80fae41d412f19",
+        "size": 5626
+      },
+      "stored": {
+        "sha256": "2b05b6c624c1c9bd94fd75f52f0c64c7eef5b4a447b3a1d55dcf6ebfb5cb12ac",
+        "size": 3188
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          1543,
+          1553
+        ]
+      ],
+      "hardware": [
+        "yam - YAM driver for AX.25"
+      ],
+      "modloop_architectures": [],
+      "package": "linux-firmware-yam",
+      "path": "yam/1200.bin",
+      "reason": [
+        "unknown_redistribution_evidence"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "4bef6bfe0670edc4d87f70820c09db40606e2e2cb2402722a70bdb802547ed2d",
+        "size": 5302
+      },
+      "stored": {
+        "sha256": "03a8c0a81dfd720fd0e08e5957bba238cbb03d309162c633e355fa9d8bae1c19",
+        "size": 2915
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          1543,
+          1553
+        ]
+      ],
+      "hardware": [
+        "yam - YAM driver for AX.25"
+      ],
+      "modloop_architectures": [],
+      "package": "linux-firmware-yam",
+      "path": "yam/9600.bin",
+      "reason": [
+        "unknown_redistribution_evidence"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "02c9b68a70de1849b01da06c9025d9e121237978f4421f2dcf431a99e8314c54",
+        "size": 5302
+      },
+      "stored": {
+        "sha256": "29dd60337069704af360d18a47141431374ce2a53c2e15e752b799acc607e75b",
+        "size": 2499
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          43,
+          54
+        ]
+      ],
+      "hardware": [
+        "snd-ymfpci - Yamaha YMF724/740/744/754 audio devices"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-yamaha",
+      "path": "yamaha/ds1_ctrl.fw",
+      "reason": [
+        "unknown_redistribution_evidence"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "cd6dcf547cd70882e42b901dbc9940c5db9edcf078124092e2aec4d9320bf526",
+        "size": 12288
+      },
+      "stored": {
+        "sha256": "a6cec57b0b27b63009df4148a8f3a94eed43c2acc222c7664d361a88b6f926eb",
+        "size": 3098
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          43,
+          54
+        ]
+      ],
+      "hardware": [
+        "snd-ymfpci - Yamaha YMF724/740/744/754 audio devices"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-yamaha",
+      "path": "yamaha/ds1_dsp.fw",
+      "reason": [
+        "unknown_redistribution_evidence"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "79ed987978fc99ba999c537f401584ca952af9e4d77367f7b1da8b034f06162b",
+        "size": 128
+      },
+      "stored": {
+        "sha256": "264363780546cbd72aa4dcf2a9670bf19b5a255206ec4e63fb9136c09bdc16ef",
+        "size": 74
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          43,
+          54
+        ]
+      ],
+      "hardware": [
+        "snd-ymfpci - Yamaha YMF724/740/744/754 audio devices"
+      ],
+      "modloop_architectures": [
+        "aarch64",
+        "x86",
+        "x86_64"
+      ],
+      "package": "linux-firmware-yamaha",
+      "path": "yamaha/ds1e_ctrl.fw",
+      "reason": [
+        "unknown_redistribution_evidence"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "399f62b9539ff4aba84e934752c80b57826ad16b9b606424f1aa986f42afe9e2",
+        "size": 12288
+      },
+      "stored": {
+        "sha256": "2e347acdd844e647a39c33da04dd26987867b146fa58414580b22e2d93f44e80",
+        "size": 3447
+      }
+    },
+    {
+      "WHENCE_lines": [
+        [
+          1739,
+          1748
+        ]
+      ],
+      "hardware": [
+        "snd-wavefront - ISA WaveFront sound card"
+      ],
+      "modloop_architectures": [],
+      "package": "linux-firmware-yamaha",
+      "path": "yamaha/yss225_registers.bin",
+      "reason": [
+        "claimed_copyleft_without_visible_source"
+      ],
+      "rootfs_kind": "file",
+      "rootfs_mode": 420,
+      "source": {
+        "sha256": "c914e2743f5293f569a352e1a7ab8d3186830a35f425fa54e7c2c5bd81698682",
+        "size": 15946
+      },
+      "stored": {
+        "sha256": "0abc7d3af61ecf88289d060ada7b0215c794d18d4694255498b4e33962793ee3",
+        "size": 1991
+      }
+    }
+  ],
+  "package_origin": "linux-firmware",
+  "package_version": "20260519-r0",
+  "purpose": "Omit firmware pending redistribution or corresponding-source evidence; Unknown does not establish a prohibition.",
+  "schema": 1,
+  "source_archive": {
+    "sha256": "ef716b155f7048b784a97eea66210b6e7d59ec554abf9321cba6872637ebce11",
+    "sha512": "56d9f1d2cf03fa1807ff572601662c45b54118f75f766fe355d230aae9ed7929021453db1b234fc9982b17936405cb575581b907c41832bdc65d765f08223d04",
+    "size": 930757424,
+    "url": "https://gitlab.com/kernel-firmware/linux-firmware/-/archive/20260519/linux-firmware-20260519.tar.gz"
+  }
+}

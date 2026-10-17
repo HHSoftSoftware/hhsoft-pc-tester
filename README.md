@@ -4,7 +4,7 @@ HHSoft PC Tester is a bootable, open-source PC inspection and qualification
 appliance. It is intended to replace a collection of disconnected inventory,
 stress-test, and manual verification tools with one auditable workflow.
 
-Current version: `0.1.0-dev.0` (Phase 1: bootable inventory, report comparison,
+Current version: `0.1.0-alpha.1` (Phase 1: bootable inventory, report comparison,
 and bounded CPU, memory, graphics, input, storage, network, and USB-readiness
 alpha).
 Version tags and release artifacts follow Semantic Versioning 2.0.0.

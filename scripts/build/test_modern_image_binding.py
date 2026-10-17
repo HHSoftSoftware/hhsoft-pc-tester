@@ -21,13 +21,22 @@ NATIVE = sys.platform.startswith("linux") and Path("/usr/bin/git").is_file()
 
 def elf(architecture):
     result = bytearray(64)
-    elf_class, machine = {"x86": (1, 3), "x86_64": (2, 62), "aarch64": (2, 183)}[architecture]
+    elf_class, machine = {"x86": (1, 3), "x86_64": (2, 62), "aarch64": (2, 183), "legacy-x86": (1, 3)}[architecture]
     result[:7] = b"\x7fELF" + bytes((elf_class, 1, 1))
     result[16:20] = (2).to_bytes(2, "little") + machine.to_bytes(2, "little")
     return bytes(result) + b"synthetic compiled application; never executed\n"
 
 
 class PortablePolicyTests(unittest.TestCase):
+    def test_legacy_epoch_uses_one_bounded_authenticated_committer_timestamp(self):
+        valid = b"tree " + b"a" * 40 + b"\ncommitter HHSoft Software <info.hhsoft@gmail.com> 1700000000 +0000\n\nfixture\n"
+        self.assertEqual(binding.commit_timestamp(valid), 1700000000)
+        for value in (valid.replace(b"1700000000", b"-1"), valid.replace(b"1700000000", b"01700000000"),
+                      valid.replace(b"1700000000", b"999999999999"), b"tree fixture\n\ncommitter ignored 1 +0000",
+                      valid.replace(b"\n\n", b"\ncommitter duplicate 2 +0000\n\n")):
+            with self.subTest(value=value), self.assertRaises(ValueError):
+                binding.commit_timestamp(value)
+
     def test_raw_tree_rejects_links_submodules_private_paths_and_duplicates(self):
         for mode, name in ((b"120000", b"linked"), (b"160000", b"submodule"),
                            (b"100644", b"../escape"), (b"100644", b"fixture.key")):
@@ -57,7 +66,7 @@ class SourceBindingTests(unittest.TestCase):
         self.work = self.root / "work"
         self.work.mkdir()
         self.contents = {}
-        for relative in binding.POLICIES:
+        for relative in set(binding.POLICIES) | set(binding.LEGACY_POLICIES):
             self.contents[relative] = (SOURCE / relative).read_bytes()
         self.contents.update({"VERSION": b"0.1.0-dev.0\n", ".go-version": b"1.27.2\n",
                               "cmd/hhpt/main.go": b"package main\nfunc main() {}\n",
@@ -242,6 +251,143 @@ class SourceBindingTests(unittest.TestCase):
         self.prepare()
         self.assertFalse(marker.exists())
         self.assertNotIn(".git/config", json.loads((self.work / "application-inputs.json").read_text())["source"]["files"])
+        legacy_work = self.root / "legacy-work"
+        legacy_work.mkdir()
+        binding.prepare(self.repository, legacy_work, "legacy-x86")
+        self.assertEqual(binding.source_epoch(self.repository, legacy_work, "legacy-x86"), 1700000000)
+        self.assertFalse(marker.exists(), "legacy preparation and timestamp must not query the original Git config")
+
+    def legacy_target(self):
+        target = self.root / "target"
+        (target / "usr/bin").mkdir(parents=True)
+        (target / "etc/init.d").mkdir(parents=True)
+        (target / "etc/init.d/S50hhpt").write_text("#!/bin/sh\nexit 0\n")
+        for name in ("S40network", "S50crond"):
+            (target / "etc/init.d" / name).write_text("fixture service\n")
+        (target / "etc/shadow").write_text("root:fixture:0:0:99999:7:::\n")
+        return target
+
+    def legacy_post_build(self, target, binary, extra_environment=None):
+        environment = {"PATH": "/usr/sbin:/usr/bin:/sbin:/bin", "LC_ALL": "C",
+                       "HHPT_BINARY": str(binary), "HHPT_BINDING_REPOSITORY": str(self.repository),
+                       "HHPT_BINDING_WORK": str(self.work)}
+        environment.update(extra_environment or {})
+        return subprocess.run(["/bin/sh", str(self.work / "application-source/platform/buildroot/board/legacy-x86/post-build.sh"),
+                               str(target)], env=environment, capture_output=True, text=True, timeout=20)
+
+    def test_legacy_fresh_binary_and_real_post_build_receipt_bind_installed_bytes(self):
+        poison = self.write("build/bin/linux_legacy-x86/hhpt", b"old poisoned binary\n")
+        self.prepare("legacy-x86")
+        binary = self.compile_fixture("legacy-x86")
+        value = self.complete("legacy-x86")
+        self.assertEqual(set(value["policy"]), set(binding.LEGACY_POLICIES))
+        self.assertEqual(value["source"]["commit_epoch"], 1700000000)
+        self.assertEqual(value["version"], "0.1.0-dev.0")
+        self.assertEqual(value["architecture"], "legacy-x86")
+        self.assertEqual(poison.read_bytes(), b"old poisoned binary\n")
+        target = self.legacy_target()
+        result = self.legacy_post_build(target, binary)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertEqual((target / "usr/bin/hhpt").read_bytes(), binary.read_bytes())
+        self.assertEqual((target / "usr/bin/hhpt").stat().st_mode & 0o777, 0o755)
+        self.assertEqual((self.work / "application-overlay.sha256").read_text(), value["binary"]["sha256"] + "\n")
+        binding.verify(self.repository, self.work, "legacy-x86", overlay=True, installed_root=target)
+        repeated = self.legacy_post_build(target, binary)
+        self.assertNotEqual(repeated.returncode, 0, "a stale receipt cannot be reused")
+        (target / "usr/bin/hhpt").write_bytes(elf("legacy-x86") + b"changed after installation\n")
+        with self.assertRaises(ValueError):
+            binding.verify(self.repository, self.work, "legacy-x86", overlay=True, installed_root=target)
+
+    def test_legacy_wrong_target_version_or_reused_binary_is_rejected(self):
+        self.compile_fixture("legacy-x86")
+        with self.assertRaises(ValueError):
+            self.prepare("legacy-x86")
+        self.work = self.root / "fresh-legacy"
+        self.work.mkdir()
+        self.prepare("legacy-x86")
+        binary = self.compile_fixture("legacy-x86")
+        binary.write_bytes(elf("x86_64"))
+        with self.assertRaises(ValueError):
+            self.complete("legacy-x86")
+        binary.write_bytes(elf("legacy-x86"))
+        self.complete("legacy-x86")
+        self.write("VERSION", b"0.1.0-dev.1\n")
+        with self.assertRaises(ValueError):
+            binding.verify(self.repository, self.work, "legacy-x86")
+
+    def test_legacy_installed_links_fifo_and_changed_bytes_never_receive_a_receipt(self):
+        self.prepare("legacy-x86")
+        binary = self.compile_fixture("legacy-x86")
+        self.complete("legacy-x86")
+        target = self.legacy_target()
+        installed = target / "usr/bin/hhpt"
+        for kind in ("changed", "symlink", "fifo", "hardlink"):
+            with self.subTest(kind=kind):
+                if kind == "changed":
+                    installed.write_bytes(elf("legacy-x86") + b"wrong copy\n")
+                    installed.chmod(0o755)
+                elif kind == "symlink":
+                    installed.symlink_to(binary)
+                elif kind == "fifo":
+                    os.mkfifo(installed)
+                else:
+                    os.link(binary, installed)
+                result = subprocess.run([sys.executable, "-I", "-B", str(Path(binding.__file__)), "record-installed",
+                                         "--repository", str(self.repository), "--work", str(self.work),
+                                         "--arch", "legacy-x86", "--installed-root", str(target)],
+                                        capture_output=True, text=True, timeout=10)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse((self.work / "application-overlay.sha256").exists())
+                self.assertNotIn("Traceback", result.stderr)
+                self.assertNotIn(str(self.root), result.stdout + result.stderr)
+                installed.unlink()
+
+    def test_legacy_installed_permissions_are_required_before_and_after_receipt(self):
+        self.prepare("legacy-x86")
+        binary = self.compile_fixture("legacy-x86")
+        self.complete("legacy-x86")
+        target = self.legacy_target()
+        installed = target / "usr/bin/hhpt"
+        installed.write_bytes(binary.read_bytes())
+        receipt = self.work / "application-overlay.sha256"
+        modes = (0o644, 0o4755, 0o2755, 0o777, 0o000)
+        for mode in modes:
+            with self.subTest(stage="before receipt", mode=oct(mode)):
+                installed.chmod(mode)
+                with self.assertRaises(ValueError):
+                    binding.record_installed(self.repository, self.work, "legacy-x86", target)
+                self.assertFalse(receipt.exists())
+        installed.chmod(0o755)
+        binding.record_installed(self.repository, self.work, "legacy-x86", target)
+        for mode in modes:
+            with self.subTest(stage="after receipt", mode=oct(mode)):
+                installed.chmod(mode)
+                with self.assertRaises(ValueError):
+                    binding.verify(self.repository, self.work, "legacy-x86", overlay=True, installed_root=target)
+        installed.chmod(0o755)
+        binding.verify(self.repository, self.work, "legacy-x86", overlay=True, installed_root=target)
+
+        original_reader = binding.files.regular_bytes
+        def change_mode_during_read(parent, name, maximum, *args, **kwargs):
+            if name == "hhpt":
+                installed.chmod(0o644)
+            return original_reader(parent, name, maximum, *args, **kwargs)
+        with mock.patch.object(binding.files, "regular_bytes", side_effect=change_mode_during_read), self.assertRaises(ValueError):
+            binding.installed_binary(target)
+
+    def test_legacy_host_binding_uses_the_buildroot_profile_and_lock(self):
+        self.write("VERSION", b"0.1.0-alpha.1\n")
+        relative = "platform/builder-hosts/buildroot-image-x86_64.json"
+        self.contents[relative] = b'{"fixture":"reviewed manifest boundary"}\n'
+        self.write(relative, self.contents[relative])
+        self.commit_source()
+        with mock.patch.object(binding.host, "actual_host_architecture", return_value="x86_64"), \
+                mock.patch.object(binding.host, "verify_manifest") as verify:
+            self.prepare("legacy-x86")
+        verify.assert_called_once_with(self.repository / relative, "buildroot-image",
+                                       self.repository / "platform/buildroot/base.lock", self.repository / ".go-version")
+        value = json.loads((self.work / "application-inputs.json").read_text())
+        self.assertEqual(value["host"]["manifest_sha256"], hashlib.sha256(self.contents[relative]).hexdigest())
 
     def test_gitless_exports_and_reference_fifo_fail_closed(self):
         head = self.repository / ".git/HEAD"

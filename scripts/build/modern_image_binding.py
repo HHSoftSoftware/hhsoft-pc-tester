@@ -1,5 +1,5 @@
 #!/usr/bin/python3 -IB
-"""Bind a freshly compiled modern image application to committed source inputs.
+"""Bind a freshly compiled image application to committed source inputs.
 
 Records describe this build invocation, not approval, extracted-image validation,
 or full builder qualification. Production requires a standalone Linux Git clone.
@@ -73,7 +73,7 @@ except (OSError, ValueError, SyntaxError, ImportError):
         raise
     print("Modern application binding: unavailable or unsupported build policy; build blocked", file=sys.stderr)
     sys.exit(1)
-ARCHITECTURES = {"x86": (1, 3), "x86_64": (2, 62), "aarch64": (2, 183)}
+ARCHITECTURES = {"x86": (1, 3), "x86_64": (2, 62), "aarch64": (2, 183), "legacy-x86": (1, 3)}
 MAX_SOURCE_FILES = 5000
 MAX_SOURCE_BYTES = 64 << 20
 MAX_SOURCE_FILE = 16 << 20
@@ -89,6 +89,16 @@ POLICIES = ("VERSION", ".go-version", "go.mod", "scripts/build/build-go.sh",
             "scripts/build/write-alpine-sbom.sh", "scripts/security/scan_source.py",
             "platform/alpine/base.lock", "platform/alpine/mkimage/genapkovl-hhpt.sh",
             "platform/alpine/mkimage/mkimg.hhpt.sh", "platform/alpine/mkimage/upstream-scripts.sha256")
+LEGACY_POLICIES = ("VERSION", ".go-version", "go.mod", "scripts/build/build-go.sh",
+                   "scripts/build/build-buildroot-image.sh", "scripts/build/modern_image_binding.py",
+                   "scripts/build/buildroot_source_cache.py", "scripts/build/builder_host_manifest.py",
+                   "scripts/build/write_buildroot_sbom.py", "scripts/security/scan_source.py",
+                   "platform/buildroot/base.lock", "platform/buildroot/configs/hhpt_legacy_x86_defconfig",
+                   "platform/buildroot/board/legacy-x86/post-build.sh")
+
+
+def policies(architecture):
+    return LEGACY_POLICIES if architecture == "legacy-x86" else POLICIES
 
 
 def require(value, message):
@@ -292,13 +302,25 @@ def reject_extra_compilation_inputs(root, tracked):
             require(name in tracked, "extra top-level compilation input")
 
 
-def source_identity(repository, work, destination=None):
+def commit_timestamp(content):
+    headers = content.split(b"\n\n", 1)[0].split(b"\n")
+    committers = [line for line in headers if line.startswith(b"committer ")]
+    require(len(committers) == 1, "source commit timestamp is missing or ambiguous")
+    match = re.fullmatch(rb"committer [^\r\n]+ (0|[1-9][0-9]{0,11}) [+-][0-9]{4}", committers[0])
+    require(match is not None, "unsupported source commit timestamp")
+    timestamp = int(match.group(1))
+    require(timestamp <= 253402300799, "source commit timestamp exceeds bound")
+    return timestamp
+
+
+def source_identity(repository, work, destination=None, architecture=None):
     with git_objects(repository, work) as (root, commit, object_bytes):
-        header = object_bytes("commit", commit).split(b"\n", 1)[0]
+        commit_content = object_bytes("commit", commit)
+        header = commit_content.split(b"\n", 1)[0]
         require(re.fullmatch(rb"tree [0-9a-f]{40}", header), "invalid committed source tree")
         tree = header[5:].decode("ascii")
         tracked = tree_files(tree, object_bytes)
-        require(set(POLICIES) <= tracked.keys(), "required build policy missing from committed source")
+        require(set(policies(architecture)) <= tracked.keys(), "required build policy missing from committed source")
         reject_extra_compilation_inputs(root, tracked)
         total = 0
         if destination is not None:
@@ -326,8 +348,11 @@ def source_identity(repository, work, destination=None):
             os.close(actual_parent)
         require(tracked["scripts/build/modern_image_binding.py"]["sha256"] == actual["sha256"],
                 "executed binding policy differs from source")
-        return {"commit": commit, "tree": tree, "files": tracked,
-                "files_sha256": hashlib.sha256(canonical(tracked)).hexdigest()}
+        result = {"commit": commit, "tree": tree, "files": tracked,
+                  "files_sha256": hashlib.sha256(canonical(tracked)).hexdigest()}
+        if architecture == "legacy-x86":
+            result["commit_epoch"] = commit_timestamp(commit_content)
+        return result
 
 
 def verify_source_copy(source, expected):
@@ -369,23 +394,24 @@ def write_json(path, value):
         os.close(root)
 
 
-def host_binding(repository, classification):
+def host_binding(repository, classification, architecture):
     if classification == "development":
         return {"status": "unqualified-development", "manifest_sha256": None}
-    architecture = host.actual_host_architecture()
-    relative = "platform/builder-hosts/alpine-image-" + architecture + ".json"
+    profile, platform = ("buildroot-image", "buildroot") if architecture == "legacy-x86" else ("alpine-image", "alpine")
+    host_architecture = host.actual_host_architecture()
+    relative = "platform/builder-hosts/" + profile + "-" + host_architecture + ".json"
     manifest = repository / relative
-    host.verify_manifest(manifest, "alpine-image", repository / "platform/alpine/base.lock", repository / ".go-version")
+    host.verify_manifest(manifest, profile, repository / "platform" / platform / "base.lock", repository / ".go-version")
     root = files.open_directory(repository)
     try:
         record, _ = read_file(root, relative, host.MAX_MANIFEST_BYTES)
     finally:
         os.close(root)
-    return {"status": "matched-reviewed-manifest", "manifest_sha256": record["sha256"], "host_architecture": architecture}
+    return {"status": "matched-reviewed-manifest", "manifest_sha256": record["sha256"], "host_architecture": host_architecture}
 
 
 def context(repository, architecture):
-    require(architecture in ARCHITECTURES, "unsupported modern target")
+    require(architecture in ARCHITECTURES, "unsupported image target")
     root = files.open_directory(repository)
     try:
         _, version = read_file(root, "VERSION", 256)
@@ -397,14 +423,18 @@ def context(repository, architecture):
     go_version = go_version.decode("ascii").rstrip("\r\n")
     require(re.fullmatch(r"[1-9][0-9]*\.[0-9]+\.[0-9]+", go_version), "invalid Go version policy")
     return {"architecture": architecture, "version": version, "go_version": go_version,
-            "host": host_binding(repository, classification), "qualification": "not_established"}
+            "host": host_binding(repository, classification, architecture), "qualification": "not_established"}
 
 
 def prepare(repository, work, architecture):
     require(not (work / "application-binding.json").exists(), "binding output must be new")
-    source = source_identity(repository, work, work / "application-source")
+    if architecture == "legacy-x86":
+        require(not any(os.path.lexists(work / name) for name in
+                        ("application-inputs.json", "application-bin", "application-overlay.sha256")),
+                "legacy application inputs and receipt must be new")
+    source = source_identity(repository, work, work / "application-source", architecture)
     value = {"schema": 1, "source": source, **context(repository, architecture)}
-    value["policy"] = {path: source["files"][path]["sha256"] for path in POLICIES}
+    value["policy"] = {path: source["files"][path]["sha256"] for path in policies(architecture)}
     write_json(work / "application-inputs.json", value)
 
 
@@ -429,8 +459,8 @@ def verify_inputs(repository, work, value, architecture):
     require(value["architecture"] == architecture, "application target differs from requested target")
     expected = context(repository, architecture)
     require(all(value.get(key) == item for key, item in expected.items()), "application build policy changed")
-    require(source_identity(repository, work) == value["source"], "source identity changed")
-    require(value["policy"] == {path: value["source"]["files"][path]["sha256"] for path in POLICIES},
+    require(source_identity(repository, work, architecture=architecture) == value["source"], "source identity changed")
+    require(value["policy"] == {path: value["source"]["files"][path]["sha256"] for path in policies(architecture)},
             "source policy binding differs")
     verify_source_copy(work / "application-source", value["source"])
 
@@ -442,7 +472,31 @@ def complete(repository, work, architecture):
     write_json(work / "application-binding.json", value)
 
 
-def verify(repository, work, architecture, overlay=False):
+def installed_binary(target):
+    root = files.open_directory(Path(target) / "usr/bin")
+    pinned = None
+    try:
+        # Inspect permissions without opening a substituted device or FIFO.
+        # Revalidate this pinned inode and the directory entry around the
+        # shared bounded reader; no root ownership is assumed before fakeroot.
+        pinned = os.open("hhpt", os.O_PATH | os.O_NOFOLLOW | os.O_CLOEXEC, dir_fd=root)
+        before = os.fstat(pinned)
+        require(stat.S_ISREG(before.st_mode) and before.st_nlink == 1 and stat.S_IMODE(before.st_mode) == 0o755,
+                "installed application must be a regular executable with mode 0755")
+        record, _ = files.regular_bytes(root, "hhpt", MAX_BINARY_BYTES)
+        after = os.fstat(pinned)
+        current = os.stat("hhpt", dir_fd=root, follow_symlinks=False)
+        fields = ("st_dev", "st_ino", "st_mode", "st_nlink", "st_uid", "st_gid", "st_size", "st_mtime_ns", "st_ctime_ns")
+        require(all(getattr(before, field) == getattr(after, field) == getattr(current, field) for field in fields),
+                "installed application metadata changed while reading")
+        return record
+    finally:
+        if pinned is not None:
+            os.close(pinned)
+        os.close(root)
+
+
+def verify(repository, work, architecture, overlay=False, installed_root=None):
     value = read_json(work / "application-binding.json")
     verify_inputs(repository, work, value, architecture)
     require(value["binary"] == binary_record(work, architecture), "application binary changed")
@@ -453,6 +507,33 @@ def verify(repository, work, architecture, overlay=False):
         finally:
             os.close(root)
         require(digest == value["binary"]["sha256"].encode("ascii") + b"\n", "overlay application differs from bound binary")
+        if architecture == "legacy-x86":
+            require(installed_root is not None, "legacy receipt requires the installed application")
+            require(installed_binary(installed_root) == {key: value["binary"][key] for key in ("size", "sha256")},
+                    "installed application changed after its receipt")
+    return value
+
+
+def record_installed(repository, work, architecture, installed_root):
+    require(architecture == "legacy-x86" and installed_root is not None, "unsupported installed application receipt")
+    value = verify(repository, work, architecture)
+    require(installed_binary(installed_root) == {key: value["binary"][key] for key in ("size", "sha256")},
+            "installed application differs from bound binary")
+    root = files.open_directory(work)
+    try:
+        descriptor = os.open("application-overlay.sha256", os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW,
+                             0o600, dir_fd=root)
+        with os.fdopen(descriptor, "wb") as stream:
+            stream.write(value["binary"]["sha256"].encode("ascii") + b"\n")
+    finally:
+        os.close(root)
+
+
+def source_epoch(repository, work, architecture):
+    require(architecture == "legacy-x86", "source epoch is only used by the legacy image")
+    value = read_json(work / "application-inputs.json")
+    verify_inputs(repository, work, value, architecture)
+    return value["source"]["commit_epoch"]
 
 
 class RedactedParser(argparse.ArgumentParser):
@@ -462,21 +543,30 @@ class RedactedParser(argparse.ArgumentParser):
 
 def main():
     parser = RedactedParser(description=__doc__)
-    parser.add_argument("command", choices=("prepare", "complete", "verify"))
+    parser.add_argument("command", choices=("prepare", "complete", "verify", "source-epoch", "record-installed"))
     parser.add_argument("--repository", type=Path, required=True)
     parser.add_argument("--work", type=Path, required=True)
     parser.add_argument("--arch", choices=sorted(ARCHITECTURES), required=True)
     parser.add_argument("--overlay", action="store_true")
+    parser.add_argument("--installed-root", type=Path)
     arguments = parser.parse_args()
     require(not arguments.overlay or arguments.command == "verify", "overlay check requires completed binding")
+    require(arguments.installed_root is None or arguments.arch == "legacy-x86" and
+            (arguments.command == "record-installed" or arguments.command == "verify" and arguments.overlay),
+            "installed target is only accepted for legacy application checks")
     repository, work = files.absolute_path(arguments.repository), files.absolute_path(arguments.work)
     if arguments.command == "prepare":
         prepare(repository, work, arguments.arch)
     elif arguments.command == "complete":
         complete(repository, work, arguments.arch)
+    elif arguments.command == "record-installed":
+        record_installed(repository, work, arguments.arch, arguments.installed_root)
+    elif arguments.command == "source-epoch":
+        print(source_epoch(repository, work, arguments.arch))
+        return
     else:
-        verify(repository, work, arguments.arch, arguments.overlay)
-    print("Modern application binding: " + arguments.command + " passed; image extraction and qualification remain separate")
+        verify(repository, work, arguments.arch, arguments.overlay, arguments.installed_root)
+    print("Image application binding: " + arguments.command + " passed; image extraction and qualification remain separate")
 
 
 if __name__ == "__main__":

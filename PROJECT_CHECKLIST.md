@@ -1,6 +1,6 @@
 # HHSoft PC Tester Master Checklist
 
-Status date: 2026-10-16
+Status date: 2026-10-17
 
 This is the project-level source of truth derived from the original product
 requirements. Check an item only when implementation and applicable validation
@@ -53,8 +53,14 @@ complete; real-hardware requirements remain open until physically tested.
   actual-host comparison; approved manifests and full qualification remain open.
 - [x] Compile modern image applications from verified committed source during
   each invocation, bind source/compiler-policy/target/binary records, and verify
-  the actual overlay copy. Native failure-case fixtures pass; fresh real
-  compilation evidence and independent finished-ISO extraction remain open.
+  the actual overlay copy. Native failure-case fixtures and fresh offline
+  compilation with actual overlay checks passed for all three modern targets;
+  independent finished-ISO extraction remains open.
+- [x] Bind legacy application compilation to exact committed source, run its
+  Go tests and build offline with a source cache, and recheck the installed
+  executable and its exclusive receipt after image stages. The full 178-test
+  native build suite passes with no skips; fresh legacy image construction,
+  embedded-version inspection, and finished-ISO extraction remain open.
 - [x] Require the pinned Go package for both image-host profiles, observe fixed
   global download/loader configuration, and reject extended attributes,
   capabilities, and ACLs in the bounded host inventory. All 42 native inventory

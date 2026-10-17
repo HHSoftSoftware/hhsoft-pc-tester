@@ -93,8 +93,11 @@ A different Buildroot version or helper requires an explicit patch and hash
 review; there is no environment override. The complete host-patch directory is
 covered by the source-cache policy binding.
 
-Configuration, compilation, and legal-info Make commands each run in a new
-network namespace with no external network interfaces. Namespace failure aborts
+The wrapper first exports verified committed application and Buildroot policy
+bytes. It compiles the legacy application from that export and records the
+actual installed binary through the [legacy application binding](legacy-application-binding.md).
+Go testing/compilation, configuration, image compilation, and legal-info Make
+commands each run in a new network namespace with no external network interfaces. Namespace failure aborts
 the build; there is no online fallback. Missing source dependencies therefore
 cannot be fetched from a live mirror. The wrapper checks both original and
 staged payloads again after Make, before copying image artifacts to the output

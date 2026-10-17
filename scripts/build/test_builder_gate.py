@@ -112,11 +112,12 @@ from pathlib import Path
 import shutil
 
 parser = argparse.ArgumentParser()
-parser.add_argument("command", choices=("prepare", "complete", "verify"))
+parser.add_argument("command", choices=("prepare", "complete", "verify", "source-epoch", "record-installed"))
 parser.add_argument("--repository", type=Path, required=True)
 parser.add_argument("--work", type=Path, required=True)
-parser.add_argument("--arch", choices=("x86", "x86_64", "aarch64"), required=True)
+parser.add_argument("--arch", choices=("x86", "x86_64", "aarch64", "legacy-x86"), required=True)
 parser.add_argument("--overlay", action="store_true")
+parser.add_argument("--installed-root", type=Path)
 args = parser.parse_args()
 fixture = args.repository.parent
 with (fixture / "events").open("a") as stream:
@@ -126,20 +127,33 @@ record = args.work / "application-binding.json"
 version = (args.repository / "VERSION").read_text()
 if args.command == "prepare":
     source = args.work / "application-source"
-    (source / "scripts/build").mkdir(parents=True)
-    (source / "scripts/security").mkdir()
-    shutil.copyfile(args.repository / "scripts/build/build-go.sh", source / "scripts/build/build-go.sh")
-    shutil.copyfile(args.repository / "scripts/security/scan_source.py", source / "scripts/security/scan_source.py")
-    shutil.copyfile(args.repository / "VERSION", source / "VERSION")
+    source.mkdir()
+    for directory in ("scripts", "platform"):
+        shutil.copytree(args.repository / directory, source / directory)
+    for name in ("VERSION", ".go-version", "LICENSE"):
+        shutil.copyfile(args.repository / name, source / name)
+elif args.command == "source-epoch":
+    if (fixture / "fail-source-time").exists():
+        raise SystemExit(29)
+    print("invalid" if (fixture / "bad-source-time").exists() else "1700000000")
 elif args.command == "complete":
     record.write_text(json.dumps({"architecture": args.arch, "version": version,
                                 "sha256": hashlib.sha256(binary.read_bytes()).hexdigest()}))
+    if (fixture / "stale-legacy-receipt").exists():
+        (args.work / "application-overlay.sha256").write_text(hashlib.sha256(binary.read_bytes()).hexdigest() + "\n")
 else:
     value = json.loads(record.read_text())
     assert value == {"architecture": args.arch, "version": version,
                      "sha256": hashlib.sha256(binary.read_bytes()).hexdigest()}
+    assert (args.work / "application-source/VERSION").read_text() == version
+    if args.command == "record-installed":
+        assert (args.installed_root / "usr/bin/hhpt").read_bytes() == binary.read_bytes()
+        with (args.work / "application-overlay.sha256").open("x") as stream:
+            stream.write(value["sha256"] + "\n")
     if args.overlay:
         assert (args.work / "application-overlay.sha256").read_text() == value["sha256"] + "\n"
+        if args.arch == "legacy-x86":
+            assert (args.installed_root / "usr/bin/hhpt").read_bytes() == binary.read_bytes()
 '''
 
 
@@ -181,6 +195,12 @@ git() {
 sha256sum() {
     if test "$1" = -c; then return 0; fi
     /bin/sh -c 'sha256sum "$@"' fixture-hash "$@"
+    case "$1" in */inputs/*.tar.xz)
+        if test -f "$fixture_root/fail-input-hash"; then
+            test "$(basename "$1")" != "$(cat "$fixture_root/fail-input-hash")" || return 84
+        fi
+        ;;
+    esac
     case "$1" in */application-bin/*/hhpt)
         test ! -f "$fixture_root/fail-application-hash" || return 86
         ;;
@@ -245,8 +265,22 @@ make() {
         sh "$source_root/support/scripts/hardlink-or-copy" \
             "$downloads/linux/linux-6.12.1.tar.xz" "$build_root/legal-info/sources/linux"
         sh "$source_root/support/scripts/hardlink-or-copy" \
-            "$repository_root/platform/buildroot/patches/linux/0001-fixture.patch" \
+            "$source_export/platform/buildroot/patches/linux/0001-fixture.patch" \
             "$build_root/legal-info/sources/linux" 0001-external.patch
+        if test -f "$fixture_root/change-legacy-installed"; then printf 'changed\n' >> "$build_root/target/usr/bin/hhpt"; fi
+        if test -f "$fixture_root/change-legacy-source"; then printf 'changed\n' >> "$source_export/VERSION"; fi
+        if test -f "$fixture_root/change-overlay-receipt"; then printf 'changed\n' > "$application_work/application-overlay.sha256"; fi
+        if test -f "$fixture_root/change-compiled-application"; then printf 'changed\n' >> "$binary"; fi
+        ;;
+    *' hhpt_legacy_x86_defconfig '*) ;;
+    *)
+        mkdir -p "$build_root/target/etc/init.d"
+        printf 'fixture\n' > "$build_root/target/etc/init.d/S50hhpt"
+        printf 'root:fixture:0:0:99999:7:::\n' > "$build_root/target/etc/shadow"
+        sh "$source_export/platform/buildroot/board/legacy-x86/post-build.sh" "$build_root/target"
+        cp "$build_root/target/usr/bin/hhpt" "$fixture_root/image-application"
+        printf '%s\n' "$HHPT_BINARY" > "$fixture_root/image-application-path"
+        printf '%s\n' "$build_root/target/usr/bin/hhpt" > "$fixture_root/legacy-installed-path"
         ;;
     esac
 }
@@ -299,7 +333,12 @@ class BuilderGateIntegrationTests(unittest.TestCase):
         self.write("scripts/build/phase.py", PHASE)
         self.write("scripts/build/alpine_package_cache.py", "# Synthetic cache fixture; no host/package access.\n")
         self.write("scripts/build/write-alpine-sbom.sh", "#!/bin/sh\nexit 0\n")
-        self.write("scripts/build/write_buildroot_sbom.py", "# Synthetic SBOM fixture.\n")
+        self.write("scripts/build/write_buildroot_sbom.py", 'from pathlib import Path\n'
+                   'fixture = Path(' + repr(str(self.root)) + ')\n'
+                   'with (fixture / "events").open("a") as stream: stream.write("sbom-output\\n")\n'
+                   'if (fixture / "change-installed-during-output").exists():\n'
+                   '    with Path((fixture / "legacy-installed-path").read_text().strip()).open("ab") as stream:\n'
+                   '        stream.write(b"changed during output\\n")\n')
         self.write("scripts/build/build-go.sh", '#!/bin/sh\nset -eu\nfixture=' + shlex.quote(str(self.root)) + '\n'
                    'printf "build-application\\n" >> "$fixture/events"\n'
                    '/usr/bin/python3 -I -B "$fixture/repository/scripts/build/phase.py" application "$@"\n'
@@ -345,7 +384,8 @@ class BuilderGateIntegrationTests(unittest.TestCase):
                        "sha256  " + archive_hash + "  linux-6.12.1.tar.xz\n")
         self.write("platform/buildroot/patches/linux/0001-fixture.patch", "Synthetic external patch bytes.\n")
         self.prepare_legacy_archive()
-        self.write("platform/buildroot/board/legacy-x86/post-build.sh", "#!/bin/sh\nexit 97\n")
+        self.write("platform/buildroot/board/legacy-x86/post-build.sh",
+                   (SOURCE.parents[1] / "platform/buildroot/board/legacy-x86/post-build.sh").read_text())
         (self.root / "tool-stubs").mkdir()
         for name in TOOLS:
             path = self.root / "tool-stubs" / name
@@ -631,7 +671,7 @@ class BuilderGateIntegrationTests(unittest.TestCase):
         for phase in make_calls:
             self.assertEqual(phase["environment"].get("HHPT_FIXTURE_NETWORK_ISOLATED"), "1")
             self.assertIn("BR2_DL_DIR=" + str(self.work / "downloads"), phase["arguments"])
-        self.assertEqual(self.events().count("network-isolation"), 4)
+        self.assertEqual(self.events().count("network-isolation"), 5)
         self.assertEqual(source_cache_policy.inventory(self.legacy_cache),
                          source_cache_policy.inventory(self.work / "downloads"))
         self.assertFalse((self.work / "downloads/busybox/.lock").exists())
@@ -663,6 +703,91 @@ class BuilderGateIntegrationTests(unittest.TestCase):
             self.assertEqual(identity(path), before)
         source_cache_policy.verify(self.legacy_cache, self.repository)
         source_cache_policy.verify(self.work / "downloads", self.repository)
+
+    def test_legacy_compiles_exported_requested_source_and_never_uses_ambient_binary(self):
+        poison = self.write("build/bin/linux_legacy-x86/hhpt", "POISON: unrelated old legacy executable\n", 0o755)
+        self.write("scripts/security/scan_source.py", 'from pathlib import Path\n'
+                   'root = Path(__file__).resolve().parents[2]\n'
+                   'with Path(' + repr(str(self.root / "source-scans")) + ').open("a") as stream:\n'
+                   '    stream.write(str(root) + "\\n")\n')
+        ambient_receipt = self.root / "ambient-receipt"
+        result = self.invoke("buildroot-image", environment={"HHPT_BINARY": str(poison),
+                             "HHPT_BINDING_REPOSITORY": str(self.root / "wrong-source"),
+                             "HHPT_BINDING_WORK": str(self.root / "wrong-work"),
+                             "HHPT_OVERLAY_RECEIPT": str(ambient_receipt)})
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        expected = b"fresh application target=legacy-x86 version=1.2.3-alpha.1\n"
+        self.assertEqual((self.root / "image-application").read_bytes(), expected)
+        selected = Path((self.root / "image-application-path").read_text().strip())
+        self.assertEqual(selected.parts[-3:], ("application-bin", "linux_legacy-x86", "hhpt"))
+        source = selected.parents[2] / "application-source"
+        self.assertEqual((self.root / "source-scans").read_text().splitlines(), [str(source)])
+        self.assertEqual(poison.read_bytes(), b"POISON: unrelated old legacy executable\n")
+        self.assertFalse(ambient_receipt.exists())
+        phases = [json.loads(line) for line in (self.root / "phases.jsonl").read_text().splitlines()]
+        compiled = [phase for phase in phases if phase["phase"] == "application"]
+        self.assertEqual(len(compiled), 1)
+        self.assertEqual(compiled[0]["arguments"], ["legacy-x86", str(selected.parents[1])])
+        self.assertEqual(compiled[0]["environment"].get("HHPT_FIXTURE_NETWORK_ISOLATED"), "1")
+        for phase in (phase for phase in phases if phase["phase"] == "make"):
+            self.assertIn("BR2_EXTERNAL=" + str(source / "platform/buildroot"), phase["arguments"])
+        events = self.events()
+        self.assertLess(events.index("binding-prepare"), events.index("build-application"))
+        self.assertLess(events.index("binding-complete"), events.index("build-image"))
+        self.assertEqual(events.count("binding-record-installed"), 1)
+        self.assertEqual(events.count("binding-verify"), 3)
+        self.assertLess(events.index("sbom-output"), max(i for i, event in enumerate(events) if event == "binding-verify"))
+
+    def test_legacy_compiler_namespace_failure_never_retries_or_uses_old_binary(self):
+        (self.root / "fail-application-namespace").touch()
+        result = self.invoke("buildroot-image")
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("binding-prepare", self.events())
+        self.assertNotIn("build-application", self.events())
+        self.assertNotIn("build-image", self.events())
+        self.assertNotIn("binding-complete", self.events())
+        self.assertFalse(self.output.exists())
+
+    def test_legacy_export_scan_failure_prevents_compiler_and_image(self):
+        self.write("scripts/security/scan_source.py", 'raise SystemExit(43)\n')
+        result = self.invoke("buildroot-image")
+        self.assertEqual(result.returncode, 43, result.stdout + result.stderr)
+        self.assertIn("binding-prepare", self.events())
+        self.assertNotIn("build-application", self.events())
+        self.assertNotIn("signing-input-check", self.events())
+        self.assertNotIn("archive-extraction", self.events())
+        self.assertFalse(self.output.exists())
+
+    def test_legacy_input_checksum_failure_cannot_pass_with_matching_digest(self):
+        for archive in ("buildroot-" + LEGACY_VERSION + ".tar.xz", "linux-6.12.1.tar.xz"):
+            with self.subTest(archive=archive):
+                self.setUp()
+                (self.root / "fail-input-hash").write_text(archive + "\n")
+                result = self.invoke("buildroot-image")
+                self.assertEqual(result.returncode, 84, result.stdout + result.stderr)
+                self.no_build_effects()
+
+    def test_legacy_stale_receipt_is_rejected_before_make(self):
+        (self.root / "stale-legacy-receipt").touch()
+        result = self.invoke("buildroot-image")
+        self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("binding-complete", self.events())
+        self.assertNotIn("build-image", self.events())
+        self.assertFalse(self.output.exists())
+
+    def test_legacy_changes_during_legal_info_or_output_cannot_finish_successfully(self):
+        for marker in ("change-legacy-installed", "change-legacy-source", "change-overlay-receipt",
+                       "change-compiled-application", "change-installed-during-output"):
+            with self.subTest(marker=marker):
+                self.setUp()
+                (self.root / marker).touch()
+                result = self.invoke("buildroot-image")
+                self.assertNotEqual(result.returncode, 0, result.stdout + result.stderr)
+                self.assertIn("binding-record-installed", self.events())
+                self.assertEqual(self.events()[-1], "binding-verify")
+                self.assertEqual(len(self.records("verify")), 1)
+                if marker != "change-installed-during-output":
+                    self.assertFalse(self.output.exists())
 
     def test_changed_host_helper_patch_or_version_blocks_all_make_commands(self):
         for failure in ("version", "helper", "patch-context", "patch-result"):
@@ -712,7 +837,7 @@ class BuilderGateIntegrationTests(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("archive-extraction", self.events())
         self.assertNotIn("build-image", self.events())
-        self.assertEqual(self.events().count("network-isolation"), 2)
+        self.assertEqual(self.events().count("network-isolation"), 3)
         self.assertFalse(self.output.exists())
 
     def test_modern_image_compiles_requested_application_and_never_consumes_old_binary(self):

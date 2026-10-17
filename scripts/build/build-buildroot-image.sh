@@ -5,6 +5,7 @@ case $jobs in [1-9]|[1-9][0-9]) ;; *) echo 'HHPT_JOBS must be an integer from 1 
 test "$jobs" -le 64 || { echo 'HHPT_JOBS must be an integer from 1 to 64' >&2; exit 2; }
 exec /usr/bin/env -i PATH=/usr/sbin:/usr/bin:/sbin:/bin HOME=/dev/null LC_ALL=C TZ=UTC \
 	GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null \
+	GIT_NO_LAZY_FETCH=1 GIT_NO_REPLACE_OBJECTS=1 \
 	/bin/sh -s -- "$0" "$jobs" "$@" <<'HHPT_BUILD'
 set -eu
 umask 077
@@ -23,7 +24,6 @@ output_root=${7:-build/images}
 work_root=${8:-build/buildroot-work}
 source_cache=${9:-}
 repository_root=$(CDPATH= cd -- "$(dirname "$script_path")/../.." && pwd)
-/usr/bin/python3 -I -B "$repository_root/scripts/security/scan_source.py"
 version_class=$(env -i PATH="$PATH" /usr/bin/python3 -I -B \
 	"$repository_root/scripts/build/builder_host_manifest.py" classify-version \
 	--version-file "$repository_root/VERSION")
@@ -77,11 +77,19 @@ linux_fingerprint=$(lock_value LINUX_SIGNER_FINGERPRINT)
 version_label=$(tr -d '\r\n' <"$repository_root/VERSION")
 
 test "$(basename "$source_archive")" = "$expected_source"
-test "$(sha256sum "$source_archive" | awk '{print $1}')" = "$expected_hash"
+source_checksum=$(sha256sum "$source_archive")
+source_checksum=${source_checksum%% *}
+test "${#source_checksum}" -eq 64
+case $source_checksum in *[!0-9a-f]*) echo invalid source checksum >&2; exit 1 ;; esac
+test "$source_checksum" = "$expected_hash"
 test "$(sed -n "s/^SHA256: \([0-9a-f]*\)  $expected_source\$/\1/p" "$signed_manifest")" = "$expected_hash"
 test "$linux_source" = "linux-$linux_version.tar.xz"
 test "$(basename "$linux_archive")" = "$linux_source"
-test "$(sha256sum "$linux_archive" | awk '{print $1}')" = "$linux_hash"
+linux_checksum=$(sha256sum "$linux_archive")
+linux_checksum=${linux_checksum%% *}
+test "${#linux_checksum}" -eq 64
+case $linux_checksum in *[!0-9a-f]*) echo invalid kernel checksum >&2; exit 1 ;; esac
+test "$linux_checksum" = "$linux_hash"
 test "$(basename "$linux_signature")" = "$linux_signature_name"
 test "$(sed -n 's/^BR2_LINUX_KERNEL_CUSTOM_VERSION_VALUE="\([^"]*\)"$/\1/p' "$repository_root/platform/buildroot/configs/hhpt_legacy_x86_defconfig")" = "$linux_version"
 for kernel_hash_file in linux/linux.hash linux-headers/linux-headers.hash; do
@@ -96,7 +104,18 @@ XDG_CONFIG_HOME=$build_environment/config
 XDG_CACHE_HOME=$build_environment/cache
 mkdir -p "$HOME" "$TMPDIR" "$XDG_CONFIG_HOME" "$XDG_CACHE_HOME"
 export HOME TMPDIR XDG_CONFIG_HOME XDG_CACHE_HOME
-SOURCE_DATE_EPOCH=$(git -c safe.directory="$repository_root" -C "$repository_root" show -s --format=%ct HEAD)
+application_work=$work_root/application-$version_label-legacy-x86
+test ! -e "$application_work" && test ! -L "$application_work"
+mkdir "$application_work"
+application_binding() {
+	/usr/bin/python3 -I -B "$repository_root/scripts/build/modern_image_binding.py" "$@" \
+		--repository "$repository_root" --work "$application_work" --arch legacy-x86
+}
+application_binding prepare
+source_export=$application_work/application-source
+# Only the verified Gitless export may invoke the source scanner or compiler.
+/usr/bin/python3 -I -B "$source_export/scripts/security/scan_source.py"
+SOURCE_DATE_EPOCH=$(application_binding source-epoch)
 case $SOURCE_DATE_EPOCH in ''|*[!0-9]*) echo 'invalid source timestamp' >&2; exit 1 ;; esac
 export SOURCE_DATE_EPOCH
 gnupg_home=$(mktemp -d "$work_root/gnupg.XXXXXX")
@@ -144,13 +163,18 @@ test -f "$legal_copy_helper" && test ! -L "$legal_copy_helper"
 legal_copy_hash=$(sha256sum "$legal_copy_helper")
 test "${legal_copy_hash%% *}" = 521e9b58758395b7eb5d9109a42d5db972f3cc5f3b117f0a43c1562295d20384
 patch --batch --forward --fuzz=0 -p1 -d "$source_root" \
-	< "$repository_root/platform/buildroot/host-patches/0001-legal-info-copy-sources.patch"
+	< "$source_export/platform/buildroot/host-patches/0001-legal-info-copy-sources.patch"
 legal_copy_hash=$(sha256sum "$legal_copy_helper")
 test "${legal_copy_hash%% *}" = 367b0615bd8479c4baa1fd87705749d4f7f1da548ad14f8eb7614074ea6baadc
-chmod 0755 "$repository_root/platform/buildroot/board/legacy-x86/post-build.sh"
+chmod 0755 "$source_export/platform/buildroot/board/legacy-x86/post-build.sh"
 
-sh "$repository_root/scripts/build/build-go.sh" legacy-x86 "$work_root/hhpt-bin"
-binary=$work_root/hhpt-bin/linux_legacy-x86/hhpt
+set -- /bin/sh "$source_export/scripts/build/build-go.sh" legacy-x86 "$application_work/application-bin"
+if test -n "$source_cache"; then unshare --net "$@"; else "$@"; fi
+binary=$application_work/application-bin/linux_legacy-x86/hhpt
+test -x "$binary"
+application_binding complete
+test ! -e "$application_work/application-overlay.sha256"
+test ! -L "$application_work/application-overlay.sha256"
 run_make() {
 	if test -n "$source_cache"; then
 		unshare --net make "$@"
@@ -158,9 +182,12 @@ run_make() {
 		make "$@"
 	fi
 }
-run_make -C "$source_root" O="$build_root" BR2_DL_DIR="$downloads" BR2_EXTERNAL="$repository_root/platform/buildroot" hhpt_legacy_x86_defconfig
-HHPT_BINARY=$binary run_make -C "$source_root" -j"$jobs" O="$build_root" BR2_DL_DIR="$downloads" BR2_EXTERNAL="$repository_root/platform/buildroot"
-HHPT_BINARY=$binary run_make -C "$source_root" O="$build_root" BR2_DL_DIR="$downloads" BR2_EXTERNAL="$repository_root/platform/buildroot" legal-info
+run_make -C "$source_root" O="$build_root" BR2_DL_DIR="$downloads" BR2_EXTERNAL="$source_export/platform/buildroot" hhpt_legacy_x86_defconfig
+HHPT_BINARY=$binary HHPT_BINDING_REPOSITORY=$repository_root HHPT_BINDING_WORK=$application_work \
+	run_make -C "$source_root" -j"$jobs" O="$build_root" BR2_DL_DIR="$downloads" BR2_EXTERNAL="$source_export/platform/buildroot"
+application_binding verify --overlay --installed-root "$build_root/target"
+run_make -C "$source_root" O="$build_root" BR2_DL_DIR="$downloads" BR2_EXTERNAL="$source_export/platform/buildroot" legal-info
+application_binding verify --overlay --installed-root "$build_root/target"
 if test -n "$source_cache"; then
 	verify_source_cache "$source_cache"
 	verify_source_cache "$downloads"
@@ -172,13 +199,14 @@ cp "$build_root/images/rootfs.iso9660" "$output_root/$artifact_name"
 cp "$build_root/legal-info/manifest.csv" "$output_root/$artifact_name.packages.csv"
 printf '"hhsoft-pc-tester","%s","BSD-3-Clause","LICENSE","NOASSERTION","https://github.com/HHSoftSoftware/hhsoft-pc-tester",""\n' "$version_label" >> "$output_root/$artifact_name.packages.csv"
 cp "$build_root/legal-info/host-manifest.csv" "$output_root/$artifact_name.host-packages.csv"
-cp "$repository_root/LICENSE" "$output_root/$artifact_name.LICENSE.txt"
+cp "$source_export/LICENSE" "$output_root/$artifact_name.LICENSE.txt"
 (cd "$output_root" && sha256sum "$artifact_name" > "$artifact_name.sha256")
-/usr/bin/python3 -I -B "$repository_root/scripts/build/write_buildroot_sbom.py" \
+/usr/bin/python3 -I -B "$source_export/scripts/build/write_buildroot_sbom.py" \
     --manifest "$output_root/$artifact_name.packages.csv" \
     --image "$output_root/$artifact_name" \
     --version "$version_label" \
     --epoch "$SOURCE_DATE_EPOCH" \
     --output "$output_root/$artifact_name.spdx"
+application_binding verify --overlay --installed-root "$build_root/target"
 verify_builder_host
 HHPT_BUILD

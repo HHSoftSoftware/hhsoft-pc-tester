@@ -108,8 +108,9 @@ do not authenticate tools or configuration on disk. The modern application
 binding checks committed source, fresh compilation, and the bytes copied into
 the overlay; independent extraction of the finished ISO and approval of its
 source/compiler provenance remain required. The legacy wrapper requires a reviewed
-[offline source cache](buildroot-source-cache.md) and network-isolated Make
-phases for non-development builds. Its complete source closure and fresh
+[offline source cache](buildroot-source-cache.md),
+[committed application binding](legacy-application-binding.md), and
+network-isolated Go and Make phases for non-development builds. Its complete source closure and fresh
 offline image still need qualification; seeding the Linux archive alone does
 not provide those guarantees. The full builder-toolchain checklist item remains
 open until that work is complete.

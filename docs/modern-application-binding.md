@@ -7,6 +7,11 @@ non-development builds, and `build-go.sh` independently checks the selected
 compiler version before testing or compilation. Automatic compiler and module
 downloads remain disabled.
 
+The [legacy image wrapper](legacy-application-binding.md) reuses this source
+verifier with its own fixed Buildroot policy and installed-file checks. A change
+to the shared helper changes its recorded policy digest; validate application
+bindings again for the final source commit intended for an image build.
+
 ## Source boundary
 
 Use a standalone Linux Git clone containing the exact committed source intended

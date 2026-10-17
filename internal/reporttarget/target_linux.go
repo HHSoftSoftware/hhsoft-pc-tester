@@ -165,6 +165,10 @@ func validateMountAuthorizationWith(ctx context.Context, options Options, author
 }
 
 func persistWith(ctx context.Context, options Options, authorization Authorization, source *os.File, sourceSize int64, name string, expectedSHA256 [sha256.Size]byte, inspectNode nodeInspector) (Receipt, error) {
+	return persistWithDirectorySync(ctx, options, authorization, source, sourceSize, name, expectedSHA256, inspectNode, (*os.File).Sync)
+}
+
+func persistWithDirectorySync(ctx context.Context, options Options, authorization Authorization, source *os.File, sourceSize int64, name string, expectedSHA256 [sha256.Size]byte, inspectNode nodeInspector, syncDirectory func(*os.File) error) (Receipt, error) {
 	if err := ValidateAuthorization(authorization); err != nil {
 		return Receipt{}, err
 	}
@@ -245,11 +249,15 @@ func persistWith(ctx context.Context, options Options, authorization Authorizati
 		validateCurrentBoot(root, authorization) != nil {
 		return Receipt{}, errors.New("report media changed during persistence")
 	}
-	directorySynced := directory.Sync() == nil
+	if err := syncDirectory(directory); err != nil {
+		// Preserve the newly created file for recovery, but never acknowledge a
+		// durable save when its directory entry could not be synchronized.
+		return Receipt{}, errors.New("report directory could not be synchronized")
+	}
 	return Receipt{
 		Schema: ReceiptSchema, AuthorizationID: authorization.ID, Device: authorization.Device.Device,
 		File: name, Bytes: written, SHA256: "sha256:" + hex.EncodeToString(actualSHA256),
-		FileSynced: true, ReadBackVerified: true, DirectorySynced: directorySynced,
+		FileSynced: true, ReadBackVerified: true, DirectorySynced: true,
 	}, nil
 }
 

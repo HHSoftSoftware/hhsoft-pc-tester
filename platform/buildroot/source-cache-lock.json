@@ -191,8 +191,8 @@
       "size": 1259
     },
     "scripts/build/build-buildroot-image.sh": {
-      "sha256": "f86def35705930b1932ce106c57c858dc6060c78946a58245365b5b4efee145d",
-      "size": 10642
+      "sha256": "ea20d741321fa65bfa48b0941fa9706e92b666ddc892f7f75310e0ae9eefb585",
+      "size": 10901
     },
     "scripts/build/build-go.sh": {
       "sha256": "4fed176868334f2aef8b4b7d41c1d2e838e8770ee83db051c37a722dcf402f78",

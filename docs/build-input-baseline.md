@@ -59,7 +59,9 @@ Buildroot definitions and project kernel pins. Review also checked 49 declared
 license-file hashes and the three pinned Linux license-file paths.
 
 The source-policy review includes the fresh application binding and actual
-installed-file receipt. An offline prerequisite check found all seven required
+installed-file receipt. Kernel builds use fixed public account and host names;
+the refreshed policy lock retains the same 29 source archives. An offline
+prerequisite check found all seven required
 Perl modules. The complete configuration, compiler build, image creation, and
 `legal-info` stages must still succeed from fresh work directories. A source
 inventory and license-file checks do not fulfill all distribution obligations.
@@ -67,7 +69,7 @@ See [legacy source cache use](buildroot-source-cache.md).
 
 ## Validation still required
 
-The full native build fixture suite passed 178 tests with no skips. Separate
+The full native build fixture suite passed 179 tests with no skips. Separate
 offline compilation from the committed source passed for all four application
 targets, including independent inspection of embedded product versions and CPU
 policies, the actual modern overlay copies, and the real legacy post-build

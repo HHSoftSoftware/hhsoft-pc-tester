@@ -3,10 +3,12 @@ package main
 import (
 	"context"
 	"crypto/ed25519"
+	"crypto/sha256"
 	"errors"
 	"flag"
 	"fmt"
 	"io"
+	"os"
 	"strings"
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/bundle"
@@ -46,6 +48,12 @@ func runReportTarget(ctx context.Context, arguments []string, stdout, stderr io.
 }
 
 func runPersist(ctx context.Context, arguments []string, stdout, stderr io.Writer) int {
+	return runPersistWith(ctx, arguments, stdout, stderr, reporttarget.Persist)
+}
+
+type reportPersister func(context.Context, reporttarget.Options, reporttarget.Authorization, *os.File, int64, string, [sha256.Size]byte) (reporttarget.Receipt, error)
+
+func runPersistWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, persist reportPersister) int {
 	flags := flag.NewFlagSet("persist", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	authorizationPath := flags.String("authorization", "", "current RAM-only report-target authorization")
@@ -101,9 +109,13 @@ func runPersist(ctx context.Context, arguments []string, stdout, stderr io.Write
 	if name == "" {
 		name = defaultReportName(artifact.Envelope.SessionID, artifact.Envelope.ManifestDigest)
 	}
-	receipt, err := reporttarget.Persist(ctx, reporttarget.Options{Root: "/", FingerprintKey: fingerprintKey}, authorization, source, metadata.Size(), name, artifact.BundleSHA256)
+	receipt, err := persist(ctx, reporttarget.Options{Root: "/", FingerprintKey: fingerprintKey}, authorization, source, metadata.Size(), name, artifact.BundleSHA256)
 	if err != nil {
 		fmt.Fprintf(stderr, "persist report: %v\n", err)
+		return 1
+	}
+	if !receipt.FileSynced || !receipt.ReadBackVerified || !receipt.DirectorySynced {
+		fmt.Fprintln(stderr, "persist report: persistence did not complete verification and synchronization")
 		return 1
 	}
 	return writeQuickResult(receipt, *outputPath, stdout, stderr, "persistence receipt")

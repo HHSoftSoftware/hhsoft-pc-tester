@@ -149,11 +149,11 @@ func runSaveWith(ctx context.Context, arguments []string, input io.Reader, stdou
 			fmt.Fprintf(stderr, "save report: data was read-back verified but %v\n", unmountErr)
 			return 1
 		}
-		fmt.Fprintf(stdout, "Saved and read-back verified: %s/%s (%d bytes, %s)\n", authorization.MountPoint, receipt.File, receipt.Bytes, receipt.SHA256)
 		if err := writeSaveReceiptAudit(audit, receipt); err != nil {
-			fmt.Fprintln(stderr, "report was saved but the report-save receipt audit failed")
+			fmt.Fprintln(stderr, "report-save receipt validation or audit failed; retain the report in RAM")
 			return 1
 		}
+		fmt.Fprintf(stdout, "Saved and read-back verified: %s/%s (%d bytes, %s)\n", authorization.MountPoint, receipt.File, receipt.Bytes, receipt.SHA256)
 		return 0
 	}
 }

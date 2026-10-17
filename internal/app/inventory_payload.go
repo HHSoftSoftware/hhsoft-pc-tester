@@ -218,7 +218,7 @@ func publicAttributes(component inventory.Component) []inventory.Attribute {
 	result := make([]inventory.Attribute, 0, len(component.Attributes))
 	for _, attribute := range component.Attributes {
 		name := strings.ToLower(attribute.Name)
-		if strings.Contains(name, "serial") || strings.Contains(name, "uuid") || strings.Contains(name, "wwid") || strings.Contains(name, "asset_tag") || strings.Contains(name, "mac") || component.Type == inventory.ComponentNetwork && name == "address" {
+		if name == "unique_id" || strings.Contains(name, "serial") || strings.Contains(name, "uuid") || strings.Contains(name, "wwid") || strings.Contains(name, "asset_tag") || strings.Contains(name, "mac") || component.Type == inventory.ComponentNetwork && name == "address" {
 			continue
 		}
 		result = append(result, attribute)

@@ -118,6 +118,11 @@ source_export=$application_work/application-source
 SOURCE_DATE_EPOCH=$(application_binding source-epoch)
 case $SOURCE_DATE_EPOCH in ''|*[!0-9]*) echo 'invalid source timestamp' >&2; exit 1 ;; esac
 export SOURCE_DATE_EPOCH
+# Linux otherwise embeds the native builder's account and hostname in its
+# version banner. Keep these public values fixed after clearing caller state.
+KBUILD_BUILD_USER=HHSoftSoftware
+KBUILD_BUILD_HOST=hhsoft-build
+export KBUILD_BUILD_USER KBUILD_BUILD_HOST
 gnupg_home=$(mktemp -d "$work_root/gnupg.XXXXXX")
 cleanup() {
 	rm -rf -- "$gnupg_home"

@@ -181,16 +181,18 @@ func readMountedDeploymentKey() (deploymentkey.Record, error) {
 	}
 	directory := os.NewFile(uintptr(directoryFD), deploymentKeyMountPoint)
 	defer directory.Close()
-	fileFD, err := syscall.Openat(directoryFD, deploymentkey.Filename, syscall.O_RDONLY|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0)
+	return readDeploymentKeyDirectory(directory)
+}
+
+func readDeploymentKeyDirectory(directory *os.File) (deploymentkey.Record, error) {
+	// Resolve inside the pinned directory, then inspect an O_PATH handle before
+	// opening for I/O. A FIFO or device on selected media must never be opened.
+	path := fmt.Sprintf("/proc/self/fd/%d/%s", directory.Fd(), deploymentkey.Filename)
+	file, metadata, err := openRegularNoSymlink(path, deploymentkey.MaximumEncodedSize)
 	if err != nil {
 		return deploymentkey.Record{}, fmt.Errorf("open %s: %w", deploymentkey.Filename, err)
 	}
-	file := os.NewFile(uintptr(fileFD), deploymentkey.Filename)
 	defer file.Close()
-	metadata, err := file.Stat()
-	if err != nil || !metadata.Mode().IsRegular() || metadata.Size() <= 0 || metadata.Size() > deploymentkey.MaximumEncodedSize {
-		return deploymentkey.Record{}, deploymentkey.ErrInvalid
-	}
 	encoded, err := io.ReadAll(io.LimitReader(file, deploymentkey.MaximumEncodedSize+1))
 	if err != nil || int64(len(encoded)) != metadata.Size() {
 		return deploymentkey.Record{}, deploymentkey.ErrInvalid

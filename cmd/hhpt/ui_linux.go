@@ -14,6 +14,8 @@ import (
 	"syscall"
 	"time"
 	"unsafe"
+
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
 )
 
 func waitForOperatorInteraction(ctx context.Context, timeout time.Duration, input io.Reader) (bool, error) {
@@ -44,7 +46,28 @@ func waitForOperatorInteraction(ctx context.Context, timeout time.Duration, inpu
 		}
 		events = append(events, event)
 	}
+	descriptors := []int{int(console.Fd())}
+	for _, event := range events {
+		descriptors = append(descriptors, int(event.Fd()))
+	}
+	return waitForInputDescriptors(ctx, timeout, descriptors, syscall.Read)
+}
 
+// Keep the real select/read boundary separate from console setup so descriptor
+// loss and transient kernel errors can be exercised without device hardware.
+func waitForInputDescriptors(ctx context.Context, timeout time.Duration, descriptors []int, read func(int, []byte) (int, error)) (bool, error) {
+	if len(descriptors) == 0 {
+		return false, errors.New("input monitoring has no descriptors")
+	}
+	baseSet := syscall.FdSet{}
+	maximum := 0
+	for _, descriptor := range descriptors {
+		var err error
+		maximum, err = addDescriptor(&baseSet, descriptor, maximum)
+		if err != nil {
+			return false, err
+		}
+	}
 	deadline := time.Now().Add(timeout)
 	buffer := make([]byte, 256)
 	for {
@@ -58,11 +81,7 @@ func waitForOperatorInteraction(ctx context.Context, timeout time.Duration, inpu
 		if remaining > 100*time.Millisecond {
 			remaining = 100 * time.Millisecond
 		}
-		readSet := syscall.FdSet{}
-		maximum := addDescriptor(&readSet, int(console.Fd()), 0)
-		for _, event := range events {
-			maximum = addDescriptor(&readSet, int(event.Fd()), maximum)
-		}
+		readSet := baseSet
 		pollTimeout := syscall.NsecToTimeval(remaining.Nanoseconds())
 		ready, selectErr := syscall.Select(maximum+1, &readSet, nil, nil, &pollTimeout)
 		if selectErr != nil {
@@ -74,21 +93,19 @@ func waitForOperatorInteraction(ctx context.Context, timeout time.Duration, inpu
 		if ready == 0 {
 			continue
 		}
-		if descriptorIsSet(&readSet, int(console.Fd())) {
-			n, readErr := console.Read(buffer)
-			if n > 0 {
-				return true, nil
-			}
-			if readErr != nil && !errors.Is(readErr, io.EOF) && !errors.Is(readErr, syscall.EINTR) {
-				return false, fmt.Errorf("read console: %w", readErr)
-			}
-		}
-		for _, event := range events {
-			if descriptorIsSet(&readSet, int(event.Fd())) {
-				n, _ := event.Read(buffer)
+		for _, descriptor := range descriptors {
+			if descriptorIsSet(&readSet, descriptor) {
+				n, readErr := read(descriptor, buffer)
 				if n > 0 {
 					return true, nil
 				}
+				if errors.Is(readErr, syscall.EINTR) || errors.Is(readErr, syscall.EAGAIN) || errors.Is(readErr, syscall.EWOULDBLOCK) {
+					continue
+				}
+				if readErr == nil {
+					readErr = io.EOF
+				}
+				return false, fmt.Errorf("read monitored input: %w", readErr)
 			}
 		}
 	}
@@ -112,17 +129,23 @@ func prepareConsole(console *os.File) (func(), error) {
 	}, nil
 }
 
-func addDescriptor(set *syscall.FdSet, descriptor, maximum int) int {
+func addDescriptor(set *syscall.FdSet, descriptor, maximum int) (int, error) {
 	bitsPerWord := int(unsafe.Sizeof(set.Bits[0]) * 8)
+	if descriptor < 0 || descriptor >= len(set.Bits)*bitsPerWord {
+		return maximum, errors.New("input descriptor exceeds the supported monitoring range")
+	}
 	set.Bits[descriptor/bitsPerWord] |= 1 << uint(descriptor%bitsPerWord)
 	if descriptor > maximum {
-		return descriptor
+		return descriptor, nil
 	}
-	return maximum
+	return maximum, nil
 }
 
 func descriptorIsSet(set *syscall.FdSet, descriptor int) bool {
 	bitsPerWord := int(unsafe.Sizeof(set.Bits[0]) * 8)
+	if descriptor < 0 || descriptor >= len(set.Bits)*bitsPerWord {
+		return false
+	}
 	return set.Bits[descriptor/bitsPerWord]&(1<<uint(descriptor%bitsPerWord)) != 0
 }
 
@@ -144,8 +167,9 @@ func interactiveEventPaths(procPath, inputRoot string) ([]string, error) {
 	paths := make([]string, 0)
 	name := ""
 	handlers := ""
+	capabilities := make(map[string]string)
 	flush := func() {
-		if interactiveInput(name, handlers) {
+		if interactiveInput(name, handlers, capabilities) {
 			for _, handler := range strings.Fields(handlers) {
 				if strings.HasPrefix(handler, "event") {
 					paths = append(paths, filepath.Join(inputRoot, handler))
@@ -153,6 +177,7 @@ func interactiveEventPaths(procPath, inputRoot string) ([]string, error) {
 			}
 		}
 		name, handlers = "", ""
+		clear(capabilities)
 	}
 	scanner := bufio.NewScanner(devices)
 	for scanner.Scan() {
@@ -167,6 +192,12 @@ func interactiveEventPaths(procPath, inputRoot string) ([]string, error) {
 		if strings.HasPrefix(line, "H: Handlers=") {
 			handlers = strings.TrimPrefix(line, "H: Handlers=")
 		}
+		if strings.HasPrefix(line, "B: ") {
+			key, value, found := strings.Cut(strings.TrimPrefix(line, "B: "), "=")
+			if found {
+				capabilities[key] = value
+			}
+		}
 	}
 	flush()
 	if err := scanner.Err(); err != nil {
@@ -175,17 +206,18 @@ func interactiveEventPaths(procPath, inputRoot string) ([]string, error) {
 	return paths, nil
 }
 
-func interactiveInput(name, handlers string) bool {
+func interactiveInput(name, handlers string, capabilities map[string]string) bool {
+	// The same capability classification used in inventory recognizes generic
+	// device names, including direct touch panels without a mouse handler.
+	category := inventory.ClassifyInput(name, handlers, capabilities["KEY"], capabilities["REL"], capabilities["ABS"], capabilities["PROP"])
+	switch category {
+	case "keyboard", "pointer", "touchpad", "touchscreen", "tablet":
+		return true
+	}
 	for _, handler := range strings.Fields(handlers) {
-		if handler == "kbd" || strings.HasPrefix(handler, "mouse") {
+		if handler == "kbd" {
 			return true
 		}
 	}
-	name = strings.ToLower(name)
-	for _, indicator := range []string{"keyboard", "mouse", "touchpad", "trackpad", "touchscreen", "touch screen", "trackball", "pointing", "tablet", "stylus"} {
-		if strings.Contains(name, indicator) {
-			return true
-		}
-	}
-	return false
+	return strings.Contains(strings.ToLower(name), "stylus")
 }

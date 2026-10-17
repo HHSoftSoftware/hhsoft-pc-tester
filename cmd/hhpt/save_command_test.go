@@ -289,7 +289,7 @@ func saveTestOperations(t *testing.T, audit io.Writer) saveOperations {
 type failingSaveAudit struct{ phase string }
 
 func (writer *failingSaveAudit) Write(data []byte) (int, error) {
-	marker := map[string]string{"candidate": "HHPT_SAVE_CANDIDATE", "confirm": "HHPT_SAVE_CONFIRM", "rejection": "HHPT_SAVE_REJECTED"}[writer.phase]
+	marker := map[string]string{"candidate": "HHPT_SAVE_CANDIDATE", "confirm": "HHPT_SAVE_CONFIRM", "rejection": "HHPT_SAVE_REJECTED", "receipt": "HHPT_SAVE_SAVED"}[writer.phase]
 	if strings.HasPrefix(string(data), marker) {
 		return 0, errors.New("fixture write failure")
 	}

@@ -627,6 +627,20 @@ class BuilderGateIntegrationTests(unittest.TestCase):
                     self.assertNotEqual(result.returncode, 0)
                     self.assertNotIn("build-image", self.events())
 
+    def test_legacy_kernel_build_identity_cannot_expose_builder_account_or_hostname(self):
+        result = self.invoke("buildroot-image", environment={
+            "KBUILD_BUILD_USER": "private-builder-account-fixture",
+            "KBUILD_BUILD_HOST": "private-builder-host-fixture"})
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        phases = [json.loads(line) for line in (self.root / "phases.jsonl").read_text().splitlines()]
+        make_calls = [phase for phase in phases if phase["phase"] == "make"]
+        self.assertEqual(len(make_calls), 3)
+        # Observe exported values in child processes for configuration, image
+        # production, and legal-info, including kernel rebuilds they may start.
+        for phase in make_calls:
+            self.assertEqual(phase["environment"].get("KBUILD_BUILD_USER"), "HHSoftSoftware")
+            self.assertEqual(phase["environment"].get("KBUILD_BUILD_HOST"), "hhsoft-build")
+
     def test_legacy_inputs_follow_caller_directory_but_relative_outputs_follow_checkout(self):
         foreign = self.root / "foreign-working-directory"
         foreign.mkdir()

@@ -286,7 +286,7 @@ func TestPersistRequiresBoundMountAndCreatesExclusiveReport(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if receipt.Bytes != int64(len("signed-report-fixture")) || !receipt.FileSynced || !receipt.ReadBackVerified {
+	if receipt.Bytes != int64(len("signed-report-fixture")) || !receipt.FileSynced || !receipt.ReadBackVerified || !receipt.DirectorySynced {
 		t.Fatalf("unexpected receipt: %#v", receipt)
 	}
 	if _, err := persistWith(context.Background(), options, authorization, source, int64(len("signed-report-fixture")), "session.hhpcr", expectedSHA256, directFixtureNode); err == nil {

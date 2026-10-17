@@ -59,7 +59,7 @@ complete; real-hardware requirements remain open until physically tested.
   independent finished-ISO extraction remains open.
 - [x] Bind legacy application compilation to exact committed source, run its
   Go tests and build offline with a source cache, and recheck the installed
-  executable and its exclusive receipt after image stages. The full 178-test
+  executable and its exclusive receipt after image stages. The full 179-test
   native build suite passes with no skips. Fresh offline compilation, embedded
   version/target inspection, and real post-build installation checks pass;
   fresh legacy image construction and finished-ISO extraction remain open.
@@ -104,6 +104,9 @@ complete; real-hardware requirements remain open until physically tested.
 - [x] Provide a lightweight console UI.
 - [x] Start the safe profile after 15 seconds without interaction.
 - [x] Cancel automatic start on keyboard, mouse, touchpad, or touch activity.
+- [x] Cancel automatic start when input monitoring fails, recognize generic
+  touch devices by capabilities, and validate disconnect and transient-error
+  behavior with native Linux tests on amd64 and 386 soft-float.
 - [x] Keep networking off and tested disks unmounted by default.
 - [x] Show reduced coverage/lower assurance on the legacy image.
 - [x] Show branded, versioned console text before test execution.
@@ -117,10 +120,14 @@ complete; real-hardware requirements remain open until physically tested.
 
 - [x] Inventory CPU, memory, firmware, PCI, USB, block, network, and DRM data.
 - [x] Redact raw stable identifiers from normal exported attributes.
+- [x] Verify that collected input-device identifiers stay out of signed
+  inventory, HTML, and PDF reports while useful device details remain.
 - [x] Generate deployment-keyed component and system HMAC identities.
 - [x] Exclude mutable or low-quality identifiers from stable identity inputs.
 - [x] Provision a stable deployment key/epoch from a separate explicitly
   selected, read-only USB token on modern images.
+- [x] Reject deployment-token FIFOs and other non-regular files before data
+  access, with bounded native tests and a pinned-directory replacement case.
 - [x] Record hot-plug changes and bind each test plan/result to the observed
   hardware graph.
 - [x] Compare signed reports and clearly identify added, removed, or replaced
@@ -180,6 +187,9 @@ complete; real-hardware requirements remain open until physically tested.
 - [x] Save verified signed reports to a separately authorized removable USB
   destination with exclusive creation, read-back, sync receipt, and final
   revalidation.
+- [x] Reject incomplete persistence receipts and directory synchronization
+  failures before announcing a successful save; preserve recoverable files
+  and validate that retries cannot overwrite them.
 - [x] Finalize normal quick-profile evidence once and provide an interactive,
   typed-confirmation save flow without requiring a root shell.
 - [x] Export a deterministic static PDF view without active content inside each

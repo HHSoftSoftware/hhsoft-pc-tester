@@ -243,17 +243,9 @@ func captureBundle(snapshot inventory.Snapshot, testResults []app.TestResult, fi
 	if err != nil {
 		return nil, err
 	}
-	inventoryJSON, err := json.Marshal(payload)
+	inventoryJSON, html, pdf, err := renderSerializedInventory(payload)
 	if err != nil {
-		return nil, fmt.Errorf("encode inventory: %w", err)
-	}
-	html, err := render.InventoryHTML(payload)
-	if err != nil {
-		return nil, fmt.Errorf("render report: %w", err)
-	}
-	pdf, err := render.InventoryPDF(payload)
-	if err != nil {
-		return nil, fmt.Errorf("render PDF: %w", err)
+		return nil, err
 	}
 	manifestDigest, err := bundle.ManifestDigestWithPDF(inventoryJSON, html, pdf)
 	if err != nil {
@@ -287,17 +279,9 @@ func captureSelfIssuedBundle(snapshot inventory.Snapshot, testResults []app.Test
 	if err != nil {
 		return nil, err
 	}
-	inventoryJSON, err := json.Marshal(payload)
+	inventoryJSON, html, pdf, err := renderSerializedInventory(payload)
 	if err != nil {
-		return nil, fmt.Errorf("encode inventory: %w", err)
-	}
-	html, err := render.InventoryHTML(payload)
-	if err != nil {
-		return nil, fmt.Errorf("render report: %w", err)
-	}
-	pdf, err := render.InventoryPDF(payload)
-	if err != nil {
-		return nil, fmt.Errorf("render PDF: %w", err)
+		return nil, err
 	}
 	manifestDigest, err := bundle.SelfIssuedManifestDigestWithPDF(inventoryJSON, html, pdf, publicKey)
 	if err != nil {
@@ -320,6 +304,35 @@ func captureSelfIssuedBundle(snapshot inventory.Snapshot, testResults []app.Test
 		return nil, err
 	}
 	return encoded.Bytes(), nil
+}
+
+// Render the exact representation authenticated in the report. Marshaling
+// compacts and HTML-escapes RawMessage evidence, including worker-file trailing
+// newlines. Rendering the earlier in-memory payload would produce views that
+// differ from the verifier's reconstruction. The typed round trip retains
+// evidence as RawMessage, preserving numeric precision and spelling.
+func renderSerializedInventory(payload app.InventoryPayload) (inventoryJSON, html, pdf []byte, err error) {
+	inventoryJSON, err = json.Marshal(payload)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("encode inventory: %w", err)
+	}
+	// Keep the extra decoding allocation within the bundle inventory limit.
+	if len(inventoryJSON) > 16<<20 {
+		return nil, nil, nil, errors.New("serialized inventory exceeds the report size limit")
+	}
+	var serialized app.InventoryPayload
+	if err := json.Unmarshal(inventoryJSON, &serialized); err != nil {
+		return nil, nil, nil, fmt.Errorf("decode serialized inventory: %w", err)
+	}
+	html, err = render.InventoryHTML(serialized)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("render report: %w", err)
+	}
+	pdf, err = render.InventoryPDF(serialized)
+	if err != nil {
+		return nil, nil, nil, fmt.Errorf("render PDF: %w", err)
+	}
+	return inventoryJSON, html, pdf, nil
 }
 
 func randomSessionID(random io.Reader) (string, error) {

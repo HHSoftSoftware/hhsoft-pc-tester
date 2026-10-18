@@ -17,6 +17,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/product"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/report"
 )
 
@@ -83,6 +84,9 @@ func ManifestDigest(inventoryJSON, renderedReport []byte) (string, error) {
 }
 
 func ManifestDigestWithPDF(inventoryJSON, renderedReport, renderedPDF []byte) (string, error) {
+	if err := validateViews(inventoryJSON, renderedReport, renderedPDF, product.Name, product.Version); err != nil {
+		return "", err
+	}
 	_, encoded, err := buildManifest(inventoryJSON, renderedReport, renderedPDF, nil)
 	if err != nil {
 		return "", err
@@ -95,6 +99,9 @@ func SelfIssuedManifestDigest(inventoryJSON, renderedReport, publicKey []byte) (
 }
 
 func SelfIssuedManifestDigestWithPDF(inventoryJSON, renderedReport, renderedPDF, publicKey []byte) (string, error) {
+	if err := validateViews(inventoryJSON, renderedReport, renderedPDF, product.Name, product.Version); err != nil {
+		return "", err
+	}
 	_, encoded, err := buildManifest(inventoryJSON, renderedReport, renderedPDF, publicKey)
 	if err != nil {
 		return "", err
@@ -132,6 +139,9 @@ func WriteSelfIssuedWithPDF(destination io.Writer, inventoryJSON []byte, envelop
 }
 
 func writeArchive(destination io.Writer, inventoryJSON []byte, envelope report.Envelope, renderedReport, renderedPDF, selfIssuedKey []byte) error {
+	if err := validateViews(inventoryJSON, renderedReport, renderedPDF, envelope.Product, envelope.Version); err != nil {
+		return err
+	}
 	_, manifestJSON, err := buildManifest(inventoryJSON, renderedReport, renderedPDF, selfIssuedKey)
 	if err != nil {
 		return err
@@ -348,7 +358,7 @@ func buildManifest(inventoryJSON, renderedReport, renderedPDF, selfIssuedKey []b
 		files = append(files, sourceFile{name: RenderedReportName, mediaType: "text/html", data: renderedReport})
 	}
 	if renderedPDF != nil {
-		if !validRenderedPDF(renderedPDF) {
+		if len(renderedPDF) > maxRenderedPDF {
 			return Manifest{}, nil, fmt.Errorf("%w: rendered PDF", ErrInvalidBundle)
 		}
 		files = append(files, sourceFile{name: RenderedPDFName, mediaType: "application/pdf", data: renderedPDF})
@@ -561,9 +571,6 @@ func verifyManifest(manifest Manifest, members map[string][]byte) error {
 		if file.Name == RenderedReportName && !utf8.Valid(contents) {
 			return fmt.Errorf("%w: invalid UTF-8 in %s", ErrInvalidBundle, file.Name)
 		}
-		if file.Name == RenderedPDFName && !validRenderedPDF(contents) {
-			return fmt.Errorf("%w: invalid static PDF in %s", ErrInvalidBundle, file.Name)
-		}
 	}
 	if !listed[InventoryName] {
 		return fmt.Errorf("%w: manifest entry %s", ErrMissingMember, InventoryName)
@@ -644,21 +651,4 @@ func equivalentJSON(first, second []byte) bool {
 func digest(contents []byte) string {
 	value := sha256.Sum256(contents)
 	return "sha256:" + hex.EncodeToString(value[:])
-}
-
-func validRenderedPDF(contents []byte) bool {
-	if len(contents) > maxRenderedPDF || !bytes.HasPrefix(contents, []byte("%PDF-1.4\n")) || !bytes.HasSuffix(contents, []byte("%%EOF\n")) {
-		return false
-	}
-	for _, character := range contents {
-		if character != '\n' && (character < 0x20 || character > 0x7e) {
-			return false
-		}
-	}
-	for _, marker := range [][]byte{[]byte("/JavaScript"), []byte("/OpenAction"), []byte("/AA"), []byte("/Launch"), []byte("/URI"), []byte("/EmbeddedFile"), []byte("/RichMedia"), []byte("/AcroForm"), []byte("/XFA")} {
-		if bytes.Contains(contents, marker) {
-			return false
-		}
-	}
-	return true
 }

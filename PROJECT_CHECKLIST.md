@@ -194,6 +194,8 @@ complete; real-hardware requirements remain open until physically tested.
   typed-confirmation save flow without requiring a root shell.
 - [x] Export a deterministic static PDF view without active content inside each
   signed report bundle.
+- [x] Verify present HTML/PDF views against the signed inventory and version,
+  including correctly signed hostile views, with bounded rendering.
 - [ ] Submit reports to an authenticated web service and/or network share.
 - [ ] Add append-only ingestion receipts and server-side return comparisons.
 - [ ] Implement report/key revocation, rotation, archival, and deletion policy.

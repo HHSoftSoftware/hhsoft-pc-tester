@@ -103,8 +103,23 @@ HTML and PDF views display the report UUID, the root manifest digest, signature 
 
 The implemented PDF view uses a fixed text-only object set with no forms,
 attachments, links, actions, scripts, or external resources. PDF text is escaped
-and restricted to printable ASCII; the verifier rejects active-content markers.
-Views are never opened automatically.
+and restricted to printable ASCII. For every present HTML or PDF view, the
+verifier strictly decodes the signed inventory and regenerates the complete
+view with the signed product and software version. The supplied bytes must
+match exactly; a signature alone does not make externally supplied views safe.
+The product is fixed to HHSoft PC Tester and version text is bounded. Renderer
+output is limited to 32 MiB per view, including escaping expansion.
+HTML evidence is limited to 1 MiB per result, 64 JSON nesting levels, and a
+shared indentation budget before allocation. PDF generation limits line count
+and escaped content before collecting pages; long fields wrap without copying
+the whole remaining field at each line. These are parser resource limits,
+not additional hardware-evidence validation.
+
+The implemented profile accepts only its canonical inventory representation
+when derived views are present. Optional absent views remain supported;
+present empty or custom views fail. Compatible earlier software versions use
+their signed version label, while incompatible renderer formats require the
+matching report utility and fail closed. Views are never opened automatically.
 
 ## Privacy-Preserving Fingerprints
 

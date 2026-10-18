@@ -253,7 +253,12 @@ hhpt.exe verify -self-issued .\hhpt-SESSION.hhpcr
 Success reads:
 `verified: contents/signature valid; signer is self-issued and does not prove operator identity`.
 The verifier checks the canonical outer bundle, manifest digests, signature,
-expected files, path safety, size limits, and static view restrictions.
+expected files, path safety, and size limits. Present HTML and PDF views must
+exactly match HHSoft's deterministic rendering of the signed inventory and
+software version. Custom views, empty view files, active content, and views
+from a different inventory are rejected even with a valid signature. A bundle
+may omit optional views. Use the matching report utility; an incompatible
+renderer format fails verification instead of accepting an unverified view.
 It does not rerun the capture/finalization evidence checks or hardware tests.
 
 Compare two sessions made with the same deployment-key token:
@@ -317,9 +322,10 @@ controlled the corresponding key pair.
 - Do not enable networking to upload a report from the appliance. Move the
   verified bundle through controlled removable media, then use an approved
   external transfer process.
-- Parse and view reports on a patched, restricted workstation. The included
-  HTML is script-free and the PDF forbids active content, but untrusted files
-  and filesystems remain parser risks.
+- Parse and view reports on a patched, restricted workstation. Verification
+  accepts only the fixed script-free HTML and text-only PDF renderings, but
+  untrusted files and filesystems remain parser risks. Verification does not
+  open a view automatically.
 - Removing the boot USB, power loss, reboot, or crash destroys unsaved RAM
   reports. Bundle integrity cannot prevent deletion; maintain independent
   backups.

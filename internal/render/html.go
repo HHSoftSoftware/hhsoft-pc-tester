@@ -3,6 +3,7 @@ package render
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"html/template"
 	"io"
 	"sort"
@@ -135,8 +136,14 @@ table{background:var(--panel);border-collapse:collapse;border:1px solid var(--li
 
 // InventoryHTML renders a payload as a deterministic, standalone HTML5 document.
 func InventoryHTML(payload app.InventoryPayload) ([]byte, error) {
+	return InventoryHTMLForVersion(payload, product.Version)
+}
+
+// InventoryHTMLForVersion reproduces a view using its signed software version,
+// rather than silently substituting the verifier binary's version.
+func InventoryHTMLForVersion(payload app.InventoryPayload, version string) ([]byte, error) {
 	var output bytes.Buffer
-	if err := RenderInventoryHTML(&output, payload); err != nil {
+	if err := renderInventoryHTML(&output, payload, version); err != nil {
 		return nil, err
 	}
 	return output.Bytes(), nil
@@ -144,6 +151,13 @@ func InventoryHTML(payload app.InventoryPayload) ([]byte, error) {
 
 // RenderInventoryHTML writes a deterministic, standalone HTML5 document.
 func RenderInventoryHTML(output io.Writer, payload app.InventoryPayload) error {
+	return renderInventoryHTML(output, payload, product.Version)
+}
+
+func renderInventoryHTML(output io.Writer, payload app.InventoryPayload, version string) error {
+	if err := validateVersion(version); err != nil {
+		return err
+	}
 	components := append([]app.ComponentRecord(nil), payload.Components...)
 	sort.SliceStable(components, func(left, right int) bool {
 		if components[left].Type != components[right].Type {
@@ -152,17 +166,18 @@ func RenderInventoryHTML(output io.Writer, payload app.InventoryPayload) error {
 		return components[left].ID < components[right].ID
 	})
 	testResults := make([]testDocument, 0, len(payload.TestResults))
+	evidenceBudget := maximumDocumentBytes
 	for _, result := range payload.TestResults {
-		var evidence bytes.Buffer
-		if err := json.Indent(&evidence, result.Evidence, "", "  "); err != nil {
-			evidence.WriteString("Unavailable")
+		evidence, err := indentEvidence(result.Evidence, &evidenceBudget)
+		if err != nil {
+			return err
 		}
-		testResults = append(testResults, testDocument{ID: result.ID, Version: result.Version, Status: result.Status, PlanID: result.PlanID, HardwareGraph: result.HardwareGraph, Evidence: evidence.String()})
+		testResults = append(testResults, testDocument{ID: result.ID, Version: result.Version, Status: result.Status, PlanID: result.PlanID, HardwareGraph: result.HardwareGraph, Evidence: evidence})
 	}
 	sort.SliceStable(testResults, func(left, right int) bool { return testResults[left].ID < testResults[right].ID })
 	document := inventoryDocument{
 		ProductName:       product.Name,
-		ProductVersion:    product.Version,
+		ProductVersion:    version,
 		SchemaVersion:     payload.SchemaVersion,
 		TotalComponents:   len(components),
 		IdentifiedParts:   payload.SystemFingerprint.IdentifiedParts,
@@ -171,5 +186,58 @@ func RenderInventoryHTML(output io.Writer, payload app.InventoryPayload) error {
 		Components:        components,
 		TestResults:       testResults,
 	}
-	return inventoryTemplate.Execute(output, document)
+	return inventoryTemplate.Execute(&limitedWriter{destination: output}, document)
+}
+
+// json.Indent writes to bytes.Buffer, so an output writer limit cannot protect
+// this intermediate allocation. Preflight a conservative size bound, counting
+// even the newlines omitted for empty containers, before calling it. Evidence
+// from implemented workers is shallow; deeper inputs are unsupported.
+func indentEvidence(encoded []byte, remaining *int) (string, error) {
+	if len(encoded) == 0 || len(encoded) > 1<<20 || !json.Valid(encoded) {
+		return "", errors.New("report evidence is outside the supported bounds")
+	}
+	depth, projected := 0, len(encoded)
+	inString, escaped := false, false
+	for _, character := range encoded {
+		if inString {
+			if escaped {
+				escaped = false
+			} else if character == '\\' {
+				escaped = true
+			} else if character == '"' {
+				inString = false
+			}
+			continue
+		}
+		switch character {
+		case '"':
+			inString = true
+		case '{', '[':
+			depth++
+			if depth > 64 {
+				return "", errors.New("report evidence nesting exceeds the supported limit")
+			}
+			projected += 1 + 2*depth
+		case '}', ']':
+			depth--
+			projected += 1 + 2*depth
+		case ',':
+			projected += 1 + 2*depth
+		case ':':
+			projected++
+		}
+		if projected > *remaining {
+			return "", errors.New("indented report evidence exceeds the supported size")
+		}
+	}
+	if projected > *remaining {
+		return "", errors.New("indented report evidence exceeds the supported size")
+	}
+	var output bytes.Buffer
+	if err := json.Indent(&output, encoded, "", "  "); err != nil {
+		return "", errors.New("report evidence is invalid")
+	}
+	*remaining -= projected
+	return output.String(), nil
 }

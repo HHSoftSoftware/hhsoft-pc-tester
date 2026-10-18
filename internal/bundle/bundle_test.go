@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/product"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/report"
 )
 
@@ -20,8 +21,7 @@ type zipMember struct {
 }
 
 func TestWriteVerifyRoundTripIsDeterministic(t *testing.T) {
-	inventoryJSON := []byte("{\n  \"schema_version\": 1,\n  \"components\": []\n}")
-	renderedReport := []byte("<!doctype html><title>HHSoft PC Tester</title>")
+	inventoryJSON, renderedReport, _ := renderedFixture(t, product.Version)
 	envelope, publicKey, _ := signedEnvelope(t, inventoryJSON, renderedReport)
 	first := writeBundle(t, inventoryJSON, envelope, renderedReport)
 	second := writeBundle(t, inventoryJSON, envelope, renderedReport)
@@ -188,8 +188,7 @@ func TestVerifyRejectsUnsafeDuplicateMissingAndUnexpectedMembers(t *testing.T) {
 }
 
 func TestVerifyRejectsAlteredContent(t *testing.T) {
-	inventoryJSON := []byte("{\"schema_version\":1}")
-	renderedReport := []byte("<title>Original</title>")
+	inventoryJSON, renderedReport, _ := renderedFixture(t, product.Version)
 	envelope, publicKey, _ := signedEnvelope(t, inventoryJSON, renderedReport)
 	valid := membersOf(t, writeBundle(t, inventoryJSON, envelope, renderedReport))
 	tests := map[string][]zipMember{
@@ -310,7 +309,7 @@ func signedEnvelopeWithDigest(t *testing.T, inventoryJSON []byte, manifestDigest
 	envelope := report.Envelope{
 		Schema:         "hhsoft.pc-tester.report-envelope/v1",
 		Product:        "HHSoft PC Tester",
-		Version:        "0.1.0",
+		Version:        product.Version,
 		SessionID:      "test-session",
 		GeneratedTime:  "2026-10-12T20:00:00Z",
 		Payload:        append(json.RawMessage(nil), inventoryJSON...),

@@ -65,7 +65,8 @@ compare-and-publish operation in this workflow. The sole-writer restriction
 is a prerequisite, not a protection that the script can infer.
 
 Commit only the armored **public** keys at `security/release-signing-key.asc`
-and `security/lab-signing-key.asc`. Independently verify and configure their
+and `security/lab-signing-key.asc`. The project keys and their roles are listed
+in [signing keys](../security/signing-keys.md). Independently verify and configure their
 full uppercase primary fingerprints as repository variables
 `RELEASE_SIGNING_KEY_FINGERPRINT` and `LAB_SIGNING_KEY_FINGERPRINT`.
 Private keys remain outside source, images, and Actions. The lab key signs

@@ -110,6 +110,23 @@ func TestReportMountProductionCheckRejectsRegularFiles(t *testing.T) {
 	}
 }
 
+func TestFailedMountCannotHideUnconfirmedCleanup(t *testing.T) {
+	for _, cleanupFailed := range []bool{false, true} {
+		calls := 0
+		err := failedReportMountCleanup(func() error {
+			calls++
+			if cleanupFailed {
+				return errors.New("raw-kernel-fixture-diagnostic")
+			}
+			return nil
+		})
+		if calls != 1 || err == nil || errors.Is(err, errReportMountCleanup) != cleanupFailed ||
+			!strings.Contains(err.Error(), "could not be mounted") || strings.Contains(err.Error(), "raw-kernel") {
+			t.Fatalf("mount/cleanup failure was not preserved safely: calls=%d error=%v", calls, err)
+		}
+	}
+}
+
 func reportMountFixture(t *testing.T, filesystem string) (*os.File, *os.File, reporttarget.Authorization) {
 	t.Helper()
 	root := t.TempDir()

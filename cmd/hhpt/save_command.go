@@ -24,6 +24,8 @@ type saveOperations struct {
 	openAudit func(string) (io.Writer, func(), error)
 }
 
+var errReportMountCleanup = errors.New("report target cleanup could not be confirmed")
+
 func runSave(ctx context.Context, arguments []string, input io.Reader, stdout, stderr io.Writer) int {
 	return runSaveWith(ctx, arguments, input, stdout, stderr, saveOperations{
 		discover: reporttarget.Discover, authorize: reporttarget.Authorize,
@@ -72,14 +74,47 @@ func runSaveWith(ctx context.Context, arguments []string, input io.Reader, stdou
 	}
 	reader := bufio.NewReader(input)
 	options := reporttarget.Options{Root: "/", FingerprintKey: fingerprintKey}
+	writeAttempted := false
+	noWriteDetail := func() string {
+		if writeAttempted {
+			return "no additional write was authorized by this selection; earlier target data may have changed"
+		}
+		return "no storage device was written"
+	}
+	finishWithoutSave := func(announce bool) int {
+		if writeAttempted {
+			fmt.Fprintln(stdout, "Report remains in volatile memory; no saved copy was confirmed. Earlier target data may have changed.")
+			return 1
+		}
+		if announce {
+			fmt.Fprintln(stdout, "Report remains in volatile memory; no storage device was written.")
+		}
+		return 0
+	}
+	cancelled := func() bool {
+		if ctx.Err() == nil {
+			return false
+		}
+		fmt.Fprintln(stderr, "Report saving cancelled; the report remains in volatile memory.")
+		if writeAttempted {
+			fmt.Fprintln(stderr, "Earlier target data may have changed; no saved copy was confirmed.")
+		}
+		return true
+	}
 	fmt.Fprintln(stdout, "\nReport complete in RAM. It is self-issued until externally signed/provisioned.")
 	for {
+		if cancelled() {
+			return 1
+		}
 		catalog := operations.discover(ctx, options)
+		if cancelled() {
+			return 1
+		}
 		eligible := eligibleCandidates(catalog.Candidates)
 		printSaveCandidates(stdout, catalog, eligible)
 		for index, candidate := range eligible {
 			if err := writeSaveCandidateAudit(audit, "CANDIDATE", index+1, candidate); err != nil {
-				fmt.Fprintln(stderr, "report-save candidate audit failed; no storage device was written")
+				fmt.Fprintf(stderr, "report-save candidate audit failed; %s\n", noWriteDetail())
 				return 1
 			}
 		}
@@ -88,34 +123,39 @@ func runSaveWith(ctx context.Context, arguments []string, input io.Reader, stdou
 		} else {
 			fmt.Fprintf(stdout, "Select 1-%d to save, Enter to rescan, or Q to finish: ", len(eligible))
 		}
-		selection, readErr := reader.ReadString('\n')
+		selection, readErr := readSaveLine(ctx, reader)
+		if cancelled() {
+			return 1
+		}
 		if readErr != nil {
 			if errors.Is(readErr, io.EOF) {
-				return 0
+				return finishWithoutSave(false)
 			}
 			fmt.Fprintf(stderr, "read save selection: %v\n", readErr)
 			return 1
 		}
 		selection = strings.TrimSpace(selection)
 		if strings.EqualFold(selection, "q") {
-			fmt.Fprintln(stdout, "Report remains in volatile memory; no storage device was written.")
-			return 0
+			return finishWithoutSave(true)
 		}
 		if selection == "" {
 			continue
 		}
 		index, parseErr := strconv.Atoi(selection)
 		if parseErr != nil || index < 1 || index > len(eligible) {
-			fmt.Fprintln(stderr, "Invalid selection; no storage device was written.")
+			fmt.Fprintf(stderr, "Invalid selection; %s.\n", noWriteDetail())
 			continue
 		}
 		candidate := eligible[index-1]
 		fmt.Fprintf(stdout, "Type %s to authorize a single report write to %s: ", candidate.ConfirmationCode, candidate.Device)
 		if err := writeSaveCandidateAudit(audit, "CONFIRM", index, candidate); err != nil {
-			fmt.Fprintln(stderr, "report-save confirmation audit failed; no storage device was written")
+			fmt.Fprintf(stderr, "report-save confirmation audit failed; %s\n", noWriteDetail())
 			return 1
 		}
-		confirmation, readErr := reader.ReadString('\n')
+		confirmation, readErr := readSaveLine(ctx, reader)
+		if cancelled() {
+			return 1
+		}
 		if readErr != nil {
 			fmt.Fprintf(stderr, "read target confirmation: %v\n", readErr)
 			return 1
@@ -123,31 +163,54 @@ func runSaveWith(ctx context.Context, arguments []string, input io.Reader, stdou
 		confirmation = strings.TrimSpace(confirmation)
 		if confirmation != candidate.ConfirmationCode {
 			if _, err := fmt.Fprintln(audit, "HHPT_SAVE_REJECTED reason=confirmation"); err != nil {
-				fmt.Fprintln(stderr, "report-save rejection audit failed; no storage device was written")
+				fmt.Fprintf(stderr, "report-save rejection audit failed; %s\n", noWriteDetail())
 				return 1
 			}
-			fmt.Fprintln(stderr, "typed report-target confirmation code does not match selected media; no storage device was written")
+			fmt.Fprintf(stderr, "typed report-target confirmation code does not match selected media; %s\n", noWriteDetail())
 			continue
 		}
 		authorization, authorizeErr := operations.authorize(ctx, options, reporttarget.AuthorizationRequest{Device: candidate.Device, ConfirmationCode: confirmation})
+		if cancelled() {
+			return 1
+		}
 		if authorizeErr != nil {
-			fmt.Fprintf(stderr, "authorize report target: %v; no storage device was written\n", authorizeErr)
+			fmt.Fprintf(stderr, "authorize report target: %v; %s\n", authorizeErr, noWriteDetail())
 			continue
 		}
+		// Even a failed writable mount may have updated filesystem metadata.
+		writeAttempted = true
 		unmount, mountErr := operations.mount(ctx, options, authorization)
 		if mountErr != nil {
-			fmt.Fprintf(stderr, "mount report target: %v; no report file was written\n", mountErr)
+			fmt.Fprintf(stderr, "mount report target: %v; no report file was written by this attempt\n", mountErr)
+			if errors.Is(mountErr, errReportMountCleanup) {
+				fmt.Fprintln(stderr, "Further saves stopped because report-media cleanup is uncertain.")
+				return 1
+			}
 			continue
 		}
-		receipt, persistErr := operations.persist(ctx, options, authorization, source, metadata.Size(), name, artifact.BundleSHA256)
+		var receipt reporttarget.Receipt
+		persistErr := ctx.Err()
+		if persistErr == nil {
+			receipt, persistErr = operations.persist(ctx, options, authorization, source, metadata.Size(), name, artifact.BundleSHA256)
+		}
 		unmountErr := unmount()
 		if persistErr != nil {
 			fmt.Fprintf(stderr, "save report: %v\n", persistErr)
-			return 1
 		}
 		if unmountErr != nil {
-			fmt.Fprintf(stderr, "save report: data was read-back verified but %v\n", unmountErr)
+			fmt.Fprintf(stderr, "unmount report target: %v; further saves stopped because report-media cleanup is uncertain\n", unmountErr)
 			return 1
+		}
+		if cancelled() {
+			return 1
+		}
+		if persistErr != nil {
+			if _, err := fmt.Fprintln(audit, "HHPT_SAVE_RETRY reason=persistence"); err != nil {
+				fmt.Fprintln(stderr, "report-save retry audit failed; no saved copy was confirmed and further saves stopped")
+				return 1
+			}
+			fmt.Fprintln(stdout, "Save failed; the target was unmounted. Any partial file is preserved. Select a target and confirm again to retry.")
+			continue
 		}
 		if err := writeSaveReceiptAudit(audit, receipt); err != nil {
 			fmt.Fprintln(stderr, "report-save receipt validation or audit failed; retain the report in RAM")
@@ -155,6 +218,30 @@ func runSaveWith(ctx context.Context, arguments []string, input io.Reader, stdou
 		}
 		fmt.Fprintf(stdout, "Saved and read-back verified: %s/%s (%d bytes, %s)\n", authorization.MountPoint, receipt.File, receipt.Bytes, receipt.SHA256)
 		return 0
+	}
+}
+
+// Only one read is outstanding at a time. Cancellation ends the CLI flow
+// without closing its caller-owned input; a blocked read ends when that input
+// closes or the command exits. A buffered result lets a late read finish.
+func readSaveLine(ctx context.Context, reader *bufio.Reader) (string, error) {
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
+	type lineResult struct {
+		line string
+		err  error
+	}
+	result := make(chan lineResult, 1)
+	go func() {
+		line, err := reader.ReadString('\n')
+		result <- lineResult{line, err}
+	}()
+	select {
+	case <-ctx.Done():
+		return "", ctx.Err()
+	case value := <-result:
+		return value.line, value.err
 	}
 }
 

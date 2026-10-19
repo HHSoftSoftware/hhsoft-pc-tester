@@ -190,6 +190,10 @@ complete; real-hardware requirements remain open until physically tested.
 - [x] Reject incomplete persistence receipts and directory synchronization
   failures before announcing a successful save; preserve recoverable files
   and validate that retries cannot overwrite them.
+- [x] Return to fresh destination selection and typed confirmation after a
+  failed save and successful unmount; preserve partial files and stop when
+  cleanup is uncertain or the session is cancelled. Failure-injection tests
+  cover recovery; fresh ISO recovery qualification remains a release check.
 - [x] Finalize normal quick-profile evidence once and provide an interactive,
   typed-confirmation save flow without requiring a root shell.
 - [x] Export a deterministic static PDF view without active content inside each

@@ -68,10 +68,19 @@ func mountAuthorizedReportTarget(ctx context.Context, options reporttarget.Optio
 	if err := command.Run(); err != nil {
 		// A timeout may occur after the kernel completed mounting but before
 		// the child reported success. The reserved mount point must be cleaned up.
-		_ = unmountReportTarget()
-		return nil, errors.New("authorized report partition could not be mounted with the fixed safe policy")
+		return nil, failedReportMountCleanup(unmountReportTarget)
 	}
 	return unmountReportTarget, nil
+}
+
+func failedReportMountCleanup(unmount func() error) error {
+	failure := errors.New("authorized report partition could not be mounted with the fixed safe policy")
+	if unmount() != nil {
+		// Keep the fixed diagnostic only; raw command/kernel output is not safe
+		// report text. The caller must not retry when cleanup is unconfirmed.
+		return errors.Join(failure, errReportMountCleanup)
+	}
+	return failure
 }
 
 func runInternalReportMount(ctx context.Context, arguments []string, input io.Reader, stderr io.Writer) int {

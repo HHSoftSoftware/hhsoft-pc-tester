@@ -198,10 +198,17 @@ rechecks authorization and binds the mount to opened device and directory
 handles. Keep the selected USB connected and the setup stable throughout saving;
 these protections do not eliminate every physical hot-plug race.
 
-Select `Q` to leave without writing. The report then remains only in volatile
-RAM and is lost on power-off or reboot. If saving fails, do not assume a partial
-file is valid; rescan or use another target and preserve the machine's power
-until a verified copy exists.
+Select `Q` before attempting a save to leave without writing. After a failed
+attempt, `Q` ends the save flow without another attempt; an unverified partial
+file may remain on the USB. The original report stays in volatile RAM and is
+lost on power-off or reboot.
+
+If writing fails and HHSoft successfully unmounts the target, the save menu
+returns. Rescan or select another formatted USB and type its current confirmation
+code. Retries do not overwrite or remove an existing partial file, so saving to
+the same target with the same filename will fail. Keep power on until a verified
+copy exists. If unmounting fails, HHSoft stops further save attempts; it cannot
+confirm that the USB is safe to remove or that the report was saved successfully.
 
 The current quick workflow creates an ephemeral **self-issued** Ed25519
 signature. It makes the saved bundle tamper-evident and binds all results to
@@ -299,8 +306,11 @@ controlled the corresponding key pair.
   newly connected devices, cold-boot, and rerun from freshly verified media.
   Reboot is the runtime reset; there is no persistent appliance state to
   repair.
-- **Failed save:** Keep power on, use the save menu to rescan or select another
-  report USB, and accept only a read-back-verified file.
+- **Failed save:** Keep power on. If unmounting succeeded, use the returned save
+  menu to select another report USB and confirm it again. Existing partial files
+  are preserved and cannot be overwritten. If unmounting failed, further save
+  attempts stop. Accept only a save confirmed by read-back verification and
+  successful unmounting.
 - **Compromised media/key:** Stop using it. Re-image boot media from a verified
   release. Rotate a stolen deployment key to a genuinely new key and epoch;
   do not merely rename the old epoch. Treat reports signed or fingerprinted

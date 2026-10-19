@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -282,6 +283,9 @@ func TestPersistRequiresBoundMountAndCreatesExclusiveReport(t *testing.T) {
 	}
 	defer source.Close()
 	expectedSHA256 := sha256.Sum256([]byte("signed-report-fixture"))
+	if _, err := source.Seek(0, io.SeekEnd); err != nil {
+		t.Fatal(err)
+	}
 	receipt, err := persistWith(context.Background(), options, authorization, source, int64(len("signed-report-fixture")), "session.hhpcr", expectedSHA256, directFixtureNode)
 	if err != nil {
 		t.Fatal(err)
@@ -295,6 +299,17 @@ func TestPersistRequiresBoundMountAndCreatesExclusiveReport(t *testing.T) {
 	wrongSHA256 := sha256.Sum256([]byte("different verified report"))
 	if _, err := persistWith(context.Background(), options, authorization, source, int64(len("signed-report-fixture")), "changed-after-verification.hhpcr", wrongSHA256, directFixtureNode); err == nil {
 		t.Fatal("bytes changed after verification passed")
+	}
+	// The rejected copy preserves its file. Retrying a fresh destination must
+	// still copy from byte zero even when the caller's source offset is at EOF.
+	if _, err := persistWith(context.Background(), options, authorization, source, int64(len("signed-report-fixture")), "retry.hhpcr", expectedSHA256, directFixtureNode); err != nil {
+		t.Fatalf("retry depended on the source descriptor offset: %v", err)
+	}
+	for _, name := range []string{"changed-after-verification.hhpcr", "retry.hhpcr"} {
+		contents, err := os.ReadFile(filepath.Join(mountPath, name))
+		if err != nil || string(contents) != "signed-report-fixture" {
+			t.Fatal("retry changed the preserved copy or omitted source bytes")
+		}
 	}
 	mustTargetWrite(t, filepath.Join(root, "proc/uptime"), "1023.00 67.89\n")
 	if _, err := persistWith(context.Background(), options, authorization, source, int64(len("signed-report-fixture")), "expired.hhpcr", expectedSHA256, directFixtureNode); err == nil {

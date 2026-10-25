@@ -102,7 +102,8 @@ adapter coverage or physical pilot required below.
   display/GPU, network, audio, input, USB, and camera quick checks.
 - Extend operator prompts and run-wide watchdog coverage around the existing
   signed reports, explicit unsupported states, and bounded CPU/RAM safeguards.
-- Pilot on at least ten varied PCs without destructive tests.
+- Complete the [physical pilot](beta-pilot.md) on at least ten varied PCs
+  without destructive tests.
 
 Exit: `0.2.0-beta.1` gives useful resale acceptance results in under 15 minutes.
 

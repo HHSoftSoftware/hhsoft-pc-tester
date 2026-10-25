@@ -174,6 +174,13 @@ safety abort prevents later active quick tests in that run.
 Automatic boot adds a separate process-level kill deadline beyond each
 worker's recorded internal deadline.
 
+The CPU/RAM monitor samples Linux thermal zones and hwmon temperature inputs
+every 250 milliseconds. It filters disabled or faulted readings, uncalibrated
+VT1211/WM831x channels, and PECI control/threshold values. Exact path aliases
+count once; equal values do not establish sensor identity. Missing telemetry
+remains absent from the sensor count. Fan, power, throttling, and run-wide
+monitoring remain planned, as does representative physical sensor validation.
+
 ## Privilege and process model
 
 Run the UI as a dedicated user and `hhptd` as root. Prefer read-only sysfs,

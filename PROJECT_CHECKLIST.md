@@ -151,6 +151,10 @@ the alpha still requires the separate documented release gates.
 
 - [x] Run a bounded CPU known-answer quick worker with independent thermal and
   global deadline monitoring.
+- [x] Include Linux hwmon temperature readings in the CPU/RAM thermal guard,
+  filtering unavailable, disabled, faulted, uncalibrated, and known threshold
+  channels. Native amd64 and 386 soft-float fixture tests pass without skips;
+  representative physical sensor validation and run-wide monitoring remain open.
 - [x] Run bounded RAM quick patterns over a safely selected working set.
 - [x] Discover DRM cards, bound drivers, render nodes, connectors, and modes.
 - [x] Detect Mesa hardware acceleration versus software-rendering fallback.

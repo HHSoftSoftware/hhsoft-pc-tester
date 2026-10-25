@@ -190,6 +190,13 @@ func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.
 		fmt.Fprintln(stderr, "validate frozen plan: inconsistent hardware graph")
 		return 1
 	}
+	// The rebuilt plan can establish attribute-dependent applicability that
+	// the opaque hardware HMACs alone cannot. Preserve hot-plug evidence, but
+	// require exact agreement when the stable hardware graph is unchanged.
+	if !changed && finalPlan.ID != frozenPlan.ID {
+		fmt.Fprintln(stderr, "validate frozen plan: plan does not match unchanged hardware")
+		return 1
+	}
 	for index, result := range testResults {
 		testResults[index], err = app.BindTestResult(result, frozenPlan.ID, frozenPlan.HardwareGraph.Value)
 		if err != nil {

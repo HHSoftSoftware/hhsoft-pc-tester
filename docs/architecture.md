@@ -157,6 +157,12 @@ deployment-keyed hardware-graph binding and deterministic frozen ID, and makes
 safe boot execute only `scheduled` tests. Planned coverage reports
 `unsupported` until its reviewed implementation exists.
 
+Finalization rejects ambiguous JSON members and plans whose catalog rows,
+limits, statuses, or component references are inconsistent, even if their
+unkeyed plan IDs were recomputed. It rebuilds applicability from the observed
+inventory and fingerprint key; when the stable hardware graph is unchanged,
+the rebuilt and frozen plan IDs must agree before signing.
+
 A graph change does not discard evidence. It fails run integrity and preserves
 the final report with the original/final graph HMACs and component-level delta,
 so a verifier can see that one unchanged hardware graph did not span the run.

@@ -121,6 +121,9 @@ the alpha still requires the separate documented release gates.
 - [x] Show reduced coverage/lower assurance on the legacy image.
 - [x] Show branded, versioned console text before test execution.
 - [x] Build the declarative capability graph and freeze an applicable test plan.
+- [x] Validate frozen catalog rows, component references, and unambiguous plan
+  JSON before report finalization. Reject rehashed applicability changes when
+  the verified hardware graph is unchanged; preserve genuine hot-plug evidence.
 - [ ] Provide complete quick, standard, extended, burn-in, and destructive
   profiles, including burn-in scheduling and its adapter-contract support.
 - [ ] Provide per-test selection, configuration, cancellation, timeout, and

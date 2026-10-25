@@ -10,8 +10,10 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"sort"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
 )
@@ -185,20 +187,7 @@ func Build(snapshot inventory.Snapshot, profile Profile, architecture string, fi
 			ComponentIDs: append([]string(nil), capability.ComponentIDs...), Destructive: definition.Destructive,
 			EstimatedSeconds: definition.EstimatedSeconds, TimeoutSeconds: definition.TimeoutSeconds,
 		}
-		switch {
-		case capability.Status == CapabilityAbsent:
-			test.Status = TestNotPresent
-		case architectureUnsupported(architecture, definition.ID):
-			test.Status = TestUnsupported
-		case capability.Status == CapabilityMissingDriver:
-			test.Status = TestMissingDriver
-		case !containsProfile(definition.Profiles, profile):
-			test.Status = TestExcluded
-		case !definition.Implemented:
-			test.Status = TestUnsupported
-		default:
-			test.Status = TestScheduled
-		}
+		test.Status = testStatus(definition, capability.Status, profile, architecture)
 		result.Tests = append(result.Tests, test)
 	}
 	unsigned := result
@@ -269,6 +258,12 @@ func CompareHardwareGraphs(initial, final HardwareGraph) HardwareDelta {
 }
 
 func Decode(encoded []byte) (Plan, error) {
+	if !utf8.Valid(encoded) || !json.Valid(encoded) {
+		return Plan{}, errors.New("decode plan: invalid JSON")
+	}
+	if err := validatePlanJSONMembers(json.NewDecoder(bytes.NewReader(encoded)), 0); err != nil {
+		return Plan{}, err
+	}
 	var result Plan
 	decoder := json.NewDecoder(bytes.NewReader(encoded))
 	decoder.DisallowUnknownFields()
@@ -284,6 +279,50 @@ func Decode(encoded []byte) (Plan, error) {
 	return result, nil
 }
 
+func validatePlanJSONMembers(decoder *json.Decoder, depth int) error {
+	if depth > 32 {
+		return errors.New("decode plan: excessive JSON nesting")
+	}
+	token, err := decoder.Token()
+	if err != nil {
+		return err
+	}
+	delimiter, compound := token.(json.Delim)
+	if !compound {
+		return nil
+	}
+	seen := make(map[string]bool)
+	for decoder.More() {
+		if delimiter == '{' {
+			keyToken, err := decoder.Token()
+			if err != nil {
+				return err
+			}
+			key, ok := keyToken.(string)
+			if !ok || seen[key] {
+				return errors.New("decode plan: duplicate JSON member")
+			}
+			// Every plan JSON tag is lowercase ASCII. This also rejects
+			// Unicode case aliases accepted by encoding/json's field matching.
+			for _, character := range key {
+				if !(character >= 'a' && character <= 'z' || character == '_') {
+					return errors.New("decode plan: noncanonical JSON member")
+				}
+			}
+			seen[key] = true
+		}
+		if err := validatePlanJSONMembers(decoder, depth+1); err != nil {
+			return err
+		}
+	}
+	_, err = decoder.Token()
+	return err
+}
+
+// Validate checks a frozen execution plan against the embedded catalog. It
+// validates the hardware bindings' structure, not their keyed authenticity or
+// attribute-dependent applicability; those require the original snapshot/key.
+// Historical signed-report verification does not use this execution-plan gate.
 func Validate(result Plan) error {
 	if result.SchemaVersion != SchemaVersion || !result.Frozen {
 		return errors.New("invalid frozen plan metadata")
@@ -295,12 +334,22 @@ func Validate(result Plan) error {
 		return errors.New("invalid frozen plan binding")
 	}
 	previous := ""
-	for _, component := range result.HardwareGraph.Components {
+	componentByID := make(map[string]int, len(result.HardwareGraph.Components))
+	for index, component := range result.HardwareGraph.Components {
 		key := string(component.Type) + "\x00" + component.ID
 		if component.Type == "" || component.ID == "" || key <= previous || !validDigest(component.Value, "hmac-sha256:") {
 			return errors.New("invalid frozen plan component binding")
 		}
+		// Capability references contain IDs only, so an ID shared by different
+		// component types would make those references ambiguous.
+		if _, exists := componentByID[component.ID]; exists {
+			return errors.New("ambiguous frozen plan component ID")
+		}
+		componentByID[component.ID] = index
 		previous = key
+	}
+	if err := validateCatalog(result, componentByID); err != nil {
+		return err
 	}
 	unsigned := result
 	unsigned.ID = ""
@@ -313,6 +362,120 @@ func Validate(result Plan) error {
 		return errors.New("invalid frozen plan ID")
 	}
 	return nil
+}
+
+func validateCatalog(result Plan, componentByID map[string]int) error {
+	catalog, digest, err := loadDefinitions(definitionData)
+	if err != nil {
+		return err
+	}
+	if result.DefinitionsDigest != digest {
+		return errors.New("frozen plan does not match current test definitions")
+	}
+	if len(result.Capabilities) != len(catalog.Capabilities) || len(result.Tests) != len(catalog.Tests) {
+		return errors.New("incomplete frozen plan catalog")
+	}
+	capabilityByID := make(map[string]Capability, len(result.Capabilities))
+	for index, definition := range catalog.Capabilities {
+		capability := result.Capabilities[index]
+		if capability.ID != definition.ID {
+			return errors.New("invalid frozen plan capability order or identity")
+		}
+		if err := validateCapability(capability, definition, result.HardwareGraph.Components, componentByID); err != nil {
+			return fmt.Errorf("invalid frozen plan capability %q: %w", capability.ID, err)
+		}
+		capabilityByID[capability.ID] = capability
+	}
+	for index, definition := range catalog.Tests {
+		test := result.Tests[index]
+		capability := capabilityByID[definition.Capability]
+		if test.ID != definition.ID || test.Version != definition.Version || test.Capability != definition.Capability ||
+			test.Destructive != definition.Destructive || test.EstimatedSeconds != definition.EstimatedSeconds ||
+			test.TimeoutSeconds != definition.TimeoutSeconds || !slices.Equal(test.ComponentIDs, capability.ComponentIDs) ||
+			test.Status != testStatus(definition, capability.Status, result.Profile, result.Architecture) {
+			return fmt.Errorf("frozen plan test %q does not match its catalog definition or capability", test.ID)
+		}
+	}
+	return nil
+}
+
+func validateCapability(capability Capability, definition capabilityDefinition, components []HardwareComponent, componentByID map[string]int) error {
+	var matches []componentMatch
+	switch capability.Status {
+	case CapabilityAbsent:
+		if len(capability.ComponentIDs) != 0 {
+			return errors.New("absent capability has component references")
+		}
+	case CapabilityPresent:
+		matches = definition.Providers
+	case CapabilityMissingDriver:
+		matches = definition.Hardware
+	default:
+		return errors.New("unknown capability status")
+	}
+	if capability.Status != CapabilityAbsent && len(capability.ComponentIDs) == 0 {
+		return errors.New("applicable capability has no component references")
+	}
+	previous := -1
+	referenced := make(map[string]bool, len(capability.ComponentIDs))
+	for _, id := range capability.ComponentIDs {
+		index, exists := componentByID[id]
+		if !exists || index <= previous || !matchesComponentType(components[index].Type, matches) {
+			return errors.New("invalid component reference or reference order")
+		}
+		previous = index
+		referenced[id] = true
+	}
+	// A type-only provider/hardware rule is decidable from the graph. Rules
+	// requiring attributes cannot be reconstructed from the component HMAC.
+	for _, component := range components {
+		if unconditionalComponentType(component.Type, definition.Providers) {
+			if capability.Status != CapabilityPresent || !referenced[component.ID] {
+				return errors.New("unconditional provider omitted")
+			}
+		}
+		if capability.Status != CapabilityPresent && unconditionalComponentType(component.Type, definition.Hardware) {
+			if capability.Status != CapabilityMissingDriver || !referenced[component.ID] {
+				return errors.New("unconditional hardware omitted")
+			}
+		}
+	}
+	return nil
+}
+
+func matchesComponentType(componentType inventory.ComponentType, matches []componentMatch) bool {
+	for _, match := range matches {
+		if match.Type == componentType {
+			return true
+		}
+	}
+	return false
+}
+
+func unconditionalComponentType(componentType inventory.ComponentType, matches []componentMatch) bool {
+	for _, match := range matches {
+		if match.Type == componentType && match.Attribute == "" && match.Equals == "" && match.Prefix == "" {
+			return true
+		}
+	}
+	return false
+}
+
+func testStatus(definition testDefinition, capabilityStatus CapabilityStatus, profile Profile, architecture string) TestStatus {
+	switch {
+	case capabilityStatus == CapabilityAbsent:
+		return TestNotPresent
+	case architectureUnsupported(architecture, definition.ID):
+		return TestUnsupported
+	case capabilityStatus == CapabilityMissingDriver:
+		return TestMissingDriver
+	case !containsProfile(definition.Profiles, profile):
+		return TestExcluded
+	case !definition.Implemented:
+		return TestUnsupported
+	default:
+		return TestScheduled
+	}
 }
 
 func keyedDigest(key []byte, domain string, encoded []byte) string {

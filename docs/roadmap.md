@@ -91,6 +91,11 @@ applicable.
 
 ## Phase 2 — quick functional test
 
+The CPU/RAM hwmon guard and frozen-plan/report validation are implemented and
+covered by automated failure tests. Operator-selected quick-test execution is
+the next orchestration increment. These safeguards do not complete the functional
+adapter coverage or physical pilot required below.
+
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.
 - Add CPU, partial memory, SMART/NVMe health, read-only storage, complete

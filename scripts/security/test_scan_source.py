@@ -123,6 +123,52 @@ class PublicationScanTests(unittest.TestCase):
         self.assertEqual(result.returncode, 1)
         self.assertNotIn(secret, result.stdout + result.stderr)
 
+    def test_private_review_marker_blocks_renamed_worktree_index_and_history(self):
+        marker = b"HHPT_PRIVATE_" + b"REVIEW_ONLY_V1"
+        path = self.root / "renamed-review.txt"
+        path.write_bytes(marker + b"\nInert review fixture\n")
+        result = self.run_scan()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("private review artifact", result.stderr)
+        self.assertNotIn(marker.decode(), result.stdout + result.stderr)
+        self.git("add", "renamed-review.txt")
+        path.write_text("clean worktree replacement\n")
+        result = self.run_scan()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("index:renamed-review.txt", result.stderr)
+        self.git("commit", "-qm", "Fixture staged review marker")
+        self.git("rm", "-f", "renamed-review.txt")
+        self.commit()
+        result = self.run_scan()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("private review artifact", result.stderr)
+        self.assertNotIn(marker.decode(), result.stdout + result.stderr)
+
+    def test_review_directory_ignore_forced_index_history_and_archive_guards(self):
+        project = SCRIPT.resolve().parents[2]
+        for name in (".gitignore", ".gitattributes"):
+            shutil.copyfile(project / name, self.root / name)
+        name = "build/private-review/context.json"
+        path = self.root / name
+        path.parent.mkdir(parents=True)
+        path.write_text('{"fixture": "inert"}\n')
+        self.assertEqual(self.git("check-ignore", "--", name).decode().strip(), name)
+        self.assertEqual(self.run_scan().returncode, 0)
+        self.git("add", "-f", "--", name)
+        result = self.run_scan()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("forbidden artifact", result.stderr)
+        self.commit()
+        with tarfile.open(fileobj=io.BytesIO(self.git("archive", "--format=tar", "HEAD"))) as archive:
+            exported = set(archive.getnames())
+        self.assertIn("source.txt", exported)
+        self.assertFalse(any(item == "build" or item.startswith("build/") for item in exported))
+        self.git("rm", "--", name)
+        self.commit()
+        result = self.run_scan()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("forbidden artifact", result.stderr)
+
     def test_private_research_variants_stay_ignored_and_cannot_enter_history_or_archives(self):
         project = SCRIPT.resolve().parents[2]
         for name in (".gitignore", ".gitattributes"):

@@ -33,6 +33,7 @@ FORBIDDEN_EXTENSIONS = re.compile(
     r"exe|dll|zip|tar|tgz|gz|pyc|log|pid)$", re.I
 )
 PATTERNS = {
+    "private review artifact": re.compile(b"HHPT_PRIVATE_" + b"REVIEW_ONLY_V1"),
     "credential": re.compile(
         rb"gh[pousr]_[A-Za-z0-9_]{36,255}|github_pat_[A-Za-z0-9_]{70,255}|"
         rb"(?:AKIA|ASIA)[0-9A-Z]{16}|xox[baprs]-[A-Za-z0-9-]{20,}"

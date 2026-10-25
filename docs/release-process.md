@@ -121,6 +121,13 @@ endpoints, and generated/private artifact paths without echoing the matched
 secret. Maintainers may put additional literal terms in ignored
 `.hhpt-source-denylist`; never commit that file or its contents.
 
+Keep local review artifacts under ignored `build/` paths and mark their contents
+as private review data. The source scanner rejects the private-review marker
+even if a file is copied or renamed. The configured pre-push hook checks current
+files, staged bytes, and outgoing history; force-adding a review file or deleting
+it in a later commit does not clear that gate. Source archives also exclude the
+root `build/` directory.
+
 CI also downloads the MIT-licensed Gitleaks CLI from the exact version and
 SHA-256 in `scripts/security/gitleaks.lock`, then independently scans all
 commits. This second engine broadens credential-pattern coverage;

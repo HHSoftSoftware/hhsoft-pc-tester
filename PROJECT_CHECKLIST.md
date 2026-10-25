@@ -1,6 +1,6 @@
 # HHSoft PC Tester Master Checklist
 
-Status date: 2026-10-24
+Status date: 2026-10-25
 
 This is the project-level source of truth derived from the original product
 requirements. Check an item only when implementation and applicable validation
@@ -131,8 +131,10 @@ the alpha still requires the separate documented release gates.
   passes for modern x64/x86 and legacy x86; rebuilt-image gates remain separate.
 - [ ] Provide complete quick, standard, extended, burn-in, and destructive
   profiles, including burn-in scheduling and its adapter-contract support.
-- [ ] Extend per-test selection to broader profiles and provide configuration,
-  cancellation, timeout, and remaining-time/status displays.
+- [x] Report the active quick worker, elapsed time, and remaining shared budget;
+  support console cancellation and signed stop reasons in the quick session.
+- [ ] Extend per-test selection, configuration, cancellation controls, and
+  remaining-time/status displays to broader profiles.
 - [ ] Provide localized UI and accessibility review.
 
 ## Hardware discovery and identity
@@ -280,7 +282,8 @@ the alpha still requires the separate documented release gates.
   remains required for release.
 - [ ] Separate the unprivileged UI, privileged daemon, and sandboxed workers.
 - [ ] Complete run-wide thermal, heartbeat, hang, and deadline watchdogs beyond
-  the existing CPU/RAM thermal/deadline checks and worker process-group cleanup.
+  the quick-session coordinator, CPU/RAM thermal checks, terminal outer guard,
+  and worker process-group cleanup.
 - [x] Coordinate safe quick tests under one session deadline and each frozen
   test's complete budget; support Ctrl-C and Linux termination signals, retain
   completed failures, and finalize clean stops with fresh bounded contexts.

@@ -40,7 +40,7 @@ Operators may deselect a test, but it remains `skip` in the report. A custom
 profile inherits one below and discloses every override.
 
 The implemented operator selection currently covers the safe quick catalog:
-nine tests on modern images and seven on legacy x86. Only otherwise scheduled
+ten tests on modern images and eight on legacy x86. Only otherwise scheduled
 tests become `excluded`, reported as `skip` with the exclusion reason. Absent
 and missing-driver states retain their applicability reason, and unsupported
 or destructive work cannot be enabled through selection. Reports retain explicit
@@ -126,6 +126,18 @@ activity mode accepts only category-appropriate input transitions, treats lost
 kernel event records as inconclusive, and retains counts rather than key codes
 or typed text. This readiness/activity evidence does not replace the complete
 operator coverage criteria below.
+
+The separate guided `input.pointer.quick` worker observes relative `EV_REL`
+interfaces with both X and Y axes. During a default 30-second window, every
+supported interface must show left/right and up/down movement, a primary-button
+press/release cycle, and cycles for each advertised right or middle button.
+One device cannot satisfy another device's requirements. Absolute `EV_ABS` or
+mixed interfaces cannot pass this relative-pointer check. Wheel behavior, extra
+buttons, accuracy, touch geometry, and gestures remain outside its scope.
+Evidence contains bounded per-interface counters and action summaries, not raw
+events or typed text. Lost records, incomplete actions, or device changes must
+not produce a pass. Automated and native Linux validation passed for this
+bounded worker; the broader input matrix below remains a target.
 
 The current storage readiness adapter rejects writable block mounts and checks
 that each supported media-bearing kernel block interface remains a direct block
@@ -251,6 +263,14 @@ of the session deadline and its frozen catalog deadline. The graphics limit is
 cards, patterns, and the finding prompt. Shortening a command timeout cannot
 extend either frozen limit. Cleanup and stopped-run finalization have separate
 bounded allowances.
+
+Pointer observation defaults to 30 seconds with a 90-second whole-command
+limit, also shortened by the session deadline. It shares one observation
+window across the selected interfaces. Enabling the existing pointer catalog
+row changes the catalog digest, so execution requires a newly frozen plan.
+Current sessions record ten worker outcomes in journal v2. This does not add a
+catalog row or change historical signed-report verification; direct capture
+continues to omit the guided pointer worker.
 
 Ctrl-C uses one owned console reader shared with display findings. Linux
 SIGINT/SIGTERM also cancel the session. The coordinator stops starting new work,

@@ -276,7 +276,7 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 
 func printSessionWorkerResult(output io.Writer, record sessionWorkerRecord) {
 	labels := map[string]string{"cpu.quick": "CPU", "memory.quick": "MEMORY", "audio.readiness.quick": "AUDIO_READINESS",
-		"input.readiness.quick": "INPUT_READINESS", "network.readiness.quick": "NETWORK_READINESS", "storage.readiness.quick": "STORAGE_READINESS",
+		"input.readiness.quick": "INPUT_READINESS", "input.pointer.quick": "POINTER", "network.readiness.quick": "NETWORK_READINESS", "storage.readiness.quick": "STORAGE_READINESS",
 		"usb.readiness.quick": "USB_READINESS", "graphics.quick": "GRAPHICS", "display.operator.quick": "DISPLAY"}
 	fmt.Fprintf(output, "HHPT_%s status=%s\n", labels[record.ID], record.Outcome)
 }

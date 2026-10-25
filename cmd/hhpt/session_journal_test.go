@@ -187,6 +187,7 @@ func TestSessionJournalRejectsAmbiguousAndIncompleteJSON(t *testing.T) {
 func TestSessionJournalRejectsContradictoryExecutionAndSafety(t *testing.T) {
 	for name, change := range map[string]func(*sessionJournal){
 		"schema":                   func(j *sessionJournal) { j.Schema = "unknown" },
+		"old-nine-worker-schema":   func(j *sessionJournal) { j.Schema = "hhsoft.pc-tester.quick-session/v1" },
 		"short budget":             func(j *sessionJournal) { j.BudgetMilliseconds = 9 },
 		"long budget":              func(j *sessionJournal) { j.BudgetMilliseconds = 900001 },
 		"negative elapsed":         func(j *sessionJournal) { j.ElapsedMilliseconds = -1 },
@@ -197,6 +198,7 @@ func TestSessionJournalRejectsContradictoryExecutionAndSafety(t *testing.T) {
 		"duplicate worker":         func(j *sessionJournal) { j.Workers[1] = j.Workers[0] },
 		"out of order":             func(j *sessionJournal) { j.Workers[0], j.Workers[1] = j.Workers[1], j.Workers[0] },
 		"missing worker":           func(j *sessionJournal) { j.Workers = j.Workers[:8] },
+		"missing pointer worker":   func(j *sessionJournal) { j.Workers = append(j.Workers[:4], j.Workers[5:]...) },
 		"unknown state":            func(j *sessionJournal) { j.Workers[0].State = "running" },
 		"invented not scheduled":   func(j *sessionJournal) { j.Workers[0].State, j.Workers[0].Outcome = "not_scheduled", "excluded" },
 		"not started pass":         func(j *sessionJournal) { j.Workers[1].Outcome = "pass" },

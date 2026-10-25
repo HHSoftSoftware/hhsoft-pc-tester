@@ -25,7 +25,7 @@
     {"id":"graphics.quick","version":1,"implemented":true,"capability":"graphics","profiles":["quick","standard","extended","destructive"],"estimated_seconds":20,"timeout_seconds":30},
     {"id":"input.readiness.quick","version":1,"implemented":true,"capability":"input","profiles":["quick","standard","extended","destructive"],"estimated_seconds":1,"timeout_seconds":5},
     {"id":"input.keyboard.quick","version":1,"capability":"input.keyboard","profiles":["quick","standard","extended","destructive"],"estimated_seconds":30,"timeout_seconds":90},
-    {"id":"input.pointer.quick","version":1,"capability":"input.pointer","profiles":["quick","standard","extended","destructive"],"estimated_seconds":30,"timeout_seconds":90},
+    {"id":"input.pointer.quick","version":1,"implemented":true,"capability":"input.pointer","profiles":["quick","standard","extended","destructive"],"estimated_seconds":30,"timeout_seconds":90},
     {"id":"input.touchpad.quick","version":1,"capability":"input.touchpad","profiles":["quick","standard","extended","destructive"],"estimated_seconds":30,"timeout_seconds":90},
     {"id":"input.touchscreen.quick","version":1,"capability":"input.touchscreen","profiles":["quick","standard","extended","destructive"],"estimated_seconds":45,"timeout_seconds":120},
     {"id":"memory.quick","version":1,"implemented":true,"capability":"memory","profiles":["quick","standard","extended","destructive"],"estimated_seconds":10,"timeout_seconds":30},

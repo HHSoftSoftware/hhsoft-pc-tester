@@ -132,6 +132,44 @@ Rebuilt ISO qualification, continuous monitoring, remaining functional adapters,
 and the physical beta pilot remain open; cooperative cancellation does not
 establish preemption of an uninterruptible kernel operation.
 
+The subsequent guided-pointer milestone adds `input.pointer.quick` to the
+implemented quick path. The Windows suite passed 1,094 test events across 17
+packages, with 12 platform skips and no failures; vet and all five application
+targets also passed. Native Linux amd64 and 386 suites passed 1,650 test events
+across input, inventory, graphics, storage, safety, and CLI code, without skips.
+Pointer/session race checks passed 241 test events without skips or race reports.
+The historical counts above describe their original catalogs. Current selection
+has ten modern and eight legacy choices; the
+existing 21 catalog rows plus run integrity still produce 22 results. Enabling
+pointer changes the catalog digest and requires fresh plans and a ten-outcome
+`hhsoft.pc-tester.quick-session/v2` journal. Historical signed-report
+verification and rendering remain unchanged; direct capture continues to
+omit guided pointer testing.
+
+Portable and native fixtures independently cover relative `EV_REL` X/Y movement in both
+directions and primary plus advertised right/middle button cycles on every
+interface. Negative cases include one complete device hiding another
+incomplete device, absolute/mixed interfaces, missing actions, lost or malformed
+events, disconnect/replacement, cancellation/deadline races, contradictory
+evidence, stale plans/journals, and privacy leakage. Initial queued events are
+discarded, and a completed sequence cannot hide a subsequently queued loss or
+disconnect. Capability checks use independently observed kernel bitmap width;
+an ambiguous 32/64-bit interpretation cannot omit advertised buttons. Retained
+per-device passes inside cancelled or partial results require the same hardware
+binding as an aggregate pass. Reports retain bounded
+action summaries without raw input events or typed text. The default observation
+window is 30 seconds, the whole-command limit is 90 seconds, and the quick
+session's five-minute budget remains independent and shared.
+
+Fifteen real CLI scenarios passed on modern x64/x86 and legacy x86 applications:
+twelve session cases covered all exclusions, deadlines, Ctrl-C, and SIGTERM;
+three pointer-to-finalizer cases preserved incomplete observations from two
+virtual interfaces in verified 22-row signed reports. The shell handoff suite
+also passed. These exercise execution and honest non-pass reporting; they do
+not establish successful physical pointer actions. Rebuilt-image qualification,
+the physical pilot, continuous monitoring, and remaining functional adapters
+remain open.
+
 Regression coverage for these cases belongs with the corresponding feature,
 not with a blanket claim of complete product coverage. Linux mount/device
 fixtures and real APK selection require the appropriate Linux environment;
@@ -166,38 +204,35 @@ not upgrade readiness into physical qualification.
 The standalone report verifier checks bundle integrity and signatures; it does
 not rerun the worker semantic checks or establish physical truth.
 
-Both appliance startup scripts independently inspect kernel mount and network
-metadata before active tests, between active stages, after readiness checks,
-and before announcing a ready report. Writable block mounts, active non-loopback
-interfaces, or incomplete observations block the normal ready/save path and
-retain diagnostic evidence in RAM. Device numbers identify mapped and aliased
-mounts even without an applicable storage test; software interfaces are checked
-even without a hardware readiness provider. Ready markers contain measured
-counts. These independent snapshots currently remain runtime evidence in RAM;
-the finalizer does not include them in the signed report. Selecting no quick
-tests still runs the independent safety gates, but its signed report contains
-the test skips, exclusion intent, and hardware-graph integrity result without
-those independent mount/network snapshots. Passing graph integrity establishes
-an unchanged observed graph, not completed hardware-test coverage. Signed
-coverage of the independent snapshots remains open, as do continuous monitoring
-and the remaining watchdog and isolation work.
+Both appliance startup scripts check mount/network safety before handing the
+frozen plan to the quick-session coordinator and again before announcing a ready
+report. The coordinator independently observes safety before work, before every
+started worker, and after cleanup. Finalization adds a fresh pre-sign observation
+and binds the journal in signed run-integrity evidence. Writable block mounts,
+active non-loopback interfaces, contradictory details, or incomplete observations
+block signing and the normal ready/save path while retaining RAM diagnostics.
+Device numbers identify mapped and aliased mounts even without a storage test;
+software interfaces are checked without a hardware readiness provider. Selecting
+no quick tests still requires the safety observations and preserves them in the
+signed session history. The extra shell checks remain separate operational
+gates. Passing graph integrity establishes an unchanged observed graph, not
+completed hardware-test coverage.
 
-The frozen catalog's per-test timeout values are not yet enforced as complete
-worker deadlines throughout either startup script. Modern graphics has separate
-subprocess limits, and display work can repeat a subprocess budget for each
-card before waiting for operator findings. A shared run deadline and operator
-cancellation that stops and finalizes the whole quick session remain open.
-Worker cleanup and individual bounded waits alone do not establish these claims.
+The coordinator enforces the shared run deadline and each frozen worker's
+complete deadline. Graphics tools share one 30-second limit; display cards,
+patterns, and findings share one 45-second limit. Ctrl-C and Linux SIGINT/SIGTERM
+stop new work, preserve completed failures and exclusions, and record unfinished
+scheduled tests. Console input must finish and restore its state before fresh,
+bounded final safety and finalization contexts begin. Unsafe, interrupted, or
+incomplete network/storage readiness cannot authorize signing. Unconfirmed
+worker cleanup also blocks finalization. The terminal shell guard prevents
+ready/save after any nonzero session exit, even if a report already exists.
 
-Future acceptance must cover sequential graphics tools and multiple display
-cards under one frozen row deadline, cancellation during work and console waits,
-and descendants retaining or closing inherited output pipes. A stopped run must
-retain completed failures and frozen exclusions, record each unfinished scheduled
-test explicitly, and finalize only after cleanup under a separate bounded
-context. This requires a stopped-run path that preserves independent safety
-checks; accepting `aborted` or unsafe readiness observations as generally safe
-would not satisfy it. Unsafe or incomplete final observations must still block
-the normal ready/save path.
+The quick-session and pointer milestones above validate this cooperative
+orchestration and its bounded input path. These snapshots and
+deadlines do not establish continuous thermal/heartbeat monitoring, preemption
+of an uninterruptible kernel operation, containment of escaped process groups,
+or the still-planned privilege separation and broader profile workflows.
 
 Display regressions cover a successful pattern alongside another output's
 modeset failure, failed/error/aborted/inconclusive/skipped patterns in either

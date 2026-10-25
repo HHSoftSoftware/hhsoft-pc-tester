@@ -133,13 +133,24 @@ New reports require the matching companion utility.
 
 Quick-session reports additionally bind a `session` object inside the existing
 run-integrity evidence. It records the stop reason, session budget, elapsed time,
-all nine worker states/outcomes, and independent safety observations, including
+all ten worker states/outcomes, and independent safety observations, including
 a fresh pre-sign observation. This adds no catalog row and does not turn graph
 integrity into an overall hardware pass. Unstarted tests stay incomplete;
 completed failures survive a stop. Unsafe or interrupted network/storage
 readiness cannot authorize signing. These checks occur during session
 finalization; the offline verifier authenticates the recorded claims without
-rerunning them. Historical evidence without `session` remains unchanged.
+rerunning them. Current execution requires
+`hhsoft.pc-tester.quick-session/v2`, including `input.pointer.quick`. The enabled
+pointer definition changes the catalog digest and requires a fresh frozen plan;
+old execution journals cannot be reused. The catalog still has 21 rows, plus
+run integrity. Historical signed reports, including earlier session evidence,
+retain their existing verification and rendering behavior. Direct capture's
+limited subset does not include guided pointer evidence. Each retained pointer
+pass, including a completed device inside a partial result, must match the
+frozen and final component identity and advertised capabilities. Kernel bitmap
+word width is independently observed and bound in the component fingerprint;
+worker evidence cannot choose a weaker button interpretation. Automated and
+native validation passed; physical pointer qualification remains separate.
 
 ## Privacy-Preserving Fingerprints
 

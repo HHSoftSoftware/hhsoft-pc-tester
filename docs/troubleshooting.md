@@ -84,6 +84,19 @@ Keyboard, pointer, touchpad, or touchscreen activity cancels the countdown. Use
 can repeatedly count as activity; temporarily disconnect that peripheral and
 record the symptom for its later input test.
 
+## Guided pointer check is incomplete
+
+Move every supported relative pointer in all four directions and press/release
+its primary button plus each advertised right or middle button during the
+observation window. Actions on one interface do not satisfy another. The default
+window is 30 seconds, within a 90-second command limit and the remaining shared
+session budget. Missing actions are incomplete evidence, not a hardware pass.
+Absolute or mixed relative/absolute interfaces cannot pass this check; touch
+geometry, wheels, extra buttons, and gesture testing remain outside its scope.
+Lost events, disconnected devices, or cancellation also prevent a complete pass.
+Keep the original report and use a fresh plan for a later session. Direct
+capture's aggregate input-readiness option does not run the guided pointer test.
+
 ## Empty inventory or safety stop
 
 `HHPT_SAFETY_FAIL empty-inventory` means the image could not establish a minimum

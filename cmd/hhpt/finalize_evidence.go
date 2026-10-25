@@ -65,6 +65,8 @@ func testEvidenceStatus(encoded []byte, expectedSchema string) (string, error) {
 		err = acceptEvidence(encoded, validateUSBEvidence)
 	case inputtest.Schema:
 		err = acceptEvidence(encoded, validateInputEvidence)
+	case inputtest.PointerSchema:
+		err = acceptEvidence(encoded, validatePointerEvidence)
 	case audio.Schema:
 		err = acceptEvidence(encoded, validateAudioEvidence)
 	case graphics.Schema:
@@ -138,6 +140,8 @@ func evidenceShape(encoded []byte, kind reflect.Type, depth int) error {
 		return errUnsupportedEvidence
 	}
 	switch kind.Kind() {
+	case reflect.Pointer:
+		return evidenceShape(encoded, kind.Elem(), depth+1)
 	case reflect.Struct, reflect.Map:
 		decoder := json.NewDecoder(bytes.NewReader(encoded))
 		first, err := decoder.Token()

@@ -96,7 +96,9 @@ After the HHSoft splash appears, a 15-second inactivity timer begins.
 
 The quick profile is offline and uses read-only device discovery. It runs a
 short CPU known-answer load, bounded RAM data/address patterns, device-node
-readiness checks, and modern-image graphics/display checks where applicable.
+readiness checks, guided relative-pointer actions, and modern-image
+graphics/display checks where applicable. The choices cover ten tests on modern
+images and eight on legacy x86, subject to hardware applicability.
 Storage readiness opens eligible block devices read-only and issues no sector
 read. USB readiness issues no USB transfers. Network readiness configures
 nothing and sends no traffic. An active non-loopback interface or writable
@@ -155,7 +157,7 @@ The console shows compact `HHPT_*` progress markers. Important markers are:
 
 - `HHPT_PLAN`: the test plan and initial hardware graph have been frozen.
 - `HHPT_CPU`, `HHPT_MEMORY`, `HHPT_INPUT_READINESS`,
-  `HHPT_AUDIO_READINESS`, `HHPT_NETWORK_READINESS`,
+  `HHPT_POINTER`, `HHPT_AUDIO_READINESS`, `HHPT_NETWORK_READINESS`,
   `HHPT_STORAGE_READINESS`, `HHPT_USB_READINESS`, `HHPT_GRAPHICS`, and
   `HHPT_DISPLAY`: individual outcomes.
 - `HHPT_RUN_INTEGRITY status=pass`: the final component graph matches the
@@ -175,6 +177,19 @@ Each scheduled test also uses its frozen plan limit. Graphics has a 30-second
 whole-test limit and display has a 45-second limit shared across sequential
 tools, cards, patterns, and the operator-finding prompt. Cleanup and safe report
 finalization have separate bounded allowances.
+
+The pointer step observes all supported relative pointers during one default
+30-second window, within a 90-second whole-test limit and the remaining session
+budget. Move each pointer left, right, up, and down. Press and release its
+primary button and every advertised right or middle button. Each interface must
+complete its own actions; using one mouse does not qualify another. The check
+requires relative X/Y events. Absolute or mixed relative/absolute interfaces,
+including many touch devices, are outside this check and cannot pass it.
+Wheels, extra buttons, tracking accuracy, and touch gestures remain untested.
+Only bounded action summaries and counts enter evidence, not raw events or
+typed text. Missing actions, lost records, and disconnects leave the inspection
+incomplete. Automated and native Linux checks validate these paths; rebuilt-image
+and physical qualification remain open.
 
 Press Ctrl-C to request a stop. One owned console reader handles cancellation
 and display findings, so those inputs do not compete. Linux SIGINT and SIGTERM
@@ -400,8 +415,10 @@ controlled the corresponding key pair.
   not confirm that nested workers were cleaned up. Do not manually resume that
   workflow. Continuous run-wide thermal monitoring, heartbeat supervision,
   and hang detection remain incomplete.
-- Input testing currently checks read-only event-device access; it does not
-  prove every key/button or touch/touchpad geometry in automatic mode.
+- Input readiness checks read-only event-device access. Guided pointer testing
+  adds relative X/Y movement and primary/advertised right/middle button cycles;
+  it does not prove every key, wheel, extra button, or touch/touchpad geometry.
+  Direct capture retains the readiness subset and omits guided pointer testing.
 - Storage testing is readiness only: no SMART/NVMe health qualification,
   sampled sector verification, throughput, optical-media read, or complete
   media scan.

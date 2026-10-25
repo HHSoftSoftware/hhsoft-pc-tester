@@ -8,8 +8,10 @@ are complete. Architecture and policy documents alone do not make an item
 complete; real-hardware requirements remain open until physically tested.
 
 The 2026-10-24 requirements audit compared the retained test matrix with the
-catalog and execution paths. The safe quick workflow supports nine implemented
-test definitions, subject to hardware and architecture applicability. The
+catalog and execution paths. Development source now contains ten implemented
+safe quick test definitions, subject to hardware and architecture applicability.
+The guided pointer increment has automated and native validation; rebuilt-image
+and physical qualification remain open. The
 planner also accepts standard, extended, and destructive profile names, but
 their complete execution workflows remain unfinished. Burn-in is a planned
 profile. The unchecked requirements below include those broader matrix items;
@@ -171,6 +173,14 @@ the alpha still requires the separate documented release gates.
 - [x] Run a bounded KMS display pattern on a connected display.
 - [x] Check read-only Linux event readiness for present keyboards, mice,
   touchpads, and touchscreens without recording key codes.
+- [x] Implement and validate the guided relative-pointer worker and signed
+  session integration with portable and native Linux fixtures. It observes `EV_REL` X/Y movement in
+  both directions and primary plus advertised right/middle button cycles on
+  each interface; absolute/mixed interfaces and broader mouse/touch coverage
+  remain unsupported. Cancellation, device changes, queued event loss, forged
+  capabilities, and retained partial passes have regression coverage.
+- [ ] Qualify guided pointer actions in rebuilt images and on physical devices,
+  including multiple pointers and incomplete-action/disconnect cases.
 - [x] Check storage mount safety and read-only block-node readiness without
   reading or changing media contents.
 - [x] Check Ethernet/Wi-Fi driver and link readiness while failing closed on

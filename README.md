@@ -133,10 +133,30 @@ hhpt display -pattern-duration 5s -finding-timeout 15s -output display.json
 `hhpt input -duration 0` checks that every present keyboard, mouse, touchpad,
 or touchscreen event device can be opened read-only. An operator can add a
 bounded activity window, for example `-duration 30s`; evidence retains only
-aggregate event counts and never key codes or typed text. Readiness is automatic,
-but full key/button coverage and touch geometry remain operator test work.
+aggregate event counts and never key codes or typed text. Readiness is automatic;
+it does not establish complete keyboard, pointer, or touch coverage.
 `hhpt capture -input-duration 30s -input-categories keyboard,pointer ...`
 includes the bounded aggregate activity evidence in the signed report.
+
+The guided `hhpt pointer` check observes relative `EV_REL` X/Y interfaces.
+Move each supported pointer left, right, up, and down, then press and release
+its primary button and every advertised right or middle button. Each interface
+must supply its own observations. Absolute `EV_ABS` and mixed relative/absolute
+interfaces are outside this check and cannot pass it. Wheels, extra buttons,
+touch gestures, and tracking accuracy remain separate coverage. Evidence keeps
+bounded counts and action summaries, never raw input events or typed text.
+
+```sh
+hhpt pointer -duration 30s -timeout 90s -output pointer.json
+```
+
+Pointer joins the quick session's shared five-minute budget and signed results;
+direct `capture` retains its existing subset and does not run this guided check.
+The selection menu now offers ten modern or eight legacy quick tests. The
+catalog change requires a fresh plan, and new sessions use a ten-outcome v2
+journal; historical signed reports remain independently verifiable. Automated
+and native Linux validation passed; rebuilt-image and physical qualification remain open.
+See [requirements validation](docs/requirements-validation.md).
 
 `hhpt audio` verifies that ALSA card, control, playback, and capture nodes match
 their confined sysfs metadata. It never opens a media stream or plays/records

@@ -161,10 +161,10 @@ The console can exclude implemented safe quick tests before the plan is frozen.
 It writes a new RAM selection file with an explicit `excluded_tests` array; the
 planner rejects ambiguous, unknown, duplicate, or architecture-incompatible
 choices. Canonically ordered exclusions become part of the plan ID. An empty
-selection preserves the default plan encoding and ID. Exclusions only change
-tests that would otherwise be scheduled, preserving absent-hardware and
+selection preserves the default plan encoding and ID within the same catalog.
+Exclusions only change tests that would otherwise be scheduled, preserving absent-hardware and
 missing-driver evidence. Both boot supervisors retain their unconditional mount
-and network safety checks and pass all nine quick outcomes to finalization.
+and network safety checks and pass all ten quick outcomes to finalization.
 Signed run-integrity evidence includes the exclusions, including choices for
 hardware that was not available.
 
@@ -180,12 +180,21 @@ Each catalog result carries its definition version and `planned_status`, even
 when no adapter runs. The signed `coverage_scope` is `frozen_plan`; HTML/PDF
 views show the planned disposition and its reason alongside the final outcome.
 Direct capture instead labels its seven collected checks `direct_capture` and
-does not claim a frozen plan. Optional absent coverage fields preserve historical
-report rendering; new reports require a matching rebuilt companion verifier.
+does not run the guided pointer check or claim a frozen plan. Optional absent
+coverage fields preserve historical report rendering; new reports require a
+matching rebuilt companion verifier.
 The quick-session coordinator adds a signed session journal inside run-integrity
 evidence: stop reason, budget and elapsed time, each worker's execution state,
 and independent mount/network safety observations. Finalization validates these
 against the frozen plan and evidence, then adds a fresh pre-sign observation.
+
+Guided pointer execution uses the existing `input.pointer.quick` row, so reports
+still contain 21 catalog results plus run integrity. Enabling that row changes
+the catalog digest and requires fresh plans. New execution uses
+`hhsoft.pc-tester.quick-session/v2` with ten worker records; an older plan or
+journal is not an execution substitute. Historical signed-report verification
+and rendering remain unchanged. The new pointer integration's validation is
+tracked separately from the earlier session milestone.
 Direct capture and finalization without a session journal do not claim that
 session safety history.
 

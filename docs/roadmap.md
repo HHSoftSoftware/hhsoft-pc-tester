@@ -101,6 +101,16 @@ modern x64/x86 and legacy x86 applications. Broader profile orchestration,
 run-wide watchdogs, rebuilt-image qualification, the remaining functional
 adapters, and the physical pilot below are still open.
 
+The guided-pointer increment adds relative movement and primary/advertised
+right/middle button cycles per interface. It expands quick selection to ten
+modern and eight legacy choices, with ten outcomes in session journal v2.
+Absolute or mixed interfaces and the rest of the input matrix remain outside
+this bounded check. The catalog change requires fresh plans while preserving
+historical signed-report verification. Portable and native Linux tests, race
+checks, cross-builds, and signed CLI workflows pass for this increment.
+Rebuilt-image and physical qualification remain open; earlier image results do
+not qualify the new worker.
+
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.
 - Add CPU, partial memory, SMART/NVMe health, read-only storage, complete

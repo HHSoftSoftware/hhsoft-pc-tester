@@ -56,6 +56,8 @@ func run(ctx context.Context, arguments []string, stdin io.Reader, stdout, stder
 		return runPersist(ctx, arguments[1:], stdout, stderr)
 	case "plan":
 		return runPlan(ctx, arguments[1:], stdout, stderr)
+	case "pointer":
+		return runPointer(ctx, arguments[1:], stdout, stderr)
 	case "report-target":
 		return runReportTarget(ctx, arguments[1:], stdout, stderr)
 	case "save":
@@ -157,6 +159,8 @@ func usage(destination io.Writer) {
 	fmt.Fprintln(destination, "       hhpt deployment-key load-media -discovery-key FILE")
 	fmt.Fprintln(destination, "       hhpt display [-pattern-duration 5s] [-finding-timeout 15s] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt memory [-bytes N] [-passes 2] [-timeout 30s] [-thermal-limit-c 90] [-output FILE]")
+	fmt.Fprintln(destination, "       hhpt input [-duration 0] [-categories LIST] [-output FILE]")
+	fmt.Fprintln(destination, "       hhpt pointer [-duration 30s] [-timeout 90s] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt network [-allow-active] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt report-target -fingerprint-key FILE [-device /dev/DEVICE -confirm CODE] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt persist -authorization FILE -fingerprint-key FILE (-self-issued | -public-key FILE -key-id ID) [-name NAME.hhpcr] REPORT.hhpcr")

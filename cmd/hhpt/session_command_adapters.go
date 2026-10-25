@@ -23,6 +23,8 @@ func runSessionWorker(ctx context.Context, worker sessionWorker, input io.Reader
 		return runAudio(ctx, arguments, stdout, stderr)
 	case "input.readiness.quick":
 		return runInput(ctx, append(arguments, "-duration", "0"), stdout, stderr)
+	case "input.pointer.quick":
+		return runPointer(ctx, append(arguments, "-duration", "30s", "-timeout", worker.Timeout.String()), stdout, stderr)
 	case "network.readiness.quick":
 		return runNetwork(ctx, arguments, stdout, stderr)
 	case "storage.readiness.quick":

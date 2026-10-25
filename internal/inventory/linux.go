@@ -21,8 +21,9 @@ type LinuxPaths struct {
 }
 
 type LinuxCollector struct {
-	Source PathSource
-	Paths  LinuxPaths
+	Source              PathSource
+	Paths               LinuxPaths
+	inputBitmapWordBits func() int
 }
 
 func NewLinuxCollector(root string) *LinuxCollector {
@@ -31,7 +32,8 @@ func NewLinuxCollector(root string) *LinuxCollector {
 
 func NewLinuxCollectorWithSource(source PathSource) *LinuxCollector {
 	return &LinuxCollector{
-		Source: source,
+		Source:              source,
+		inputBitmapWordBits: kernelInputBitmapWordBits,
 		Paths: LinuxPaths{
 			Proc: "proc",
 			Sys:  "sys",

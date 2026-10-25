@@ -39,6 +39,7 @@ var quickResultDefinitions = []quickResultDefinition{
 	{id: "cpu.quick", filename: "cpu.json", schema: "hhsoft.pc-tester.cpu/v1"},
 	{id: "display.operator.quick", filename: "display.json", schema: "hhsoft.pc-tester.display-visual/v1"},
 	{id: "graphics.quick", filename: "graphics.json", schema: "hhsoft.pc-tester.graphics/v1"},
+	{id: "input.pointer.quick", filename: "pointer.json", schema: "hhsoft.pc-tester.pointer-functional/v1"},
 	{id: "input.readiness.quick", filename: "input.json", schema: "hhsoft.pc-tester.input-readiness/v1"},
 	{id: "memory.quick", filename: "memory.json", schema: "hhsoft.pc-tester.memory/v1"},
 	{id: "network.readiness.quick", filename: "network.json", schema: "hhsoft.pc-tester.network-readiness/v1"},
@@ -251,6 +252,13 @@ func runFinalizeWithSafety(ctx context.Context, arguments []string, stdout, stde
 	if !changed && finalPlan.ID != frozenPlan.ID {
 		fmt.Fprintln(stderr, "validate frozen plan: plan does not match unchanged hardware")
 		return 1
+	}
+	for _, result := range testResults {
+		if result.ID == "input.pointer.quick" && (result.Status == app.TestPass || pointerEvidenceHasPassedDevice(result.Evidence)) &&
+			!validatePointerPlanEvidence(result.Evidence, plannedTests[result.ID], frozenPlan, finalPlan, snapshot) {
+			fmt.Fprintln(stderr, "validate pointer evidence: interfaces or capabilities do not match the frozen hardware")
+			return 1
+		}
 	}
 	for index, result := range testResults {
 		testResults[index], err = app.BindTestResult(result, frozenPlan.ID, frozenPlan.HardwareGraph.Value)

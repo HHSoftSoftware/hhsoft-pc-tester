@@ -16,7 +16,7 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/storage"
 )
 
-const sessionJournalSchema = "hhsoft.pc-tester.quick-session/v1"
+const sessionJournalSchema = "hhsoft.pc-tester.quick-session/v2"
 const maximumSessionJournalBytes = 64 << 10
 
 type sessionJournal struct {
@@ -46,6 +46,7 @@ func safeSessionObservation(result safemode.Result) bool {
 
 var sessionWorkerIDs = [...]string{
 	"cpu.quick", "memory.quick", "audio.readiness.quick", "input.readiness.quick",
+	"input.pointer.quick",
 	"network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick",
 	"graphics.quick", "display.operator.quick",
 }

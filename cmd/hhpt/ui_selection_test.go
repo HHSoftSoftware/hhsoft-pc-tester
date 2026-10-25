@@ -43,12 +43,12 @@ func TestUISelectionChoicesSurviveWaitAndDeploymentKey(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "selection.json")
 	var output bytes.Buffer
 	got := runUIWith(context.Background(), []string{"-selection-output", path, "-deployment-key-media"},
-		strings.NewReader("c\n6\n2\n\nw\nk\n"), &output, &output, uiOperatorWait)
+		strings.NewReader("c\n7\n2\n\nw\nk\n"), &output, &output, uiOperatorWait)
 	if got != deploymentKeySelectionExitCode {
 		t.Fatalf("ui returned %d: %s", got, &output)
 	}
 	assertUISelectionFile(t, path, `{"excluded_tests":["cpu.quick","memory.quick"]}`+"\n")
-	for _, text := range []string{"[C]", "CPU computation", "Memory patterns", "Quick tests selected: 7 of 9.", "Automatic start remains disabled."} {
+	for _, text := range []string{"[C]", "CPU computation", "Memory patterns", "Pointer movement and buttons", "Quick tests selected: 8 of 10.", "Automatic start remains disabled."} {
 		if !strings.Contains(output.String(), text) {
 			t.Errorf("output is missing %q: %s", text, &output)
 		}
@@ -70,7 +70,7 @@ func TestUISelectionInvalidChoicesDoNotChangeTests(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "selection.json")
 	var output bytes.Buffer
 	got := runUIWith(context.Background(), []string{"-selection-output", path},
-		strings.NewReader("unknown\nc\n0\n10\n-1\nx\n1 2\n2\n\n1\n"), &output, &output, uiOperatorWait)
+		strings.NewReader("unknown\nc\n0\n11\n-1\nx\n1 2\n2\n\n1\n"), &output, &output, uiOperatorWait)
 	if got != 0 {
 		t.Fatalf("ui returned %d: %s", got, &output)
 	}
@@ -234,7 +234,7 @@ func TestUISelectionLegacyExposesOnlySupportedQuickChoices(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "selection.json")
 	var output bytes.Buffer
 	got := runUIWith(context.Background(), []string{"-selection-output", path, "-legacy", "-deployment-key-media"},
-		strings.NewReader("c\n8\n2\n4\n\nk\n1\n"), &output, &output, uiOperatorWait)
+		strings.NewReader("c\n9\n2\n5\n\nk\n1\n"), &output, &output, uiOperatorWait)
 	if got != 0 {
 		t.Fatalf("legacy menu returned %d: %s", got, &output)
 	}
@@ -250,11 +250,11 @@ func TestUISelectionAllowsInventoryAndSafetyWithoutQuickTests(t *testing.T) {
 	path := filepath.Join(t.TempDir(), "selection.json")
 	var output bytes.Buffer
 	got := runUIWith(context.Background(), []string{"-selection-output", path},
-		strings.NewReader("c\n1\n2\n3\n4\n5\n6\n7\n8\n9\n\n1\n"), &output, &output, uiOperatorWait)
+		strings.NewReader("c\n1\n2\n3\n4\n5\n6\n7\n8\n9\n10\n\n1\n"), &output, &output, uiOperatorWait)
 	if got != 0 || !strings.Contains(output.String(), "No quick tests selected; inventory and safety checks still run.") {
 		t.Fatalf("all exclusions returned %d: %s", got, &output)
 	}
-	assertUISelectionFile(t, path, `{"excluded_tests":["audio.readiness.quick","cpu.quick","display.operator.quick","graphics.quick","input.readiness.quick","memory.quick","network.readiness.quick","storage.readiness.quick","usb.readiness.quick"]}`+"\n")
+	assertUISelectionFile(t, path, `{"excluded_tests":["audio.readiness.quick","cpu.quick","display.operator.quick","graphics.quick","input.pointer.quick","input.readiness.quick","memory.quick","network.readiness.quick","storage.readiness.quick","usb.readiness.quick"]}`+"\n")
 }
 
 func uiOperatorWait(context.Context, time.Duration, io.Reader) (bool, error) { return true, nil }

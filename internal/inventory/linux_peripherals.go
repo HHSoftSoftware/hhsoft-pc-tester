@@ -18,7 +18,7 @@ var (
 	framebufferPattern  = regexp.MustCompile(`^fb[0-9]+$`)
 )
 
-func (collector *LinuxCollector) collectInput() []Component {
+func (collector *LinuxCollector) collectInputDevices() []Component {
 	inputDevices := path.Join(collector.Paths.Proc, "bus/input/devices")
 	if data, ok := collector.readFile(inputDevices); ok {
 		if components := parseInputDevices(string(data)); len(components) > 0 {

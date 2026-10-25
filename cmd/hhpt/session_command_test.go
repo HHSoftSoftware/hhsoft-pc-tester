@@ -15,6 +15,7 @@ import (
 	"time"
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/graphics"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inputtest"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/networktest"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/plan"
@@ -44,7 +45,7 @@ func newSessionHarness(t *testing.T, architecture string, excluded []string) *se
 		inventory.NewComponent(inventory.ComponentCPU, "cpu:0", nil),
 		inventory.NewComponent(inventory.ComponentMemory, "memory:system", nil),
 		inventory.NewComponent(inventory.ComponentSound, "sound:card0", nil),
-		inventory.NewComponent(inventory.ComponentInput, "input:event0", nil),
+		inventory.NewComponent(inventory.ComponentInput, "input:event0", map[string]string{"category": "pointer"}),
 		inventory.NewComponent(inventory.ComponentNetwork, "network:eth0", map[string]string{"name": "eth0"}),
 		inventory.NewComponent(inventory.ComponentBlock, "block:sda", map[string]string{"kind": "device"}),
 		inventory.NewComponent(inventory.ComponentUSB, "usb:1-1", nil),
@@ -137,6 +138,8 @@ func sessionCompleteEvidence(id string) any {
 		return completeAudioEvidence()
 	case "input.readiness.quick":
 		return completeInputEvidence()
+	case "input.pointer.quick":
+		return completePointerEvidence()
 	case "network.readiness.quick":
 		return completeNetworkEvidence()
 	case "storage.readiness.quick":
@@ -155,6 +158,59 @@ func (h *sessionHarness) run(ctx context.Context) int {
 	return runSessionWith(ctx, h.arguments, strings.NewReader(""), &h.stdout, &h.stderr, h.dependencies)
 }
 
+func TestSessionPointerIncompleteActionsRemainVisibleAndAllowLaterWorkers(t *testing.T) {
+	h := newSessionHarness(t, "x86_64", nil)
+	runWorker := h.dependencies.RunWorker
+	h.dependencies.RunWorker = func(ctx context.Context, worker sessionWorker, input io.Reader, stdout, stderr io.Writer) int {
+		if worker.ID != "input.pointer.quick" {
+			return runWorker(ctx, worker, input, stdout, stderr)
+		}
+		h.calls = append(h.calls, worker.ID)
+		result := completePointerEvidence()
+		result.Status, result.StopReason = inputtest.StatusInconclusive, "observation_timeout"
+		result.DurationMilliseconds = result.LimitMilliseconds
+		result.Devices[0].Status = inputtest.StatusInconclusive
+		result.Devices[0].XNegative = 0
+		writeSessionFixture(t, worker.OutputPath, result)
+		return 0
+	}
+	if code := h.run(t.Context()); code != 0 || !h.finalized || len(h.calls) != 10 || h.journal.StopReason != "completed" {
+		t.Fatalf("incomplete pointer interrupted unrelated work: code=%d", code)
+	}
+	if h.journal.Workers[4].Outcome != "inconclusive" || h.journal.Workers[4].State != "completed" ||
+		!strings.Contains(h.stdout.String(), "HHPT_POINTER status=inconclusive") {
+		t.Fatal("pointer action gaps were hidden")
+	}
+	marker, err := os.ReadFile(filepath.Join(h.directory, "session-ready.txt"))
+	if err != nil || !bytes.Contains(marker, []byte(" pointer=inconclusive ")) {
+		t.Fatal("readiness marker lost pointer qualification")
+	}
+}
+
+func TestSessionCancellationDuringPointerPreservesPartialEvidence(t *testing.T) {
+	h := newSessionHarness(t, "x86_64", nil)
+	ctx, cancel := context.WithCancel(t.Context())
+	defer cancel()
+	runWorker := h.dependencies.RunWorker
+	h.dependencies.RunWorker = func(ctx context.Context, worker sessionWorker, input io.Reader, stdout, stderr io.Writer) int {
+		if worker.ID != "input.pointer.quick" {
+			return runWorker(ctx, worker, input, stdout, stderr)
+		}
+		h.calls = append(h.calls, worker.ID)
+		result := completePointerEvidence()
+		cancel()
+		result.MarkInterrupted(context.Canceled)
+		writeSessionFixture(t, worker.OutputPath, result)
+		return 0
+	}
+	if code := h.run(ctx); code != 0 || !h.finalized || len(h.calls) != 5 || h.journal.StopReason != "operator_cancelled" {
+		t.Fatalf("pointer cancellation did not finalize the stopped run: code=%d", code)
+	}
+	if h.journal.Workers[4].State != "interrupted" || h.journal.Workers[4].Outcome != "aborted" || h.journal.Workers[5].State != "not_started" {
+		t.Fatal("pointer cancellation started a later worker or discarded its outcome")
+	}
+}
+
 func TestSessionExecutesFrozenAllowlistAndRetainsSelection(t *testing.T) {
 	for _, architecture := range []string{"x86_64", "x86", "legacy-x86", "aarch64"} {
 		t.Run(architecture, func(t *testing.T) {
@@ -162,7 +218,7 @@ func TestSessionExecutesFrozenAllowlistAndRetainsSelection(t *testing.T) {
 			if code := h.run(t.Context()); code != 0 {
 				t.Fatalf("code=%d stderr=%s", code, &h.stderr)
 			}
-			want := []string{"cpu.quick", "memory.quick", "input.readiness.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick"}
+			want := []string{"cpu.quick", "memory.quick", "input.readiness.quick", "input.pointer.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick"}
 			if architecture != "legacy-x86" {
 				want = append(want, "graphics.quick", "display.operator.quick")
 			}
@@ -172,7 +228,7 @@ func TestSessionExecutesFrozenAllowlistAndRetainsSelection(t *testing.T) {
 			if h.journal.Workers[2].State != "not_scheduled" || h.journal.Workers[2].Outcome != "excluded" {
 				t.Fatal("excluded choice was changed")
 			}
-			if architecture == "legacy-x86" && (h.journal.Workers[7].Outcome != "unsupported" || h.journal.Workers[8].Outcome != "unsupported") {
+			if architecture == "legacy-x86" && (h.journal.Workers[8].Outcome != "unsupported" || h.journal.Workers[9].Outcome != "unsupported") {
 				t.Fatal("legacy unsupported rows were changed")
 			}
 			if !strings.Contains(h.stdout.String(), "HHPT_SESSION_RESULT reason=completed") || !strings.Contains(h.stdout.String(), "HHPT_AUDIO_READINESS status=excluded") {
@@ -340,7 +396,7 @@ func TestSessionOrdinaryGraphicsErrorRemainsReportable(t *testing.T) {
 		}
 		return worker(ctx, w, in, out, errOut)
 	}
-	if code := h.run(t.Context()); code != 0 || !h.finalized || len(h.calls) != 9 || h.journal.Workers[7].Outcome != "error" {
+	if code := h.run(t.Context()); code != 0 || !h.finalized || len(h.calls) != 10 || h.journal.Workers[8].Outcome != "error" {
 		t.Fatalf("ordinary error behavior changed: code=%d stderr=%s", code, &h.stderr)
 	}
 }
@@ -446,8 +502,8 @@ func TestSessionExplicitGraphicsFailureStopsDisplayAndRemainsFailure(t *testing.
 		writeSessionFixture(t, w.OutputPath, result)
 		return 0
 	}
-	if code := h.run(t.Context()); code != 0 || !h.finalized || len(h.calls) != 8 || h.journal.StopReason != "worker_stop" ||
-		h.journal.Workers[7].Outcome != "fail" || h.journal.Workers[7].State != "completed" || h.journal.Workers[8].State != "not_started" {
+	if code := h.run(t.Context()); code != 0 || !h.finalized || len(h.calls) != 9 || h.journal.StopReason != "worker_stop" ||
+		h.journal.Workers[8].Outcome != "fail" || h.journal.Workers[8].State != "completed" || h.journal.Workers[9].State != "not_started" {
 		t.Fatalf("graphics failure was lost: code=%d calls=%v stderr=%s", code, h.calls, &h.stderr)
 	}
 	marker, err := os.ReadFile(filepath.Join(h.directory, "session-ready.txt"))

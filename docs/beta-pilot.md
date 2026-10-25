@@ -45,6 +45,7 @@ tests, repairs, internal-drive mounts, or disabling firmware safety controls.
 | Exercise automatic safe start on a separate boot. | Countdown behavior and the selected frozen quick plan. | |
 | Compare discovery with the installed hardware. | Missing or duplicated devices, diskless behavior where applicable, driver gaps. | |
 | Run the applicable quick tests. | Each result, skipped/unsupported reason, operator findings, and elapsed time. | |
+| Exercise guided relative-pointer actions on every applicable interface. | Left/right and up/down movement; primary and advertised right/middle button press/release cycles; one device must not satisfy another. Absolute/mixed interfaces and incomplete actions must not pass. Do not retain raw events or typed text. | |
 | Check thermal evidence during CPU/RAM work. | Exposed sensor count and plausible peak temperature; absent telemetry stays absent. Do not force overheating or change fan controls. | |
 | Exercise cancellation where the UI supports it. | Worker termination, retained evidence, and return to a usable interface. Record unavailable cancellation paths. | |
 | Exercise a supported removable test peripheral's disconnect/reconnect. | Explicit device-change or partial-result handling. Keep boot and active report media attached. | |
@@ -57,6 +58,10 @@ that reaches 15 minutes for review; retain slow and failed runs in the evidence
 set. A readiness check does not establish functional transfer, audio playback,
 camera capture, RF performance, or sustained-load coverage. Use the exact
 coverage reported by the candidate, and track missing beta functionality openly.
+For the guided-pointer milestone, include multiple pointers, withheld actions,
+lost/disconnected-device handling, and cancellation with a supported removable
+fixture. Record unsupported absolute/mixed interfaces separately. VM and
+synthetic event checks do not complete these physical rows.
 
 Self-issued report verification checks integrity, not independent signer trust:
 

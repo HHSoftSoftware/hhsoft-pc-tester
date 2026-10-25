@@ -162,6 +162,7 @@ func quickTestLabel(id string) string {
 		"display.operator.quick":  "Display inspection",
 		"graphics.quick":          "Graphics pattern",
 		"input.readiness.quick":   "Input device readiness",
+		"input.pointer.quick":     "Pointer movement and buttons",
 		"memory.quick":            "Memory patterns",
 		"network.readiness.quick": "Network device readiness",
 		"storage.readiness.quick": "Storage device readiness",

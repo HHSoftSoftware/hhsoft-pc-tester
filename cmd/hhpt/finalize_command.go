@@ -179,7 +179,7 @@ func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.
 			return 1
 		}
 	}
-	finalPlan, err := plan.Build(snapshot, frozenPlan.Profile, frozenPlan.Architecture, fingerprintKey, *keyEpoch)
+	finalPlan, err := plan.BuildWithSelection(snapshot, frozenPlan.Profile, frozenPlan.Architecture, fingerprintKey, *keyEpoch, frozenPlan.ExcludedTests)
 	if err != nil || finalPlan.DefinitionsDigest != frozenPlan.DefinitionsDigest {
 		fmt.Fprintln(stderr, "validate frozen plan: test definitions changed")
 		return 1
@@ -219,7 +219,8 @@ func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.
 		AddedComponents       []plan.HardwareComponentRef `json:"added_components,omitempty"`
 		RemovedComponents     []plan.HardwareComponentRef `json:"removed_components,omitempty"`
 		ChangedComponents     []plan.HardwareComponentRef `json:"changed_components,omitempty"`
-	}{"hhsoft.pc-tester.run-integrity/v1", integrityStatus, frozenPlan.ID, frozenPlan.HardwareGraph.Value, finalPlan.HardwareGraph.Value, len(frozenPlan.HardwareGraph.Components), len(finalPlan.HardwareGraph.Components), delta.Added, delta.Removed, delta.Changed})
+		ExcludedTests         []string                    `json:"excluded_tests,omitempty"`
+	}{"hhsoft.pc-tester.run-integrity/v1", integrityStatus, frozenPlan.ID, frozenPlan.HardwareGraph.Value, finalPlan.HardwareGraph.Value, len(frozenPlan.HardwareGraph.Components), len(finalPlan.HardwareGraph.Components), delta.Added, delta.Removed, delta.Changed, frozenPlan.ExcludedTests})
 	if err == nil {
 		integrityResult, err = app.BindTestResult(integrityResult, frozenPlan.ID, frozenPlan.HardwareGraph.Value)
 	}

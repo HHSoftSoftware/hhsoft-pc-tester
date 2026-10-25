@@ -15,6 +15,11 @@ import (
 )
 
 func runPlan(ctx context.Context, arguments []string, stdout, stderr io.Writer) int {
+	collector := inventory.NewLinuxCollector("/")
+	return runPlanWith(ctx, arguments, stdout, stderr, collector.Collect)
+}
+
+func runPlanWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector) int {
 	flags := flag.NewFlagSet("plan", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	profile := flags.String("profile", string(plan.ProfileQuick), "quick, standard, extended, or destructive")
@@ -23,19 +28,37 @@ func runPlan(ctx context.Context, arguments []string, stdout, stderr io.Writer) 
 	keyPath := flags.String("fingerprint-key", "", "file containing exactly 32 random bytes")
 	keyEpoch := flags.String("key-epoch", "local-1", "non-secret deployment key epoch label")
 	fixtureComponents := flags.String("fixture-components", "", "internal file binding selected test-fixture component IDs")
+	selectionPath := flags.String("selection-file", "", "bounded JSON file listing safe quick-test exclusions")
 	if err := flags.Parse(arguments); err != nil {
+		return 2
+	}
+	if flags.NArg() != 0 {
+		fmt.Fprintln(stderr, "plan accepts no positional arguments")
 		return 2
 	}
 	if *keyPath == "" {
 		fmt.Fprintln(stderr, "plan requires -fingerprint-key; the hardware graph is never exported with an unkeyed digest")
 		return 2
 	}
+	var excludedTests []string
+	if *selectionPath != "" {
+		encoded, err := readSmallRegularFile(*selectionPath, plan.MaximumSelectionBytes)
+		if err != nil {
+			fmt.Fprintf(stderr, "read quick-test selection: %v\n", err)
+			return 1
+		}
+		excludedTests, err = plan.DecodeSelection(encoded, strings.TrimSpace(*architecture))
+		if err != nil {
+			fmt.Fprintf(stderr, "validate quick-test selection: %v\n", err)
+			return 1
+		}
+	}
 	fingerprintKey, err := os.ReadFile(*keyPath)
 	if err != nil {
 		fmt.Fprintf(stderr, "read fingerprint key: %v\n", err)
 		return 1
 	}
-	snapshot, err := inventory.NewLinuxCollector("/").Collect(ctx)
+	snapshot, err := collect(ctx)
 	if err != nil {
 		fmt.Fprintf(stderr, "collect inventory: %v\n", err)
 		return 1
@@ -47,7 +70,7 @@ func runPlan(ctx context.Context, arguments []string, stdout, stderr io.Writer) 
 			return 1
 		}
 	}
-	result, err := plan.Build(snapshot, plan.Profile(strings.ToLower(strings.TrimSpace(*profile))), *architecture, fingerprintKey, *keyEpoch)
+	result, err := plan.BuildWithSelection(snapshot, plan.Profile(strings.ToLower(strings.TrimSpace(*profile))), *architecture, fingerprintKey, *keyEpoch, excludedTests)
 	if err != nil {
 		fmt.Fprintf(stderr, "build test plan: %v\n", err)
 		return 1

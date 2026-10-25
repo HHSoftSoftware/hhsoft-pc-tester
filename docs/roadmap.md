@@ -10,7 +10,8 @@ Next work follows the existing dependencies:
 
 1. Complete the current alpha's source/image inspection, source and license
    packaging, authenticated evidence, and approved publication checks.
-2. Expand profile and per-test selection orchestration around the frozen plan
+2. Expand profile orchestration beyond safe quick-test selection, adding
+   configuration, cancellation, and run-wide watchdogs around the frozen plan
    and signed evidence paths, retaining explicit unsupported results.
 3. Implement the remaining applicable functional tests with independent
    failure-case coverage for each adapter. Record physical validation separately
@@ -91,10 +92,12 @@ applicable.
 
 ## Phase 2 — quick functional test
 
-The CPU/RAM hwmon guard and frozen-plan/report validation are implemented and
-covered by automated failure tests. Operator-selected quick-test execution is
-the next orchestration increment. These safeguards do not complete the functional
-adapter coverage or physical pilot required below.
+The CPU/RAM hwmon guard, frozen-plan/report validation, and operator-selected
+quick-test execution are implemented and covered by automated failure tests.
+The selection flow also passes native menu-to-signed-report verification for
+modern x64/x86 and legacy x86 applications. Broader profile orchestration,
+run-wide watchdogs, rebuilt-image qualification, the remaining functional
+adapters, and the physical pilot below are still open.
 
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.

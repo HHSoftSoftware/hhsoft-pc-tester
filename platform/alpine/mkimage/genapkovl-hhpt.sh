@@ -80,10 +80,16 @@ if ! test -c "\$ui_console"; then
 fi
 printf '\n=== HHSoft PC Tester ===\nOffline hardware inspection and qualification\n\n' > /dev/console
 printf 'HHPT_UI_WAIT timeout=15s architecture=$target_architecture\n' > /dev/console
-if /usr/bin/hhpt ui -auto-start 15s -deployment-key-media <"\$ui_console" >"\$ui_console" 2>&1; then
+if /usr/bin/hhpt ui -auto-start 15s -deployment-key-media -selection-output /run/hhpt/selection.json <"\$ui_console" >"\$ui_console" 2>&1; then
 	ui_status=0
 else
 	ui_status=\$?
+fi
+if test "\$ui_status" -eq 0 || test "\$ui_status" -eq 10; then
+	if ! test -f /run/hhpt/selection.json || test -L /run/hhpt/selection.json || ! chmod 0400 /run/hhpt/selection.json; then
+		printf 'HHPT_FAILED freeze-test-selection\n' > /dev/console
+		exit 1
+	fi
 fi
 key_epoch=ephemeral-session
 key_mode=ephemeral
@@ -127,7 +133,7 @@ if /usr/bin/hhpt inventory -fingerprint-key /run/hhpt/fingerprint.key -key-epoch
 			exit 1
 		fi
 		check_safety preflight
-		if /usr/bin/hhpt plan -fingerprint-key /run/hhpt/fingerprint.key -key-epoch "\$key_epoch" \$fixture_flag -profile quick -architecture $target_architecture -output /run/hhpt/plan.json; then
+		if /usr/bin/hhpt plan -fingerprint-key /run/hhpt/fingerprint.key -key-epoch "\$key_epoch" \$fixture_flag -profile quick -architecture $target_architecture -selection-file /run/hhpt/selection.json -output /run/hhpt/plan.json; then
 			chmod 0400 /run/hhpt/plan.json || { printf 'HHPT_FAILED freeze-test-plan\n' > /dev/console; exit 1; }
 			plan_id=\$(sed -n 's/^[[:space:]]*"id": "\(sha256:[^"]*\)",*$/\1/p' /run/hhpt/plan.json | head -n 1)
 			scheduled_count=\$(grep -c '"status": "scheduled"' /run/hhpt/plan.json || true)
@@ -218,7 +224,7 @@ if /usr/bin/hhpt inventory -fingerprint-key /run/hhpt/fingerprint.key -key-epoch
 		# before the fresh check. Do not continue active tests or claim readiness.
 		for readiness_status in "\$network_status" "\$storage_status"; do
 			case "\$readiness_status" in
-				pass|inconclusive|not_present|missing_driver|unsupported|skip) ;;
+				pass|inconclusive|not_present|missing_driver|unsupported|excluded|skip) ;;
 				*) printf 'HHPT_SAFETY_FAIL stage=readiness detail=unsafe-or-incomplete-observations\n' > /dev/console; exit 1 ;;
 			esac
 		done

@@ -148,7 +148,7 @@ func usage(destination io.Writer) {
 	fmt.Fprintln(destination, "       hhpt compare (-self-issued | -public-key FILE -key-id ID [-after-public-key FILE -after-key-id ID]) [-output FILE] BEFORE.hhpcr AFTER.hhpcr")
 	fmt.Fprintln(destination, "       hhpt finalize -fingerprint-key FILE -plan PLAN.json -outcome TEST=STATUS... [-evidence-dir DIR] -output REPORT.hhpcr")
 	fmt.Fprintln(destination, "usage: hhpt inventory -fingerprint-key FILE [-key-epoch LABEL] [-output FILE]")
-	fmt.Fprintln(destination, "       hhpt plan -fingerprint-key FILE [-key-epoch LABEL] [-profile quick|standard|extended|destructive] [-output FILE]")
+	fmt.Fprintln(destination, "       hhpt plan -fingerprint-key FILE [-key-epoch LABEL] [-profile quick|standard|extended|destructive] [-selection-file FILE] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt cpu [-duration 3s] [-timeout 20s] [-workers N] [-thermal-limit-c 90] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt deployment-key init -epoch LABEL -output PATH/hhpt-deployment-key.v1")
 	fmt.Fprintln(destination, "       hhpt deployment-key inspect PATH/hhpt-deployment-key.v1")
@@ -164,6 +164,6 @@ func usage(destination io.Writer) {
 	fmt.Fprintln(destination, "       hhpt usb [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt save -fingerprint-key FILE REPORT.hhpcr")
 	fmt.Fprintln(destination, "       hhpt verify (-self-issued | -public-key FILE -key-id ID) REPORT.hhpcr")
-	fmt.Fprintln(destination, "       hhpt ui [-auto-start 15s] [-legacy] [-deployment-key-media]")
+	fmt.Fprintln(destination, "       hhpt ui [-auto-start 15s] [-legacy] [-deployment-key-media] [-selection-output FILE]")
 	fmt.Fprintln(destination, "       hhpt version")
 }

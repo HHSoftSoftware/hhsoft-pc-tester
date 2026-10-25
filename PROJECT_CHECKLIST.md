@@ -124,10 +124,15 @@ the alpha still requires the separate documented release gates.
 - [x] Validate frozen catalog rows, component references, and unambiguous plan
   JSON before report finalization. Reject rehashed applicability changes when
   the verified hardware graph is unchanged; preserve genuine hot-plug evidence.
+- [x] Choose implemented safe quick tests in the console, freeze exclusions in
+  the plan, and preserve them in signed results. Native amd64/386 tests and both
+  startup supervisors retain independent safety checks, architecture limits,
+  and unavailable-hardware reasons. Application menu-to-report verification
+  passes for modern x64/x86 and legacy x86; rebuilt-image gates remain separate.
 - [ ] Provide complete quick, standard, extended, burn-in, and destructive
   profiles, including burn-in scheduling and its adapter-contract support.
-- [ ] Provide per-test selection, configuration, cancellation, timeout, and
-  remaining-time/status displays.
+- [ ] Extend per-test selection to broader profiles and provide configuration,
+  cancellation, timeout, and remaining-time/status displays.
 - [ ] Provide localized UI and accessibility review.
 
 ## Hardware discovery and identity

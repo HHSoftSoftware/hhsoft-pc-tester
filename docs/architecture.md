@@ -157,11 +157,23 @@ deployment-keyed hardware-graph binding and deterministic frozen ID, and makes
 safe boot execute only `scheduled` tests. Planned coverage reports
 `unsupported` until its reviewed implementation exists.
 
+The console can exclude implemented safe quick tests before the plan is frozen.
+It writes a new RAM selection file with an explicit `excluded_tests` array; the
+planner rejects ambiguous, unknown, duplicate, or architecture-incompatible
+choices. Canonically ordered exclusions become part of the plan ID. An empty
+selection preserves the default plan encoding and ID. Exclusions only change
+tests that would otherwise be scheduled, preserving absent-hardware and
+missing-driver evidence. Both boot supervisors retain their unconditional mount
+and network safety checks and pass all nine quick outcomes to finalization.
+Signed run-integrity evidence includes the exclusions, including choices for
+hardware that was not available.
+
 Finalization rejects ambiguous JSON members and plans whose catalog rows,
 limits, statuses, or component references are inconsistent, even if their
 unkeyed plan IDs were recomputed. It rebuilds applicability from the observed
 inventory and fingerprint key; when the stable hardware graph is unchanged,
-the rebuilt and frozen plan IDs must agree before signing.
+the rebuilt and frozen plan IDs must agree before signing. Reconstruction carries
+the frozen exclusions so an operator's choices remain bound to the report.
 
 A graph change does not discard evidence. It fails run integrity and preserves
 the final report with the original/final graph HMACs and component-level delta,

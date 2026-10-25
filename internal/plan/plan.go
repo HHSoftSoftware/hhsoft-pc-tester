@@ -108,6 +108,7 @@ type Plan struct {
 	DefinitionsDigest string        `json:"definitions_digest"`
 	Capabilities      []Capability  `json:"capabilities"`
 	Tests             []Test        `json:"tests"`
+	ExcludedTests     []string      `json:"excluded_tests,omitempty"`
 }
 
 type definitions struct {
@@ -141,6 +142,10 @@ type testDefinition struct {
 }
 
 func Build(snapshot inventory.Snapshot, profile Profile, architecture string, fingerprintKey []byte, keyEpoch string) (Plan, error) {
+	return BuildWithSelection(snapshot, profile, architecture, fingerprintKey, keyEpoch, nil)
+}
+
+func BuildWithSelection(snapshot inventory.Snapshot, profile Profile, architecture string, fingerprintKey []byte, keyEpoch string, excludedTests []string) (Plan, error) {
 	if len(fingerprintKey) != fingerprintKeyBytes {
 		return Plan{}, ErrFingerprintKeyLength
 	}
@@ -160,6 +165,10 @@ func Build(snapshot inventory.Snapshot, profile Profile, architecture string, fi
 	if err != nil {
 		return Plan{}, err
 	}
+	excludedTests, err = canonicalExclusions(definitions, profile, architecture, excludedTests)
+	if err != nil {
+		return Plan{}, err
+	}
 	canonicalSnapshot := inventory.NewSnapshot(snapshot.Components)
 	hardwareGraph, err := ObserveHardwareGraph(canonicalSnapshot, fingerprintKey, keyEpoch)
 	if err != nil {
@@ -173,6 +182,7 @@ func Build(snapshot inventory.Snapshot, profile Profile, architecture string, fi
 		Architecture:      architecture,
 		HardwareGraph:     hardwareGraph,
 		DefinitionsDigest: definitionsDigest,
+		ExcludedTests:     excludedTests,
 	}
 	capabilityByID := make(map[string]Capability, len(definitions.Capabilities))
 	for _, definition := range definitions.Capabilities {
@@ -187,7 +197,7 @@ func Build(snapshot inventory.Snapshot, profile Profile, architecture string, fi
 			ComponentIDs: append([]string(nil), capability.ComponentIDs...), Destructive: definition.Destructive,
 			EstimatedSeconds: definition.EstimatedSeconds, TimeoutSeconds: definition.TimeoutSeconds,
 		}
-		test.Status = testStatus(definition, capability.Status, profile, architecture)
+		test.Status = testStatus(definition, capability.Status, profile, architecture, excludedTests)
 		result.Tests = append(result.Tests, test)
 	}
 	unsigned := result
@@ -310,6 +320,13 @@ func validatePlanJSONMembers(decoder *json.Decoder, depth int) error {
 				}
 			}
 			seen[key] = true
+			if key == "excluded_tests" {
+				var selected *[]string
+				if err := decoder.Decode(&selected); err != nil || selected == nil {
+					return errors.New("decode plan: excluded_tests must be an array of test IDs")
+				}
+				continue
+			}
 		}
 		if err := validatePlanJSONMembers(decoder, depth+1); err != nil {
 			return err
@@ -372,6 +389,10 @@ func validateCatalog(result Plan, componentByID map[string]int) error {
 	if result.DefinitionsDigest != digest {
 		return errors.New("frozen plan does not match current test definitions")
 	}
+	canonical, err := canonicalExclusions(catalog, result.Profile, result.Architecture, result.ExcludedTests)
+	if err != nil || !slices.Equal(canonical, result.ExcludedTests) {
+		return errors.New("invalid or noncanonical frozen test exclusions")
+	}
 	if len(result.Capabilities) != len(catalog.Capabilities) || len(result.Tests) != len(catalog.Tests) {
 		return errors.New("incomplete frozen plan catalog")
 	}
@@ -392,7 +413,7 @@ func validateCatalog(result Plan, componentByID map[string]int) error {
 		if test.ID != definition.ID || test.Version != definition.Version || test.Capability != definition.Capability ||
 			test.Destructive != definition.Destructive || test.EstimatedSeconds != definition.EstimatedSeconds ||
 			test.TimeoutSeconds != definition.TimeoutSeconds || !slices.Equal(test.ComponentIDs, capability.ComponentIDs) ||
-			test.Status != testStatus(definition, capability.Status, result.Profile, result.Architecture) {
+			test.Status != testStatus(definition, capability.Status, result.Profile, result.Architecture, result.ExcludedTests) {
 			return fmt.Errorf("frozen plan test %q does not match its catalog definition or capability", test.ID)
 		}
 	}
@@ -461,7 +482,7 @@ func unconditionalComponentType(componentType inventory.ComponentType, matches [
 	return false
 }
 
-func testStatus(definition testDefinition, capabilityStatus CapabilityStatus, profile Profile, architecture string) TestStatus {
+func testStatus(definition testDefinition, capabilityStatus CapabilityStatus, profile Profile, architecture string, excludedTests []string) TestStatus {
 	switch {
 	case capabilityStatus == CapabilityAbsent:
 		return TestNotPresent
@@ -473,6 +494,8 @@ func testStatus(definition testDefinition, capabilityStatus CapabilityStatus, pr
 		return TestExcluded
 	case !definition.Implemented:
 		return TestUnsupported
+	case slices.Contains(excludedTests, definition.ID):
+		return TestExcluded
 	default:
 		return TestScheduled
 	}

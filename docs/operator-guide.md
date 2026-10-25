@@ -85,7 +85,11 @@ After the HHSoft splash appears, a 15-second inactivity timer begins.
   start and show the operator menu.
 - If input monitoring is unavailable, automatic start is cancelled rather
   than started blindly.
-- Choose `1` or press Enter to start the same safe quick profile.
+- Choose `1` or press Enter to start the safe quick profile with the current
+  test choices. All applicable quick tests are selected by default.
+- Choose `C` to choose quick tests. Enter a displayed number to toggle a test,
+  `A` to restore the defaults, or Enter to return to the main menu. The choices
+  apply when you start the run, including when you choose `K`.
 - Choose `W` to remain at the menu. The automatic timer stays disabled.
 - On a modern image, choose `K` to select a deployment-key token before the
   test. Legacy images do not offer `K`.
@@ -97,6 +101,12 @@ Storage readiness opens eligible block devices read-only and issues no sector
 read. USB readiness issues no USB transfers. Network readiness configures
 nothing and sends no traffic. An active non-loopback interface or writable
 block mount causes safe mode to fail closed.
+
+Skipping a quick test does not disable the independent mount and network safety
+checks. The report records the choices and marks applicable skipped tests as
+`excluded`; hardware that is absent or lacks a driver keeps its corresponding
+status. Legacy graphics/display checks remain unsupported. A test choice does
+not enable an unsupported test or a destructive action.
 
 The graphics pattern and CPU/RAM checks are active loads despite the read-only
 storage policy. Supervise unstable equipment. If there is smoke, sparking,
@@ -236,6 +246,7 @@ questions.
 | `not_present` | The relevant hardware was not detected | Confirm it is truly absent; if it should be present, check firmware, connection, and driver state |
 | `unsupported` | This product version, image architecture, or selected profile does not implement the test | Use the modern image where possible or perform a documented external/manual test |
 | `missing_driver` | Hardware was detected but no usable kernel/provider device appeared | Record as untested, try the current modern image, and investigate driver compatibility; absence of a failure is not a pass |
+| `excluded` | The operator omitted this applicable quick test, or it is outside the selected profile | Treat it as untested; the signed outcome is `skip` with the exclusion reason |
 | `inconclusive` | Evidence was insufficient or ambiguous, including software rendering or inaccessible/partial readiness | Repeat under known-good conditions or use a controlled external fixture |
 | `aborted` | A safety/correctness stop or earlier prerequisite failure prevented the test | Resolve the earlier result and repeat the entire session |
 | `error` | The collector, tool, timeout, or report workflow failed | Treat the test as incomplete; reboot into a freshly verified image and retry |

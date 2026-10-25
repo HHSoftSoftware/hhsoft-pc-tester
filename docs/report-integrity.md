@@ -121,6 +121,16 @@ present empty or custom views fail. Compatible earlier software versions use
 their signed version label, while incompatible renderer formats require the
 matching report utility and fail closed. Views are never opened automatically.
 
+The implemented inventory can also contain optional `coverage_scope` and
+per-result `planned_status` fields. Finalization uses `frozen_plan` and includes
+every frozen catalog row plus run integrity; direct capture uses `direct_capture`
+for its limited collected checks. Planned dispositions remain distinct from
+execution outcomes. New coverage claims require valid, consistent bindings and
+statuses, including in bundles without views. The verifier checks their schema
+and consistency; it does not reconstruct the original plan or rerun hardware
+checks. Historical reports without these fields retain their existing rendering.
+New reports require the matching companion utility.
+
 ## Privacy-Preserving Fingerprints
 
 Raw stable identifiers are sensitive. By default, reports do not store motherboard, chassis, DIMM, drive, battery, modem, or network interface serials, system UUIDs, permanent MAC addresses, TPM endorsement identities, or similarly linkable values. They store keyed pseudonyms computed during collection and discard the raw values from report memory as soon as practicable.

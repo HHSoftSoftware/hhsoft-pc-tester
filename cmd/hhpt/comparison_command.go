@@ -120,9 +120,15 @@ func loadVerifiedComparisonReport(reportPath, publicKeyPath, keyID string, selfI
 }
 
 func decodeComparisonInventory(encoded []byte) (app.InventoryPayload, error) {
-	root, err := canonicalJSONFields(encoded, []string{"schema_version", "components", "system_fingerprint", "test_results"}, []string{"schema_version", "components", "system_fingerprint"})
+	root, err := canonicalJSONFields(encoded, []string{"schema_version", "components", "system_fingerprint", "test_results", "coverage_scope"}, []string{"schema_version", "components", "system_fingerprint"})
 	if err != nil {
 		return app.InventoryPayload{}, fmt.Errorf("decode inventory: %w", err)
+	}
+	if raw, present := root["coverage_scope"]; present {
+		var scope app.CoverageScope
+		if json.Unmarshal(raw, &scope) != nil || scope == "" {
+			return app.InventoryPayload{}, fmt.Errorf("decode inventory: invalid coverage scope")
+		}
 	}
 	var components []json.RawMessage
 	if err := json.Unmarshal(root["components"], &components); err != nil {
@@ -157,8 +163,15 @@ func decodeComparisonInventory(encoded []byte) (app.InventoryPayload, error) {
 			return app.InventoryPayload{}, fmt.Errorf("decode test results: %w", err)
 		}
 		for _, result := range results {
-			if _, err := canonicalJSONFields(result, []string{"id", "version", "status", "plan_id", "hardware_graph", "evidence"}, []string{"id", "version", "status", "evidence"}); err != nil {
+			fields, err := canonicalJSONFields(result, []string{"id", "version", "status", "plan_id", "hardware_graph", "evidence", "planned_status"}, []string{"id", "version", "status", "evidence"})
+			if err != nil {
 				return app.InventoryPayload{}, fmt.Errorf("decode test result: %w", err)
+			}
+			if raw, present := fields["planned_status"]; present {
+				var status app.PlannedStatus
+				if json.Unmarshal(raw, &status) != nil || status == "" {
+					return app.InventoryPayload{}, fmt.Errorf("decode test result: invalid planned status")
+				}
 			}
 		}
 	}
@@ -170,6 +183,9 @@ func decodeComparisonInventory(encoded []byte) (app.InventoryPayload, error) {
 	}
 	if err := decoder.Decode(new(any)); err != io.EOF {
 		return app.InventoryPayload{}, fmt.Errorf("decode inventory: trailing JSON value")
+	}
+	if err := app.ValidateCoverage(payload); err != nil {
+		return app.InventoryPayload{}, fmt.Errorf("decode inventory coverage: %w", err)
 	}
 	return payload, nil
 }

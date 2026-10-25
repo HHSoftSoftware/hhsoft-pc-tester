@@ -14,24 +14,27 @@ import (
 )
 
 type inventoryDocument struct {
-	ProductName       string
-	ProductVersion    string
-	SchemaVersion     int
-	TotalComponents   int
-	IdentifiedParts   int
-	UnidentifiedParts int
-	SystemFingerprint app.SystemFingerprint
-	Components        []app.ComponentRecord
-	TestResults       []testDocument
+	ProductName         string
+	ProductVersion      string
+	SchemaVersion       int
+	TotalComponents     int
+	IdentifiedParts     int
+	UnidentifiedParts   int
+	SystemFingerprint   app.SystemFingerprint
+	Components          []app.ComponentRecord
+	TestResults         []testDocument
+	CoverageDescription string
 }
 
 type testDocument struct {
-	ID            string
-	Version       int
-	Status        app.TestStatus
-	PlanID        string
-	HardwareGraph string
-	Evidence      string
+	ID                 string
+	Version            int
+	Status             app.TestStatus
+	PlanID             string
+	HardwareGraph      string
+	Evidence           string
+	PlannedStatus      app.PlannedStatus
+	PlannedDescription string
 }
 
 var inventoryTemplate = template.Must(template.New("inventory").Funcs(template.FuncMap{
@@ -72,7 +75,8 @@ table{background:var(--panel);border-collapse:collapse;border:1px solid var(--li
 <tr><th class="label" scope="row">Components</th><td>{{.TotalComponents}}</td></tr>
 <tr><th class="label" scope="row">Identified parts</th><td>{{.IdentifiedParts}}</td></tr>
 <tr><th class="label" scope="row">Unidentified parts</th><td>{{.UnidentifiedParts}}</td></tr>
-<tr><th class="label" scope="row">Functional test results</th><td>{{len .TestResults}}</td></tr>
+<tr><th class="label" scope="row">Functional test results</th><td>{{len .TestResults}}</td></tr>{{if .CoverageDescription}}
+<tr><th class="label" scope="row">Coverage</th><td>{{.CoverageDescription}}</td></tr>{{end}}
 </tbody>
 </table>
 </section>
@@ -94,8 +98,10 @@ table{background:var(--panel);border-collapse:collapse;border:1px solid var(--li
 <article class="test">
 <h3>{{display .ID}} Â· {{.Status}}</h3>
 <table><tbody>
-<tr><th class="label" scope="row">Adapter version</th><td>{{.Version}}</td></tr>
-<tr><th class="label" scope="row">Status</th><td>{{.Status}}</td></tr>
+<tr><th class="label" scope="row">{{if .PlannedStatus}}Definition version{{else}}Adapter version{{end}}</th><td>{{.Version}}</td></tr>
+<tr><th class="label" scope="row">Status</th><td>{{.Status}}</td></tr>{{if .PlannedStatus}}
+<tr><th class="label" scope="row">Planned status</th><td>{{.PlannedStatus}}</td></tr>
+<tr><th class="label" scope="row">Disposition</th><td>{{.PlannedDescription}}</td></tr>{{end}}
 {{if .PlanID}}<tr><th class="label" scope="row">Frozen plan</th><td class="fingerprint">{{.PlanID}}</td></tr>{{end}}
 {{if .HardwareGraph}}<tr><th class="label" scope="row">Planned hardware graph</th><td class="fingerprint">{{.HardwareGraph}}</td></tr>{{end}}
 </tbody></table>
@@ -158,6 +164,9 @@ func renderInventoryHTML(output io.Writer, payload app.InventoryPayload, version
 	if err := validateVersion(version); err != nil {
 		return err
 	}
+	if err := app.ValidateCoverage(payload); err != nil {
+		return err
+	}
 	components := append([]app.ComponentRecord(nil), payload.Components...)
 	sort.SliceStable(components, func(left, right int) bool {
 		if components[left].Type != components[right].Type {
@@ -172,19 +181,20 @@ func renderInventoryHTML(output io.Writer, payload app.InventoryPayload, version
 		if err != nil {
 			return err
 		}
-		testResults = append(testResults, testDocument{ID: result.ID, Version: result.Version, Status: result.Status, PlanID: result.PlanID, HardwareGraph: result.HardwareGraph, Evidence: evidence})
+		testResults = append(testResults, testDocument{ID: result.ID, Version: result.Version, Status: result.Status, PlanID: result.PlanID, HardwareGraph: result.HardwareGraph, Evidence: evidence, PlannedStatus: result.PlannedStatus, PlannedDescription: plannedStatusDescription(result.PlannedStatus)})
 	}
 	sort.SliceStable(testResults, func(left, right int) bool { return testResults[left].ID < testResults[right].ID })
 	document := inventoryDocument{
-		ProductName:       product.Name,
-		ProductVersion:    version,
-		SchemaVersion:     payload.SchemaVersion,
-		TotalComponents:   len(components),
-		IdentifiedParts:   payload.SystemFingerprint.IdentifiedParts,
-		UnidentifiedParts: payload.SystemFingerprint.UnidentifiedParts,
-		SystemFingerprint: payload.SystemFingerprint,
-		Components:        components,
-		TestResults:       testResults,
+		ProductName:         product.Name,
+		ProductVersion:      version,
+		SchemaVersion:       payload.SchemaVersion,
+		TotalComponents:     len(components),
+		IdentifiedParts:     payload.SystemFingerprint.IdentifiedParts,
+		UnidentifiedParts:   payload.SystemFingerprint.UnidentifiedParts,
+		SystemFingerprint:   payload.SystemFingerprint,
+		Components:          components,
+		TestResults:         testResults,
+		CoverageDescription: coverageDescription(payload.CoverageScope),
 	}
 	return inventoryTemplate.Execute(&limitedWriter{destination: output}, document)
 }

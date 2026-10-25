@@ -10,6 +10,23 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
 )
 
+func TestCompareRejectsInvalidOptionalCoverageMetadata(t *testing.T) {
+	before := fixtureReport("a", []app.ComponentRecord{record(inventory.ComponentBlock, "block:sda", "a", "wwid")})
+	after := fixtureReport("a", []app.ComponentRecord{record(inventory.ComponentBlock, "block:sda", "a", "wwid")})
+	if _, err := Compare(before, after); err != nil {
+		t.Fatal(err)
+	}
+	after.Inventory.CoverageScope = "complete"
+	if _, err := Compare(before, after); err == nil {
+		t.Fatal("comparison accepted unknown coverage scope")
+	}
+	after.Inventory.CoverageScope = app.CoverageDirectCapture
+	after.Inventory.TestResults = []app.TestResult{{ID: "cpu.quick", Version: 1, Status: app.TestPass, PlannedStatus: "passed", Evidence: json.RawMessage(`{}`)}}
+	if _, err := Compare(before, after); err == nil {
+		t.Fatal("comparison accepted unknown planned status")
+	}
+}
+
 func TestCompareClassifiesIdentityChanges(t *testing.T) {
 	before := fixtureReport("f", []app.ComponentRecord{
 		record(inventory.ComponentBlock, "block:nvme0n1", "a", "wwid"),

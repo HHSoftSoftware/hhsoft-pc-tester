@@ -2,12 +2,15 @@ package graphics
 
 import (
 	"context"
+	"errors"
 	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/workerexec"
 )
 
 const Schema = "hhsoft.pc-tester.graphics/v1"
@@ -33,13 +36,16 @@ type Runner interface {
 }
 
 type Result struct {
-	Schema      string         `json:"schema"`
-	Status      Status         `json:"status"`
-	Cards       []Card         `json:"cards"`
-	RenderNodes []string       `json:"render_nodes,omitempty"`
-	Renderer    RendererResult `json:"renderer"`
-	Pattern     PatternResult  `json:"pattern"`
-	Warnings    []string       `json:"warnings,omitempty"`
+	// CleanupUncertain is a live execution stop, not a claim reconstructed from
+	// historical evidence. Callers must stop further work and signing when set.
+	CleanupUncertain bool           `json:"-"`
+	Schema           string         `json:"schema"`
+	Status           Status         `json:"status"`
+	Cards            []Card         `json:"cards"`
+	RenderNodes      []string       `json:"render_nodes,omitempty"`
+	Renderer         RendererResult `json:"renderer"`
+	Pattern          PatternResult  `json:"pattern"`
+	Warnings         []string       `json:"warnings,omitempty"`
 }
 
 type Card struct {
@@ -87,7 +93,15 @@ func Probe(ctx context.Context, root string, frames int, runner Runner) Result {
 
 	rendererOutput, rendererError := runner.Run(ctx, "/usr/bin/eglinfo", "-B", "-p", "gbm")
 	result.Renderer = parseRenderer(rendererOutput, rendererError)
-	result.Pattern = runPattern(ctx, result.Cards, frames, runner)
+	if errors.Is(rendererError, workerexec.ErrCleanupUncertain) {
+		result.CleanupUncertain = true
+		result.Pattern = PatternResult{Status: StatusAborted, Detail: "not started: previous worker cleanup could not be confirmed"}
+		return result
+	}
+	result.Pattern, result.CleanupUncertain = runPattern(ctx, result.Cards, frames, runner)
+	if result.CleanupUncertain {
+		return result
+	}
 	if len(result.Cards) > 0 && result.Renderer.Status == StatusPass && result.Pattern.Status != StatusInconclusive {
 		result.Status = StatusPass
 	}
@@ -156,22 +170,22 @@ func parseRenderer(output string, runError error) RendererResult {
 	return RendererResult{Status: StatusPass, Name: renderer, HardwareDetected: true}
 }
 
-func runPattern(ctx context.Context, cards []Card, frames int, runner Runner) PatternResult {
+func runPattern(ctx context.Context, cards []Card, frames int, runner Runner) (PatternResult, bool) {
 	if frames <= 0 {
-		return PatternResult{Status: StatusSkip, Detail: "not requested"}
+		return PatternResult{Status: StatusSkip, Detail: "not requested"}, false
 	}
 	if frames > 600 {
 		frames = 600
 	}
 	device := firstConnectedCard(cards)
 	if device == "" {
-		return PatternResult{Status: StatusSkip, Detail: "no connected display connector"}
+		return PatternResult{Status: StatusSkip, Detail: "no connected display connector"}, false
 	}
 	_, err := runner.Run(ctx, "/usr/bin/kmscube", "-D", device, "-c", strconv.Itoa(frames), "-M", "rgba")
 	if err != nil {
-		return PatternResult{Status: StatusInconclusive, Frames: frames, Device: device, Detail: normalizeDetail(err.Error())}
+		return PatternResult{Status: StatusInconclusive, Frames: frames, Device: device, Detail: normalizeDetail(err.Error())}, errors.Is(err, workerexec.ErrCleanupUncertain)
 	}
-	return PatternResult{Status: StatusPass, Frames: frames, Device: device}
+	return PatternResult{Status: StatusPass, Frames: frames, Device: device}, false
 }
 
 func firstConnectedCard(cards []Card) string {

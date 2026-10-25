@@ -28,6 +28,7 @@ type InventoryPayload struct {
 	Components        []ComponentRecord `json:"components"`
 	SystemFingerprint SystemFingerprint `json:"system_fingerprint"`
 	TestResults       []TestResult      `json:"test_results,omitempty"`
+	CoverageScope     CoverageScope     `json:"coverage_scope,omitempty"`
 }
 
 type TestStatus string
@@ -48,6 +49,7 @@ type TestResult struct {
 	PlanID        string          `json:"plan_id,omitempty"`
 	HardwareGraph string          `json:"hardware_graph,omitempty"`
 	Evidence      json.RawMessage `json:"evidence"`
+	PlannedStatus PlannedStatus   `json:"planned_status,omitempty"`
 }
 
 type ComponentRecord struct {
@@ -202,7 +204,7 @@ func validateTestResult(result TestResult) error {
 	if len(result.Evidence) == 0 || len(result.Evidence) > maxTestEvidenceBytes || !json.Valid(result.Evidence) {
 		return errors.New("invalid test result evidence")
 	}
-	return nil
+	return validatePlannedStatus(result)
 }
 
 func validTestStatus(status TestStatus) bool {

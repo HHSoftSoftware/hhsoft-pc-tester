@@ -50,9 +50,9 @@ func TestCaptureViewsUseSerializedEvidenceForBothSigningProfiles(t *testing.T) {
 				generated := time.Unix(10, 20)
 				var encoded []byte
 				if selfIssued {
-					encoded, err = captureSelfIssuedBundle(snapshot, []app.TestResult{result}, fingerprintKey, "fixture", privateKey, publicKey, "fixture-session", generated)
+					encoded, err = captureSelfIssuedBundle(snapshot, []app.TestResult{result}, fingerprintKey, "fixture", privateKey, publicKey, "fixture-session", generated, "")
 				} else {
-					encoded, err = captureBundle(snapshot, []app.TestResult{result}, fingerprintKey, "fixture", privateKey, "fixture-signer", "fixture-session", generated)
+					encoded, err = captureBundle(snapshot, []app.TestResult{result}, fingerprintKey, "fixture", privateKey, "fixture-signer", "fixture-session", generated, "")
 				}
 				if err != nil {
 					t.Fatalf("valid evidence could not produce a signed report: %v", err)
@@ -201,9 +201,9 @@ func TestCaptureViewsUseSerializedPublicAttributes(t *testing.T) {
 		var encoded []byte
 		var err error
 		if selfIssued {
-			encoded, err = captureSelfIssuedBundle(snapshot, nil, make([]byte, 32), "fixture", privateKey, publicKey, "fixture-session", time.Unix(10, 20))
+			encoded, err = captureSelfIssuedBundle(snapshot, nil, make([]byte, 32), "fixture", privateKey, publicKey, "fixture-session", time.Unix(10, 20), "")
 		} else {
-			encoded, err = captureBundle(snapshot, nil, make([]byte, 32), "fixture", privateKey, "fixture-signer", "fixture-session", time.Unix(10, 20))
+			encoded, err = captureBundle(snapshot, nil, make([]byte, 32), "fixture", privateKey, "fixture-signer", "fixture-session", time.Unix(10, 20), "")
 		}
 		if err != nil {
 			t.Fatalf("serialized attribute cannot be rendered: %v", err)

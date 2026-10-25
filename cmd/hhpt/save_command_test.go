@@ -247,7 +247,7 @@ func saveTestArguments(t *testing.T) []string {
 	key := bytes.Repeat([]byte{0x27}, 32)
 	privateKey := ed25519.NewKeyFromSeed(bytes.Repeat([]byte{0x46}, ed25519.SeedSize))
 	encoded, err := captureSelfIssuedBundle(inventory.NewSnapshot(nil), nil, key, "ephemeral-session", privateKey,
-		privateKey.Public().(ed25519.PublicKey), "save-fixture", time.Unix(1, 0))
+		privateKey.Public().(ed25519.PublicKey), "save-fixture", time.Unix(1, 0), "")
 	if err != nil {
 		t.Fatal(err)
 	}

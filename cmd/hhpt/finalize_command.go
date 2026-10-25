@@ -101,6 +101,10 @@ func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.
 		fmt.Fprintf(stderr, "validate frozen plan outcomes: %v\n", err)
 		return 1
 	}
+	plannedTests := make(map[string]plan.Test, len(frozenPlan.Tests))
+	for _, test := range frozenPlan.Tests {
+		plannedTests[test.ID] = test
+	}
 	resolvedSessionID := strings.TrimSpace(*sessionID)
 	if resolvedSessionID == "" {
 		resolvedSessionID, err = randomSessionID(random)
@@ -110,8 +114,11 @@ func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.
 		}
 	}
 
-	testResults := make([]app.TestResult, 0, len(quickResultDefinitions))
+	testResults := make([]app.TestResult, 0, len(frozenPlan.Tests)+1)
+	covered := make(map[string]bool, len(quickResultDefinitions))
 	for _, definition := range quickResultDefinitions {
+		plannedTest := plannedTests[definition.id]
+		covered[definition.id] = true
 		sourceStatus := outcomeValues[definition.id]
 		normalizedStatus, ok := normalizeOutcome(sourceStatus)
 		if !ok {
@@ -120,7 +127,7 @@ func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.
 		}
 		path := filepath.Join(*evidenceDirectory, definition.filename)
 		encoded, readErr := readOptionalEvidence(path)
-		plannedStatus := frozenTestStatus(frozenPlan, definition.id)
+		plannedStatus := plannedTest.Status
 		var testResult app.TestResult
 		if readErr == nil {
 			if plannedStatus != plan.TestScheduled {
@@ -145,7 +152,7 @@ func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.
 					return 1
 				}
 			} else {
-				testResult, err = app.NewEncodedTestResult(definition.id, 1, normalizedStatus, encoded)
+				testResult, err = app.NewEncodedTestResult(definition.id, plannedTest.Version, normalizedStatus, encoded)
 			}
 		}
 		if testResult.ID == "" && plannedStatus == plan.TestScheduled && normalizedStatus != app.TestError && normalizedStatus != app.TestAborted {
@@ -153,18 +160,29 @@ func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.
 			return 1
 		}
 		if testResult.ID == "" {
-			testResult, err = app.NewTestResult(definition.id, 1, normalizedStatus, struct {
-				Schema       string         `json:"schema"`
-				Status       app.TestStatus `json:"status"`
-				SourceStatus string         `json:"source_status"`
-				Detail       string         `json:"detail"`
-			}{"hhsoft.pc-tester.execution-note/v1", normalizedStatus, sourceStatus, "bounded evidence was not produced; outcome recorded by the run supervisor"})
+			testResult, err = newExecutionNote(plannedTest, normalizedStatus, sourceStatus)
 		}
 		if err != nil {
 			fmt.Fprintf(stderr, "build result %s: %v\n", definition.id, err)
 			return 1
 		}
 		testResults = append(testResults, testResult)
+	}
+	for _, test := range frozenPlan.Tests {
+		if covered[test.ID] {
+			continue
+		}
+		status, ok := normalizeOutcome(string(test.Status))
+		if !ok || test.Status == plan.TestScheduled {
+			fmt.Fprintf(stderr, "validate frozen plan: test %s has no execution adapter\n", test.ID)
+			return 1
+		}
+		result, err := newExecutionNote(test, status, string(test.Status))
+		if err != nil {
+			fmt.Fprintf(stderr, "build planned disposition %s: %v\n", test.ID, err)
+			return 1
+		}
+		testResults = append(testResults, result)
 	}
 
 	snapshot, err := collect(ctx)
@@ -203,6 +221,7 @@ func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.
 			fmt.Fprintf(stderr, "bind result %s: %v\n", result.ID, err)
 			return 1
 		}
+		testResults[index].PlannedStatus = app.PlannedStatus(plannedTests[result.ID].Status)
 	}
 	integrityStatus := app.TestPass
 	if changed {
@@ -235,7 +254,7 @@ func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.
 		fmt.Fprintf(stderr, "generate self-issued report key: %v\n", err)
 		return 1
 	}
-	encoded, err := captureSelfIssuedBundle(snapshot, testResults, fingerprintKey, *keyEpoch, privateKey, publicKey, resolvedSessionID, now())
+	encoded, err := captureSelfIssuedBundle(snapshot, testResults, fingerprintKey, *keyEpoch, privateKey, publicKey, resolvedSessionID, now(), app.CoverageFrozenPlan)
 	if err != nil {
 		fmt.Fprintf(stderr, "build self-issued report: %v\n", err)
 		return 1
@@ -255,10 +274,17 @@ func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.
 }
 
 func validatePlanOutcomes(frozenPlan plan.Plan, outcomes map[string]string) error {
+	implemented := make(map[string]bool, len(quickResultDefinitions))
+	for _, definition := range quickResultDefinitions {
+		implemented[definition.id] = true
+	}
 	planned := make(map[string]plan.TestStatus, len(frozenPlan.Tests))
 	for _, test := range frozenPlan.Tests {
 		if _, exists := planned[test.ID]; exists {
 			return fmt.Errorf("duplicate planned test %s", test.ID)
+		}
+		if test.Status == plan.TestScheduled && !implemented[test.ID] {
+			return fmt.Errorf("scheduled test %s has no execution adapter", test.ID)
 		}
 		planned[test.ID] = test.Status
 	}
@@ -274,13 +300,17 @@ func validatePlanOutcomes(frozenPlan plan.Plan, outcomes map[string]string) erro
 	return nil
 }
 
-func frozenTestStatus(frozenPlan plan.Plan, id string) plan.TestStatus {
-	for _, test := range frozenPlan.Tests {
-		if test.ID == id {
-			return test.Status
-		}
+func newExecutionNote(test plan.Test, status app.TestStatus, sourceStatus string) (app.TestResult, error) {
+	detail := "bounded evidence was not produced; outcome recorded by the run supervisor"
+	if test.Status != plan.TestScheduled {
+		detail = "not run; disposition recorded in the frozen plan"
 	}
-	return ""
+	return app.NewTestResult(test.ID, test.Version, status, struct {
+		Schema       string         `json:"schema"`
+		Status       app.TestStatus `json:"status"`
+		SourceStatus string         `json:"source_status"`
+		Detail       string         `json:"detail"`
+	}{"hhsoft.pc-tester.execution-note/v1", status, sourceStatus, detail})
 }
 
 func parseOutcomes(values []string) (map[string]string, error) {

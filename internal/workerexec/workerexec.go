@@ -10,13 +10,17 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync"
 	"time"
 )
 
 var (
 	ErrInvalidConfiguration = errors.New("workerexec: invalid configuration")
 	ErrInvalidRequest       = errors.New("workerexec: invalid request")
+	ErrCleanupUncertain     = errors.New("workerexec: worker cleanup could not be confirmed")
 )
+
+const cleanupTimeout = 2 * time.Second
 
 type Options struct {
 	Timeout        time.Duration
@@ -91,27 +95,34 @@ func (runner *Runner) Run(ctx context.Context, request Request) (Result, error) 
 		return Result{ExitCode: -1}, fmt.Errorf("workerexec: worker not started: %w", err)
 	}
 
-	stdout := newBoundedBuffer(runner.maxStdoutBytes)
-	stderr := newBoundedBuffer(runner.maxStderrBytes)
+	capture, err := newOutputCapture(runner.maxStdoutBytes, runner.maxStderrBytes)
+	if err != nil {
+		return Result{ExitCode: -1}, fmt.Errorf("workerexec: create output pipes: %w", err)
+	}
+	defer capture.close()
 	command := exec.Command(runner.path, request.Args...)
 	command.Dir = runner.directory
 	command.Env = environment
-	command.Stdout = stdout
-	command.Stderr = stderr
+	command.Stdout = capture.stdoutWrite
+	command.Stderr = capture.stderrWrite
 	closeStdin := func() {}
 	var stdinRead, stdinWrite *os.File
 	if request.StdinHoldTime > 0 {
 		stdinRead, stdinWrite, err = os.Pipe()
 		if err != nil {
-			return resultFor(command, stdout, stderr), fmt.Errorf("workerexec: create stdin pipe: %w", err)
+			return capture.result(-1), fmt.Errorf("workerexec: create stdin pipe: %w", err)
 		}
 		command.Stdin = stdinRead
 	}
-	configureProcess(command)
+	if err := configureProcess(command); err != nil {
+		closePipe(stdinRead, stdinWrite)
+		return capture.result(-1), fmt.Errorf("workerexec: configure process: %w", err)
+	}
 	if err := command.Start(); err != nil {
 		closePipe(stdinRead, stdinWrite)
-		return resultFor(command, stdout, stderr), fmt.Errorf("workerexec: start %q: %w", runner.path, err)
+		return capture.result(-1), fmt.Errorf("workerexec: start worker: %w", err)
 	}
+	capture.start()
 	if stdinRead != nil {
 		_ = stdinRead.Close()
 		stdinTimer := time.AfterFunc(request.StdinHoldTime, func() {
@@ -124,29 +135,9 @@ func (runner *Runner) Run(ctx context.Context, request Request) (Result, error) 
 		defer closeStdin()
 	}
 
-	wait := make(chan error, 1)
-	go func() {
-		wait <- command.Wait()
-	}()
-
-	select {
-	case err := <-wait:
-		return completedResult(command, stdout, stderr, err)
-	case <-runContext.Done():
-		select {
-		case err := <-wait:
-			return completedResult(command, stdout, stderr, err)
-		default:
-		}
-		closeStdin()
-		terminationErr := terminateProcess(command)
-		<-wait
-		result := resultFor(command, stdout, stderr)
-		if terminationErr != nil {
-			return result, fmt.Errorf("workerexec: terminate %q: %v: %w", runner.path, terminationErr, runContext.Err())
-		}
-		return result, fmt.Errorf("workerexec: terminate %q: %w", runner.path, runContext.Err())
-	}
+	completed := waitProcess(runContext, command, closeStdin)
+	drainErr := capture.finish(completed.cleanupDeadline)
+	return capture.result(completed.exitCode), errors.Join(completed.err, drainErr)
 }
 
 func closePipe(read, write *os.File) {
@@ -155,28 +146,6 @@ func closePipe(read, write *os.File) {
 	}
 	if write != nil {
 		_ = write.Close()
-	}
-}
-
-func completedResult(command *exec.Cmd, stdout, stderr *boundedBuffer, err error) (Result, error) {
-	result := resultFor(command, stdout, stderr)
-	if err == nil {
-		return result, nil
-	}
-	return result, fmt.Errorf("workerexec: worker exited with code %d: %w", result.ExitCode, err)
-}
-
-func resultFor(command *exec.Cmd, stdout, stderr *boundedBuffer) Result {
-	exitCode := -1
-	if command.ProcessState != nil {
-		exitCode = command.ProcessState.ExitCode()
-	}
-	return Result{
-		Stdout:          stdout.bytes(),
-		Stderr:          stderr.bytes(),
-		ExitCode:        exitCode,
-		StdoutTruncated: stdout.truncated,
-		StderrTruncated: stderr.truncated,
 	}
 }
 
@@ -211,6 +180,7 @@ func validEnvironmentName(name string) bool {
 }
 
 type boundedBuffer struct {
+	mutex     sync.Mutex
 	limit     int
 	buffer    bytes.Buffer
 	truncated bool
@@ -221,6 +191,8 @@ func newBoundedBuffer(limit int) *boundedBuffer {
 }
 
 func (buffer *boundedBuffer) Write(data []byte) (int, error) {
+	buffer.mutex.Lock()
+	defer buffer.mutex.Unlock()
 	remaining := buffer.limit - buffer.buffer.Len()
 	if remaining > len(data) {
 		remaining = len(data)
@@ -234,6 +206,8 @@ func (buffer *boundedBuffer) Write(data []byte) (int, error) {
 	return len(data), nil
 }
 
-func (buffer *boundedBuffer) bytes() []byte {
-	return bytes.Clone(buffer.buffer.Bytes())
+func (buffer *boundedBuffer) snapshot() ([]byte, bool) {
+	buffer.mutex.Lock()
+	defer buffer.mutex.Unlock()
+	return bytes.Clone(buffer.buffer.Bytes()), buffer.truncated
 }

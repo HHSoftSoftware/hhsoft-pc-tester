@@ -143,10 +143,12 @@ else:
     assert command in TEST_WORKERS.values(), "unexpected worker"
     frozen = json.loads((root / "run/plan.json").read_text())
     assert any(TEST_WORKERS[test["id"]] == command and test["status"] == "scheduled" for test in frozen["tests"])
-    status = "error" if command == configuration.get("worker_error") else "pass"
+    exit_code = configuration.get("worker_exit_codes", {}).get(command, 0)
+    status = "error" if command == configuration.get("worker_error") or exit_code else "pass"
     if command == configuration.get("worker_fail"):
         status = "fail"
     write({"status": status})
+    sys.exit(exit_code)
 '''
 
 
@@ -407,6 +409,47 @@ class RuntimeSafetySupervisorTests(unittest.TestCase):
                     self.assertIn("HHPT_SAFETY_FAIL stage=readiness", console)
                     self.assertNotIn("HHPT_READY", console)
                     self.assertFalse(set(events) & {"graphics", "display", "finalize", "save"}, events)
+                    self.assertEqual(json.loads((root / ("run/" + worker + ".json")).read_text())["status"], "error")
+
+    def test_uncertain_worker_cleanup_stops_without_finalization_and_retains_evidence(self):
+        for worker in ("graphics", "display"):
+            with self.subTest(worker=worker):
+                root, result, events, console = self.run_supervisor(False, worker_exit_codes={worker: 12})
+                self.assertNotEqual(result.returncode, 0, result.stderr)
+                self.assertIn("HHPT_FAILED worker-cleanup-unconfirmed worker=" + worker, console)
+                self.assertNotIn("HHPT_READY", console)
+                self.assertEqual(events[-1], worker, "no collector or finalizer may run after uncertain cleanup")
+                self.assertEqual(events.count(worker), 1)
+                self.assertFalse(set(events) & {"finalize", "save"}, events)
+                if worker == "graphics":
+                    self.assertNotIn("display", events)
+                    self.assertFalse((root / "run/display.json").exists())
+                else:
+                    self.assertEqual(json.loads((root / "run/graphics.json").read_text())["status"], "pass")
+                self.assertEqual(json.loads((root / ("run/" + worker + ".json")).read_text())["status"], "error")
+                for previous in ("audio", "cpu", "memory", "input", "network", "storage", "usb"):
+                    self.assertEqual(events.count(previous), 1)
+                    self.assertEqual(json.loads((root / ("run/" + previous + ".json")).read_text())["status"], "pass")
+                for evidence in ("inventory.json", "plan.json", "selection.json", "safety-preflight.json",
+                                 "safety-after-readiness.json", "safety-before-" + worker + ".json"):
+                    self.assertTrue((root / "run" / evidence).is_file(), evidence)
+                self.assertFalse((root / "run/session.hhpcr").exists())
+
+    def test_other_graphics_and_display_command_errors_keep_existing_finalization_behavior(self):
+        for worker in ("graphics", "display"):
+            for exit_code in (1, 2):
+                with self.subTest(worker=worker, exit_code=exit_code):
+                    root, result, events, console = self.run_supervisor(False, worker_exit_codes={worker: exit_code})
+                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+                    self.assertIn("HHPT_READY", console)
+                    self.assertNotIn("worker-cleanup-unconfirmed", console)
+                    self.assertEqual(events.count("graphics"), 1)
+                    self.assertEqual(events.count("display"), 1)
+                    self.assertIn("finalize", events)
+                    self.assertIn("save", events)
+                    outcomes = json.loads((root / "final-outcomes.json").read_text())
+                    identifier = "graphics.quick" if worker == "graphics" else "display.operator.quick"
+                    self.assertEqual(outcomes[identifier], "error")
                     self.assertEqual(json.loads((root / ("run/" + worker + ".json")).read_text())["status"], "error")
 
     def test_final_observation_blocks_ready_and_save_while_retaining_completed_evidence(self):

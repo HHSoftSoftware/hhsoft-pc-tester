@@ -76,7 +76,7 @@ func TestDecodeComparisonInventoryRejectsCaseAlias(t *testing.T) {
 
 func writeSignedComparisonFixture(t *testing.T, path string, snapshot inventory.Snapshot, fingerprintKey []byte, privateKey ed25519.PrivateKey, keyID, sessionID string) {
 	t.Helper()
-	encoded, err := captureBundle(snapshot, nil, fingerprintKey, "epoch-1", privateKey, keyID, sessionID, time.Date(2026, time.October, 13, 0, 0, 0, 0, time.UTC))
+	encoded, err := captureBundle(snapshot, nil, fingerprintKey, "epoch-1", privateKey, keyID, sessionID, time.Date(2026, time.October, 13, 0, 0, 0, 0, time.UTC), "")
 	if err != nil {
 		t.Fatal(err)
 	}

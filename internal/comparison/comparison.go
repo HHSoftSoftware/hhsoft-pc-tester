@@ -261,6 +261,9 @@ func Compare(before, after Report) (Result, error) {
 
 func validateReport(report Report) error {
 	payload := report.Inventory
+	if err := app.ValidateCoverage(payload); err != nil {
+		return err
+	}
 	if payload.SchemaVersion != inventory.SnapshotSchemaVersion {
 		return errors.New("unsupported inventory schema")
 	}

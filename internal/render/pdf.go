@@ -92,6 +92,9 @@ func InventoryPDFForVersion(payload app.InventoryPayload, version string) ([]byt
 }
 
 func inventoryPDFLines(payload app.InventoryPayload, version string) ([]string, error) {
+	if err := app.ValidateCoverage(payload); err != nil {
+		return nil, err
+	}
 	components := append([]app.ComponentRecord(nil), payload.Components...)
 	sort.SliceStable(components, func(left, right int) bool {
 		if components[left].Type != components[right].Type {
@@ -120,6 +123,10 @@ func inventoryPDFLines(payload app.InventoryPayload, version string) ([]string, 
 	lines.field("Key epoch", payload.SystemFingerprint.KeyEpoch, "  ")
 	lines.field("Fingerprint key ID", payload.SystemFingerprint.KeyID, "  ")
 	lines.field("Fingerprint", payload.SystemFingerprint.Value, "  ")
+	if description := coverageDescription(payload.CoverageScope); description != "" {
+		lines.add("", "COVERAGE")
+		lines.field("Scope", description, "  ")
+	}
 	lines.add("", "FUNCTIONAL TEST EVIDENCE")
 	if len(tests) == 0 {
 		lines.add("No functional test evidence is included.")
@@ -128,7 +135,15 @@ func inventoryPDFLines(payload app.InventoryPayload, version string) ([]string, 
 		lines.add("")
 		lines.field("Test", result.ID, "")
 		lines.field("Status", string(result.Status), "  ")
-		lines.field("Adapter version", fmt.Sprintf("%d", result.Version), "  ")
+		if result.PlannedStatus != "" {
+			lines.field("Planned status", string(result.PlannedStatus), "  ")
+			lines.field("Disposition", plannedStatusDescription(result.PlannedStatus), "  ")
+		}
+		versionLabel := "Adapter version"
+		if result.PlannedStatus != "" {
+			versionLabel = "Definition version"
+		}
+		lines.field(versionLabel, fmt.Sprintf("%d", result.Version), "  ")
 		if result.PlanID != "" {
 			lines.field("Frozen plan", result.PlanID, "  ")
 			lines.field("Planned hardware graph", result.HardwareGraph, "  ")

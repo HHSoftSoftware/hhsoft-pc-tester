@@ -45,10 +45,20 @@ func TestFinalizePreservesAllSelectionIntentAndHotPlugEvidence(t *testing.T) {
 			if err := json.Unmarshal(artifact.InventoryJSON, &payload); err != nil {
 				t.Fatal(err)
 			}
+			if payload.CoverageScope != app.CoverageFrozenPlan || len(payload.TestResults) != len(frozen.Tests)+1 {
+				t.Fatal("selected or hot-plug report lost complete frozen coverage")
+			}
+			planned := make(map[string]plan.TestStatus, len(frozen.Tests))
+			for _, row := range frozen.Tests {
+				planned[row.ID] = row.Status
+			}
 			cpuFound, usbFound, integrityFound := false, false, false
 			for _, result := range payload.TestResults {
 				if result.PlanID != frozen.ID || result.HardwareGraph != frozen.HardwareGraph.Value {
 					t.Fatal("signed result lost the selected frozen plan binding")
+				}
+				if result.ID != "run.integrity.quick" && string(result.PlannedStatus) != string(planned[result.ID]) {
+					t.Fatal("hot-plug or selection replaced a frozen planned disposition")
 				}
 				switch result.ID {
 				case "cpu.quick":

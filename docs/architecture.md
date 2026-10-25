@@ -175,6 +175,16 @@ inventory and fingerprint key; when the stable hardware graph is unchanged,
 the rebuilt and frozen plan IDs must agree before signing. Reconstruction carries
 the frozen exclusions so an operator's choices remain bound to the report.
 
+Finalized reports retain all 21 frozen catalog rows and one run-integrity row.
+Each catalog result carries its definition version and `planned_status`, even
+when no adapter runs. The signed `coverage_scope` is `frozen_plan`; HTML/PDF
+views show the planned disposition and its reason alongside the final outcome.
+Direct capture instead labels its seven collected checks `direct_capture` and
+does not claim a frozen plan. Optional absent coverage fields preserve historical
+report rendering; new reports require a matching rebuilt companion verifier.
+Independent runtime mount/network safety snapshots remain outside the signed
+payload and are a separate planned evidence addition.
+
 A graph change does not discard evidence. It fails run integrity and preserves
 the final report with the original/final graph HMACs and component-level delta,
 so a verifier can see that one unchanged hardware graph did not span the run.
@@ -210,6 +220,16 @@ and working directory.
 The initial graphics adapter narrows this contract further: absolute image tool
 paths, validated frame counts, a 20-second subprocess timeout, and a 64 KiB
 combined-output limit. It has no network or storage-mount capability.
+
+On Linux, worker cleanup reserves the leader PID with non-reaping observation,
+terminates its process group, and checks for remaining live members before
+reaping. Cleanup, reaping, and output draining share a two-second allowance.
+Unconfirmed cleanup returns a distinct error; graphics, display, and direct
+capture stop later work and return exit code 12. The modern supervisor preserves
+available diagnostics in RAM and stops before finalization or report saving.
+This covers members of the owned process group, not processes that escape it,
+arbitrary kernel stalls, or a killed supervisor. Whole-command catalog deadlines
+and run-wide cancellation remain incomplete.
 
 Bind the API to a Unix socket. If a browser UI is used, place a random session
 capability in the launch URL, bind only to loopback, reject cross-origin calls,

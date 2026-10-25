@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/app"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
@@ -16,7 +17,7 @@ import (
 // and signed product/version. No HTML/PDF parser or active-content denylist is
 // used. Absent optional views retain the inventory-only bundle profile.
 func validateViews(encoded, html, pdf []byte, productName, version string) error {
-	if html == nil && pdf == nil {
+	if html == nil && pdf == nil && !hasCoverageMetadata(encoded) {
 		return nil
 	}
 	if productName != product.Name || len(encoded) == 0 || len(encoded) > maxInventoryBytes ||
@@ -26,6 +27,9 @@ func validateViews(encoded, html, pdf []byte, productName, version string) error
 	var payload app.InventoryPayload
 	if err := decodeStrict(encoded, &payload); err != nil || payload.SchemaVersion != inventory.SnapshotSchemaVersion {
 		return fmt.Errorf("%w: unsupported report view inventory", ErrInvalidBundle)
+	}
+	if err := app.ValidateCoverage(payload); err != nil {
+		return fmt.Errorf("%w: invalid report coverage", ErrInvalidBundle)
 	}
 	// Exact canonical field spelling and representation also reject Unicode
 	// case-fold aliases, missing/noncanonical field representations, and ignored
@@ -47,4 +51,53 @@ func validateViews(encoded, html, pdf []byte, productName, version string) error
 		}
 	}
 	return nil
+}
+
+// New coverage claims are validated even in bundles without optional views.
+// Older inventory-only payloads keep their historical schema behavior.
+func hasCoverageMetadata(encoded []byte) bool {
+	found, err := findCoverageMetadata(json.NewDecoder(bytes.NewReader(encoded)), true, false)
+	return found || err != nil
+}
+
+// Inspect decoded member names, not last-wins struct values. A claim inside a
+// malformed test_results container must still select strict validation.
+func findCoverageMetadata(decoder *json.Decoder, root, results bool) (bool, error) {
+	token, err := decoder.Token()
+	if err != nil {
+		return false, err
+	}
+	switch token {
+	case json.Delim('{'):
+		for decoder.More() {
+			key, err := decoder.Token()
+			if err != nil {
+				return false, err
+			}
+			name, ok := key.(string)
+			if !ok {
+				return false, fmt.Errorf("invalid coverage member")
+			}
+			if root && strings.EqualFold(name, "coverage_scope") || results && strings.EqualFold(name, "planned_status") {
+				return true, nil
+			}
+			found, err := findCoverageMetadata(decoder, false, results || root && strings.EqualFold(name, "test_results"))
+			if found || err != nil {
+				return found, err
+			}
+		}
+		_, err = decoder.Token()
+		return false, err
+	case json.Delim('['):
+		for decoder.More() {
+			found, err := findCoverageMetadata(decoder, root, results)
+			if found || err != nil {
+				return found, err
+			}
+		}
+		_, err = decoder.Token()
+		return false, err
+	default:
+		return false, nil
+	}
 }

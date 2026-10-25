@@ -43,26 +43,34 @@ func TestCaptureAndVerifyRoundTrip(t *testing.T) {
 		return snapshot, nil
 	}
 	probeCalls := 0
+	workerCalls := make(map[string]int)
 	probe := func(context.Context, int) graphics.Result {
 		probeCalls++
+		workerCalls["graphics.quick"]++
 		return completeGraphicsEvidence()
 	}
 	probeCPU := func(context.Context, quick.CPUOptions) quick.CPUResult {
+		workerCalls["cpu.quick"]++
 		return completeCPUEvidence()
 	}
 	probeMemory := func(context.Context, quick.MemoryOptions) quick.MemoryResult {
+		workerCalls["memory.quick"]++
 		return completeMemoryEvidence()
 	}
 	probeInput := func(context.Context, inputtest.Options) inputtest.Result {
+		workerCalls["input.readiness.quick"]++
 		return completeInputEvidence()
 	}
 	probeNetwork := func(context.Context, networktest.Options) networktest.Result {
+		workerCalls["network.readiness.quick"]++
 		return completeNetworkEvidence()
 	}
 	probeStorage := func(context.Context, storage.Options) storage.Result {
+		workerCalls["storage.readiness.quick"]++
 		return completeStorageEvidence()
 	}
 	probeUSB := func(context.Context, usbtest.Options) usbtest.Result {
+		workerCalls["usb.readiness.quick"]++
 		return completeUSBEvidence()
 	}
 	now := time.Date(2026, time.October, 12, 13, 14, 15, 123456789, time.FixedZone("PDT", -7*60*60))
@@ -108,6 +116,19 @@ func TestCaptureAndVerifyRoundTrip(t *testing.T) {
 	}
 	if len(payload.TestResults) != 7 || payload.TestResults[0].ID != "cpu.quick" || payload.TestResults[1].ID != "graphics.quick" || payload.TestResults[2].ID != "input.readiness.quick" || payload.TestResults[3].ID != "memory.quick" || payload.TestResults[4].ID != "network.readiness.quick" || payload.TestResults[5].ID != "storage.readiness.quick" || payload.TestResults[6].ID != "usb.readiness.quick" || payload.TestResults[0].Status != app.TestPass {
 		t.Fatalf("test results = %#v", payload.TestResults)
+	}
+	if payload.CoverageScope != app.CoverageDirectCapture || len(workerCalls) != 7 {
+		t.Fatal("capture coverage no longer describes its seven direct checks")
+	}
+	for _, result := range payload.TestResults {
+		if workerCalls[result.ID] != 1 || result.PlanID != "" || result.HardwareGraph != "" || result.PlannedStatus != "" {
+			t.Fatal("direct capture omitted/repeated a worker or invented frozen-plan metadata")
+		}
+	}
+	for _, view := range [][]byte{artifact.RenderedReport, artifact.RenderedPDF} {
+		if !bytes.Contains(view, []byte("Direct capture: only the listed checks")) || !bytes.Contains(view, []byte("No frozen plan")) {
+			t.Fatal("signed direct-capture scope is not readable in the report view")
+		}
 	}
 
 	stdout.Reset()
@@ -251,7 +272,7 @@ func TestCaptureWillNotSignUnsupportedPassEvidence(t *testing.T) {
 func TestVerifyRejectsWrongPublicKey(t *testing.T) {
 	snapshot := inventory.NewSnapshot(nil)
 	privateKey := ed25519.NewKeyFromSeed(bytes.Repeat([]byte{3}, ed25519.SeedSize))
-	encoded, err := captureBundle(snapshot, nil, bytes.Repeat([]byte{4}, 32), "lab", privateKey, "signer", "session", time.Unix(1, 2))
+	encoded, err := captureBundle(snapshot, nil, bytes.Repeat([]byte{4}, 32), "lab", privateKey, "signer", "session", time.Unix(1, 2), "")
 	if err != nil {
 		t.Fatal(err)
 	}

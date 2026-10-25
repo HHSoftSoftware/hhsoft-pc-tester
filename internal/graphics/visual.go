@@ -2,10 +2,13 @@ package graphics
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
 	"time"
+
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/workerexec"
 )
 
 const VisualSchema = "hhsoft.pc-tester.display-visual/v1"
@@ -18,11 +21,13 @@ type InteractiveRunner interface {
 }
 
 type VisualResult struct {
-	Schema   string           `json:"schema"`
-	Status   Status           `json:"status"`
-	Patterns []DisplayPattern `json:"patterns,omitempty"`
-	Findings []VisualFinding  `json:"operator_findings,omitempty"`
-	Warnings []string         `json:"warnings,omitempty"`
+	// A live cleanup failure forbids more patterns, operator acceptance or signing.
+	CleanupUncertain bool             `json:"-"`
+	Schema           string           `json:"schema"`
+	Status           Status           `json:"status"`
+	Patterns         []DisplayPattern `json:"patterns,omitempty"`
+	Findings         []VisualFinding  `json:"operator_findings,omitempty"`
+	Warnings         []string         `json:"warnings,omitempty"`
 }
 
 type DisplayPattern struct {
@@ -80,6 +85,11 @@ func ProbePreferredDisplays(ctx context.Context, root string, displayTime time.D
 			pattern.Status = StatusPass
 		}
 		result.Patterns = append(result.Patterns, pattern)
+		if errors.Is(err, workerexec.ErrCleanupUncertain) {
+			result.CleanupUncertain = true
+			result.Status = StatusInconclusive
+			return result
+		}
 	}
 	if len(result.Patterns) == 0 {
 		result.Warnings = []string{"no connected display connector with a preferred-mode target"}
@@ -97,6 +107,9 @@ func ProbePreferredDisplays(ctx context.Context, root string, displayTime time.D
 func ApplyVisualFindingCodes(result *VisualResult, codes []string) error {
 	if result == nil {
 		return fmt.Errorf("nil visual result")
+	}
+	if result.CleanupUncertain {
+		return errors.New("operator findings cannot accept a run with unconfirmed worker cleanup")
 	}
 	connectors := make([]string, 0)
 	overall := StatusPass

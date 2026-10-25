@@ -21,6 +21,13 @@ last marker before rebooting. Useful checkpoints are:
 Retry a hang only once. Record the image filename, checksum, firmware mode, and
 the last marker when reporting a reproducible failure.
 
+`HHPT_FAILED worker-cleanup-unconfirmed` means a graphics/display worker could
+not be confirmed stopped. The run stops before later tests, signing, or saving;
+available diagnostic evidence remains in RAM. Record the marker and image
+version, then reboot into a verified image. Do not manually resume the stopped
+workflow. Direct graphics, display, and capture commands use exit code 12 for
+this condition, including when diagnostic output could not be written.
+
 ## Image will not boot
 
 1. Verify the ISO SHA-256 against its adjacent `.sha256` file.

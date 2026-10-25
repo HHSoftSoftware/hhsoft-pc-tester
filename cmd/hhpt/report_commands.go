@@ -135,6 +135,10 @@ func runCaptureWith(ctx context.Context, arguments []string, stdout, stderr io.W
 	if cpuEvidence.Status == quick.StatusPass && memoryEvidence.Status == quick.StatusPass {
 		graphicsEvidence = probeGraphics(ctx, *graphicsPatternFrames)
 	}
+	if graphicsEvidence.CleanupUncertain {
+		fmt.Fprintln(stderr, "capture stopped: graphics worker cleanup could not be confirmed")
+		return workerCleanupUncertainExitCode
+	}
 	graphicsResult, err := newValidatedQuickTestResult("graphics.quick", 1, app.TestStatus(graphicsEvidence.Status), graphicsEvidence)
 	if err != nil {
 		fmt.Fprintf(stderr, "build graphics evidence: %v\n", err)
@@ -168,7 +172,7 @@ func runCaptureWith(ctx context.Context, arguments []string, stdout, stderr io.W
 		fmt.Fprintf(stderr, "build USB evidence: %v\n", err)
 		return 1
 	}
-	encoded, err := captureBundle(snapshot, []app.TestResult{cpuResult, memoryResult, graphicsResult, inputResult, networkResult, storageResult, usbResult}, fingerprintKey, *keyEpoch, privateKey, strings.TrimSpace(*keyID), resolvedSessionID, now())
+	encoded, err := captureBundle(snapshot, []app.TestResult{cpuResult, memoryResult, graphicsResult, inputResult, networkResult, storageResult, usbResult}, fingerprintKey, *keyEpoch, privateKey, strings.TrimSpace(*keyID), resolvedSessionID, now(), app.CoverageDirectCapture)
 	if err != nil {
 		fmt.Fprintf(stderr, "build report: %v\n", err)
 		return 1
@@ -235,7 +239,7 @@ func runVerify(arguments []string, stdout, stderr io.Writer) int {
 	return 0
 }
 
-func captureBundle(snapshot inventory.Snapshot, testResults []app.TestResult, fingerprintKey []byte, keyEpoch string, privateKey ed25519.PrivateKey, keyID, sessionID string, generated time.Time) ([]byte, error) {
+func captureBundle(snapshot inventory.Snapshot, testResults []app.TestResult, fingerprintKey []byte, keyEpoch string, privateKey ed25519.PrivateKey, keyID, sessionID string, generated time.Time, coverageScope app.CoverageScope) ([]byte, error) {
 	if len(privateKey) != ed25519.PrivateKeySize {
 		return nil, fmt.Errorf("signing key must contain exactly %d bytes", ed25519.PrivateKeySize)
 	}
@@ -243,6 +247,7 @@ func captureBundle(snapshot inventory.Snapshot, testResults []app.TestResult, fi
 	if err != nil {
 		return nil, err
 	}
+	payload.CoverageScope = coverageScope
 	inventoryJSON, html, pdf, err := renderSerializedInventory(payload)
 	if err != nil {
 		return nil, err
@@ -271,7 +276,7 @@ func captureBundle(snapshot inventory.Snapshot, testResults []app.TestResult, fi
 	return encoded.Bytes(), nil
 }
 
-func captureSelfIssuedBundle(snapshot inventory.Snapshot, testResults []app.TestResult, fingerprintKey []byte, keyEpoch string, privateKey ed25519.PrivateKey, publicKey ed25519.PublicKey, sessionID string, generated time.Time) ([]byte, error) {
+func captureSelfIssuedBundle(snapshot inventory.Snapshot, testResults []app.TestResult, fingerprintKey []byte, keyEpoch string, privateKey ed25519.PrivateKey, publicKey ed25519.PublicKey, sessionID string, generated time.Time, coverageScope app.CoverageScope) ([]byte, error) {
 	if len(privateKey) != ed25519.PrivateKeySize || len(publicKey) != ed25519.PublicKeySize || !bytes.Equal(privateKey.Public().(ed25519.PublicKey), publicKey) {
 		return nil, errors.New("self-issued signing key is invalid or inconsistent")
 	}
@@ -279,6 +284,7 @@ func captureSelfIssuedBundle(snapshot inventory.Snapshot, testResults []app.Test
 	if err != nil {
 		return nil, err
 	}
+	payload.CoverageScope = coverageScope
 	inventoryJSON, html, pdf, err := renderSerializedInventory(payload)
 	if err != nil {
 		return nil, err

@@ -19,7 +19,7 @@ func runDisplay(ctx context.Context, arguments []string, input io.Reader, stdout
 	return runDisplayWith(ctx, arguments, input, stdout, stderr, graphics.ProbePreferredDisplays)
 }
 
-func runDisplayWith(ctx context.Context, arguments []string, input io.Reader, stdout, stderr io.Writer, probe visualCollector) int {
+func runDisplayWith(ctx context.Context, arguments []string, input io.Reader, stdout, stderr io.Writer, probe visualCollector) (code int) {
 	flags := flag.NewFlagSet("display", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	displayTime := flags.Duration("pattern-duration", 5*time.Second, "preferred-mode pattern display time")
@@ -34,8 +34,14 @@ func runDisplayWith(ctx context.Context, arguments []string, input io.Reader, st
 	}
 	fmt.Fprintf(stdout, "Connected displays will show native/preferred patterns for %s. Inspect pixels, geometry, color, flicker, scaling, overscan, and artifacts.\n", displayTime.Round(time.Second))
 	result := probe(ctx, "/", *displayTime, graphics.NewExecRunner("/run/hhpt", *displayTime+15*time.Second, 64<<10))
+	if result.CleanupUncertain {
+		defer func() {
+			fmt.Fprintln(stderr, "Worker cleanup could not be confirmed; stop the session. Diagnostic evidence remains in RAM when available.")
+			code = workerCleanupUncertainExitCode
+		}()
+	}
 	connectors := patternedConnectors(result)
-	if len(connectors) > 0 {
+	if len(connectors) > 0 && !result.CleanupUncertain {
 		fmt.Fprintln(stdout, "Finding order:", strings.Join(connectors, ", "))
 		fmt.Fprintln(stdout, "Enter P/F/I or a seven-letter P/F/I code per display, comma-separated; Enter means inconclusive.")
 		fmt.Fprint(stdout, "Pixels Geometry Color Flicker Scaling Overscan Artifacts: ")

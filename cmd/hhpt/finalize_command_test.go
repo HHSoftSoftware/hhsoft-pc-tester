@@ -60,10 +60,14 @@ func TestFinalizeBuildsSelfIssuedReportFromExistingEvidence(t *testing.T) {
 	if err := json.Unmarshal(artifact.InventoryJSON, &payload); err != nil {
 		t.Fatal(err)
 	}
-	if len(payload.TestResults) != len(quickResultDefinitions)+1 || payload.TestResults[0].Status != app.TestSkip || payload.TestResults[1].Status != app.TestPass || payload.TestResults[2].Status != app.TestSkip || payload.TestResults[7].ID != "run.integrity.quick" || payload.TestResults[7].Status != app.TestPass || payload.TestResults[9].Status != app.TestSkip {
+	results := make(map[string]app.TestResult)
+	for _, result := range payload.TestResults {
+		results[result.ID] = result
+	}
+	if len(payload.TestResults) != 22 || payload.CoverageScope != app.CoverageFrozenPlan || results["audio.readiness.quick"].Status != app.TestSkip || results["cpu.quick"].Status != app.TestPass || results["display.operator.quick"].Status != app.TestSkip || results["run.integrity.quick"].Status != app.TestPass || results["usb.readiness.quick"].Status != app.TestSkip {
 		t.Fatalf("unexpected results: %+v", payload.TestResults)
 	}
-	if !bytes.Equal(payload.TestResults[1].Evidence, cpuEvidence) || payload.TestResults[1].PlanID == "" || payload.TestResults[1].HardwareGraph == "" || !bytes.Contains(payload.TestResults[3].Evidence, []byte(`"source_status":"not_present"`)) || bytes.Contains(artifact.InventoryJSON, []byte("private-value")) {
+	if !bytes.Equal(results["cpu.quick"].Evidence, cpuEvidence) || results["cpu.quick"].PlanID == "" || results["cpu.quick"].HardwareGraph == "" || results["cpu.quick"].PlannedStatus != app.PlannedScheduled || !bytes.Contains(results["graphics.quick"].Evidence, []byte(`"source_status":"not_present"`)) || bytes.Contains(artifact.InventoryJSON, []byte("private-value")) {
 		t.Fatal("evidence was changed, synthetic provenance omitted, or identity exposed")
 	}
 	stdout.Reset()

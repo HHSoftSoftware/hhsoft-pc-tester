@@ -148,6 +148,9 @@ func evidenceShape(encoded []byte, kind reflect.Type, depth int) error {
 		if kind.Kind() == reflect.Struct {
 			for index := 0; index < kind.NumField(); index++ {
 				field := kind.Field(index)
+				if field.Tag.Get("json") == "-" {
+					continue
+				}
 				parts := strings.Split(field.Tag.Get("json"), ",")
 				fields[parts[0]] = field.Type
 				required[parts[0]] = len(parts) == 1

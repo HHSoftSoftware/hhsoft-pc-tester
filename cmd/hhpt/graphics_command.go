@@ -11,7 +11,16 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/graphics"
 )
 
+// Appliance supervisors must stop the session on this code, even if saving
+// the diagnostic result also fails. Cleanup uncertainty is not an ordinary
+// inconclusive hardware observation.
+const workerCleanupUncertainExitCode = 12
+
 func runGraphics(ctx context.Context, arguments []string, stdout, stderr io.Writer) int {
+	return runGraphicsWith(ctx, arguments, stdout, stderr, graphics.Probe)
+}
+
+func runGraphicsWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, probe func(context.Context, string, int, graphics.Runner) graphics.Result) (code int) {
 	flags := flag.NewFlagSet("graphics", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	outputPath := flags.String("output", "-", "new JSON output file, or - for stdout")
@@ -24,7 +33,13 @@ func runGraphics(ctx context.Context, arguments []string, stdout, stderr io.Writ
 		return 2
 	}
 
-	result := graphics.Probe(ctx, "/", *frames, graphics.NewExecRunner("/run/hhpt", 20*time.Second, 64<<10))
+	result := probe(ctx, "/", *frames, graphics.NewExecRunner("/run/hhpt", 20*time.Second, 64<<10))
+	if result.CleanupUncertain {
+		defer func() {
+			fmt.Fprintln(stderr, "Worker cleanup could not be confirmed; stop the session. Diagnostic evidence remains in RAM when available.")
+			code = workerCleanupUncertainExitCode
+		}()
+	}
 	destination, closeDestination, err := openDestination(*outputPath, stdout)
 	if err != nil {
 		fmt.Fprintf(stderr, "open output: %v\n", err)

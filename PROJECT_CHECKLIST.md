@@ -239,6 +239,11 @@ the alpha still requires the separate documented release gates.
   signed report bundle.
 - [x] Verify present HTML/PDF views against the signed inventory and version,
   including correctly signed hostile views, with bounded rendering.
+- [x] Retain every frozen catalog row in signed reports and HTML/PDF views,
+  including excluded, absent, unsupported, and missing-driver dispositions.
+  Label direct capture as limited coverage and preserve historical rendering.
+- [ ] Include independent runtime mount/network safety observations in the
+  signed report; current safety snapshots remain in RAM.
 - [ ] Preserve corrections and retests as new signed report revisions linked
   to the prior report digest.
 - [ ] Add explicitly consented encrypted restricted-evidence export while
@@ -254,6 +259,10 @@ the alpha still requires the separate documented release gates.
 - [x] Use only virtual file-backed disks in development VMs.
 - [x] Run fixed-path graphics tools without a shell, inherited environment, or
   network access; bound time and captured output.
+- [x] Clean up Linux workers and same-process-group descendants before reaping
+  their leader, with bounded cleanup and output draining. Unconfirmed cleanup
+  stops later graphics/display work and blocks capture or appliance signing.
+  Escaped process groups and whole-run cancellation remain outside this scope.
 - [x] Generate local state in RAM and keep production signing keys out of images.
 - [x] Scan candidate source on every build and scan full Git history in CI for
   private identity terms, credentials, local paths/endpoints, keys, and forbidden artifacts.

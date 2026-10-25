@@ -50,7 +50,7 @@ func TestInputUniqueIdentifiersNeverReachSignedReportsOrViews(t *testing.T) {
 			key := bytes.Repeat([]byte{0x23}, 32)
 			privateKey := ed25519.NewKeyFromSeed(bytes.Repeat([]byte{0x45}, ed25519.SeedSize))
 			publicKey := privateKey.Public().(ed25519.PublicKey)
-			encoded, err := captureBundle(snapshot, nil, key, "fixture", privateKey, "fixture-signer", "fixture", time.Unix(1, 0))
+			encoded, err := captureBundle(snapshot, nil, key, "fixture", privateKey, "fixture-signer", "fixture", time.Unix(1, 0), "")
 			if err != nil {
 				t.Fatal(err)
 			}

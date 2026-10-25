@@ -122,6 +122,13 @@ network or mount host/internal filesystems. This contains routine tool failure
 but cannot fully contain malicious GPU hardware, device firmware, or a kernel
 graphics-driver vulnerability.
 
+Linux worker cleanup retains the leader identity until same-group descendants
+have been stopped, with a shared two-second cleanup/reaping/output-drain limit.
+Unconfirmed cleanup prevents subsequent graphics/display work and capture or
+appliance signing. No numeric process-group signal is sent after reaping begins.
+This is process-group cleanup, not containment of arbitrary escaped processes;
+whole-run watchdogs and cancellation remain separate implementation work.
+
 Run workers as a dedicated account when possible. Grant device access through
 ACLs, file descriptors, or narrowly scoped capabilities rather than making the
 UI root. A worker cannot reach signing keys. A local browser cannot reach raw

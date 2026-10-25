@@ -28,9 +28,9 @@ reviews and independent failure-case testing.
 
 ## Profiles
 
-The modern Alpine images target most systems from the Windows 8 era onward and
-offer the complete applicable suite. The BIOS/CSM-only Buildroot legacy image
-targets Pentium MMX-class through older x64 PCs. It shares report semantics but
+The modern Alpine images target most systems from the Windows 8 era onward.
+The BIOS/CSM-only Buildroot legacy image targets Pentium MMX-class through older
+x64 PCs. It shares report semantics but
 exposes a visibly reduced test catalog; unavailable driver-dependent tests are
 `skip/unsupported`, never pass.
 
@@ -38,6 +38,16 @@ Profiles are versioned declarative manifests. The plan records the exact
 manifest, thresholds, fixtures, selections, and exclusions before execution.
 Operators may deselect a test, but it remains `skip` in the report. A custom
 profile inherits one below and discloses every override.
+
+The implemented operator selection currently covers the safe quick catalog:
+nine tests on modern images and seven on legacy x86. Only otherwise scheduled
+tests become `excluded`, reported as `skip` with the exclusion reason. Absent
+and missing-driver states retain their applicability reason, and unsupported
+or destructive work cannot be enabled through selection. Reports retain explicit
+selection reasons and the frozen exclusion intent. The broader profile budgets
+and coverage below remain targets, not completed workflows.
+The [selection validation milestone](requirements-validation.md) records the
+completed native and host checks.
 
 | Profile | Objective and default budget | Required coverage | Explicit exclusions |
 | --- | --- | --- | --- |
@@ -214,14 +224,36 @@ Every scheduled case ends in exactly one state:
   does not erase an earlier failure.
 - `error`: no valid determination was possible because the adapter, tool,
   environment, evidence pipeline, or control channel failed.
+- `inconclusive`: observations exist but cannot establish the required
+  criterion, such as an unconfirmed visual finding or missing driver.
+- `aborted`: work stopped before completion; the stop reason and any completed
+  observations remain explicit.
 
 Any required `fail` makes the run fail. In the absence of a fail, a required
 `error` makes the run an error. A run passes only when all required applicable
 cases pass; optional skips remain visible and reduce coverage. A run with no
 applicable cases for its declared purpose is skipped, never passed. Minimum
 coverage rules cannot convert `skip`, `fail`, or `error` into `pass`.
+Selecting no quick tests therefore records no completed quick-test coverage.
+A ready-report marker or passing hardware-graph integrity result does not turn
+those skips into a successful hardware qualification.
 
 ## Timeouts and recovery
+
+The following is the target execution policy. Current CPU/memory workers have
+internal deadlines and separate startup-script kill limits, and readiness and
+independent safety commands have bounded outer timeouts. Frozen catalog timeout
+values do not yet bound every complete worker: graphics runs sequential tools
+with separate limits, and display budgets can repeat for multiple cards before
+the operator-finding wait. A shared session deadline and whole-run operator
+cancellation/finalization remain incomplete.
+
+Linux subprocess cleanup now keeps the leader identity reserved until its
+process group has been stopped. Cleanup, child reaping, and output draining
+share a two-second allowance. Unconfirmed cleanup stops later graphics/display
+work and blocks capture or appliance finalization, while retaining available
+diagnostics. This is limited to the owned process group; it does not establish
+whole-run cancellation or containment of processes that escape the group.
 
 - Unless the matrix says otherwise, adapter startup times out after 30 seconds
   and an operator prompt after 120 seconds.
@@ -236,6 +268,31 @@ coverage rules cannot convert `skip`, `fail`, or `error` into `pass`.
   condition stops affected tests. Resume requires an explicit safe state.
 - At the run deadline, active work is cancelled as `error/run-deadline` while
   completed statuses remain unchanged.
+
+Acceptance of session deadline and cancellation support requires:
+
+- Sequential tools and multi-card display work stay within the complete frozen
+  test deadline and the shared run budget; child cleanup has its own finite
+  allowance and cannot leave a worker running after a claimed stop.
+- Cancellation during computation, subprocess output, and operator input stops
+  new scheduled work without consuming another prompt's response or leaving a
+  console reader behind. Excluded and unavailable outcomes remain unchanged.
+- Completed failures survive cancellation and timeout. Every unfinished
+  scheduled test receives an explicit incomplete outcome; missing or partial
+  evidence cannot become a pass.
+- Stopped-run finalization uses a fresh bounded context after cleanup and
+  preserves the original plan binding. It does not broadly admit `aborted`
+  readiness outcomes or erase earlier unsafe observations to reach signing.
+- Independent mount/network checks remain active when readiness tests, or all
+  quick tests, are excluded. Unsafe or incomplete final observations still
+  block the normal ready/save path.
+
+The independent safety snapshots currently gate the runtime and remain in RAM;
+they are not included in the signed report. An all-off selection can therefore
+produce signed skip and graph-integrity records without carrying those separate
+mount/network observations. Including and validating that evidence in signed
+reports remains a distinct acceptance requirement. These snapshots are not
+continuous safety monitoring.
 
 ## Evidence contract
 

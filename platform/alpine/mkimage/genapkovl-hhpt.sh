@@ -248,6 +248,11 @@ if /usr/bin/hhpt inventory -fingerprint-key /run/hhpt/fingerprint.key -key-epoch
 			test -n "\$graphics_status" || graphics_status=error
 			printf 'HHPT_GRAPHICS status=%s output=/run/hhpt/graphics.json\n' "\$graphics_status" > /dev/console
 		else
+			graphics_exit_status=\$?
+			if test "\$graphics_exit_status" -eq 12; then
+				printf 'HHPT_FAILED worker-cleanup-unconfirmed worker=graphics evidence=/run/hhpt/graphics.json\n' > /dev/console
+				exit 1
+			fi
 			graphics_status=error
 			printf 'HHPT_GRAPHICS status=error output=/run/hhpt/graphics.json\n' > /dev/console
 		fi
@@ -261,6 +266,11 @@ if /usr/bin/hhpt inventory -fingerprint-key /run/hhpt/fingerprint.key -key-epoch
 			display_status=\$(sed -n 's/^[[:space:]]*"status": "\([^"]*\)",*$/\1/p' /run/hhpt/display.json | head -n 1)
 			test -n "\$display_status" || display_status=error
 		else
+			display_exit_status=\$?
+			if test "\$display_exit_status" -eq 12; then
+				printf 'HHPT_FAILED worker-cleanup-unconfirmed worker=display evidence=/run/hhpt/display.json\n' > /dev/console
+				exit 1
+			fi
 			display_status=error
 		fi
 		printf 'HHPT_DISPLAY status=%s output=/run/hhpt/display.json\n' "\$display_status" > /dev/console

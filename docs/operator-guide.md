@@ -238,6 +238,14 @@ the truth.
 Read both the frozen plan status and the final result. They answer different
 questions.
 
+Current finalized reports list every frozen catalog test, including tests that
+did not run, and one hardware-graph integrity result. The HTML/PDF views show
+each planned status and reason separately from the outcome. A direct-capture
+report labels its limited collected scope and does not claim full quick-profile
+coverage. Neither scope establishes an overall hardware pass. Independent
+runtime mount/network safety checks currently gate execution but are not part
+of the signed report.
+
 | Status | Operator meaning | Required action |
 | --- | --- | --- |
 | `scheduled` / supported | Compatible hardware and an implemented provider were present, so the plan selected the test | Check the final test result; this alone is not a pass |

@@ -1,5 +1,21 @@
 # Roadmap
 
+The 2026-10-24 requirements audit is reflected in the
+[master checklist](../PROJECT_CHECKLIST.md). The current automatic workflow is
+the bounded safe quick profile. Broader profile names in the planner do not
+establish complete execution coverage; burn-in remains planned. The initial
+alpha requires its release gates, while full matrix coverage remains later work.
+
+Next work follows the existing dependencies:
+
+1. Complete the current alpha's source/image inspection, source and license
+   packaging, authenticated evidence, and approved publication checks.
+2. Expand profile and per-test selection orchestration around the frozen plan
+   and signed evidence paths, retaining explicit unsupported results.
+3. Implement the remaining applicable functional tests with independent
+   failure-case coverage for each adapter. Record physical validation separately
+   from implementation and VM checks.
+
 ## Working checklist (2026-10-16)
 
 - [x] Select a diskless Alpine base, permissive source license, initial threat
@@ -79,19 +95,26 @@ applicable.
   memory, storage, input, USB, network, audio, and camera families.
 - Add CPU, partial memory, SMART/NVMe health, read-only storage, complete
   display/GPU, network, audio, input, USB, and camera quick checks.
-- Add operator prompts, clear unsupported states, thermal watchdog, and report
-  signatures.
+- Extend operator prompts and run-wide watchdog coverage around the existing
+  signed reports, explicit unsupported states, and bounded CPU/RAM safeguards.
 - Pilot on at least ten varied PCs without destructive tests.
 
 Exit: `0.2.0-beta.1` gives useful resale acceptance results in under 15 minutes.
 
 ## Phase 3 — complete profiles
 
-- Add Memtest86+ boot integration, standard and extended profiles, calibrated
-  storage self-tests, sensors, battery, optical media, card reader, modem, and
-  optional remote submission.
+- Add Memtest86+ boot integration, standard, extended, and burn-in profiles,
+  calibrated storage self-tests, sensors, battery, optical media, card reader,
+  modem, and optional remote submission.
+- Complete the remaining matrix coverage for SPD/ECC, Bluetooth, power and
+  cooling, firmware-security reporting, expansion/dock fixtures, clock drift,
+  and operator physical inspection.
 - Add controlled temporary-file writes and a physically separate destructive
   image for wipe and full write qualification.
+- Implement the adapter package/protocol/runtime contract, including burn-in
+  support, and validate third-party adapter conformance.
+- Add linked signed report revisions and separately consented encrypted
+  restricted-evidence export with the required privacy controls.
 - Expand BIOS and EFI device matrices in CI.
 
 Exit: release candidate has documented criteria and no open critical safety or
@@ -117,5 +140,8 @@ report-integrity issue.
   custody before any report upload exists.
 - Storage: destructive qualification remains separate until whole-device
   authorization has independent negative tests.
-- Hardware identity: operator deployments choose locally comparable SHA-256 or
-  server-comparable HMAC identifiers; raw serial export stays explicit.
+- Hardware identity: use deployment-keyed HMAC identities for comparisons
+  within a deployment and key epoch; automatic sessions use unlinkable
+  per-session keys unless an explicit deployment token is selected. Cross-epoch
+  or cross-deployment comparison and restricted raw-identifier export remain
+  separately controlled future work.

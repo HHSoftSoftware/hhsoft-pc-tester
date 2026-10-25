@@ -1,11 +1,19 @@
 # HHSoft PC Tester Master Checklist
 
-Status date: 2026-10-17
+Status date: 2026-10-24
 
 This is the project-level source of truth derived from the original product
 requirements. Check an item only when implementation and applicable validation
 are complete. Architecture and policy documents alone do not make an item
 complete; real-hardware requirements remain open until physically tested.
+
+The 2026-10-24 requirements audit compared the retained test matrix with the
+catalog and execution paths. The safe quick workflow supports nine implemented
+test definitions, subject to hardware and architecture applicability. The
+planner also accepts standard, extended, and destructive profile names, but
+their complete execution workflows remain unfinished. Burn-in is a planned
+profile. The unchecked requirements below include those broader matrix items;
+the alpha still requires the separate documented release gates.
 
 ## Product and repository
 
@@ -17,6 +25,8 @@ complete; real-hardware requirements remain open until physically tested.
 - [x] Guard reference-only material from commits and release images.
 - [x] Record clean-room functionality lessons without copying reference code.
 - [x] Define a stable third-party test-adapter/test-definition API.
+- [ ] Implement third-party adapter package validation, protocol negotiation,
+  confined execution, and API conformance tests.
 - [x] Add project governance, maintainer, and merge-review rules.
 - [x] Create and verify the public repository under `HHSoftSoftware`.
 - [ ] Publish the first signed Semantic Version release.
@@ -111,7 +121,8 @@ complete; real-hardware requirements remain open until physically tested.
 - [x] Show reduced coverage/lower assurance on the legacy image.
 - [x] Show branded, versioned console text before test execution.
 - [x] Build the declarative capability graph and freeze an applicable test plan.
-- [ ] Provide complete quick, standard, extended, and destructive profiles.
+- [ ] Provide complete quick, standard, extended, burn-in, and destructive
+  profiles, including burn-in scheduling and its adapter-contract support.
 - [ ] Provide per-test selection, configuration, cancellation, timeout, and
   remaining-time/status displays.
 - [ ] Provide localized UI and accessibility review.
@@ -162,6 +173,8 @@ complete; real-hardware requirements remain open until physically tested.
 - [ ] Test CPU correctness, instruction coverage, performance, stability, power,
   and thermal behavior.
 - [ ] Test available RAM from Linux with a bounded quick/extended worker.
+- [ ] Cross-check memory capacity, topology, speed, and exposed SPD data against
+  firmware and OS observations; monitor corrected and uncorrected ECC deltas.
 - [ ] Add the separate Memtest86+ boot entry for complete memory coverage.
 - [ ] Test audio output, microphone input, channels, volume, and jack behavior.
 - [ ] Test keyboard, mouse, touchpad, touchscreen, pen, and buttons.
@@ -171,7 +184,21 @@ complete; real-hardware requirements remain open until physically tested.
   surface/media errors, and supported self-tests.
 - [ ] Test Ethernet link/addressing/DNS/throughput with opt-in network fixtures.
 - [ ] Test Wi-Fi radio/association/signal/throughput with opt-in fixtures.
+- [ ] Test Bluetooth discovery, pairing, services, data exchange, and temporary
+  pairing cleanup with known-good fixtures.
 - [ ] Test cameras, microphones, rotation/other sensors, and supported modems.
+- [ ] Collect adapter/battery health and charge telemetry and test AC/battery
+  transitions where supported.
+- [ ] Monitor temperatures, fans, clocks, power, and throttling throughout a run
+  and test cooling response under sustained load.
+- [ ] Report Secure Boot, TPM, measured-boot, and firmware-lock capabilities
+  without changing firmware state or provisioning keys.
+- [ ] Test PCIe, Thunderbolt, and dock topology, link properties, and controlled
+  hot-plug behavior with appropriate fixtures.
+- [ ] Measure RTC/monotonic discontinuities and drift against a trusted reference
+  over a sufficient observation period.
+- [ ] Add operator physical-inspection findings for chassis, hinges, ports,
+  damage, cooling noise, and battery swelling.
 - [ ] Add short versus long variants and capability-based applicability for all
   completed test families.
 
@@ -200,6 +227,10 @@ complete; real-hardware requirements remain open until physically tested.
   signed report bundle.
 - [x] Verify present HTML/PDF views against the signed inventory and version,
   including correctly signed hostile views, with bounded rendering.
+- [ ] Preserve corrections and retests as new signed report revisions linked
+  to the prior report digest.
+- [ ] Add explicitly consented encrypted restricted-evidence export while
+  keeping raw identifiers out of normal reports, views, filenames, and logs.
 - [ ] Submit reports to an authenticated web service and/or network share.
 - [ ] Add append-only ingestion receipts and server-side return comparisons.
 - [ ] Implement report/key revocation, rotation, archival, and deletion policy.
@@ -226,7 +257,8 @@ complete; real-hardware requirements remain open until physically tested.
   Native metadata and supervisor fixtures pass; fresh ISO boot qualification
   remains required for release.
 - [ ] Separate the unprivileged UI, privileged daemon, and sandboxed workers.
-- [ ] Add thermal, hang, process-group, and global run watchdogs.
+- [ ] Complete run-wide thermal, heartbeat, hang, and deadline watchdogs beyond
+  the existing CPU/RAM thermal/deadline checks and worker process-group cleanup.
 - [x] Implement deployment-keyed, same-boot typed authorization for separate
   removable USB report destinations with mounted boot/internal-media exclusion.
 - [ ] Implement typed authorization for destructive targets with boot-media,

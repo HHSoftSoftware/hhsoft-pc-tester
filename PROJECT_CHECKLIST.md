@@ -242,8 +242,9 @@ the alpha still requires the separate documented release gates.
 - [x] Retain every frozen catalog row in signed reports and HTML/PDF views,
   including excluded, absent, unsupported, and missing-driver dispositions.
   Label direct capture as limited coverage and preserve historical rendering.
-- [ ] Include independent runtime mount/network safety observations in the
-  signed report; current safety snapshots remain in RAM.
+- [x] Include the quick session's independent mount/network safety observations,
+  execution states, and stop reason in the signed report, with a fresh safety
+  observation before signing. Unsafe or interrupted readiness blocks signing.
 - [ ] Preserve corrections and retests as new signed report revisions linked
   to the prior report digest.
 - [ ] Add explicitly consented encrypted restricted-evidence export while
@@ -280,6 +281,11 @@ the alpha still requires the separate documented release gates.
 - [ ] Separate the unprivileged UI, privileged daemon, and sandboxed workers.
 - [ ] Complete run-wide thermal, heartbeat, hang, and deadline watchdogs beyond
   the existing CPU/RAM thermal/deadline checks and worker process-group cleanup.
+- [x] Coordinate safe quick tests under one session deadline and each frozen
+  test's complete budget; support Ctrl-C and Linux termination signals, retain
+  completed failures, and finalize clean stops with fresh bounded contexts.
+  A terminal outer guard blocks ready/save on failure. Kernel stalls, escaped
+  process groups, and continuous run-wide monitoring remain separate limits.
 - [x] Implement deployment-keyed, same-boot typed authorization for separate
   removable USB report destinations with mounted boot/internal-media exclusion.
 - [ ] Implement typed authorization for destructive targets with boot-media,

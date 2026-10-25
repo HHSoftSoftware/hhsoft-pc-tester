@@ -143,3 +143,16 @@ func mustWrite(t *testing.T, path, value string) {
 		t.Fatal(err)
 	}
 }
+
+func TestRunRetainsWritableObservationWhenLaterRegistryEntryFails(t *testing.T) {
+	root := fixtureReadinessMedia(t)
+	mustWrite(t, filepath.Join(root, "proc/self/mountinfo"), "1 0 253:0 / /fixture rw - ext4 /dev/mapper/fixture rw\n")
+	mustWrite(t, filepath.Join(root, "sys/class/block/dm-0/dev"), "253:0\n")
+	if err := os.MkdirAll(filepath.Join(root, "sys/class/block/zzz"), 0700); err != nil {
+		t.Fatal(err)
+	}
+	result := runPlatform(t.Context(), Options{Root: root})
+	if result.Status != StatusError || result.WritableMounts != 1 || result.MediaContentRead || result.MediaContentWrites {
+		t.Fatal("a later collector error erased the writable block mount observation")
+	}
+}

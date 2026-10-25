@@ -37,6 +37,12 @@ func (runner *ExecRunner) RunInteractive(ctx context.Context, displayTime time.D
 }
 
 func (runner *ExecRunner) run(ctx context.Context, inputHold time.Duration, name string, arguments ...string) (string, error) {
+	if ctx == nil {
+		return "", errors.New("invalid graphics command context")
+	}
+	if err := ctx.Err(); err != nil {
+		return "", err
+	}
 	if runner == nil || runner.timeout <= 0 || runner.outputLimit <= 0 {
 		return "", errors.New("invalid graphics command runner")
 	}

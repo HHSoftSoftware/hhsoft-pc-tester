@@ -73,6 +73,8 @@ func runPlatform(ctx context.Context, options Options) Result {
 		// mappings and loop devices excluded from hardware readiness evidence.
 		if state.writable {
 			writableDevices[deviceNumber] = struct{}{}
+			// Keep an unsafe observation if later enumeration fails or stops.
+			result.WritableMounts = len(writableDevices)
 		}
 		device, include, deviceErr := inspectRegistryDevice(root, name, state)
 		if deviceErr != nil {
@@ -94,7 +96,6 @@ func runPlatform(ctx context.Context, options Options) Result {
 			return result
 		}
 	}
-	result.WritableMounts = len(writableDevices)
 	sort.Slice(result.Devices, func(i, j int) bool { return result.Devices[i].Interface < result.Devices[j].Interface })
 	if result.WritableMounts > 0 {
 		result.Detail = "one or more block devices have a writable mount"

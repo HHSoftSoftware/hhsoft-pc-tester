@@ -1,8 +1,8 @@
-"""Run the product supervisors with inert collectors in isolated file fixtures.
+"""Exercise real startup scripts with an inert quick-session boundary.
 
-These tests exercise the actual generated Alpine script and legacy init script.
-Only device/runtime paths and hhpt collectors are replaced; no VM, mount, network,
-physical device, signing key, or real report is involved.
+The fixture checks arguments and files. It does not schedule workers, inspect
+hardware, sign reports, or reproduce Go coordinator safety decisions. No VM,
+mount, network, physical device, real signing key, or real report is involved.
 """
 
 import json
@@ -14,43 +14,65 @@ import sys
 import tempfile
 import unittest
 
-
 ROOT = Path(__file__).resolve().parents[2]
 ALPINE = ROOT / "platform/alpine/mkimage/genapkovl-hhpt.sh"
 LEGACY = ROOT / "platform/buildroot/board/legacy-x86/rootfs-overlay/etc/init.d/S50hhpt"
-
-QUICK_TESTS = {
-    "audio.readiness.quick": "audio", "cpu.quick": "cpu",
-    "display.operator.quick": "display", "graphics.quick": "graphics",
-    "input.readiness.quick": "input", "memory.quick": "memory",
-    "network.readiness.quick": "network", "storage.readiness.quick": "storage",
-    "usb.readiness.quick": "usb",
-}
+SELECTABLE_IDS = (
+    "audio.readiness.quick", "cpu.quick", "display.operator.quick", "graphics.quick",
+    "input.readiness.quick", "memory.quick", "network.readiness.quick",
+    "storage.readiness.quick", "usb.readiness.quick",
+)
 LEGACY_UNSUPPORTED = {"graphics.quick", "display.operator.quick"}
+REPORT_FIXTURE = b"synthetic bundle fixture; no signature or hardware data\n"
 
-STUB = "TEST_WORKERS = " + repr(QUICK_TESTS) + "\n" + r'''import json
+STUB = "SELECTABLE_IDS = " + repr(SELECTABLE_IDS) + "\n" + r'''import json
 import os
 from pathlib import Path
 import stat
 import sys
+import time
 
 root = Path(__file__).resolve().parent.parent
+run = root / "run"
 configuration = json.loads((root / "configuration.json").read_text())
 command, arguments = sys.argv[1], sys.argv[2:]
 output = Path(arguments[arguments.index("-output") + 1]) if "-output" in arguments else None
 with (root / "events").open("a") as events:
     events.write(command + (" " + output.stem if command == "safety" else "") + "\n")
-if command in ("ui", "inventory", "plan", "finalize", "deployment-key"):
-    (root / (command + "-arguments.json")).write_text(json.dumps(arguments))
+(root / (command + "-arguments.json")).write_text(json.dumps(arguments))
+epoch = "fixture-deployment" if configuration.get("deployment_key") else "ephemeral-session"
+common = ["-fingerprint-key", str(run / "fingerprint.key"), "-key-epoch", epoch]
+if configuration.get("deployment_key"):
+    common += ["-fixture-components=" + str(run / "fixture-components")]
 
-def write(value):
-    with output.open("x") as stream:
+def write(path, value):
+    with path.open("x") as stream:
         json.dump(value, stream, indent=2)
 
+def ready_file():
+    ready = run / "session-ready.txt"
+    content = "HHPT_READY fixture=inert-session-handoff\n"
+    kind = configuration.get("ready_kind", "regular")
+    if kind == "missing":
+        return
+    if kind == "directory":
+        ready.mkdir()
+    elif kind == "fifo":
+        os.mkfifo(ready, 0o600)
+    elif kind == "symlink":
+        target = root / "ready-target.txt"
+        target.write_text(content)
+        ready.symlink_to(target)
+    else:
+        ready.write_text("" if kind == "empty" else content)
+
 if command == "ui":
-    selection = Path(arguments[arguments.index("-selection-output") + 1])
-    assert selection == root / "run/selection.json", "UI must use the fixed RAM selection path"
-    if configuration.get("ui_failure"):
+    expected = (["-legacy"] if configuration["legacy"] else []) + ["-auto-start", "15s"]
+    if not configuration["legacy"]:
+        expected += ["-deployment-key-media"]
+    assert arguments == expected + ["-selection-output", str(run / "selection.json")]
+    selection = run / "selection.json"
+    if configuration.get("ui_failure") or selection.exists() or selection.is_symlink():
         sys.exit(2)
     kind = configuration.get("selection_kind", "regular")
     if kind == "symlink":
@@ -70,41 +92,52 @@ if command == "ui":
                 json.dump({"excluded_tests": configuration.get("excluded_tests", [])}, stream)
     sys.exit(10 if configuration.get("deployment_key") else 0)
 elif command == "deployment-key":
-    assert arguments[0] == "load-media" and not configuration["legacy"]
-    assert stat.S_IMODE((root / "run/selection.json").stat().st_mode) == 0o400
-    (root / "run/deployment-key.json").write_text(json.dumps(
+    assert not configuration["legacy"]
+    assert arguments == ["load-media", "-discovery-key", str(run / "media-discovery.key"),
+                         "-audit-output", str(root / "console")]
+    assert stat.S_IMODE((run / "selection.json").stat().st_mode) == 0o400
+    if configuration.get("deployment_failure"):
+        sys.exit(1)
+    (run / "deployment-key.json").write_text(json.dumps(
         {"epoch": "fixture-deployment", "key_id": "fixture-key-id"}, separators=(",", ":")))
-    (root / "run/fingerprint.key").write_bytes(b"synthetic-deployment-fixture-only")
-    (root / "run/fixture-components").write_text("block:fixture\n")
+    (run / "fingerprint.key").write_bytes(b"synthetic-deployment-fixture-only")
+    (run / "fixture-components").write_text("block:fixture\n")
 elif command == "inventory":
-    write({"components": [{"type": "cpu"}, {"type": "memory"}],
-           "system_fingerprint": {"value": "hmac-sha256:" + "a" * 64}})
+    assert arguments == common + ["-output", str(run / "inventory.json")]
+    if configuration.get("inventory_failure"):
+        sys.exit(1)
+    components = [] if configuration.get("empty_inventory") else [{"type": "cpu"}, {"type": "memory"}]
+    write(output, {"components": components,
+                   "system_fingerprint": {"value": "hmac-sha256:" + "a" * 64}})
 elif command == "plan":
-    selection_path = Path(arguments[arguments.index("-selection-file") + 1])
-    assert selection_path == root / "run/selection.json"
-    assert not selection_path.is_symlink() and selection_path.is_file()
-    assert stat.S_IMODE(selection_path.stat().st_mode) == 0o400, "selection must be frozen before planning"
-    selection = json.loads(selection_path.read_text())
-    assert isinstance(selection, dict) and set(selection) == {"excluded_tests"}
-    exclusions = selection["excluded_tests"]
-    assert isinstance(exclusions, list) and all(isinstance(name, str) and name in TEST_WORKERS for name in exclusions)
-    assert len(set(exclusions)) == len(exclusions)
-    if configuration["legacy"]:
-        assert not set(exclusions) & {"graphics.quick", "display.operator.quick"}
-    tests = []
-    for name in TEST_WORKERS:
-        status = "scheduled"
-        if configuration["legacy"] and name in ("graphics.quick", "display.operator.quick"):
-            status = "unsupported"
-        if configuration.get("absent") and name in ("network.readiness.quick", "storage.readiness.quick"):
-            status = "not_present"
-        status = configuration.get("plan_statuses", {}).get(name, status)
-        if status == "scheduled" and name in exclusions:
-            status = "excluded"
-        tests.append({"id": name, "status": status})
-    write({"id": "sha256:" + "b" * 64, "excluded_tests": exclusions, "tests": tests})
+    architecture = "legacy-x86" if configuration["legacy"] else configuration.get("architecture", "x86_64")
+    assert arguments == common + ["-profile", "quick", "-architecture", architecture,
+                                 "-selection-file", str(run / "selection.json"), "-output", str(run / "plan.json")]
+    selection = run / "selection.json"
+    assert not selection.is_symlink() and selection.is_file()
+    assert stat.S_IMODE(selection.stat().st_mode) == 0o400, "selection must be frozen before planning"
+    try:
+        decoded = json.loads(selection.read_text())
+    except ValueError:
+        sys.exit(2)
+    exclusions = decoded["excluded_tests"]
+    if not isinstance(exclusions, list) or any(not isinstance(name, str) or name not in SELECTABLE_IDS for name in exclusions):
+        sys.exit(2)
+    if len(set(exclusions)) != len(exclusions):
+        sys.exit(2)
+    if configuration["legacy"] and set(exclusions) & {"graphics.quick", "display.operator.quick"}:
+        sys.exit(2)
+    if configuration.get("plan_failure"):
+        sys.exit(2)
+    # Deliberately not a production plan. Go tests own catalog validation and
+    # scheduling; this marker proves the exact frozen file is handed on.
+    write(output, {"id": "sha256:" + "b" * 64, "fixture": "inert handoff only",
+                   "excluded_tests": sorted(exclusions), "tests": []})
+    (root / "frozen-plan-bytes").write_bytes(output.read_bytes())
 elif command == "safety":
     phase = output.stem.removeprefix("safety-")
+    assert phase in ("preflight", "final"), "worker safety orchestration belongs to the Go session"
+    assert arguments == ["-output", str(run / ("safety-" + phase + ".json")), "-summary"]
     failure = configuration.get("phase") == phase
     kind = configuration.get("kind", "mount")
     result = {"status": "pass", "storage_observed": True, "network_observed": True,
@@ -114,47 +147,45 @@ elif command == "safety":
         if kind == "mount": result["writable_block_mounts"] = 1
         elif kind == "network": result["active_non_loop_interfaces"] = 1
         elif kind == "unknown": result["storage_observed"] = False
-    write(result)
+    write(output, result)
     if failure and kind != "malformed-summary":
         sys.exit(1)
     print("writable_block_mounts=0 active_non_loop_interfaces=0" +
           (" writable_block_mounts=1" if failure else ""))
-elif command == "finalize":
-    pairs = [arguments[index + 1].split("=", 1) for index, value in enumerate(arguments) if value == "-outcome"]
-    outcomes = dict(pairs)
-    assert len(pairs) == len(outcomes) == 9 and set(outcomes) == set(TEST_WORKERS), "exactly nine unique outcomes required"
-    frozen = json.loads(Path(arguments[arguments.index("-plan") + 1]).read_text())
-    events = (root / "events").read_text().splitlines()
-    for test in frozen["tests"]:
-        worker = TEST_WORKERS[test["id"]]
-        evidence = root / ("run/" + worker + ".json")
-        outcome = outcomes[test["id"]]
-        if test["status"] != "scheduled":
-            assert outcome == test["status"], "non-scheduled outcome differs from frozen plan"
-            assert worker not in events and not evidence.exists(), "non-scheduled worker executed"
-        elif outcome not in ("error", "aborted"):
-            assert worker in events and json.loads(evidence.read_text())["status"] == outcome
-    (root / "final-outcomes.json").write_text(json.dumps(outcomes))
-    output.write_bytes(b"synthetic bundle fixture; no signature or hardware data\n")
-    print("HHPT_RUN_INTEGRITY status=pass final_components=2 added=0 removed=0 changed=0")
-elif command == "save":
-    pass
-else:
-    assert command in TEST_WORKERS.values(), "unexpected worker"
-    frozen = json.loads((root / "run/plan.json").read_text())
-    assert any(TEST_WORKERS[test["id"]] == command and test["status"] == "scheduled" for test in frozen["tests"])
-    exit_code = configuration.get("worker_exit_codes", {}).get(command, 0)
-    status = "error" if command == configuration.get("worker_error") or exit_code else "pass"
-    if command == configuration.get("worker_fail"):
-        status = "fail"
-    write({"status": status})
+elif command == "session":
+    assert arguments == common + ["-plan", str(run / "plan.json"), "-evidence-dir", str(run),
+                                 "-timeout", "5m", "-output", str(run / "session.hhpcr")]
+    frozen = run / "plan.json"
+    assert frozen.is_file() and not frozen.is_symlink()
+    assert stat.S_IMODE(frozen.stat().st_mode) == 0o400, "plan must be frozen before session entry"
+    assert frozen.read_bytes() == (root / "frozen-plan-bytes").read_bytes(), "frozen plan changed in transit"
+    assert json.loads(frozen.read_text())["excluded_tests"] == sorted(configuration.get("excluded_tests", []))
+    assert (root / "events").read_text().splitlines()[-3:] == ["safety safety-preflight", "plan", "session"]
+    exit_code = configuration.get("session_exit", 0)
+    write(run / "session-diagnostic.json", {"fixture": "session-boundary", "exit": exit_code})
+    if exit_code == 0 or configuration.get("failure_artifacts"):
+        output.write_bytes(b"synthetic bundle fixture; no signature or hardware data\n")
+        ready_file()
+    if configuration.get("outer_timeout"):
+        # Stall only this inert process. The one-second outer guard must kill
+        # it; the finite fallback prevents an orphan if that guard regresses.
+        time.sleep(5)
     sys.exit(exit_code)
+elif command == "save":
+    assert arguments == ["-fingerprint-key", str(run / "fingerprint.key"), "-audit-output", str(root / "console"),
+                         str(run / "session.hhpcr")]
+    assert (run / "session.hhpcr").read_bytes() == b"synthetic bundle fixture; no signature or hardware data\n"
+    assert (root / "events").read_text().splitlines()[-3:] == ["session", "safety safety-final", "save"]
+    assert "HHPT_READY fixture=inert-session-handoff" in (root / "console").read_text()
+    sys.exit(1 if configuration.get("save_failure") else 0)
+else:
+    raise AssertionError("startup script invoked an unexpected command: " + command)
 '''
 
 
 class SupervisorFixtureSyntaxTests(unittest.TestCase):
-    def test_embedded_collector_fixture_compiles(self):
-        compile(STUB, "runtime-safety-collector-fixture", "exec")
+    def test_embedded_session_fixture_compiles(self):
+        compile(STUB, "runtime-session-boundary-fixture", "exec")
 
 
 @unittest.skipUnless(sys.platform.startswith("linux") and Path("/bin/sh").is_file(),
@@ -175,27 +206,28 @@ class RuntimeSafetySupervisorTests(unittest.TestCase):
         executable = root / "tools/hhpt"
         executable.write_text("#!" + sys.executable + "\n" + STUB)
         executable.chmod(0o700)
-        for name in ("eglinfo", "kmscube"):
-            (root / "tools" / name).write_text("#!/bin/sh\nexit 99\n")
-            (root / "tools" / name).chmod(0o700)
         if legacy:
             script = LEGACY.read_text()
         else:
             source = ALPINE.read_text()
             start = 'make_file root:root 0755 "$temporary_directory/etc/local.d/hhpt.start" <<EOF\n'
             body = source.split(start, 1)[1].split("\nEOF\n", 1)[0]
-            # Expansion must remain data-only: runtime command substitutions in
-            # this generated product script must be escaped in the outer heredoc.
+            # Runtime substitutions must remain data during outer expansion.
             self.assertIsNone(re.search(r"(?<!\\)\$\(", body))
-            generated = subprocess.run(["/bin/sh", "-c", "target_architecture=x86_64\ncat <<EOF\n" + body + "\nEOF\n"],
+            architecture = configuration.get("architecture", "x86_64")
+            self.assertIn(architecture, ("x86_64", "x86", "aarch64"))
+            generated = subprocess.run(["/bin/sh", "-c", "target_architecture=" + architecture + "\ncat <<EOF\n" + body + "\nEOF\n"],
                                        capture_output=True, text=True, timeout=5, check=True)
             script = generated.stdout
+        if configuration.get("outer_timeout"):
+            guard = "/usr/bin/timeout -s KILL 340 /usr/bin/hhpt session "
+            self.assertEqual(script.count(guard), 1, "expected one terminal session watchdog")
+            script = script.replace(guard, "/usr/bin/timeout -s KILL 1 /usr/bin/hhpt session ")
         substitutions = {
             "/run/hhpt": str(root / "run"), "/usr/bin/hhpt": str(executable),
             "/dev/console": str(root / "console"), "/dev/tty0": str(root / "console"),
             "/dev/tty1": str(root / "console"), "/dev/urandom": str(root / "entropy"),
-            "/etc/shadow": str(root / "shadow"), "/usr/bin/eglinfo": str(root / "tools/eglinfo"),
-            "/usr/bin/kmscube": str(root / "tools/kmscube"),
+            "/etc/shadow": str(root / "shadow"),
         }
         for source, destination in substitutions.items():
             script = script.replace(source, destination)
@@ -211,296 +243,173 @@ class RuntimeSafetySupervisorTests(unittest.TestCase):
         events = (root / "events").read_text().splitlines()
         return root, result, events, (root / "console").read_text()
 
-    def test_default_selection_preserves_every_applicable_worker(self):
-        for legacy in (False, True):
-            with self.subTest(legacy=legacy):
-                root, result, events, console = self.run_supervisor(legacy)
-                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+    def assert_ready(self, root, result, events, console, save_failed=False):
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr + console)
+        expected = ["ui"] + (["deployment-key"] if "deployment-key" in events else [])
+        self.assertEqual(events, expected + ["inventory", "safety safety-preflight", "plan", "session", "safety safety-final", "save"])
+        self.assertEqual(console.count("HHPT_READY fixture=inert-session-handoff"), 1)
+        self.assertEqual("HHPT_SAVE_FAILED" in console, save_failed)
+        self.assertEqual((root / "run/session.hhpcr").read_bytes(), REPORT_FIXTURE)
+        for name in ("plan.json", "selection.json"):
+            self.assertEqual(stat.S_IMODE((root / "run" / name).stat().st_mode), 0o400)
+        self.assertEqual((root / "run/plan.json").read_bytes(), (root / "frozen-plan-bytes").read_bytes())
+
+    def test_default_selection_hands_frozen_plan_to_one_session(self):
+        for legacy, architecture in ((False, "x86_64"), (False, "x86"), (False, "aarch64"), (True, "legacy-x86")):
+            with self.subTest(legacy=legacy, architecture=architecture):
+                root, result, events, console = self.run_supervisor(legacy, architecture=architecture)
+                self.assert_ready(root, result, events, console)
                 self.assertEqual(json.loads((root / "run/selection.json").read_text()), {"excluded_tests": []})
-                self.assertEqual(stat.S_IMODE((root / "run/selection.json").stat().st_mode), 0o400)
-                outcomes = json.loads((root / "final-outcomes.json").read_text())
-                self.assertEqual(set(outcomes), set(QUICK_TESTS))
-                for name, worker in QUICK_TESTS.items():
-                    applicable = not legacy or name not in LEGACY_UNSUPPORTED
-                    self.assertEqual(events.count(worker), 1 if applicable else 0)
-                    self.assertEqual(outcomes[name], "pass" if applicable else "unsupported")
-                self.assertIn("HHPT_READY", console)
+                self.assertEqual(json.loads((root / "run/plan.json").read_text())["excluded_tests"], [])
+                self.assertIn("architecture=" + architecture, console)
 
-    def test_excluding_an_active_worker_does_not_abort_other_scheduled_workers(self):
+    def test_custom_and_all_exclusions_survive_the_session_handoff(self):
         for legacy in (False, True):
-            for excluded in ("cpu.quick", "memory.quick", "graphics.quick", "display.operator.quick"):
-                if legacy and excluded in LEGACY_UNSUPPORTED:
-                    continue
-                with self.subTest(legacy=legacy, excluded=excluded):
-                    root, result, events, console = self.run_supervisor(legacy, excluded_tests=[excluded])
-                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                    outcomes = json.loads((root / "final-outcomes.json").read_text())
-                    for name, worker in QUICK_TESTS.items():
-                        expected = "excluded" if name == excluded else "pass"
-                        if legacy and name in LEGACY_UNSUPPORTED:
-                            expected = "unsupported"
-                        self.assertEqual(outcomes[name], expected)
-                        self.assertEqual(events.count(worker), 1 if expected == "pass" else 0)
-                    self.assertIn("HHPT_READY", console)
+            selectable = [name for name in SELECTABLE_IDS if not legacy or name not in LEGACY_UNSUPPORTED]
+            for exclusions in (["memory.quick", "cpu.quick"], ["network.readiness.quick", "storage.readiness.quick"], selectable):
+                with self.subTest(legacy=legacy, exclusions=exclusions):
+                    root, result, events, console = self.run_supervisor(legacy, excluded_tests=exclusions)
+                    self.assert_ready(root, result, events, console)
+                    self.assertEqual(json.loads((root / "run/selection.json").read_text()), {"excluded_tests": exclusions})
+                    self.assertEqual(json.loads((root / "run/plan.json").read_text())["excluded_tests"], sorted(exclusions))
 
-    def test_excluding_all_selectable_workers_retains_safety_and_all_outcomes(self):
-        for legacy in (False, True):
-            with self.subTest(legacy=legacy):
-                exclusions = [name for name in QUICK_TESTS if not legacy or name not in LEGACY_UNSUPPORTED]
-                root, result, events, console = self.run_supervisor(legacy, excluded_tests=exclusions)
-                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                self.assertFalse(set(events) & set(QUICK_TESTS.values()), events)
-                self.assertEqual([event for event in events if event.startswith("safety ")],
-                                 ["safety safety-preflight", "safety safety-after-readiness", "safety safety-final"])
-                outcomes = json.loads((root / "final-outcomes.json").read_text())
-                self.assertEqual(outcomes, {name: "excluded" if name in exclusions else "unsupported" for name in QUICK_TESTS})
-                self.assertIn("finalize", events)
-                self.assertIn("save", events)
-                self.assertIn("HHPT_READY", console)
+    def test_deployment_start_preserves_identity_and_selection_arguments(self):
+        for exclusions in ([], ["cpu.quick", "network.readiness.quick"]):
+            with self.subTest(exclusions=exclusions):
+                root, result, events, console = self.run_supervisor(False, deployment_key=True, excluded_tests=exclusions)
+                self.assert_ready(root, result, events, console)
+                for command in ("inventory", "plan", "session"):
+                    arguments = json.loads((root / (command + "-arguments.json")).read_text())
+                    self.assertEqual(arguments[arguments.index("-key-epoch") + 1], "fixture-deployment")
+                    self.assertIn("-fixture-components=" + str(root / "run/fixture-components"), arguments)
+                self.assertFalse((root / "run/media-discovery.key").exists())
+                self.assertIn("fingerprint_mode=deployment", console)
 
-    def test_prior_failure_preserves_exclusions_and_aborts_only_scheduled_active_work(self):
-        scenarios = ((False, "cpu", ["memory.quick"]),
-                     (False, "cpu", ["graphics.quick", "display.operator.quick"]),
-                     (False, "memory", ["graphics.quick", "display.operator.quick"]),
-                     (True, "cpu", ["memory.quick"]))
-        for legacy, failed, exclusions in scenarios:
-            with self.subTest(legacy=legacy, failed=failed, exclusions=exclusions):
-                root, result, events, console = self.run_supervisor(legacy, worker_fail=failed, excluded_tests=exclusions)
-                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                outcomes = json.loads((root / "final-outcomes.json").read_text())
-                for name in ("cpu.quick", "memory.quick", "graphics.quick", "display.operator.quick"):
-                    worker = QUICK_TESTS[name]
-                    if legacy and name in LEGACY_UNSUPPORTED:
-                        expected = "unsupported"
-                    elif name in exclusions:
-                        expected = "excluded"
-                    elif worker == failed:
-                        expected = "fail"
-                    elif worker == "cpu":
-                        expected = "pass"
-                    else:
-                        expected = "aborted"
-                    self.assertEqual(outcomes[name], expected)
-                    self.assertEqual(events.count(worker), 1 if expected in ("pass", "fail") else 0)
-                self.assertIn("HHPT_READY", console)
-
-    def test_exclusions_preserve_absent_and_missing_driver_reasons(self):
-        unavailable = {"network.readiness.quick": "not_present", "storage.readiness.quick": "missing_driver"}
+    def test_deployment_failure_or_legacy_request_stops_before_inventory(self):
         for legacy in (False, True):
             with self.subTest(legacy=legacy):
-                root, result, events, console = self.run_supervisor(
-                    legacy, excluded_tests=list(unavailable), plan_statuses=unavailable)
-                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                outcomes = json.loads((root / "final-outcomes.json").read_text())
-                for name, reason in unavailable.items():
-                    self.assertEqual(outcomes[name], reason)
-                    self.assertNotIn(QUICK_TESTS[name], events)
-                self.assertIn("HHPT_READY", console)
-
-    def test_excluded_readiness_never_bypasses_global_safety_failures(self):
-        for legacy in (False, True):
-            for phase in ("preflight", "after-readiness", "final"):
-                for kind in ("mount", "network", "unknown", "malformed-summary"):
-                    with self.subTest(legacy=legacy, phase=phase, kind=kind):
-                        root, result, events, console = self.run_supervisor(
-                            legacy, excluded_tests=["network.readiness.quick", "storage.readiness.quick"],
-                            phase=phase, kind=kind)
-                        self.assertNotEqual(result.returncode, 0, result.stderr)
-                        self.assertIn("HHPT_SAFETY_FAIL stage=" + phase, console)
-                        self.assertNotIn("HHPT_READY", console)
-                        self.assertNotIn("network", events)
-                        self.assertNotIn("storage", events)
-                        self.assertNotIn("save", events)
-                        self.assertEqual("finalize" in events, phase == "final")
-                        self.assertTrue((root / ("run/safety-" + phase + ".json")).is_file())
-
-    def test_exclusions_retain_the_next_active_stage_safety_check(self):
-        scenarios = ((False, "before-memory", "memory", ["cpu.quick"]),
-                     (True, "before-memory", "memory", ["cpu.quick"]),
-                     (False, "before-graphics", "graphics", ["cpu.quick", "memory.quick"]),
-                     (False, "before-display", "display", ["cpu.quick", "memory.quick", "graphics.quick"]))
-        for legacy, phase, blocked, exclusions in scenarios:
-            with self.subTest(legacy=legacy, phase=phase):
-                root, result, events, console = self.run_supervisor(
-                    legacy, excluded_tests=exclusions, phase=phase, kind="network")
-                self.assertNotEqual(result.returncode, 0, result.stderr)
-                self.assertIn("safety safety-" + phase, events)
-                self.assertNotIn(blocked, events)
-                self.assertNotIn("finalize", events)
+                _, result, events, console = self.run_supervisor(legacy, deployment_key=True, deployment_failure=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(events, ["ui"] if legacy else ["ui", "deployment-key"])
                 self.assertNotIn("HHPT_READY", console)
 
-    def test_missing_unsafe_or_malformed_selection_stops_before_workers(self):
+    def test_missing_unsafe_or_malformed_selection_stops_before_session(self):
         for legacy in (False, True):
             for kind in ("missing", "symlink", "directory", "fifo", "malformed", "existing"):
                 with self.subTest(legacy=legacy, kind=kind):
                     root, result, events, console = self.run_supervisor(legacy, selection_kind=kind)
-                    self.assertNotEqual(result.returncode, 0, result.stderr)
-                    self.assertFalse(set(events) & (set(QUICK_TESTS.values()) | {"finalize", "save"}), events)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertNotIn("session", events)
+                    self.assertNotIn("save", events)
                     self.assertNotIn("HHPT_READY", console)
                     if kind == "malformed":
+                        self.assertEqual(events, ["ui", "inventory", "safety safety-preflight", "plan"])
                         self.assertIn("HHPT_FAILED test-plan", console)
                     elif kind == "existing":
+                        self.assertEqual(events, ["ui"])
                         self.assertIn("HHPT_FAILED user-interface", console)
                         self.assertEqual((root / "run/selection.json").read_text(), "existing selection must not be replaced\n")
                     else:
+                        self.assertEqual(events, ["ui"])
                         self.assertIn("HHPT_FAILED freeze-test-selection", console)
-                        self.assertNotIn("inventory", events)
-                        self.assertNotIn("plan", events)
                     if kind == "symlink":
                         self.assertEqual(stat.S_IMODE((root / "selection-target.json").stat().st_mode), 0o600)
 
-    def test_selection_output_failure_stops_before_inventory_or_workers(self):
+    def test_planner_rejection_never_falls_back_to_default_selection(self):
         for legacy in (False, True):
-            with self.subTest(legacy=legacy):
-                root, result, events, console = self.run_supervisor(legacy, ui_failure=True)
-                self.assertNotEqual(result.returncode, 0, result.stderr)
-                self.assertEqual(events, ["ui"])
-                self.assertIn("HHPT_FAILED user-interface", console)
-                self.assertFalse((root / "run/selection.json").exists())
-
-    def test_stable_key_start_preserves_default_and_custom_selection(self):
-        for exclusions in ([], ["cpu.quick", "network.readiness.quick"]):
-            with self.subTest(exclusions=exclusions):
-                root, result, events, console = self.run_supervisor(False, deployment_key=True, excluded_tests=exclusions)
-                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                self.assertEqual(events.count("deployment-key"), 1)
-                self.assertEqual(json.loads((root / "run/selection.json").read_text()), {"excluded_tests": exclusions})
-                for command in ("inventory", "plan", "finalize"):
-                    arguments = json.loads((root / (command + "-arguments.json")).read_text())
-                    self.assertEqual(arguments[arguments.index("-key-epoch") + 1], "fixture-deployment")
-                    self.assertIn("-fixture-components=" + str(root / "run/fixture-components"), arguments)
-                outcomes = json.loads((root / "final-outcomes.json").read_text())
-                for name in exclusions:
-                    self.assertEqual(outcomes[name], "excluded")
-                    self.assertNotIn(QUICK_TESTS[name], events)
-                self.assertIn("fingerprint_mode=deployment", console)
-                self.assertIn("HHPT_READY", console)
-
-    def test_preflight_blocks_unsafe_unknown_and_malformed_observations_before_active_work(self):
-        for legacy in (False, True):
-            for kind in ("mount", "network", "unknown", "malformed-summary"):
-                with self.subTest(legacy=legacy, kind=kind):
-                    root, result, events, console = self.run_supervisor(legacy, phase="preflight", kind=kind, absent=True)
-                    self.assertNotEqual(result.returncode, 0, result.stderr)
-                    self.assertIn("HHPT_SAFETY_FAIL", console)
+            selections = [["unknown.quick"], ["cpu.quick", "cpu.quick"], None]
+            if legacy:
+                selections += [["graphics.quick"], ["display.operator.quick"]]
+            for exclusions in selections:
+                with self.subTest(legacy=legacy, exclusions=exclusions):
+                    _, result, events, console = self.run_supervisor(legacy, excluded_tests=exclusions)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertEqual(events, ["ui", "inventory", "safety safety-preflight", "plan"])
+                    self.assertIn("HHPT_FAILED test-plan", console)
                     self.assertNotIn("HHPT_READY", console)
-                    self.assertFalse(set(events) & {"cpu", "memory", "graphics", "display", "finalize", "save"}, events)
-                    self.assertTrue((root / "run/safety-preflight.json").is_file())
 
-    def test_new_unsafe_state_prevents_the_next_active_stage(self):
-        for legacy, phase, previous, blocked in ((False, "before-memory", "cpu", "memory"),
-                                                (True, "before-memory", "cpu", "memory"),
-                                                (False, "before-graphics", "memory", "graphics"),
-                                                (False, "before-display", "graphics", "display")):
-            with self.subTest(legacy=legacy, phase=phase):
-                root, result, events, console = self.run_supervisor(legacy, phase=phase, kind="network")
-                self.assertNotEqual(result.returncode, 0, result.stderr)
-                self.assertIn(previous, events)
-                self.assertNotIn(blocked, events)
-                self.assertNotIn("HHPT_READY", console)
-                self.assertTrue((root / ("run/safety-" + phase + ".json")).is_file())
-
-    def test_readiness_safety_error_cannot_be_forgotten_when_later_state_looks_safe(self):
+    def test_setup_failures_stop_before_session(self):
+        cases = (("ui_failure", ["ui"], "user-interface"),
+                 ("inventory_failure", ["ui", "inventory"], "inventory"),
+                 ("empty_inventory", ["ui", "inventory"], "empty-inventory"),
+                 ("plan_failure", ["ui", "inventory", "safety safety-preflight", "plan"], "test-plan"))
         for legacy in (False, True):
-            for worker in ("storage", "network"):
-                with self.subTest(legacy=legacy, worker=worker):
-                    root, result, events, console = self.run_supervisor(legacy, worker_error=worker)
-                    self.assertNotEqual(result.returncode, 0, result.stderr)
-                    self.assertIn("HHPT_SAFETY_FAIL stage=readiness", console)
+            for failure, expected, diagnostic in cases:
+                with self.subTest(legacy=legacy, failure=failure):
+                    _, result, events, console = self.run_supervisor(legacy, **{failure: True})
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertEqual(events, expected)
+                    self.assertIn(diagnostic, console)
                     self.assertNotIn("HHPT_READY", console)
-                    self.assertFalse(set(events) & {"graphics", "display", "finalize", "save"}, events)
-                    self.assertEqual(json.loads((root / ("run/" + worker + ".json")).read_text())["status"], "error")
 
-    def test_uncertain_worker_cleanup_stops_without_finalization_and_retains_evidence(self):
-        for worker in ("graphics", "display"):
-            with self.subTest(worker=worker):
-                root, result, events, console = self.run_supervisor(False, worker_exit_codes={worker: 12})
-                self.assertNotEqual(result.returncode, 0, result.stderr)
-                self.assertIn("HHPT_FAILED worker-cleanup-unconfirmed worker=" + worker, console)
-                self.assertNotIn("HHPT_READY", console)
-                self.assertEqual(events[-1], worker, "no collector or finalizer may run after uncertain cleanup")
-                self.assertEqual(events.count(worker), 1)
-                self.assertFalse(set(events) & {"finalize", "save"}, events)
-                if worker == "graphics":
-                    self.assertNotIn("display", events)
-                    self.assertFalse((root / "run/display.json").exists())
-                else:
-                    self.assertEqual(json.loads((root / "run/graphics.json").read_text())["status"], "pass")
-                self.assertEqual(json.loads((root / ("run/" + worker + ".json")).read_text())["status"], "error")
-                for previous in ("audio", "cpu", "memory", "input", "network", "storage", "usb"):
-                    self.assertEqual(events.count(previous), 1)
-                    self.assertEqual(json.loads((root / ("run/" + previous + ".json")).read_text())["status"], "pass")
-                for evidence in ("inventory.json", "plan.json", "selection.json", "safety-preflight.json",
-                                 "safety-after-readiness.json", "safety-before-" + worker + ".json"):
-                    self.assertTrue((root / "run" / evidence).is_file(), evidence)
-                self.assertFalse((root / "run/session.hhpcr").exists())
-
-    def test_other_graphics_and_display_command_errors_keep_existing_finalization_behavior(self):
-        for worker in ("graphics", "display"):
-            for exit_code in (1, 2):
-                with self.subTest(worker=worker, exit_code=exit_code):
-                    root, result, events, console = self.run_supervisor(False, worker_exit_codes={worker: exit_code})
-                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                    self.assertIn("HHPT_READY", console)
-                    self.assertNotIn("worker-cleanup-unconfirmed", console)
-                    self.assertEqual(events.count("graphics"), 1)
-                    self.assertEqual(events.count("display"), 1)
-                    self.assertIn("finalize", events)
-                    self.assertIn("save", events)
-                    outcomes = json.loads((root / "final-outcomes.json").read_text())
-                    identifier = "graphics.quick" if worker == "graphics" else "display.operator.quick"
-                    self.assertEqual(outcomes[identifier], "error")
-                    self.assertEqual(json.loads((root / ("run/" + worker + ".json")).read_text())["status"], "error")
-
-    def test_final_observation_blocks_ready_and_save_while_retaining_completed_evidence(self):
+    def test_nonzero_session_retains_diagnostics_and_prevents_final_check_ready_or_save(self):
         for legacy in (False, True):
-            with self.subTest(legacy=legacy):
-                root, result, events, console = self.run_supervisor(legacy, phase="final", kind="mount")
-                self.assertNotEqual(result.returncode, 0, result.stderr)
-                self.assertIn("finalize", events)
-                self.assertNotIn("save", events)
-                self.assertNotIn("HHPT_READY", console)
-                self.assertTrue((root / "run/session.hhpcr").is_file())
-                self.assertEqual(json.loads((root / "run/safety-final.json").read_text())["writable_block_mounts"], 1)
-
-    def test_cpu_failure_preserves_frozen_absent_outcomes_and_aborts_only_scheduled_workers(self):
-        absent = {"memory.quick": "not_present", "graphics.quick": "not_present",
-                  "display.operator.quick": "not_present"}
-        for legacy in (False, True):
-            for plan_statuses in (absent, {}):
-                with self.subTest(legacy=legacy, absent=bool(plan_statuses)):
+            for exit_code, artifacts in ((1, False), (2, False), (12, False), (130, False), (12, True)):
+                with self.subTest(legacy=legacy, exit_code=exit_code, artifacts=artifacts):
                     root, result, events, console = self.run_supervisor(
-                        legacy, worker_fail="cpu", plan_statuses=plan_statuses)
-                    self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                    self.assertIn("finalize", events)
-                    self.assertIn("save", events)
-                    self.assertFalse(set(events) & {"memory", "graphics", "display"}, events)
-                    outcomes = json.loads((root / "final-outcomes.json").read_text())
-                    self.assertEqual(outcomes["cpu.quick"], "fail")
-                    self.assertEqual(json.loads((root / "run/cpu.json").read_text())["status"], "fail")
-                    for name in absent:
-                        expected = "not_present" if plan_statuses else "aborted"
-                        if not plan_statuses and legacy and name != "memory.quick":
-                            expected = "unsupported"
-                        self.assertEqual(outcomes[name], expected, (name, outcomes))
-                    self.assertNotIn("HHPT_FAILED report-finalization", console)
-                    self.assertTrue((root / "run/session.hhpcr").is_file())
+                        legacy, session_exit=exit_code, failure_artifacts=artifacts)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertEqual(events, ["ui", "inventory", "safety safety-preflight", "plan", "session"])
+                    self.assertIn("HHPT_FAILED quick-session exit=" + str(exit_code), console)
+                    self.assertNotIn("HHPT_READY", console)
+                    self.assertEqual(json.loads((root / "run/session-diagnostic.json").read_text())["exit"], exit_code)
+                    for name in ("inventory.json", "selection.json", "plan.json", "safety-preflight.json"):
+                        self.assertTrue((root / "run" / name).is_file(), name)
+                    self.assertEqual((root / "run/session.hhpcr").exists(), artifacts)
+                    self.assertEqual((root / "run/session-ready.txt").exists(), artifacts)
+                    self.assertFalse((root / "run/safety-final.json").exists())
 
-    def test_safe_diskless_profile_still_checks_global_safety_and_reports_observed_counts(self):
+    def test_missing_unsafe_or_empty_ready_metadata_prevents_ready_and_save(self):
+        for legacy in (False, True):
+            for kind in ("missing", "symlink", "empty", "directory", "fifo"):
+                with self.subTest(legacy=legacy, kind=kind):
+                    root, result, events, console = self.run_supervisor(legacy, ready_kind=kind)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertEqual(events, ["ui", "inventory", "safety safety-preflight", "plan", "session", "safety safety-final"])
+                    self.assertIn("HHPT_FAILED session-ready-metadata", console)
+                    self.assertNotIn("HHPT_READY", console)
+                    self.assertEqual((root / "run/session.hhpcr").read_bytes(), REPORT_FIXTURE)
+
+    def test_terminal_watchdog_blocks_ready_and_save_even_with_existing_artifacts(self):
         for legacy in (False, True):
             with self.subTest(legacy=legacy):
-                root, result, events, console = self.run_supervisor(legacy, absent=True)
-                self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
-                self.assertNotIn("storage", events)
-                self.assertNotIn("network", events)
-                self.assertIn("safety safety-preflight", events)
-                self.assertIn("safety safety-final", events)
-                self.assertIn("save", events)
-                ready = [line for line in console.splitlines() if line.startswith("HHPT_READY ")]
-                self.assertEqual(len(ready), 1)
-                observed = json.loads((root / "run/safety-final.json").read_text())
-                for field in ("writable_block_mounts", "active_non_loop_interfaces"):
-                    self.assertIn(field + "=" + str(observed[field]), ready[0])
+                root, result, events, console = self.run_supervisor(legacy, outer_timeout=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(events, ["ui", "inventory", "safety safety-preflight", "plan", "session"])
+                self.assertIn("HHPT_FAILED quick-session", console)
+                self.assertNotIn("HHPT_READY", console)
+                self.assertTrue((root / "run/session-diagnostic.json").is_file())
+                self.assertEqual((root / "run/session.hhpcr").read_bytes(), REPORT_FIXTURE)
+                self.assertIn("HHPT_READY", (root / "run/session-ready.txt").read_text())
+                self.assertFalse((root / "run/safety-final.json").exists())
+
+    def test_independent_shell_safety_failures_block_ready_and_save(self):
+        for legacy in (False, True):
+            for phase in ("preflight", "final"):
+                for kind in ("mount", "network", "unknown", "malformed-summary"):
+                    with self.subTest(legacy=legacy, phase=phase, kind=kind):
+                        root, result, events, console = self.run_supervisor(
+                            legacy, phase=phase, kind=kind,
+                            excluded_tests=["network.readiness.quick", "storage.readiness.quick"])
+                        self.assertNotEqual(result.returncode, 0)
+                        expected = ["ui", "inventory", "safety safety-preflight"]
+                        if phase == "final":
+                            expected += ["plan", "session", "safety safety-final"]
+                        self.assertEqual(events, expected)
+                        self.assertIn("HHPT_SAFETY_FAIL stage=" + phase, console)
+                        self.assertNotIn("HHPT_READY", console)
+                        self.assertTrue((root / ("run/safety-" + phase + ".json")).is_file())
+                        self.assertEqual((root / "run/session.hhpcr").exists(), phase == "final")
+                        self.assertEqual((root / "run/session-ready.txt").exists(), phase == "final")
+                        if phase == "final":
+                            self.assertEqual((root / "run/session.hhpcr").read_bytes(), REPORT_FIXTURE)
+
+    def test_save_failure_preserves_completed_report(self):
+        for legacy in (False, True):
+            with self.subTest(legacy=legacy):
+                root, result, events, console = self.run_supervisor(legacy, save_failure=True)
+                self.assert_ready(root, result, events, console, save_failed=True)
+                self.assertIn("HHPT_SAVE_FAILED report-retained-in-ram", console)
 
 
 if __name__ == "__main__":

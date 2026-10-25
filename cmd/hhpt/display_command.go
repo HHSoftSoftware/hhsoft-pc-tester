@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"context"
 	"encoding/json"
 	"flag"
@@ -15,6 +14,8 @@ import (
 
 type visualCollector func(context.Context, string, time.Duration, graphics.InteractiveRunner) graphics.VisualResult
 
+const displayCommandTimeout = 45 * time.Second
+
 func runDisplay(ctx context.Context, arguments []string, input io.Reader, stdout, stderr io.Writer) int {
 	return runDisplayWith(ctx, arguments, input, stdout, stderr, graphics.ProbePreferredDisplays)
 }
@@ -24,16 +25,22 @@ func runDisplayWith(ctx context.Context, arguments []string, input io.Reader, st
 	flags.SetOutput(stderr)
 	displayTime := flags.Duration("pattern-duration", 5*time.Second, "preferred-mode pattern display time")
 	findingTimeout := flags.Duration("finding-timeout", 15*time.Second, "single operator-finding response deadline")
+	timeout := flags.Duration("timeout", displayCommandTimeout, "whole-command deadline, from 10ms to 45s")
 	outputPath := flags.String("output", "-", "new JSON output file, or - for stdout")
 	if err := flags.Parse(arguments); err != nil {
 		return 2
 	}
-	if flags.NArg() != 0 || *displayTime < time.Second || *displayTime > 30*time.Second || *findingTimeout < time.Second || *findingTimeout > 5*time.Minute {
-		fmt.Fprintln(stderr, "display requires 1s-30s patterns, a 1s-5m finding timeout, and no positional arguments")
+	if flags.NArg() != 0 || *displayTime < time.Second || *displayTime > 30*time.Second || *findingTimeout < time.Second || *findingTimeout > 5*time.Minute || *timeout < 10*time.Millisecond || *timeout > displayCommandTimeout {
+		fmt.Fprintln(stderr, "display requires 1s-30s patterns, a 1s-5m finding timeout, a 10ms-45s command timeout, and no positional arguments")
 		return 2
 	}
+	runContext, cancel := context.WithTimeout(ctx, *timeout)
+	defer cancel()
 	fmt.Fprintf(stdout, "Connected displays will show native/preferred patterns for %s. Inspect pixels, geometry, color, flicker, scaling, overscan, and artifacts.\n", displayTime.Round(time.Second))
-	result := probe(ctx, "/", *displayTime, graphics.NewExecRunner("/run/hhpt", *displayTime+15*time.Second, 64<<10))
+	result := graphics.VisualResult{Schema: graphics.VisualSchema}
+	if commandStopReason(runContext) == nil {
+		result = probe(runContext, "/", *displayTime, graphics.NewExecRunner("/run/hhpt", *displayTime+15*time.Second, 64<<10))
+	}
 	if result.CleanupUncertain {
 		defer func() {
 			fmt.Fprintln(stderr, "Worker cleanup could not be confirmed; stop the session. Diagnostic evidence remains in RAM when available.")
@@ -41,11 +48,11 @@ func runDisplayWith(ctx context.Context, arguments []string, input io.Reader, st
 		}()
 	}
 	connectors := patternedConnectors(result)
-	if len(connectors) > 0 && !result.CleanupUncertain {
+	if len(connectors) > 0 && len(result.Findings) == 0 && !result.CleanupUncertain && commandStopReason(runContext) == nil {
 		fmt.Fprintln(stdout, "Finding order:", strings.Join(connectors, ", "))
 		fmt.Fprintln(stdout, "Enter P/F/I or a seven-letter P/F/I code per display, comma-separated; Enter means inconclusive.")
 		fmt.Fprint(stdout, "Pixels Geometry Color Flicker Scaling Overscan Artifacts: ")
-		line, timedOut, readErr := readFindingLine(ctx, input, *findingTimeout)
+		line, timedOut, readErr := readFindingLine(runContext, input, *findingTimeout)
 		var codes []string
 		if timedOut {
 			fmt.Fprintln(stdout, "Operator finding timed out; visual quality is inconclusive.")
@@ -56,6 +63,16 @@ func runDisplayWith(ctx context.Context, arguments []string, input io.Reader, st
 			if line != "" && codes == nil {
 				fmt.Fprintln(stderr, "Invalid finding code; visual quality is inconclusive.")
 			}
+		}
+		if (timedOut || readErr != nil) && line != "" {
+			// A fully received defect remains evidence. A response racing a
+			// stop cannot supply new passing operator observations.
+			codes = parseFindingCodes(strings.Map(func(character rune) rune {
+				if character == 'p' || character == 'P' {
+					return 'i'
+				}
+				return character
+			}, line), len(connectors))
 		}
 		if codes == nil {
 			codes = make([]string, len(connectors))
@@ -68,6 +85,7 @@ func runDisplayWith(ctx context.Context, arguments []string, input io.Reader, st
 			return 1
 		}
 	}
+	result.MarkInterrupted(commandStopReason(runContext))
 	destination, closeDestination, err := openDestination(*outputPath, stdout)
 	if err != nil {
 		fmt.Fprintf(stderr, "open output: %v\n", err)
@@ -127,26 +145,4 @@ func parseFindingCodes(line string, count int) []string {
 		}
 	}
 	return values
-}
-
-func readFindingLine(ctx context.Context, input io.Reader, timeout time.Duration) (string, bool, error) {
-	type response struct {
-		line string
-		err  error
-	}
-	result := make(chan response, 1)
-	go func() {
-		line, err := bufio.NewReader(input).ReadString('\n')
-		result <- response{strings.TrimSpace(line), err}
-	}()
-	timer := time.NewTimer(timeout)
-	defer timer.Stop()
-	select {
-	case value := <-result:
-		return value.line, false, value.err
-	case <-ctx.Done():
-		return "", false, ctx.Err()
-	case <-timer.C:
-		return "", true, nil
-	}
 }

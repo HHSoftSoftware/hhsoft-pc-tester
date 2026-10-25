@@ -20,6 +20,7 @@ type Status string
 const (
 	StatusPass         Status = "pass"
 	StatusFail         Status = "fail"
+	StatusError        Status = "error"
 	StatusSkip         Status = "skip"
 	StatusInconclusive Status = "inconclusive"
 	StatusAborted      Status = "aborted"
@@ -78,9 +79,16 @@ type PatternResult struct {
 	Detail string `json:"detail,omitempty"`
 }
 
-func Probe(ctx context.Context, root string, frames int, runner Runner) Result {
-	result := Result{Schema: Schema, Status: StatusInconclusive}
-	result.Cards, result.RenderNodes = discover(root)
+func Probe(ctx context.Context, root string, frames int, runner Runner) (result Result) {
+	result = Result{Schema: Schema, Status: StatusInconclusive}
+	defer func() { result.MarkInterrupted(ctx.Err()) }()
+	if ctx.Err() != nil {
+		return result
+	}
+	result.Cards, result.RenderNodes = discover(ctx, root)
+	if ctx.Err() != nil {
+		return result
+	}
 	if len(result.Cards) == 0 {
 		result.Warnings = append(result.Warnings, "no DRM card was discovered")
 	}
@@ -98,22 +106,38 @@ func Probe(ctx context.Context, root string, frames int, runner Runner) Result {
 		result.Pattern = PatternResult{Status: StatusAborted, Detail: "not started: previous worker cleanup could not be confirmed"}
 		return result
 	}
+	if errors.Is(rendererError, context.DeadlineExceeded) || errors.Is(rendererError, context.Canceled) {
+		result.Renderer.Status = interruptedStatus(rendererError)
+		result.MarkInterrupted(rendererError)
+		return result
+	}
+	if ctx.Err() != nil {
+		return result
+	}
 	result.Pattern, result.CleanupUncertain = runPattern(ctx, result.Cards, frames, runner)
 	if result.CleanupUncertain {
 		return result
 	}
-	if len(result.Cards) > 0 && result.Renderer.Status == StatusPass && result.Pattern.Status != StatusInconclusive {
+	if result.Pattern.Status == StatusError || result.Pattern.Status == StatusAborted || result.Pattern.Status == StatusFail {
+		result.Status = result.Pattern.Status
+	} else if len(result.Cards) > 0 && result.Renderer.Status == StatusPass && (result.Pattern.Status == StatusPass || result.Pattern.Status == StatusSkip) {
 		result.Status = StatusPass
 	}
 	return result
 }
 
-func discover(root string) ([]Card, []string) {
+func discover(ctx context.Context, root string) ([]Card, []string) {
+	if ctx.Err() != nil {
+		return nil, nil
+	}
 	drmRoot := resolve(root, "sys/class/drm")
 	entries, _ := os.ReadDir(drmRoot)
 	var cards []Card
 	var renderNodes []string
 	for _, entry := range entries {
+		if ctx.Err() != nil {
+			return cards, renderNodes
+		}
 		name := entry.Name()
 		switch {
 		case cardPattern.MatchString(name):
@@ -131,8 +155,14 @@ func discover(root string) ([]Card, []string) {
 		}
 	}
 	for cardIndex := range cards {
+		if ctx.Err() != nil {
+			return cards, renderNodes
+		}
 		prefix := cards[cardIndex].Name + "-"
 		for _, entry := range entries {
+			if ctx.Err() != nil {
+				return cards, renderNodes
+			}
 			if !strings.HasPrefix(entry.Name(), prefix) {
 				continue
 			}
@@ -171,6 +201,9 @@ func parseRenderer(output string, runError error) RendererResult {
 }
 
 func runPattern(ctx context.Context, cards []Card, frames int, runner Runner) (PatternResult, bool) {
+	if err := ctx.Err(); err != nil {
+		return PatternResult{Status: interruptedStatus(err), Detail: err.Error()}, false
+	}
 	if frames <= 0 {
 		return PatternResult{Status: StatusSkip, Detail: "not requested"}, false
 	}
@@ -183,7 +216,11 @@ func runPattern(ctx context.Context, cards []Card, frames int, runner Runner) (P
 	}
 	_, err := runner.Run(ctx, "/usr/bin/kmscube", "-D", device, "-c", strconv.Itoa(frames), "-M", "rgba")
 	if err != nil {
-		return PatternResult{Status: StatusInconclusive, Frames: frames, Device: device, Detail: normalizeDetail(err.Error())}, errors.Is(err, workerexec.ErrCleanupUncertain)
+		status := StatusInconclusive
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+			status = interruptedStatus(err)
+		}
+		return PatternResult{Status: status, Frames: frames, Device: device, Detail: normalizeDetail(err.Error())}, errors.Is(err, workerexec.ErrCleanupUncertain)
 	}
 	return PatternResult{Status: StatusPass, Frames: frames, Device: device}, false
 }

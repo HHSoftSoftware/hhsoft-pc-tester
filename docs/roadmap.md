@@ -10,9 +10,9 @@ Next work follows the existing dependencies:
 
 1. Complete the current alpha's source/image inspection, source and license
    packaging, authenticated evidence, and approved publication checks.
-2. Expand profile orchestration beyond safe quick-test selection, adding
-   configuration, cancellation, and run-wide watchdogs around the frozen plan
-   and signed evidence paths, retaining explicit unsupported results.
+2. Expand profile orchestration beyond the safe quick-session coordinator,
+   adding configuration and continuous run-wide monitoring around the frozen
+   plan and signed evidence paths, retaining explicit unsupported results.
 3. Implement the remaining applicable functional tests with independent
    failure-case coverage for each adapter. Record physical validation separately
    from implementation and VM checks.
@@ -93,8 +93,9 @@ applicable.
 ## Phase 2 — quick functional test
 
 The CPU/RAM hwmon guard, frozen-plan/report validation, operator-selected
-quick-test execution, complete frozen-catalog reporting, and bounded worker
-process-group cleanup are implemented and covered by automated failure tests.
+quick-test execution, complete frozen-catalog reporting, bounded worker cleanup,
+quick-session deadlines/cancellation, and signed runtime safety history are
+implemented and covered by automated failure tests.
 The selection flow also passes native menu-to-signed-report verification for
 modern x64/x86 and legacy x86 applications. Broader profile orchestration,
 run-wide watchdogs, rebuilt-image qualification, the remaining functional
@@ -106,8 +107,8 @@ adapters, and the physical pilot below are still open.
   display/GPU, network, audio, input, USB, and camera quick checks.
 - Extend operator prompts and run-wide watchdog coverage around the existing
   signed reports, explicit unsupported states, and bounded CPU/RAM safeguards.
-- Bind independent runtime mount/network safety observations into signed reports;
-  current snapshots gate execution but remain in RAM.
+- Extend snapshot-based quick-session safety into continuous monitoring and
+  broader profiles, preserving signed stop reasons and earlier unsafe evidence.
 - Complete the [physical pilot](beta-pilot.md) on at least ten varied PCs
   without destructive tests.
 

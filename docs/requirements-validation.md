@@ -110,6 +110,28 @@ digests captured from the preceding implementation remain unchanged. These
 checks validate applications and fixtures; new ISO builds, whole-run deadlines,
 physical qualification, and release approval remain open.
 
+The 2026-10-25 quick-session milestone passed the full Windows Go suite and
+`go vet`: 948 test/subtest passes across 16 packages, zero failures, and 13
+platform skips. All five application targets built with Go 1.27.2. Native
+Linux amd64 and 386 each passed 661 test/subtest cases across the four affected
+packages without skips. The actual generated modern and legacy shell scripts
+passed 82 isolated handoff scenarios across 12 integration methods, plus the
+fixture syntax test. This includes a report-written-then-watchdog-stop case
+that must not announce readiness or save. Worker orchestration is tested in the
+Go coordinator rather than duplicated in the shell fixture.
+
+Twelve real CLI sessions exercised all-off completion, a shared deadline,
+Ctrl-C, and SIGTERM on each modern x64/x86 and legacy x86 application. Every
+report retained all 22 results, exact frozen dispositions, signed stop reason
+and worker states, and safe observations including the fresh pre-sign check.
+Independent verification passed, and owned pseudo-terminal modes and descriptor
+flags were restored. Native Go 1.26.9 race testing passed 120 session, journal,
+finding-input, and signal test/subtest cases without skips or race findings.
+The source audit found no abandoned implementation stubs or orphaned helpers.
+Rebuilt ISO qualification, continuous monitoring, remaining functional adapters,
+and the physical beta pilot remain open; cooperative cancellation does not
+establish preemption of an uninterruptible kernel operation.
+
 Regression coverage for these cases belongs with the corresponding feature,
 not with a blanket claim of complete product coverage. Linux mount/device
 fixtures and real APK selection require the appropriate Linux environment;

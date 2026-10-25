@@ -162,9 +162,28 @@ The console shows compact `HHPT_*` progress markers. Important markers are:
   frozen plan. A `fail` plus nonzero added, removed, or changed counts means
   hardware changed during the run; preserve the report but repeat the test
   with a stable setup.
+- `HHPT_SESSION_STOP`: why quick work ended, including completion, operator
+  cancellation, a session/test deadline, or a worker stop. Review the recorded
+  outcomes even when the stop reason is `completed`.
 - `HHPT_READY`: the bundle was finalized in RAM and the save menu is ready.
 - `HHPT_SAFETY_FAIL` or `HHPT_FAILED`: the safe appliance guarantee or
   workflow failed. Do not treat the session as a completed inspection.
+
+Quick-session work has a shared five-minute budget. The `session` command
+accepts a `-timeout` from `10ms` through `15m`; the boot workflow uses `5m`.
+Each scheduled test also uses its frozen plan limit. Graphics has a 30-second
+whole-test limit and display has a 45-second limit shared across sequential
+tools, cards, patterns, and the operator-finding prompt. Cleanup and safe report
+finalization have separate bounded allowances.
+
+Press Ctrl-C to request a stop. One owned console reader handles cancellation
+and display findings, so those inputs do not compete. Linux SIGINT and SIGTERM
+also request cancellation. New scheduled work stops, completed failures remain
+failures, and unfinished work is recorded as incomplete. The console reader is
+joined and its input flags and terminal mode are restored before signing or
+saving. A clean stop can still produce a valid signed report when cleanup and
+safety checks succeed; that report records an incomplete inspection, not a
+hardware pass.
 
 The display check may require operator observations because software cannot
 reliably judge pixels, color, flicker, scaling, overscan, or visible artifacts
@@ -242,9 +261,16 @@ Current finalized reports list every frozen catalog test, including tests that
 did not run, and one hardware-graph integrity result. The HTML/PDF views show
 each planned status and reason separately from the outcome. A direct-capture
 report labels its limited collected scope and does not claim full quick-profile
-coverage. Neither scope establishes an overall hardware pass. Independent
-runtime mount/network safety checks currently gate execution but are not part
-of the signed report.
+coverage. Neither scope establishes an overall hardware pass.
+
+Reports produced by the quick-session workflow also sign the stop reason,
+worker execution states, and mount/network safety history: session preflight,
+checks before started workers, final observations, and a fresh check before
+signing. An unsafe or incomplete safety observation cannot be erased by a later
+safe one. These are snapshots, not continuous monitoring. The extra shell checks
+before session launch and after report creation remain separate operational
+gates. Direct capture and direct finalization without a session journal retain
+their older limited scope and do not claim this session history.
 
 | Status | Operator meaning | Required action |
 | --- | --- | --- |
@@ -367,6 +393,13 @@ controlled the corresponding key pair.
 - Quick CPU and RAM tests are bounded samples, not sustained stress or complete
   memory qualification. Full-media memory testing remains a separate future
   boot path.
+- Cancellation and deadlines rely on synchronous collectors cooperating;
+  they cannot preempt a blocked kernel operation. The boot script has a final
+  340-second KILL guard around the session command. A nonzero session exit
+  blocks `HHPT_READY` and save, even if report files already exist, and does
+  not confirm that nested workers were cleaned up. Do not manually resume that
+  workflow. Continuous run-wide thermal monitoring, heartbeat supervision,
+  and hang detection remain incomplete.
 - Input testing currently checks read-only event-device access; it does not
   prove every key/button or touch/touchpad geometry in automatic mode.
 - Storage testing is readiness only: no SMART/NVMe health qualification,

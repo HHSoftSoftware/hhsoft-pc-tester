@@ -103,11 +103,14 @@ Phase 1 implements only the first read-only graphics subset of this matrix.
 and advertised modes, then queries Mesa through GBM to distinguish a hardware
 renderer from llvmpipe or another software fallback. A frame count of zero is
 discovery-only; `1` through `600` presents a short KMS pattern on the first
-connected card within the current 20-second tool timeout. `hhpt display` uses
+connected card within the current 20-second tool timeout and the shared
+30-second graphics command limit. `hhpt display` uses
 the locked libdrm `modetest` worker to apply its preferred-mode pattern to all
 connected outputs on each card. One compact seven-criterion P/F/I finding per
 connector is recorded, with invalid or absent operator input classified as
-inconclusive rather than guessed.
+inconclusive rather than guessed. Its 45-second command limit covers all cards,
+patterns, and the finding prompt together. A parent session deadline can shorten
+either command's remaining budget.
 
 The probe reports absent DRM devices as skipped and insufficient acceleration
 evidence as inconclusive. Preferred-mode and finding orchestration still needs
@@ -240,36 +243,59 @@ those skips into a successful hardware qualification.
 
 ## Timeouts and recovery
 
-The following is the target execution policy. Current CPU/memory workers have
-internal deadlines and separate startup-script kill limits, and readiness and
-independent safety commands have bounded outer timeouts. Frozen catalog timeout
-values do not yet bound every complete worker: graphics runs sequential tools
-with separate limits, and display budgets can repeat for multiple cards before
-the operator-finding wait. A shared session deadline and whole-run operator
-cancellation/finalization remain incomplete.
+The implemented quick-session coordinator runs workers synchronously under one
+shared budget, defaulting to five minutes. The `session -timeout` range is
+`10ms` through `15m`; boot scripts select `5m`. Each worker receives the earlier
+of the session deadline and its frozen catalog deadline. The graphics limit is
+30 seconds across its tools and pattern; display has 45 seconds across all
+cards, patterns, and the finding prompt. Shortening a command timeout cannot
+extend either frozen limit. Cleanup and stopped-run finalization have separate
+bounded allowances.
+
+Ctrl-C uses one owned console reader shared with display findings. Linux
+SIGINT/SIGTERM also cancel the session. The coordinator stops starting new work,
+retains explicit completed failures, and records unfinished scheduled work as
+`aborted` or `error`. Excluded and unavailable dispositions remain unchanged.
+The input reader must finish and restore its flags and terminal mode before
+signing or handing the console to save. A complete failure finding survives a
+cancellation race; a partial line or late passing response cannot become a pass.
 
 Linux subprocess cleanup now keeps the leader identity reserved until its
 process group has been stopped. Cleanup, child reaping, and output draining
 share a two-second allowance. Unconfirmed cleanup stops later graphics/display
 work and blocks capture or appliance finalization, while retaining available
 diagnostics. This is limited to the owned process group; it does not establish
-whole-run cancellation or containment of processes that escape the group.
+containment of processes that escape the group.
 
-- Unless the matrix says otherwise, adapter startup times out after 30 seconds
-  and an operator prompt after 120 seconds.
-- Automated workers heartbeat every 15 seconds. Two missed heartbeats trigger
-  graceful cancellation; failure to stop after 15 more seconds triggers worker
-  termination and target isolation.
-- Timeout is `error` when completion was needed for diagnosis. It is `fail` only
-  when response time is itself the criterion and target evidence is conclusive.
-- Retries must be declared before execution. All attempts remain in evidence;
-  recovery may mark a defect intermittent but cannot hide it.
-- Hang, reset, disconnect, critical thermal state, uncorrected error, or unsafe
-  condition stops affected tests. Resume requires an explicit safe state.
-- At the run deadline, active work is cancelled as `error/run-deadline` while
-  completed statuses remain unchanged.
+The signed report's run-integrity evidence includes a validated session journal
+containing the frozen plan binding, stop reason, budget and elapsed time, every
+quick worker's state and outcome, and ordered mount/network safety snapshots.
+The coordinator takes snapshots at
+session preflight, before each started worker, and after execution stops. The
+finalizer validates that history against the plan, outcomes, and worker evidence
+and adds its own fresh pre-sign observation. Missing, contradictory, unsafe, or
+incomplete observations block signing. A clean cancellation/deadline can use a
+fresh finalization context after confirmed cleanup, but cannot turn an aborted
+safety-readiness check or an earlier unsafe observation into permission to sign.
+An all-off selection still requires safety observations and records no completed
+quick-test coverage.
 
-Acceptance of session deadline and cancellation support requires:
+The shell independently checks safety before launching the session and after
+report creation. These outer checks gate `HHPT_READY` and save; their separate
+files are not the signed session history. Both boot scripts also use a terminal
+340-second KILL guard around the session command. Any nonzero session exit
+blocks ready/save, even if a report and ready file were already written. Killing
+the command does not establish nested-worker cleanup, and the failure marker
+explicitly leaves cleanup unconfirmed.
+
+Synchronous collectors use cooperative cancellation; a context deadline cannot
+preempt a blocked kernel call. The terminal shell guard is a failure path, not a
+claim of safe recovery or hardware qualification. Continuous thermal monitoring,
+heartbeat supervision, hang detection, and other profile execution remain open.
+Direct capture and finalization without a session journal keep their older
+limited evidence scope; they do not acquire session stop/safety claims.
+
+Regression acceptance for this implementation requires:
 
 - Sequential tools and multi-card display work stay within the complete frozen
   test deadline and the shared run budget; child cleanup has its own finite
@@ -284,15 +310,28 @@ Acceptance of session deadline and cancellation support requires:
   preserves the original plan binding. It does not broadly admit `aborted`
   readiness outcomes or erase earlier unsafe observations to reach signing.
 - Independent mount/network checks remain active when readiness tests, or all
-  quick tests, are excluded. Unsafe or incomplete final observations still
-  block the normal ready/save path.
+  quick tests, are excluded. Signed session history cannot omit a required
+  observation, and unsafe or incomplete final observations still block the
+  normal ready/save path.
+- Terminal watchdog failure or invalid ready metadata blocks ready/save even
+  when report artifacts exist. Shell fixtures exercise only the handoff; Go
+  tests cover worker scheduling, cancellation, and journal validation.
 
-The independent safety snapshots currently gate the runtime and remain in RAM;
-they are not included in the signed report. An all-off selection can therefore
-produce signed skip and graph-integrity records without carrying those separate
-mount/network observations. Including and validating that evidence in signed
-reports remains a distinct acceptance requirement. These snapshots are not
-continuous safety monitoring.
+The broader target policy remains:
+
+- Unless the matrix says otherwise, adapter startup times out after 30 seconds
+  and an operator prompt after 120 seconds. The implemented quick limits above
+  take precedence for current commands.
+- Automated workers heartbeat every 15 seconds. Two missed heartbeats trigger
+  cancellation; failure to stop after 15 more seconds triggers termination and
+  target isolation. This heartbeat policy is not yet implemented.
+- Timeout is `error` when completion was needed for diagnosis. It is `fail` only
+  when response time is itself the criterion and target evidence is conclusive.
+- Retries must be declared before execution. All attempts remain in evidence;
+  recovery may mark a defect intermittent but cannot hide it.
+- Hang, reset, disconnect, critical thermal state, uncorrected error, or unsafe
+  condition stops affected tests. Resume requires an explicit safe state;
+  continuous monitoring and general recovery remain future work.
 
 ## Evidence contract
 

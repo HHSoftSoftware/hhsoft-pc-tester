@@ -126,8 +126,12 @@ Linux worker cleanup retains the leader identity until same-group descendants
 have been stopped, with a shared two-second cleanup/reaping/output-drain limit.
 Unconfirmed cleanup prevents subsequent graphics/display work and capture or
 appliance signing. No numeric process-group signal is sent after reaping begins.
-This is process-group cleanup, not containment of arbitrary escaped processes;
-whole-run watchdogs and cancellation remain separate implementation work.
+This covers the owned process group. The quick-session coordinator supplies
+shared cancellation and deadlines, joins console input, and validates signed
+safety history before finalization. Earlier unsafe observations cannot be cleared
+by a later safe snapshot. A separate terminal outer guard blocks ready/save on
+failure, including a hard stop after report creation. Arbitrary escaped processes,
+uninterruptible kernel calls, and continuous monitoring require further controls.
 
 Run workers as a dedicated account when possible. Grant device access through
 ACLs, file descriptors, or narrowly scoped capabilities rather than making the

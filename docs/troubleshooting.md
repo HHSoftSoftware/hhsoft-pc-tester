@@ -15,18 +15,50 @@ last marker before rebooting. Useful checkpoints are:
   classified as not scheduled.
 - `HHPT_RUN_INTEGRITY`: the final graph either matched the frozen plan or records
   a component delta.
+- `HHPT_SESSION_STOP`: the session ended through completion, cancellation,
+  a deadline, or a worker stop; inspect the reason and individual results.
 - `HHPT_READY`: the signed report exists in RAM and can be saved.
-- `HHPT_FAILED` or `HHPT_SAFETY_FAIL`: the run stopped without a usable report.
+- `HHPT_FAILED` or `HHPT_SAFETY_FAIL`: the workflow stopped. A report may remain
+  in RAM, but this marker does not authorize ready/save or a completed inspection.
 
 Retry a hang only once. Record the image filename, checksum, firmware mode, and
 the last marker when reporting a reproducible failure.
 
-`HHPT_FAILED worker-cleanup-unconfirmed` means a graphics/display worker could
-not be confirmed stopped. The run stops before later tests, signing, or saving;
-available diagnostic evidence remains in RAM. Record the marker and image
+`HHPT_SESSION_FAILED ... reason=cleanup_unconfirmed` means a graphics/display
+worker could not be confirmed stopped. The run stops before later tests,
+signing, or saving; available diagnostic evidence remains in RAM. Record the marker and image
 version, then reboot into a verified image. Do not manually resume the stopped
 workflow. Direct graphics, display, and capture commands use exit code 12 for
 this condition, including when diagnostic output could not be written.
+
+## Cancellation or deadline stop
+
+Quick-session work defaults to five minutes. Direct `session -timeout` accepts
+`10ms` through `15m`; boot uses `5m`. Frozen whole-test limits also apply:
+graphics has 30 seconds across its sequential tools, and display has 45 seconds
+across every card, pattern, and finding prompt. Cleanup and safe finalization
+have separate bounded allowances, so a stop is not necessarily instantaneous.
+
+Ctrl-C requests cancellation through the session's single owned console reader;
+it does not compete with the display prompt. Linux SIGINT/SIGTERM request the
+same stop. Completed failures remain failures, while unfinished work remains
+incomplete. Before signing or save, the input reader must finish and restore
+the input flags and terminal mode. A safely stopped session can still create
+a signed report with its stop reason, worker states, ordered safety history,
+and a fresh pre-sign check. A valid signature on that report does not make the
+inspection complete or prove a hardware pass.
+
+Collectors cooperate with cancellation and cannot preempt blocked kernel
+calls. The boot scripts have a terminal 340-second KILL guard. A nonzero session
+exit produces `HHPT_FAILED quick-session ... cleanup=unconfirmed` and blocks
+`HHPT_READY` and save, even if report artifacts already exist. That guard does
+not confirm child cleanup. Preserve sanitized diagnostics and reboot from
+verified media; do not manually resume or force save after this stop.
+
+Continuous thermal monitoring, heartbeat/hang supervision, other profiles,
+and physical-hardware qualification remain incomplete. Direct capture and
+direct finalization without a session journal do not claim the quick session's
+stop or safety history.
 
 ## Image will not boot
 

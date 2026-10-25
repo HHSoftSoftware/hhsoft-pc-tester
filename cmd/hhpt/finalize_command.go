@@ -17,6 +17,7 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/graphics"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/plan"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/safemode"
 )
 
 type repeatedString []string
@@ -51,6 +52,10 @@ func runFinalize(ctx context.Context, arguments []string, stdout, stderr io.Writ
 }
 
 func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, random io.Reader, now func() time.Time) int {
+	return runFinalizeWithSafety(ctx, arguments, stdout, stderr, collect, random, now, safemode.Observe)
+}
+
+func runFinalizeWithSafety(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, random io.Reader, now func() time.Time, observe func(context.Context) safemode.Result) int {
 	flags := flag.NewFlagSet("finalize", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	fingerprintKeyPath := flags.String("fingerprint-key", "", "file containing exactly 32 raw fingerprint-key bytes")
@@ -60,6 +65,8 @@ func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.
 	sessionID := flags.String("session-id", "", "session identifier; random when omitted")
 	outputPath := flags.String("output", "", "new self-issued .hhpcr output file")
 	fixtureComponents := flags.String("fixture-components", "", "internal file binding selected test-fixture component IDs")
+	journalPath := flags.String("session-journal", "", "bounded session execution and safety journal")
+	runStop := flags.String("run-stop", "", "session stop reason bound to the journal")
 	var outcomes repeatedString
 	flags.Var(&outcomes, "outcome", "required TEST_ID=SOURCE_STATUS execution outcome; repeat for every implemented quick test")
 	if err := flags.Parse(arguments); err != nil {
@@ -67,6 +74,15 @@ func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.
 	}
 	if flags.NArg() != 0 || *fingerprintKeyPath == "" || *planPath == "" || *outputPath == "" {
 		fmt.Fprintln(stderr, "finalize requires -fingerprint-key, -plan, -output, and no positional arguments")
+		return 2
+	}
+	journalFlag, stopFlag := false, false
+	flags.Visit(func(value *flag.Flag) {
+		journalFlag = journalFlag || value.Name == "session-journal"
+		stopFlag = stopFlag || value.Name == "run-stop"
+	})
+	if journalFlag != stopFlag || journalFlag && (*journalPath == "" || *runStop == "") {
+		fmt.Fprintln(stderr, "finalize requires nonempty -session-journal and -run-stop together")
 		return 2
 	}
 	outcomeValues, err := parseOutcomes(outcomes)
@@ -101,6 +117,17 @@ func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.
 		fmt.Fprintf(stderr, "validate frozen plan outcomes: %v\n", err)
 		return 1
 	}
+	var journal *sessionJournal
+	if journalFlag {
+		journal, err = readSessionJournal(*journalPath)
+		if err == nil {
+			err = validateSessionJournal(*journal, frozenPlan, outcomeValues, *runStop, *evidenceDirectory)
+		}
+		if err != nil {
+			fmt.Fprintf(stderr, "validate session journal: %v\n", err)
+			return 1
+		}
+	}
 	plannedTests := make(map[string]plan.Test, len(frozenPlan.Tests))
 	for _, test := range frozenPlan.Tests {
 		plannedTests[test.ID] = test
@@ -127,6 +154,12 @@ func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.
 		}
 		path := filepath.Join(*evidenceDirectory, definition.filename)
 		encoded, readErr := readOptionalEvidence(path)
+		if readErr != nil {
+			if err := validateSessionWorkerEvidence(journal, definition.id, encoded, readErr, "", nil); err != nil {
+				fmt.Fprintf(stderr, "validate session evidence %s: %v\n", definition.id, err)
+				return 1
+			}
+		}
 		plannedStatus := plannedTest.Status
 		var testResult app.TestResult
 		if readErr == nil {
@@ -135,6 +168,10 @@ func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.
 				return 1
 			}
 			evidenceSourceStatus, statusErr := testEvidenceStatus(encoded, definition.schema)
+			if err := validateSessionWorkerEvidence(journal, definition.id, encoded, nil, evidenceSourceStatus, statusErr); err != nil {
+				fmt.Fprintf(stderr, "validate session evidence %s: %v\n", definition.id, err)
+				return 1
+			}
 			evidenceStatus, normalized := normalizeOutcome(evidenceSourceStatus)
 			if errors.Is(statusErr, errDisplayFailureDowngrade) ||
 				(definition.schema == graphics.VisualSchema && statusErr == nil && evidenceStatus == app.TestFail && normalizedStatus != app.TestFail) {
@@ -227,6 +264,18 @@ func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.
 	if changed {
 		integrityStatus = app.TestFail
 	}
+	if journal != nil {
+		if ctx.Err() != nil || observe == nil {
+			fmt.Fprintln(stderr, "session finalization has no live safety observation context")
+			return 1
+		}
+		currentSafety := observe(ctx)
+		if ctx.Err() != nil || !safeSessionObservation(currentSafety) {
+			fmt.Fprintln(stderr, "session finalization safety is unsafe or incomplete; report not signed")
+			return 1
+		}
+		journal.Safety = append(journal.Safety, sessionSafetyRecord{Phase: "pre-sign", Result: currentSafety})
+	}
 	integrityResult, err := app.NewTestResult("run.integrity.quick", 1, integrityStatus, struct {
 		Schema                string                      `json:"schema"`
 		Status                app.TestStatus              `json:"status"`
@@ -239,7 +288,8 @@ func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.
 		RemovedComponents     []plan.HardwareComponentRef `json:"removed_components,omitempty"`
 		ChangedComponents     []plan.HardwareComponentRef `json:"changed_components,omitempty"`
 		ExcludedTests         []string                    `json:"excluded_tests,omitempty"`
-	}{"hhsoft.pc-tester.run-integrity/v1", integrityStatus, frozenPlan.ID, frozenPlan.HardwareGraph.Value, finalPlan.HardwareGraph.Value, len(frozenPlan.HardwareGraph.Components), len(finalPlan.HardwareGraph.Components), delta.Added, delta.Removed, delta.Changed, frozenPlan.ExcludedTests})
+		Session               *sessionJournal             `json:"session,omitempty"`
+	}{"hhsoft.pc-tester.run-integrity/v1", integrityStatus, frozenPlan.ID, frozenPlan.HardwareGraph.Value, finalPlan.HardwareGraph.Value, len(frozenPlan.HardwareGraph.Components), len(finalPlan.HardwareGraph.Components), delta.Added, delta.Removed, delta.Changed, frozenPlan.ExcludedTests, journal})
 	if err == nil {
 		integrityResult, err = app.BindTestResult(integrityResult, frozenPlan.ID, frozenPlan.HardwareGraph.Value)
 	}
@@ -254,9 +304,17 @@ func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.
 		fmt.Fprintf(stderr, "generate self-issued report key: %v\n", err)
 		return 1
 	}
+	if journal != nil && ctx.Err() != nil {
+		fmt.Fprintln(stderr, "session finalization cancelled before signing")
+		return 1
+	}
 	encoded, err := captureSelfIssuedBundle(snapshot, testResults, fingerprintKey, *keyEpoch, privateKey, publicKey, resolvedSessionID, now(), app.CoverageFrozenPlan)
 	if err != nil {
 		fmt.Fprintf(stderr, "build self-issued report: %v\n", err)
+		return 1
+	}
+	if journal != nil && ctx.Err() != nil {
+		fmt.Fprintln(stderr, "session finalization cancelled before report output")
 		return 1
 	}
 	destination, closeDestination, err := openDestination(*outputPath, stdout)

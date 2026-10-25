@@ -48,15 +48,25 @@ type VisualFinding struct {
 	Criteria  map[string]Status `json:"criteria"`
 }
 
-func ProbePreferredDisplays(ctx context.Context, root string, displayTime time.Duration, runner InteractiveRunner) VisualResult {
-	result := VisualResult{Schema: VisualSchema, Status: StatusSkip}
-	cards, _ := discover(root)
+func ProbePreferredDisplays(ctx context.Context, root string, displayTime time.Duration, runner InteractiveRunner) (result VisualResult) {
+	result = VisualResult{Schema: VisualSchema, Status: StatusSkip}
+	defer func() { result.MarkInterrupted(ctx.Err()) }()
+	if ctx.Err() != nil {
+		return result
+	}
+	cards, _ := discover(ctx, root)
+	if ctx.Err() != nil {
+		return result
+	}
 	if runner == nil {
 		result.Status = StatusInconclusive
 		result.Warnings = []string{"preferred-mode visual worker unavailable"}
 		return result
 	}
 	for _, card := range cards {
+		if ctx.Err() != nil {
+			return result
+		}
 		pattern := DisplayPattern{Card: card.Device, Status: StatusSkip}
 		for _, connector := range card.Connectors {
 			if connector.Status == "connected" {
@@ -88,6 +98,11 @@ func ProbePreferredDisplays(ctx context.Context, root string, displayTime time.D
 		if errors.Is(err, workerexec.ErrCleanupUncertain) {
 			result.CleanupUncertain = true
 			result.Status = StatusInconclusive
+			return result
+		}
+		if errors.Is(err, context.DeadlineExceeded) || errors.Is(err, context.Canceled) {
+			result.Patterns[len(result.Patterns)-1].Status = interruptedStatus(err)
+			result.MarkInterrupted(err)
 			return result
 		}
 	}

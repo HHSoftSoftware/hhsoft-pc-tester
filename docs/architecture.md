@@ -182,8 +182,12 @@ views show the planned disposition and its reason alongside the final outcome.
 Direct capture instead labels its seven collected checks `direct_capture` and
 does not claim a frozen plan. Optional absent coverage fields preserve historical
 report rendering; new reports require a matching rebuilt companion verifier.
-Independent runtime mount/network safety snapshots remain outside the signed
-payload and are a separate planned evidence addition.
+The quick-session coordinator adds a signed session journal inside run-integrity
+evidence: stop reason, budget and elapsed time, each worker's execution state,
+and independent mount/network safety observations. Finalization validates these
+against the frozen plan and evidence, then adds a fresh pre-sign observation.
+Direct capture and finalization without a session journal do not claim that
+session safety history.
 
 A graph change does not discard evidence. It fails run integrity and preserves
 the final report with the original/final graph HMACs and component-level delta,
@@ -199,8 +203,22 @@ Initial CPU and RAM workers are in-process reviewed Go adapters. Each receives
 a global deadline, an independent thermal monitor, bounded memory/output, and
 no target-storage, network, or external-command authority. A fail, error, or
 safety abort prevents later active quick tests in that run.
-Automatic boot adds a separate process-level kill deadline beyond each
-worker's recorded internal deadline.
+Automatic boot hands the frozen plan to one synchronous Go session coordinator.
+Its default five-minute deadline is shared across the selected workers. Each
+worker also receives the smaller remaining session or frozen-test budget.
+Graphics shares 30 seconds across its tools; display shares 45 seconds across
+cards and the operator prompt. No timed-out adapter is detached to allow later
+work to proceed. A 340-second outer KILL guard is terminal: nonzero exit blocks
+ready/save even if a report was already written. It does not confirm cleanup
+of nested processes or establish preemption of a blocked kernel call.
+
+One console reader owns cancellation and requested finding lines. Ctrl-C,
+SIGINT, or SIGTERM stops new work, preserves completed failures, and leaves
+non-scheduled dispositions unchanged. Before a clean stop is finalized, the
+reader is joined and terminal mode restored. Final safety has a fresh five-second
+context and finalization has a fresh 30-second context. Unsafe observations,
+interrupted safety readiness, or unconfirmed cleanup prevent signing. Ordinary
+clean stops retain explicit incomplete results and a signed stop reason.
 
 The CPU/RAM monitor samples Linux thermal zones and hwmon temperature inputs
 every 250 milliseconds. It filters disabled or faulted readings, uncalibrated
@@ -228,8 +246,8 @@ Unconfirmed cleanup returns a distinct error; graphics, display, and direct
 capture stop later work and return exit code 12. The modern supervisor preserves
 available diagnostics in RAM and stops before finalization or report saving.
 This covers members of the owned process group, not processes that escape it,
-arbitrary kernel stalls, or a killed supervisor. Whole-command catalog deadlines
-and run-wide cancellation remain incomplete.
+arbitrary kernel stalls, or a killed supervisor. Continuous run-wide thermal,
+heartbeat, and hang monitoring remain incomplete.
 
 Bind the API to a Unix socket. If a browser UI is used, place a random session
 capability in the launch URL, bind only to loopback, reject cross-origin calls,

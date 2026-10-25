@@ -131,6 +131,16 @@ and consistency; it does not reconstruct the original plan or rerun hardware
 checks. Historical reports without these fields retain their existing rendering.
 New reports require the matching companion utility.
 
+Quick-session reports additionally bind a `session` object inside the existing
+run-integrity evidence. It records the stop reason, session budget, elapsed time,
+all nine worker states/outcomes, and independent safety observations, including
+a fresh pre-sign observation. This adds no catalog row and does not turn graph
+integrity into an overall hardware pass. Unstarted tests stay incomplete;
+completed failures survive a stop. Unsafe or interrupted network/storage
+readiness cannot authorize signing. These checks occur during session
+finalization; the offline verifier authenticates the recorded claims without
+rerunning them. Historical evidence without `session` remains unchanged.
+
 ## Privacy-Preserving Fingerprints
 
 Raw stable identifiers are sensitive. By default, reports do not store motherboard, chassis, DIMM, drive, battery, modem, or network interface serials, system UUIDs, permanent MAC addresses, TPM endorsement identities, or similarly linkable values. They store keyed pseudonyms computed during collection and discard the raw values from report memory as soon as practicable.

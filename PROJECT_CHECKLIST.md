@@ -168,14 +168,18 @@ the alpha still requires the separate documented release gates.
   channels. The earlier hwmon milestone passed native amd64 and 386 soft-float
   fixture tests without skips;
   representative physical sensor validation and run-wide monitoring remain open.
-- [ ] Complete qualification of the strengthened local CPU/RAM thermal guard.
-  Source now bounds the initial and later readings, joins the observer before
-  returning evidence, reports available/partial/unavailable coverage, and blocks
-  signing when cleanup is unconfirmed. CPU and memory evidence use v2; known
-  calculation and memory failures remain failures. The full Windows suite passed
-  1,532 test events across 17 packages with 21 platform skips; vet and five
-  application targets passed. Native/race validation, rebuilt images, and
-  representative physical sensors remain pending.
+- [x] Implement and validate the strengthened local CPU/RAM thermal guard in
+  automated and native Linux fixtures. The guard bounds the initial and later
+  readings, joins the observer before returning evidence, reports
+  available/partial/unavailable coverage, and blocks signing when cleanup is
+  unconfirmed. CPU and memory evidence use v2; known
+  calculation and memory failures remain failures. Windows tests, vet, five
+  application builds, native amd64/386 suites, race checks, and command-line
+  workflows passed; counts are recorded in
+  [requirements validation](docs/requirements-validation.md).
+- [ ] Qualify the strengthened local CPU/RAM thermal guard in rebuilt bootable
+  images and on representative physical sensors. Run-wide monitoring remains a
+  separate requirement.
 - [x] Run bounded RAM quick patterns over a safely selected working set.
 - [x] Discover DRM cards, bound drivers, render nodes, connectors, and modes.
 - [x] Detect Mesa hardware acceleration versus software-rendering fallback.

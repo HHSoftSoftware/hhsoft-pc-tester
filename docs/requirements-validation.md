@@ -231,12 +231,17 @@ an existing invalid CPU/RAM file cannot use that fallback to bypass validation.
 The subsequent full Windows suite passed 1,532 test events across 17 packages
 with 21 platform skips and no failures. Vet and five application targets passed:
 Linux amd64, x86 with SSE2, 386 soft-float, arm64, and Windows amd64. Seven test
-suites also cross-compiled for both Linux amd64 and 386; cross-compilation does
-not establish native execution. Native and race validation of this increment
-remain pending. Earlier native milestones above do not qualify these changed
-bytes. Historical signed-report
-verification is unchanged, and the catalog and journal v3 still contain ten
-implemented workers and 21 catalog rows plus run integrity.
+suites also cross-compiled for both Linux amd64 and 386.
+
+Native validation of this increment completed on 2026-10-26. The 14 suite runs
+across Linux amd64 and 386 passed 2,690 test/subtest events with no skips. Race
+checks for the quick-worker and command packages passed 1,125 events with no
+skips. All 15 command-line workflows passed: 12 quick-session cases and three
+pointer cases. Nine compiler and nine runtime process-ownership controls also
+passed with confirmed fixture cleanup. Pass counts were independently checked
+against the test logs. Historical signed-report verification and journal v3 are
+unchanged. The catalog still has ten implemented workers and 21 rows, plus run
+integrity in the report.
 
 This local guard is a prerequisite for future run-wide thermal coverage. It
 does not monitor other workers or an all-off selection, implement heartbeat or

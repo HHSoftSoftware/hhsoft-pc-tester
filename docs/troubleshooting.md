@@ -37,8 +37,9 @@ from the worker result. `unavailable` means no valid temperature was observed;
 An observed thermal limit stops the worker, and a known calculation or memory
 failure stays a failure. A one-second reading timeout can produce a diagnostic
 error only after cleanup is confirmed; an unconfirmed join remains terminal.
-The v2 guard in development source passed the full Windows suite, vet, and
-cross-builds; native/race and rebuilt-image qualification are still pending.
+The v2 guard in development source passed Windows tests, vet, cross-builds,
+native Linux suites, race checks, and command-line workflows. Rebuilt-image and
+physical-sensor qualification remain open.
 
 ## Cancellation or deadline stop
 

@@ -273,8 +273,8 @@ joining; a known calculation or RAM mismatch remains a failure during cleanup.
 Old v1 execution evidence cannot substitute for these observations, while
 historical signed-report verification remains unchanged.
 
-This prerequisite passed the full Windows suite, vet, and cross-builds;
-native/race validation and rebuilt-image qualification are pending.
+This prerequisite passed Windows tests, vet, cross-builds, native Linux suites,
+race checks, and command-line workflows. Rebuilt-image qualification remains open.
 Fan, power, throttling, session-wide thermal monitoring, and representative
 physical sensor validation remain open. Local CPU/RAM monitoring does not span
 other workers or runs where both tests are excluded.

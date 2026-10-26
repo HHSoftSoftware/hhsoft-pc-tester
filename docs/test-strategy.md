@@ -338,8 +338,8 @@ detection, and other profile execution remain open.
 Direct capture and finalization without a session journal keep their older
 limited evidence scope; they do not acquire session stop/safety claims.
 
-The strengthened local CPU/RAM thermal guard passed the full Windows suite,
-vet, and cross-builds; native/race validation remains pending. It
+The strengthened local CPU/RAM thermal guard passed Windows tests, vet,
+cross-builds, native Linux suites, race checks, and command-line workflows. It
 supervises the first observation before load, limits each reading to one second,
 waits 250 milliseconds after sample completion before repeating, and allows two
 seconds to join. Normal completion waits for the active bounded reading before
@@ -363,8 +363,8 @@ Independent acceptance cases for this prerequisite include:
   v1 execution evidence, impossible counts, and existing unreadable evidence.
   A missing-file execution note cannot substitute for malformed existing data.
 - Cleanly joined thermal stops retain their observations in verified reports;
-  historical signed reports remain verifiable. Native filesystem tests and
-  physical sensor behavior require their own validation.
+  historical signed reports remain verifiable. Native filesystem fixtures
+  passed; representative physical sensor validation remains open.
 
 Regression acceptance for this implementation requires:
 

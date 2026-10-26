@@ -116,8 +116,9 @@ or partial telemetry does not prove safe temperatures. The guard checks before
 load and during those two workers; it does not monitor the rest of the session
 or runs where both are excluded. Each read has a one-second limit and observer
 cleanup has a separate two-second allowance. Unconfirmed cleanup stops later
-work and report signing. This change passed the full Windows suite, vet, and
-cross-builds; native/race and rebuilt-image qualification remain pending.
+work and report signing. This change passed Windows tests, vet, cross-builds,
+native Linux suites, race checks, and command-line workflows. Rebuilt-image and
+physical-sensor qualification remain open.
 
 The graphics pattern and CPU/RAM checks are active loads despite the read-only
 storage policy. Supervise unstable equipment. If there is smoke, sparking,

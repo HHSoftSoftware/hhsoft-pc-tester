@@ -141,9 +141,9 @@ and signing, including when diagnostic output fails. This bounds the caller's
 wait; it cannot kill an uninterruptible kernel read. Partial or unavailable
 telemetry is disclosed and cannot establish safe temperatures. Known calculation
 and RAM failures remain failures during cleanup. The strengthened v2 evidence
-path passed the full Windows suite, vet, and cross-builds; native/race and
-rebuilt-image checks remain pending. Run-wide thermal coverage and heartbeat
-supervision remain open.
+path passed Windows tests, vet, cross-builds, native Linux suites, race checks,
+and command-line workflows. Rebuilt-image and physical-sensor qualification
+remain open, along with run-wide thermal coverage and heartbeat supervision.
 
 Privilege separation below is a target architecture, not an implemented
 containment boundary for the current in-process CPU/RAM workers.

@@ -180,8 +180,9 @@ Unconfirmed observer cleanup blocks signing regardless of the claimed outcome;
 known calculation and memory failures cannot be downgraded. Joined thermal
 stops retain their observed heat. Missing or partial sensor coverage remains
 explicit and does not establish thermal health. These checks do not change
-verification or rendering of historical signed reports. The full Windows suite,
-vet, and cross-builds passed; native/race and rebuilt-image qualification are pending.
+verification or rendering of historical signed reports. Windows tests, vet,
+cross-builds, native Linux suites, race checks, and command-line workflows passed.
+Rebuilt-image and physical-sensor qualification remain open.
 
 ## Privacy-Preserving Fingerprints
 

@@ -125,8 +125,10 @@ sample exposed thermal-zone and hwmon inputs, and record safety coverage in JSON
 and signed reports. The strengthened v2 guard bounds readings and observer
 cleanup; unconfirmed cleanup stops later work and signing. Partial or unavailable
 telemetry remains explicit and does not establish safe temperatures. This local
-guard passed the full Windows suite, vet, and cross-builds; native/race and
-fresh-image checks are pending. Run-wide thermal coverage remains planned.
+guard passed Windows tests, vet, cross-builds, native Linux suites, race checks,
+and command-line workflows. Rebuilt-image and physical-sensor qualification
+remain open, as does run-wide thermal coverage. See
+[requirements validation](docs/requirements-validation.md).
 
 ```sh
 hhpt cpu -duration 3s -timeout 20s -output cpu.json

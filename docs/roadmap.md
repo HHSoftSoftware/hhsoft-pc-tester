@@ -128,10 +128,11 @@ The next thermal prerequisite is implemented in source: local CPU/RAM guards
 bound the initial and periodic observations, join before returning results, and
 record truthful coverage in CPU/memory v2 evidence. Unconfirmed cleanup blocks
 later work and signing; observed calculation or memory failures are preserved.
-The full Windows suite, vet, and cross-builds passed; native/race validation
-and fresh image qualification remain pending. This does not add a
-catalog row, change journal v3, or provide thermal monitoring across the whole
-session. Run-wide thermal coverage, heartbeat/hang supervision, privilege
+Windows tests, vet, cross-builds, native Linux suites, race checks, and
+command-line workflows passed. Rebuilt-image and physical-sensor qualification
+remain open. This does not add a catalog row, change journal v3, or provide
+thermal monitoring across the whole session. Run-wide thermal coverage,
+heartbeat/hang supervision, privilege
 separation, and the physical pilot remain subsequent work.
 
 - Expand the embedded capability graph beyond the initial graphics, CPU,

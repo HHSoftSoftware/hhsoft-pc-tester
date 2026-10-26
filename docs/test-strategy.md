@@ -338,6 +338,34 @@ detection, and other profile execution remain open.
 Direct capture and finalization without a session journal keep their older
 limited evidence scope; they do not acquire session stop/safety claims.
 
+The strengthened local CPU/RAM thermal guard passed the full Windows suite,
+vet, and cross-builds; native/race validation remains pending. It
+supervises the first observation before load, limits each reading to one second,
+waits 250 milliseconds after sample completion before repeating, and allows two
+seconds to join. Normal completion waits for the active bounded reading before
+freezing evidence. CPU/memory v2 records coverage and cleanup explicitly.
+Missing or partial telemetry remains a coverage limitation, even when the
+computation passes. This does not provide thermal coverage across other workers
+or an all-off selection.
+
+Independent acceptance cases for this prerequisite include:
+
+- An initial blocked, panicking, or invalid observer starts no load; a late
+  result cannot restore a successful monitor state.
+- Heat arriving during cleanup appears in the returned result. Known CPU/RAM
+  failures survive cancellation, thermal failure, and cleanup uncertainty.
+- Empty, disabled, malformed, mixed-valid, and disappearing sensor inventories
+  produce truthful coverage without inventing temperatures or hiding heat.
+- An observer that cannot join within the cleanup allowance forces exit 12,
+  preserves available diagnostics, and stops direct capture/session progress
+  before later workers or signing, including after an output-write failure.
+- Finalization rejects missing cleanup fields, duplicate or case-aliased JSON,
+  v1 execution evidence, impossible counts, and existing unreadable evidence.
+  A missing-file execution note cannot substitute for malformed existing data.
+- Cleanly joined thermal stops retain their observations in verified reports;
+  historical signed reports remain verifiable. Native filesystem tests and
+  physical sensor behavior require their own validation.
+
 Regression acceptance for this implementation requires:
 
 - Sequential tools and multi-card display work stay within the complete frozen

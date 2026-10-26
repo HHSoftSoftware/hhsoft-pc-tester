@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/plan"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quick"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/safemode"
 )
 
@@ -253,6 +254,10 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 		outcome, state, evidenceErr := sessionWorkerOutcome(worker.OutputPath, definitions[record.ID].schema, code, reason != "")
 		if evidenceErr != nil {
 			fmt.Fprintf(stderr, "session worker evidence: %v\n", evidenceErr)
+			if errors.Is(evidenceErr, errQuickCleanupUnconfirmed) {
+				fmt.Fprintf(stderr, "HHPT_SESSION_FAILED worker=%s reason=cleanup_unconfirmed\n", record.ID)
+				return workerCleanupUncertainExitCode
+			}
 			return 1
 		}
 		record.State, record.Outcome = state, outcome
@@ -359,7 +364,15 @@ func sessionStopReason(parent, run, worker context.Context, now, runDeadline, wo
 
 func sessionWorkerOutcome(path, schema string, code int, interrupted bool) (string, string, error) {
 	encoded, readErr := readOptionalEvidence(path)
+	if (schema == quick.CPUSchema || schema == quick.MemorySchema) && readErr != nil && readErr != os.ErrNotExist {
+		// Only direct absence permits an execution note. Existing quick
+		// evidence must establish that the thermal observer was joined.
+		return "", "", errInvalidQuickSafety
+	}
 	status, statusErr := testEvidenceStatus(encoded, schema)
+	if readErr == nil && (errors.Is(statusErr, errQuickCleanupUnconfirmed) || errors.Is(statusErr, errInvalidQuickSafety)) {
+		return "", "", statusErr
+	}
 	if errors.Is(statusErr, errMemoryFailureDowngrade) || errors.Is(statusErr, errGraphicsFailureDowngrade) || errors.Is(statusErr, errDisplayFailureDowngrade) {
 		return "", "", statusErr
 	}

@@ -254,16 +254,35 @@ The outer guard allows the five-minute run plus worker cleanup (two seconds),
 input cleanup (two), final safety (five), monitor join (two), finalization (30),
 and nine seconds of margin.
 
-The CPU/RAM monitor samples Linux thermal zones and hwmon temperature inputs
-every 250 milliseconds. It filters disabled or faulted readings, uncalibrated
-VT1211/WM831x channels, and PECI control/threshold values. Exact path aliases
-count once; equal values do not establish sensor identity. Missing telemetry
-remains absent from the sensor count. Fan, power, throttling, and run-wide
-thermal monitoring remain planned, as does representative physical sensor validation.
+The local CPU/RAM monitor supervises an initial Linux thermal-zone/hwmon
+observation before starting load. Each observation has a one-second deadline;
+after a completed sample, the monitor waits 250 milliseconds before the next.
+Only one observation is in flight. Normal completion permits the current
+bounded reading to finish, and result construction waits for a confirmed join
+within a separate two-second allowance. A blocked kernel call cannot be
+preempted: an unconfirmed join instead stops the session and blocks signing.
+
+The sampler filters disabled or faulted readings, uncalibrated VT1211/WM831x
+channels, and PECI control/threshold values. Exact path aliases count once;
+equal values do not establish sensor identity. Typed snapshots distinguish
+available, partial, and unavailable telemetry, including rejected readings and
+enumeration failures. Missing or partial telemetry does not establish safe
+temperatures, even if the bounded computation passes. CPU/memory v2 evidence
+retains aggregate coverage, peak, monitor failure, and cleanup state only after
+joining; a known calculation or RAM mismatch remains a failure during cleanup.
+Old v1 execution evidence cannot substitute for these observations, while
+historical signed-report verification remains unchanged.
+
+This prerequisite passed the full Windows suite, vet, and cross-builds;
+native/race validation and rebuilt-image qualification are pending.
+Fan, power, throttling, session-wide thermal monitoring, and representative
+physical sensor validation remain open. Local CPU/RAM monitoring does not span
+other workers or runs where both tests are excluded.
 
 ## Privilege and process model
 
-Run the UI as a dedicated user and `hhptd` as root. Prefer read-only sysfs,
+The target privilege separation remains unimplemented. Run the UI as a
+dedicated user and `hhptd` as root. Prefer read-only sysfs,
 device ACLs, and Linux capabilities. An adapter receives only the device nodes
 and output directory it needs. Every subprocess gets a timeout, process group,
 Linux parent-death signal, bounded stdout and stderr, and a fixed environment

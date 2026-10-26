@@ -117,14 +117,24 @@ func runCaptureWith(ctx context.Context, arguments []string, stdout, stderr io.W
 		return 1
 	}
 	cpuEvidence := probeCPU(ctx, quick.CPUOptions{Duration: *cpuDuration, GlobalTimeout: *cpuTimeout, Root: "/", ThermalLimit: *thermalLimit * 1000})
+	if quickCleanupUnconfirmed(cpuEvidence.Safety) {
+		fmt.Fprintln(stderr, "capture stopped: CPU thermal observer cleanup could not be confirmed")
+		return workerCleanupUncertainExitCode
+	}
 	cpuResult, err := newValidatedQuickTestResult("cpu.quick", 1, app.TestStatus(cpuEvidence.Status), cpuEvidence)
 	if err != nil {
 		fmt.Fprintf(stderr, "build CPU evidence: %v\n", err)
 		return 1
 	}
-	memoryEvidence := quick.MemoryResult{Schema: quick.MemorySchema, Status: quick.StatusAborted, Detail: "not run after CPU safety or correctness stop"}
+	memoryEvidence := quick.MemoryResult{Schema: quick.MemorySchema, Status: quick.StatusAborted, Detail: "not run after CPU safety or correctness stop",
+		Safety: quick.SafetyEvidence{GlobalTimeoutMilliseconds: memoryTimeout.Milliseconds(), ThermalLimitMilliCelsius: *thermalLimit * 1000,
+			MonitorStatus: "not_started", CleanupConfirmed: true, ThermalCoverage: "unavailable"}}
 	if cpuEvidence.Status == quick.StatusPass {
 		memoryEvidence = probeMemory(ctx, quick.MemoryOptions{Bytes: *memoryBytes, Passes: *memoryPasses, GlobalTimeout: *memoryTimeout, Root: "/", ThermalLimit: *thermalLimit * 1000})
+	}
+	if quickCleanupUnconfirmed(memoryEvidence.Safety) {
+		fmt.Fprintln(stderr, "capture stopped: memory thermal observer cleanup could not be confirmed")
+		return workerCleanupUncertainExitCode
 	}
 	memoryResult, err := newValidatedQuickTestResult("memory.quick", 1, app.TestStatus(memoryEvidence.Status), memoryEvidence)
 	if err != nil {

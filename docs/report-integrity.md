@@ -170,6 +170,19 @@ CLI workflows. Each 2.5-second deadline case on modern x64/x86 and legacy x86
 retained two periodic observations, and the signed summary exactly matched the
 monitor diagnostic. Rebuilt-image and physical gates remain open.
 
+The subsequent local CPU/RAM guard uses v2 worker evidence with explicit
+thermal coverage, completed-observation counts, peak, monitor state/failure,
+and confirmed cleanup. It leaves journal v3 and the 22-result report unchanged.
+Finalization rejects old v1 execution evidence and malformed or contradictory
+v2 records, including existing unreadable files. An error/aborted execution note
+may represent a missing file but cannot replace invalid existing CPU/RAM data.
+Unconfirmed observer cleanup blocks signing regardless of the claimed outcome;
+known calculation and memory failures cannot be downgraded. Joined thermal
+stops retain their observed heat. Missing or partial sensor coverage remains
+explicit and does not establish thermal health. These checks do not change
+verification or rendering of historical signed reports. The full Windows suite,
+vet, and cross-builds passed; native/race and rebuilt-image qualification are pending.
+
 ## Privacy-Preserving Fingerprints
 
 Raw stable identifiers are sensitive. By default, reports do not store motherboard, chassis, DIMM, drive, battery, modem, or network interface serials, system UUIDs, permanent MAC addresses, TPM endorsement identities, or similarly linkable values. They store keyed pseudonyms computed during collection and discard the raw values from report memory as soon as practicable.

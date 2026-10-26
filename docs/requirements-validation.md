@@ -209,6 +209,41 @@ does not provide continuous coverage, run-wide thermal or heartbeat monitoring,
 stress qualification, privilege isolation, or preemptive containment of a
 blocked kernel operation. These results do not establish publication readiness.
 
+The subsequent local thermal prerequisite is implemented in source. CPU and
+memory evidence now use `hhsoft.pc-tester.cpu/v2` and
+`hhsoft.pc-tester.memory/v2`. The initial and subsequent observations have
+one-second deadlines; subsequent samples start after a 250-millisecond wait
+following completion. Results are constructed after a bounded two-second
+observer join, including a final in-flight reading during normal completion.
+Unconfirmed cleanup returns exit code 12 and prevents later work or signing,
+even if diagnostic output fails. Known calculation and RAM mismatches remain
+failures. Available, partial, and unavailable thermal coverage is explicit;
+a computation pass does not establish thermal health when telemetry is absent
+or incomplete.
+
+Focused Windows command, finalizer, and session-journal regression tests passed
+571 test events across 59 top-level tests, with no failures and four symlink
+cases skipped. Controls cover output failures, both contradictory cleanup
+claims, malformed/duplicate/old-version evidence, existing unreadable evidence,
+impossible aggregate counts, retained upper-range heat, and preserved worker
+failures. A missing evidence file retains the documented error/aborted fallback;
+an existing invalid CPU/RAM file cannot use that fallback to bypass validation.
+The subsequent full Windows suite passed 1,532 test events across 17 packages
+with 21 platform skips and no failures. Vet and five application targets passed:
+Linux amd64, x86 with SSE2, 386 soft-float, arm64, and Windows amd64. Seven test
+suites also cross-compiled for both Linux amd64 and 386; cross-compilation does
+not establish native execution. Native and race validation of this increment
+remain pending. Earlier native milestones above do not qualify these changed
+bytes. Historical signed-report
+verification is unchanged, and the catalog and journal v3 still contain ten
+implemented workers and 21 catalog rows plus run integrity.
+
+This local guard is a prerequisite for future run-wide thermal coverage. It
+does not monitor other workers or an all-off selection, implement heartbeat or
+general hang supervision, or introduce privilege isolation. Fresh images,
+physical sensor validation, the beta pilot, all four alpha ISOs, source/image
+privacy review, and publication approval remain separate open gates.
+
 Regression coverage for these cases belongs with the corresponding feature,
 not with a blanket claim of complete product coverage. Linux mount/device
 fixtures and real APK selection require the appropriate Linux environment;

@@ -19,13 +19,15 @@ import (
 func completeCPUEvidence() quick.CPUResult {
 	return quick.CPUResult{Schema: quick.CPUSchema, Status: quick.StatusPass, Workers: 1, Iterations: 42,
 		StateAggregate: 17, KnownAnswerSHA256: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
-		DurationMilliseconds: 20, Safety: quick.SafetyEvidence{GlobalTimeoutMilliseconds: 20000, ThermalLimitMilliCelsius: 90000}}
+		DurationMilliseconds: 20, Safety: quick.SafetyEvidence{GlobalTimeoutMilliseconds: 20000, ThermalLimitMilliCelsius: 90000,
+			MonitorStatus: "completed", CleanupConfirmed: true, ThermalObservations: 1, ThermalCoverage: "unavailable"}}
 }
 
 func completeMemoryEvidence() quick.MemoryResult {
 	return quick.MemoryResult{Schema: quick.MemorySchema, Status: quick.StatusPass, AllocatedBytes: 4 << 20, ExaminedBytes: 12 << 20,
 		Passes: 1, PatternsPerPass: 3, DurationMilliseconds: 20,
-		Safety: quick.SafetyEvidence{GlobalTimeoutMilliseconds: 30000, ThermalLimitMilliCelsius: 90000}}
+		Safety: quick.SafetyEvidence{GlobalTimeoutMilliseconds: 30000, ThermalLimitMilliCelsius: 90000,
+			MonitorStatus: "completed", CleanupConfirmed: true, ThermalObservations: 1, ThermalCoverage: "unavailable"}}
 }
 
 func completeStorageEvidence() storage.Result {

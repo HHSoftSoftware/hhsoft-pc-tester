@@ -110,6 +110,15 @@ checks. The report records the choices and marks applicable skipped tests as
 status. Legacy graphics/display checks remain unsupported. A test choice does
 not enable an unsupported test or a destructive action.
 
+The strengthened CPU/RAM guard in development source reports thermal coverage
+as `available`, `partial`, or `unavailable`. A passing computation with missing
+or partial telemetry does not prove safe temperatures. The guard checks before
+load and during those two workers; it does not monitor the rest of the session
+or runs where both are excluded. Each read has a one-second limit and observer
+cleanup has a separate two-second allowance. Unconfirmed cleanup stops later
+work and report signing. This change passed the full Windows suite, vet, and
+cross-builds; native/race and rebuilt-image qualification remain pending.
+
 The graphics pattern and CPU/RAM checks are active loads despite the read-only
 storage policy. Supervise unstable equipment. If there is smoke, sparking,
 swelling, abnormal heat, or mechanical distress, remove power rather than

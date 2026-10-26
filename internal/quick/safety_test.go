@@ -12,6 +12,13 @@ import (
 	"time"
 )
 
+// Existing sensor ABI fixtures compare counts and peaks. Production consumers
+// use the typed snapshot, which also discloses incomplete coverage.
+func thermalSample(root string) (int, int) {
+	result := ObserveThermals(context.Background(), root)
+	return result.Sensors, result.PeakMilliCelsius
+}
+
 func TestHwmonOnlyTemperatureGuardsCPUAndMemory(t *testing.T) {
 	for _, temperature := range []string{"90000\n", "105000\n"} {
 		t.Run(strings.TrimSpace(temperature), func(t *testing.T) {

@@ -121,8 +121,12 @@ but deliberately does not claim an enrolled operator or deployment identity.
 
 The safe quick profile also runs bounded CPU known-answer calculations and
 RAM data/address patterns. Both have configurable short deadlines, independently
-sample exposed thermal zones, and record safety coverage in JSON and signed
-reports.
+sample exposed thermal-zone and hwmon inputs, and record safety coverage in JSON
+and signed reports. The strengthened v2 guard bounds readings and observer
+cleanup; unconfirmed cleanup stops later work and signing. Partial or unavailable
+telemetry remains explicit and does not establish safe temperatures. This local
+guard passed the full Windows suite, vet, and cross-builds; native/race and
+fresh-image checks are pending. Run-wide thermal coverage remains planned.
 
 ```sh
 hhpt cpu -duration 3s -timeout 20s -output cpu.json

@@ -17,6 +17,7 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/graphics"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/plan"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quick"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/safemode"
 )
 
@@ -36,12 +37,12 @@ type quickResultDefinition struct {
 
 var quickResultDefinitions = []quickResultDefinition{
 	{id: "audio.readiness.quick", filename: "audio.json", schema: "hhsoft.pc-tester.audio-readiness/v1"},
-	{id: "cpu.quick", filename: "cpu.json", schema: "hhsoft.pc-tester.cpu/v1"},
+	{id: "cpu.quick", filename: "cpu.json", schema: quick.CPUSchema},
 	{id: "display.operator.quick", filename: "display.json", schema: "hhsoft.pc-tester.display-visual/v1"},
 	{id: "graphics.quick", filename: "graphics.json", schema: "hhsoft.pc-tester.graphics/v1"},
 	{id: "input.pointer.quick", filename: "pointer.json", schema: "hhsoft.pc-tester.pointer-functional/v1"},
 	{id: "input.readiness.quick", filename: "input.json", schema: "hhsoft.pc-tester.input-readiness/v1"},
-	{id: "memory.quick", filename: "memory.json", schema: "hhsoft.pc-tester.memory/v1"},
+	{id: "memory.quick", filename: "memory.json", schema: quick.MemorySchema},
 	{id: "network.readiness.quick", filename: "network.json", schema: "hhsoft.pc-tester.network-readiness/v1"},
 	{id: "storage.readiness.quick", filename: "storage.json", schema: "hhsoft.pc-tester.storage-readiness/v1"},
 	{id: "usb.readiness.quick", filename: "usb.json", schema: "hhsoft.pc-tester.usb-readiness/v1"},
@@ -156,6 +157,13 @@ func runFinalizeWithSafety(ctx context.Context, arguments []string, stdout, stde
 		path := filepath.Join(*evidenceDirectory, definition.filename)
 		encoded, readErr := readOptionalEvidence(path)
 		if readErr != nil {
+			// Only readOptionalEvidence's direct absence sentinel permits a
+			// missing-file note. Existing unreadable or oversized quick evidence
+			// cannot establish that the thermal observer was joined.
+			if (definition.schema == quick.CPUSchema || definition.schema == quick.MemorySchema) && readErr != os.ErrNotExist {
+				fmt.Fprintf(stderr, "validate evidence %s: %v\n", definition.id, errInvalidQuickSafety)
+				return 1
+			}
 			if err := validateSessionWorkerEvidence(journal, definition.id, encoded, readErr, "", nil); err != nil {
 				fmt.Fprintf(stderr, "validate session evidence %s: %v\n", definition.id, err)
 				return 1
@@ -169,6 +177,10 @@ func runFinalizeWithSafety(ctx context.Context, arguments []string, stdout, stde
 				return 1
 			}
 			evidenceSourceStatus, statusErr := testEvidenceStatus(encoded, definition.schema)
+			if errors.Is(statusErr, errQuickCleanupUnconfirmed) || errors.Is(statusErr, errInvalidQuickSafety) {
+				fmt.Fprintf(stderr, "validate evidence %s: %v\n", definition.id, statusErr)
+				return 1
+			}
 			if err := validateSessionWorkerEvidence(journal, definition.id, encoded, nil, evidenceSourceStatus, statusErr); err != nil {
 				fmt.Fprintf(stderr, "validate session evidence %s: %v\n", definition.id, err)
 				return 1

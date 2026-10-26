@@ -12,6 +12,10 @@ import (
 )
 
 func runCPU(ctx context.Context, arguments []string, stdout, stderr io.Writer) int {
+	return runCPUWith(ctx, arguments, stdout, stderr, quick.RunCPU)
+}
+
+func runCPUWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, probe func(context.Context, quick.CPUOptions) quick.CPUResult) int {
 	flags := flag.NewFlagSet("cpu", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	outputPath := flags.String("output", "-", "new JSON output file, or - for stdout")
@@ -26,14 +30,23 @@ func runCPU(ctx context.Context, arguments []string, stdout, stderr io.Writer) i
 		fmt.Fprintln(stderr, "cpu accepts bounded duration/timeout, up to 64 workers, and a 50-125C limit")
 		return 2
 	}
-	result := quick.RunCPU(ctx, quick.CPUOptions{
+	result := probe(ctx, quick.CPUOptions{
 		Duration: *duration, GlobalTimeout: *globalTimeout, Workers: *workers,
 		Root: "/", ThermalLimit: *thermalLimit * 1000,
 	})
-	return writeQuickResult(result, *outputPath, stdout, stderr, "CPU")
+	code := writeQuickResult(result, *outputPath, stdout, stderr, "CPU")
+	if quickCleanupUnconfirmed(result.Safety) {
+		fmt.Fprintln(stderr, "CPU thermal observer cleanup could not be confirmed; stop the session. Diagnostic evidence remains in RAM when available.")
+		return workerCleanupUncertainExitCode
+	}
+	return code
 }
 
 func runMemory(ctx context.Context, arguments []string, stdout, stderr io.Writer) int {
+	return runMemoryWith(ctx, arguments, stdout, stderr, quick.RunMemory)
+}
+
+func runMemoryWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, probe func(context.Context, quick.MemoryOptions) quick.MemoryResult) int {
 	flags := flag.NewFlagSet("memory", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	outputPath := flags.String("output", "-", "new JSON output file, or - for stdout")
@@ -48,11 +61,20 @@ func runMemory(ctx context.Context, arguments []string, stdout, stderr io.Writer
 		fmt.Fprintln(stderr, "memory accepts a bounded byte count, one to eight passes, and a 50-125C limit")
 		return 2
 	}
-	result := quick.RunMemory(ctx, quick.MemoryOptions{
+	result := probe(ctx, quick.MemoryOptions{
 		Bytes: *bytes, Passes: *passes, GlobalTimeout: *globalTimeout,
 		Root: "/", ThermalLimit: *thermalLimit * 1000,
 	})
-	return writeQuickResult(result, *outputPath, stdout, stderr, "memory")
+	code := writeQuickResult(result, *outputPath, stdout, stderr, "memory")
+	if quickCleanupUnconfirmed(result.Safety) {
+		fmt.Fprintln(stderr, "Memory thermal observer cleanup could not be confirmed; stop the session. Diagnostic evidence remains in RAM when available.")
+		return workerCleanupUncertainExitCode
+	}
+	return code
+}
+
+func quickCleanupUnconfirmed(safety quick.SafetyEvidence) bool {
+	return !safety.CleanupConfirmed || safety.MonitorStatus == "cleanup_unconfirmed"
 }
 
 func writeQuickResult(result any, outputPath string, stdout, stderr io.Writer, name string) int {

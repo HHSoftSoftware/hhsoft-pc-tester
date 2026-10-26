@@ -1,6 +1,6 @@
 # HHSoft PC Tester Master Checklist
 
-Status date: 2026-10-25
+Status date: 2026-10-26
 
 This is the project-level source of truth derived from the original product
 requirements. Check an item only when implementation and applicable validation
@@ -165,8 +165,17 @@ the alpha still requires the separate documented release gates.
   global deadline monitoring.
 - [x] Include Linux hwmon temperature readings in the CPU/RAM thermal guard,
   filtering unavailable, disabled, faulted, uncalibrated, and known threshold
-  channels. Native amd64 and 386 soft-float fixture tests pass without skips;
+  channels. The earlier hwmon milestone passed native amd64 and 386 soft-float
+  fixture tests without skips;
   representative physical sensor validation and run-wide monitoring remain open.
+- [ ] Complete qualification of the strengthened local CPU/RAM thermal guard.
+  Source now bounds the initial and later readings, joins the observer before
+  returning evidence, reports available/partial/unavailable coverage, and blocks
+  signing when cleanup is unconfirmed. CPU and memory evidence use v2; known
+  calculation and memory failures remain failures. The full Windows suite passed
+  1,532 test events across 17 packages with 21 platform skips; vet and five
+  application targets passed. Native/race validation, rebuilt images, and
+  representative physical sensors remain pending.
 - [x] Run bounded RAM quick patterns over a safely selected working set.
 - [x] Discover DRM cards, bound drivers, render nodes, connectors, and modes.
 - [x] Detect Mesa hardware acceleration versus software-rendering fallback.
@@ -306,6 +315,7 @@ the alpha still requires the separate documented release gates.
 - [ ] Complete run-wide thermal, heartbeat, hang, and deadline watchdogs beyond
   the quick-session coordinator, CPU/RAM thermal checks, terminal outer guard,
   and worker process-group cleanup.
+  The local CPU/RAM guard does not monitor other workers or an all-off selection.
 - [x] Coordinate safe quick tests under one session deadline and each frozen
   test's complete budget; support Ctrl-C and Linux termination signals, retain
   completed failures, and finalize clean stops with fresh bounded contexts.

@@ -3,328 +3,325 @@ package quick
 import (
 	"context"
 	"errors"
-	"io"
-	"os"
-	"path/filepath"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 )
 
-var ErrThermalLimit = errors.New("thermal limit reached")
+var (
+	ErrThermalLimit       = errors.New("thermal limit reached")
+	errThermalObservation = errors.New("thermal observation timed out")
+	errThermalPanic       = errors.New("thermal observer panicked")
+	errThermalInvalid     = errors.New("invalid thermal observation")
+	errThermalCleanup     = errors.New("thermal observer cleanup unconfirmed")
+)
+
+const (
+	thermalInterval           = 250 * time.Millisecond
+	thermalObservationTimeout = time.Second
+	thermalStopTimeout        = 2 * time.Second
+)
 
 type SafetyEvidence struct {
-	GlobalTimeoutMilliseconds int64 `json:"global_timeout_ms"`
-	ThermalLimitMilliCelsius  int   `json:"thermal_limit_millicelsius"`
-	ThermalSensors            int   `json:"thermal_sensors"`
-	ThermalSamples            int   `json:"thermal_samples"`
-	PeakMilliCelsius          int   `json:"peak_millicelsius,omitempty"`
+	GlobalTimeoutMilliseconds  int64  `json:"global_timeout_ms"`
+	ThermalLimitMilliCelsius   int    `json:"thermal_limit_millicelsius"`
+	ThermalSensors             int    `json:"thermal_sensors"`
+	ThermalSamples             int    `json:"thermal_samples"`
+	PeakMilliCelsius           int    `json:"peak_millicelsius,omitempty"`
+	MonitorStatus              string `json:"monitor_status"`
+	MonitorFailure             string `json:"monitor_failure,omitempty"`
+	CleanupConfirmed           bool   `json:"cleanup_confirmed"`
+	ThermalObservations        int    `json:"thermal_observations"`
+	ThermalCoverage            string `json:"thermal_coverage"`
+	ThermalRejectedReadings    int    `json:"thermal_rejected_readings"`
+	ThermalUnavailableReadings int    `json:"thermal_unavailable_readings"`
+	ThermalEnumerationErrors   int    `json:"thermal_enumeration_errors"`
 }
 
+func unstartedSafety() SafetyEvidence {
+	return SafetyEvidence{MonitorStatus: "not_started", CleanupConfirmed: true, ThermalCoverage: ThermalUnavailable}
+}
+
+type thermalObserver func(context.Context, string) ThermalSnapshot
+type thermalCompletion struct {
+	snapshot ThermalSnapshot
+	finished time.Time
+	panicked bool
+	invoked  bool
+}
 type safetyMonitor struct {
-	context       context.Context
-	cancel        context.CancelCauseFunc
-	timerCancel   context.CancelFunc
-	done          chan struct{}
-	root          string
-	thermalLimit  int
-	globalTimeout time.Duration
-
-	mutex   sync.Mutex
-	sensors int
-	samples int
-	peak    int
+	context                    context.Context
+	cancel                     context.CancelCauseFunc
+	timerCancel                context.CancelFunc
+	done, ready, stopRequested chan struct{}
+	stopOnce, readyOnce        sync.Once
+	stopTimeout                time.Duration
+	mutex                      sync.Mutex
+	result                     SafetyEvidence
+	failureErr, finalCause     error
+	frozen                     bool
+	joinedAt                   time.Time
 }
 
-func newSafetyMonitor(parent context.Context, root string, globalTimeout time.Duration, thermalLimit int) *safetyMonitor {
-	timedContext, timerCancel := context.WithTimeout(parent, globalTimeout)
-	guardedContext, cancel := context.WithCancelCause(timedContext)
-	monitor := &safetyMonitor{
-		context: guardedContext, cancel: cancel, timerCancel: timerCancel, done: make(chan struct{}),
-		root: root, thermalLimit: thermalLimit, globalTimeout: globalTimeout,
+func newSafetyMonitor(parent context.Context, root string, timeout time.Duration, limit int) *safetyMonitor {
+	return startSafetyMonitor(parent, root, timeout, limit, ObserveThermals, thermalInterval, thermalObservationTimeout, thermalStopTimeout)
+}
+
+// The initial observation is supervised too. A blocked kernel read can outlive
+// its deadline, but cannot start load or make the caller wait indefinitely.
+func startSafetyMonitor(parent context.Context, root string, timeout time.Duration, limit int, observe thermalObserver, interval, observationTimeout, stopTimeout time.Duration) *safetyMonitor {
+	timed, timerCancel := context.WithTimeout(parent, timeout)
+	guarded, cancel := context.WithCancelCause(timed)
+	monitor := &safetyMonitor{context: guarded, cancel: cancel, timerCancel: timerCancel,
+		done: make(chan struct{}), ready: make(chan struct{}), stopRequested: make(chan struct{}), stopTimeout: stopTimeout,
+		result: SafetyEvidence{GlobalTimeoutMilliseconds: timeout.Milliseconds(), ThermalLimitMilliCelsius: limit,
+			MonitorStatus: "running", ThermalCoverage: ThermalUnavailable}}
+	go monitor.run(root, observe, interval, observationTimeout)
+	select {
+	case <-monitor.ready:
+	case <-guarded.Done():
 	}
-	monitor.sampleThermals()
-	go monitor.run()
 	return monitor
 }
-
-func (monitor *safetyMonitor) run() {
-	defer close(monitor.done)
-	ticker := time.NewTicker(250 * time.Millisecond)
-	defer ticker.Stop()
+func (monitor *safetyMonitor) signalReady() { monitor.readyOnce.Do(func() { close(monitor.ready) }) }
+func callThermalObserver(observe thermalObserver, ctx context.Context, root string) (completion thermalCompletion) {
+	if ctx.Err() != nil {
+		return thermalCompletion{finished: time.Now()}
+	}
+	completion.invoked = true
+	defer func() {
+		if recover() != nil {
+			completion.panicked = true
+		}
+		completion.finished = time.Now()
+	}()
+	completion.snapshot = observe(ctx, root)
+	return completion
+}
+func (monitor *safetyMonitor) run(root string, observe thermalObserver, interval, timeout time.Duration) {
+	jobs := make(chan context.Context, 1)
+	completed := make(chan thermalCompletion, 1)
+	observerDone := make(chan struct{})
+	go func() {
+		defer close(observerDone)
+		for ctx := range jobs {
+			completed <- callThermalObserver(observe, ctx, root)
+		}
+	}()
+	defer func() {
+		close(jobs)
+		<-observerDone
+		monitor.mutex.Lock()
+		monitor.joinedAt = time.Now()
+		monitor.mutex.Unlock()
+		close(monitor.done)
+	}()
+	defer monitor.signalReady()
+	if monitor.context.Err() != nil {
+		return
+	}
 	for {
 		select {
+		case <-monitor.stopRequested:
+			return
 		case <-monitor.context.Done():
 			return
-		case <-ticker.C:
-			monitor.sampleThermals()
+		default:
+		}
+		deadline := time.Now().Add(timeout)
+		ctx, cancel := context.WithDeadline(context.Background(), deadline)
+		jobs <- ctx
+		timer := time.NewTimer(time.Until(deadline))
+		ending := false
+		stopRequested, contextDone := monitor.stopRequested, monitor.context.Done()
+		var completion thermalCompletion
+	observation:
+		for {
+			select {
+			case completion = <-completed:
+				break observation
+			case <-timer.C:
+				// A queued timely result wins over timer-select ordering.
+				select {
+				case completion = <-completed:
+				default:
+					monitor.fail(errThermalObservation)
+					cancel()
+					monitor.signalReady()
+					// Retain ownership even if the kernel read outlives its
+					// deadline. stop separately bounds the caller's join.
+					completion = <-completed
+				}
+				break observation
+			case <-stopRequested:
+				// Normal cleanup lets the current bounded observation finish.
+				ending, stopRequested = true, nil
+			case <-contextDone:
+				ending, contextDone = true, nil
+				cancel()
+				monitor.signalReady()
+			}
+		}
+		timer.Stop()
+		monitor.complete(completion, deadline)
+		cancel()
+		monitor.signalReady()
+		if ending || monitor.failure() != nil {
+			return
+		}
+		pause := time.NewTimer(interval)
+		select {
+		case <-pause.C:
+		case <-monitor.stopRequested:
+			pause.Stop()
+			return
+		case <-monitor.context.Done():
+			pause.Stop()
+			return
 		}
 	}
 }
-
-func (monitor *safetyMonitor) sampleThermals() {
-	sensors, peak := thermalSample(monitor.root)
+func (monitor *safetyMonitor) complete(completion thermalCompletion, deadline time.Time) {
+	if !completion.finished.Before(deadline) {
+		monitor.fail(errThermalObservation)
+	}
+	if !completion.invoked {
+		return
+	}
+	if completion.panicked {
+		monitor.fail(errThermalPanic)
+		return
+	}
+	sample := completion.snapshot
+	if !validThermalSnapshot(sample) {
+		monitor.fail(errThermalInvalid)
+		return
+	}
 	monitor.mutex.Lock()
-	if sensors > monitor.sensors {
-		monitor.sensors = sensors
+	if monitor.frozen {
+		monitor.mutex.Unlock()
+		return
 	}
-	monitor.samples += sensors
-	if peak > monitor.peak {
-		monitor.peak = peak
+	evidence := &monitor.result
+	if evidence.ThermalObservations == 0 {
+		evidence.ThermalCoverage = sample.Coverage
+	} else if evidence.ThermalCoverage != sample.Coverage {
+		evidence.ThermalCoverage = ThermalPartial
 	}
-	limitReached := peak >= monitor.thermalLimit && monitor.thermalLimit > 0
+	evidence.ThermalObservations++
+	evidence.ThermalSensors = max(evidence.ThermalSensors, sample.Sensors)
+	evidence.ThermalSamples += sample.Sensors
+	evidence.PeakMilliCelsius = max(evidence.PeakMilliCelsius, sample.PeakMilliCelsius)
+	evidence.ThermalRejectedReadings += sample.RejectedReadings
+	evidence.ThermalUnavailableReadings += sample.UnavailableReadings
+	evidence.ThermalEnumerationErrors += sample.EnumerationErrors
+	limitReached := sample.Sensors > 0 && sample.PeakMilliCelsius >= evidence.ThermalLimitMilliCelsius
 	monitor.mutex.Unlock()
 	if limitReached {
-		monitor.cancel(ErrThermalLimit)
+		monitor.fail(ErrThermalLimit)
 	}
 }
-
-func (monitor *safetyMonitor) stop() {
-	monitor.cancel(context.Canceled)
-	monitor.timerCancel()
-	<-monitor.done
-}
-
-func (monitor *safetyMonitor) failure() error {
-	select {
-	case <-monitor.context.Done():
-		return context.Cause(monitor.context)
+func validThermalSnapshot(sample ThermalSnapshot) bool {
+	if sample.Sensors < 0 || sample.PeakMilliCelsius < 0 || sample.PeakMilliCelsius > 250000 ||
+		sample.RejectedReadings < 0 || sample.UnavailableReadings < 0 || sample.EnumerationErrors < 0 ||
+		sample.Sensors == 0 && sample.PeakMilliCelsius != 0 {
+		return false
+	}
+	switch sample.Coverage {
+	case ThermalAvailable:
+		return sample.Sensors > 0 && sample.RejectedReadings == 0 && sample.UnavailableReadings == 0 && sample.EnumerationErrors == 0
+	case ThermalUnavailable:
+		return sample.Sensors == 0 && sample.RejectedReadings == 0 && sample.EnumerationErrors == 0
+	case ThermalPartial:
+		return sample.RejectedReadings > 0 || sample.EnumerationErrors > 0 || sample.Sensors > 0 && sample.UnavailableReadings > 0
 	default:
-		return nil
+		return false
 	}
 }
+func (monitor *safetyMonitor) fail(err error) {
+	monitor.mutex.Lock()
+	if !monitor.frozen && monitor.failureErr == nil {
+		monitor.failureErr = err
+	}
+	monitor.mutex.Unlock()
+	monitor.cancel(err)
+}
 
+// A normal stop requests no new readings without pretending the operator
+// cancelled. All callers receive the same frozen result; late readings cannot
+// rewrite a timed-out cleanup or previously returned evidence.
+func (monitor *safetyMonitor) stop() {
+	monitor.stopOnce.Do(func() {
+		deadline := time.Now().Add(monitor.stopTimeout)
+		close(monitor.stopRequested)
+		timer := time.NewTimer(time.Until(deadline))
+		defer timer.Stop()
+		select {
+		case <-monitor.done:
+		case <-timer.C:
+		}
+		monitor.mutex.Lock()
+		joined := !monitor.joinedAt.IsZero() && !monitor.joinedAt.After(deadline)
+		monitor.result.CleanupConfirmed = joined
+		if !joined {
+			monitor.failureErr = errThermalCleanup
+		}
+		monitor.finalCause = monitor.failureErr
+		if monitor.finalCause == nil {
+			monitor.finalCause = context.Cause(monitor.context)
+		}
+		monitor.result.MonitorStatus = "completed"
+		if monitor.result.ThermalObservations == 0 {
+			monitor.result.MonitorStatus = "not_started"
+		}
+		if monitor.failureErr != nil {
+			monitor.result.MonitorStatus = "failed"
+			monitor.result.MonitorFailure = thermalFailureReason(monitor.failureErr)
+		}
+		if !joined {
+			monitor.result.MonitorStatus = "cleanup_unconfirmed"
+		}
+		monitor.frozen = true
+		monitor.mutex.Unlock()
+		monitor.cancel(context.Canceled)
+		monitor.timerCancel()
+	})
+}
+func thermalFailureReason(err error) string {
+	switch err {
+	case ErrThermalLimit:
+		return "thermal_limit"
+	case errThermalObservation:
+		return "observation_timeout"
+	case errThermalPanic:
+		return "observer_panic"
+	case errThermalInvalid:
+		return "invalid_observation"
+	case errThermalCleanup:
+		return "cleanup_unconfirmed"
+	default:
+		return ""
+	}
+}
+func (monitor *safetyMonitor) failure() error {
+	monitor.mutex.Lock()
+	defer monitor.mutex.Unlock()
+	if monitor.frozen {
+		return monitor.finalCause
+	}
+	if monitor.failureErr != nil {
+		return monitor.failureErr
+	}
+	return context.Cause(monitor.context)
+}
 func (monitor *safetyMonitor) evidence() SafetyEvidence {
 	monitor.mutex.Lock()
 	defer monitor.mutex.Unlock()
-	return SafetyEvidence{
-		GlobalTimeoutMilliseconds: monitor.globalTimeout.Milliseconds(),
-		ThermalLimitMilliCelsius:  monitor.thermalLimit,
-		ThermalSensors:            monitor.sensors,
-		ThermalSamples:            monitor.samples,
-		PeakMilliCelsius:          monitor.peak,
-	}
+	return monitor.result
 }
-
-func thermalSample(root string) (int, int) {
-	root, err := filepath.Abs(root)
-	if err != nil {
-		return 0, 0
+func finishSafety(monitor *safetyMonitor, status *Status, detail *string, evidence *SafetyEvidence) {
+	monitor.stop()
+	*evidence = monitor.evidence()
+	if err := monitor.failure(); err != nil && *status != StatusFail {
+		*status, *detail = safetyStatus(err), safetyDetail(err)
 	}
-	root, err = filepath.EvalSymlinks(root)
-	if err != nil {
-		return 0, 0
-	}
-	sample := thermalSampler{root: root, seen: make(map[string]bool)}
-	thermalDirectory := filepath.Join(root, "sys/class/thermal")
-	entries := sample.directory(thermalDirectory)
-	for _, entry := range entries {
-		if !numberedThermalName(entry.Name(), "thermal_zone", "", true) {
-			continue
-		}
-		sample.add(filepath.Join(thermalDirectory, entry.Name(), "temp"))
-	}
-	hwmonDirectory := filepath.Join(root, "sys/class/hwmon")
-	for _, entry := range sample.directory(hwmonDirectory) {
-		if !numberedThermalName(entry.Name(), "hwmon", "", true) {
-			continue
-		}
-		directory := filepath.Join(hwmonDirectory, entry.Name())
-		chip, valid := sample.hwmonName(directory)
-		if !valid {
-			continue
-		}
-		// The hwmon ABI permits attributes in the class directory or the
-		// older physical-device directory. Resolve exact aliases once; equal
-		// temperatures or labels do not establish physical sensor identity.
-		sample.hwmon(directory, chip)
-		sample.hwmon(filepath.Join(directory, "device"), chip)
-	}
-	return sample.sensors, sample.peak
-}
-
-type thermalSampler struct {
-	root    string
-	seen    map[string]bool
-	sensors int
-	peak    int
-}
-
-func (sample *thermalSampler) hwmon(directory, chip string) {
-	for _, entry := range sample.directory(directory) {
-		// Use the standard millidegree input ABI except for known channels
-		// requiring board-specific conversion. Never infer temperatures from
-		// voltage channels, limits, labels, or historical readings.
-		if !numberedThermalName(entry.Name(), "temp", "_input", false) {
-			continue
-		}
-		channel := strings.TrimSuffix(entry.Name(), "_input")
-		if !hwmonTemperatureChannel(chip, channel) ||
-			!sample.optionalValue(filepath.Join(directory, channel+"_enable"), "1") ||
-			!sample.optionalValue(filepath.Join(directory, channel+"_fault"), "0") ||
-			!sample.optionalValue(filepath.Join(directory, channel+"_type"), "1", "2", "3", "4", "5", "6") {
-			continue
-		}
-		sample.add(filepath.Join(directory, entry.Name()))
-	}
-}
-
-func hwmonTemperatureChannel(chip, channel string) bool {
-	if numberedThermalName(chip, "peci_cputemp.cpu", "", true) {
-		// These three input attributes are control/shutdown targets, not
-		// observed temperatures. Die, DTS and per-core inputs remain usable.
-		// https://docs.kernel.org/hwmon/peci-cputemp.html
-		return channel != "temp3" && channel != "temp4" && channel != "temp5"
-	}
-	switch chip {
-	case "vt1211":
-		// Only the internal diode is converted by the driver. External
-		// channels need board-specific scaling or thermistor conversion.
-		// https://docs.kernel.org/hwmon/vt1211.html
-		return channel == "temp2"
-	case "wm831x":
-		// The battery's temp2_input is a voltage; only temp1 is converted.
-		// https://docs.kernel.org/hwmon/wm831x.html
-		return channel == "temp1"
-	default:
-		return true
-	}
-}
-
-func (sample *thermalSampler) hwmonName(directory string) (string, bool) {
-	// Name is mandatory in the ABI. Without it, known voltage-producing
-	// drivers cannot be distinguished from standard temperature drivers.
-	path := filepath.Join(directory, "name")
-	if _, err := os.Lstat(path); errors.Is(err, os.ErrNotExist) {
-		path = filepath.Join(directory, "device", "name")
-	} else if err != nil {
-		return "", false
-	}
-	canonical, err := sample.resolve(path)
-	if err != nil {
-		return "", false
-	}
-	name, err := readThermalAttribute(canonical)
-	if err != nil || name == "" {
-		return "", false
-	}
-	for _, character := range name {
-		if character < '!' || character > '~' || character == '*' || character == '-' {
-			return "", false
-		}
-	}
-	return name, true
-}
-
-func (sample *thermalSampler) optionalValue(path string, allowed ...string) bool {
-	// These ABI attributes are optional. A present but unreadable or malformed
-	// value cannot establish that its associated reading is trustworthy.
-	if _, err := os.Lstat(path); errors.Is(err, os.ErrNotExist) {
-		return true
-	} else if err != nil {
-		return false
-	}
-	canonical, err := sample.resolve(path)
-	if err != nil {
-		return false
-	}
-	value, err := readThermalAttribute(canonical)
-	if err != nil {
-		return false
-	}
-	for _, candidate := range allowed {
-		if value == candidate {
-			return true
-		}
-	}
-	return false
-}
-
-func (sample *thermalSampler) add(path string) {
-	canonical, err := sample.resolve(path)
-	if err != nil || sample.seen[canonical] {
-		return
-	}
-	text, err := readThermalAttribute(canonical)
-	if err != nil {
-		return
-	}
-	value, err := strconv.Atoi(text)
-	// Retain the existing quick-worker plausibility range and evidence
-	// semantics. Missing or invalid telemetry is never counted as a sensor.
-	if err != nil || value < 0 || value > 250000 {
-		return
-	}
-	sample.seen[canonical] = true
-	sample.sensors++
-	if value > sample.peak {
-		sample.peak = value
-	}
-}
-
-func (sample *thermalSampler) directory(path string) []os.DirEntry {
-	canonical, err := sample.resolve(path)
-	if err != nil {
-		return nil
-	}
-	entries, _ := os.ReadDir(canonical)
-	return entries
-}
-
-func (sample *thermalSampler) resolve(path string) (string, error) {
-	canonical, err := filepath.EvalSymlinks(path)
-	if err != nil {
-		return "", err
-	}
-	relative, err := filepath.Rel(sample.root, canonical)
-	if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) || filepath.IsAbs(relative) {
-		return "", errors.New("thermal attribute outside root")
-	}
-	return canonical, nil
-}
-
-func numberedThermalName(name, prefix, suffix string, allowZero bool) bool {
-	if !strings.HasPrefix(name, prefix) || !strings.HasSuffix(name, suffix) {
-		return false
-	}
-	number := strings.TrimSuffix(strings.TrimPrefix(name, prefix), suffix)
-	if number == "0" {
-		return allowZero
-	}
-	if len(number) == 0 || number[0] < '1' || number[0] > '9' {
-		return false
-	}
-	for _, digit := range number[1:] {
-		if digit < '0' || digit > '9' {
-			return false
-		}
-	}
-	return true
-}
-
-func readThermalAttribute(path string) (string, error) {
-	before, err := os.Stat(path)
-	if err != nil {
-		return "", err
-	}
-	if !before.Mode().IsRegular() {
-		return "", errors.New("invalid thermal attribute type")
-	}
-	file, err := openThermalAttribute(path)
-	if err != nil {
-		return "", err
-	}
-	defer file.Close()
-	opened, err := file.Stat()
-	if err != nil || !opened.Mode().IsRegular() || !os.SameFile(before, opened) {
-		return "", errors.New("thermal attribute changed during open")
-	}
-	// sysfs files may report a size of zero or a page regardless of their
-	// content, so bound the read itself rather than trusting file size.
-	data, err := io.ReadAll(io.LimitReader(file, 65))
-	if err != nil || len(data) > 64 {
-		return "", errors.New("invalid thermal attribute length")
-	}
-	return strings.TrimSpace(string(data)), nil
 }

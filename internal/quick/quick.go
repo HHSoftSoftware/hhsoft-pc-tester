@@ -16,8 +16,8 @@ import (
 )
 
 const (
-	CPUSchema            = "hhsoft.pc-tester.cpu/v1"
-	MemorySchema         = "hhsoft.pc-tester.memory/v1"
+	CPUSchema            = "hhsoft.pc-tester.cpu/v2"
+	MemorySchema         = "hhsoft.pc-tester.memory/v2"
 	defaultMemoryBytes   = 64 << 20
 	minimumMemoryBytes   = 4 << 20
 	maximumMemoryBytes   = 512 << 20
@@ -77,8 +77,14 @@ type MemoryResult struct {
 	Detail               string         `json:"detail,omitempty"`
 }
 
+type safetyMonitorFactory func(context.Context, string, time.Duration, int) *safetyMonitor
+
 func RunCPU(ctx context.Context, options CPUOptions) CPUResult {
-	result := CPUResult{Schema: CPUSchema, Status: StatusError, KnownAnswerSHA256: hex.EncodeToString(expectedKnownAnswer[:])}
+	return runCPUWith(ctx, options, newSafetyMonitor)
+}
+
+func runCPUWith(ctx context.Context, options CPUOptions, startMonitor safetyMonitorFactory) (result CPUResult) {
+	result = CPUResult{Schema: CPUSchema, Status: StatusError, KnownAnswerSHA256: hex.EncodeToString(expectedKnownAnswer[:]), Safety: unstartedSafety()}
 	if options.Duration <= 0 || options.Duration > 5*time.Minute || options.GlobalTimeout < 10*time.Millisecond || options.GlobalTimeout > 10*time.Minute || options.ThermalLimit < 50000 || options.ThermalLimit > 125000 {
 		result.Detail = "invalid CPU quick-test limits"
 		return result
@@ -89,15 +95,16 @@ func RunCPU(ctx context.Context, options CPUOptions) CPUResult {
 	if options.Workers > 64 {
 		options.Workers = 64
 	}
+	result.Safety.GlobalTimeoutMilliseconds = options.GlobalTimeout.Milliseconds()
+	result.Safety.ThermalLimitMilliCelsius = options.ThermalLimit
 	if options.Root == "" {
 		options.Root = "/"
 	}
 	result.Workers = options.Workers
-	monitor := newSafetyMonitor(ctx, options.Root, options.GlobalTimeout, options.ThermalLimit)
-	defer monitor.stop()
+	monitor := startMonitor(ctx, options.Root, options.GlobalTimeout, options.ThermalLimit)
+	defer finishSafety(monitor, &result.Status, &result.Detail, &result.Safety)
 	if err := monitor.failure(); err != nil {
 		result.Status = safetyStatus(err)
-		result.Safety = monitor.evidence()
 		result.Detail = safetyDetail(err)
 		return result
 	}
@@ -140,7 +147,6 @@ func RunCPU(ctx context.Context, options CPUOptions) CPUResult {
 	result.DurationMilliseconds = time.Since(started).Milliseconds()
 	result.Iterations = iterations.Load()
 	result.StateAggregate = stateAggregate.Load()
-	result.Safety = monitor.evidence()
 	if calculationFailure.Load() {
 		result.Status = StatusFail
 		result.Detail = "known-answer calculation mismatch"
@@ -161,11 +167,17 @@ func RunCPU(ctx context.Context, options CPUOptions) CPUResult {
 }
 
 func RunMemory(ctx context.Context, options MemoryOptions) MemoryResult {
-	result := MemoryResult{Schema: MemorySchema, Status: StatusError, PatternsPerPass: 3}
+	return runMemoryWith(ctx, options, newSafetyMonitor)
+}
+
+func runMemoryWith(ctx context.Context, options MemoryOptions, startMonitor safetyMonitorFactory) (result MemoryResult) {
+	result = MemoryResult{Schema: MemorySchema, Status: StatusError, PatternsPerPass: 3, Safety: unstartedSafety()}
 	if options.Passes < 1 || options.Passes > 8 || options.GlobalTimeout < time.Second || options.GlobalTimeout > 10*time.Minute || options.ThermalLimit < 50000 || options.ThermalLimit > 125000 {
 		result.Detail = "invalid memory quick-test limits"
 		return result
 	}
+	result.Safety.GlobalTimeoutMilliseconds = options.GlobalTimeout.Milliseconds()
+	result.Safety.ThermalLimitMilliCelsius = options.ThermalLimit
 	if options.Root == "" {
 		options.Root = "/"
 	}
@@ -183,11 +195,10 @@ func RunMemory(ctx context.Context, options MemoryOptions) MemoryResult {
 	}
 	result.AllocatedBytes = options.Bytes
 	result.Passes = options.Passes
-	monitor := newSafetyMonitor(ctx, options.Root, options.GlobalTimeout, options.ThermalLimit)
-	defer monitor.stop()
+	monitor := startMonitor(ctx, options.Root, options.GlobalTimeout, options.ThermalLimit)
+	defer finishSafety(monitor, &result.Status, &result.Detail, &result.Safety)
 	if err := monitor.failure(); err != nil {
 		result.Status = safetyStatus(err)
-		result.Safety = monitor.evidence()
 		result.Detail = safetyDetail(err)
 		return result
 	}
@@ -202,7 +213,6 @@ func RunMemory(ctx context.Context, options MemoryOptions) MemoryResult {
 						result.Status = safetyStatus(err)
 						result.Detail = safetyDetail(err)
 						result.DurationMilliseconds = time.Since(started).Milliseconds()
-						result.Safety = monitor.evidence()
 						return result
 					}
 				}
@@ -216,7 +226,6 @@ func RunMemory(ctx context.Context, options MemoryOptions) MemoryResult {
 					result.ActualByte = int(actual)
 					result.Detail = "memory pattern mismatch"
 					result.DurationMilliseconds = time.Since(started).Milliseconds()
-					result.Safety = monitor.evidence()
 					return result
 				}
 				result.ExaminedBytes++
@@ -225,7 +234,6 @@ func RunMemory(ctx context.Context, options MemoryOptions) MemoryResult {
 						result.Status = safetyStatus(err)
 						result.Detail = safetyDetail(err)
 						result.DurationMilliseconds = time.Since(started).Milliseconds()
-						result.Safety = monitor.evidence()
 						return result
 					}
 				}
@@ -234,7 +242,6 @@ func RunMemory(ctx context.Context, options MemoryOptions) MemoryResult {
 	}
 	runtime.KeepAlive(buffer)
 	result.DurationMilliseconds = time.Since(started).Milliseconds()
-	result.Safety = monitor.evidence()
 	if err := monitor.failure(); err != nil {
 		result.Status = safetyStatus(err)
 		result.Detail = safetyDetail(err)

@@ -133,6 +133,20 @@ by a later safe snapshot. A separate terminal outer guard blocks ready/save on
 failure, including a hard stop after report creation. Arbitrary escaped processes,
 uninterruptible kernel calls, and continuous monitoring require further controls.
 
+The local CPU/RAM thermal guard separately supervises its first reading before
+load and later readings with one-second deadlines. It waits 250 milliseconds
+after a completed sample and joins the observer within two seconds before
+returning evidence. An unconfirmed join forces exit 12 and blocks later work
+and signing, including when diagnostic output fails. This bounds the caller's
+wait; it cannot kill an uninterruptible kernel read. Partial or unavailable
+telemetry is disclosed and cannot establish safe temperatures. Known calculation
+and RAM failures remain failures during cleanup. The strengthened v2 evidence
+path passed the full Windows suite, vet, and cross-builds; native/race and
+rebuilt-image checks remain pending. Run-wide thermal coverage and heartbeat
+supervision remain open.
+
+Privilege separation below is a target architecture, not an implemented
+containment boundary for the current in-process CPU/RAM workers.
 Run workers as a dedicated account when possible. Grant device access through
 ACLs, file descriptors, or narrowly scoped capabilities rather than making the
 UI root. A worker cannot reach signing keys. A local browser cannot reach raw

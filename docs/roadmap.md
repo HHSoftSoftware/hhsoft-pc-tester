@@ -67,7 +67,7 @@ Next work follows the existing dependencies:
   component-level report fingerprint decisions.
 - Initialize source-only repository, BSD 3-Clause license, security model,
   test matrix, report contract, and release gates.
-- Format the authorized scratch disk for file-backed VMs only.
+- Reuse dedicated scratch storage for file-backed VMs and preserve test evidence.
 - Boot the official local Alpine x86_64 ISO in BIOS and EFI VirtualBox VMs and
   capture repeatable serial logs and screenshots.
 
@@ -123,6 +123,16 @@ Rebuilt-image and physical gates remain open. Sampling does not establish
 continuous coverage, thermal or heartbeat monitoring, or preemption of a
 blocked kernel operation. The remaining functional adapters and beta/release
 requirements below still apply.
+
+The next thermal prerequisite is implemented in source: local CPU/RAM guards
+bound the initial and periodic observations, join before returning results, and
+record truthful coverage in CPU/memory v2 evidence. Unconfirmed cleanup blocks
+later work and signing; observed calculation or memory failures are preserved.
+The full Windows suite, vet, and cross-builds passed; native/race validation
+and fresh image qualification remain pending. This does not add a
+catalog row, change journal v3, or provide thermal monitoring across the whole
+session. Run-wide thermal coverage, heartbeat/hang supervision, privilege
+separation, and the physical pilot remain subsequent work.
 
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.

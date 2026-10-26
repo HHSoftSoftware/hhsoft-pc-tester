@@ -24,12 +24,21 @@ last marker before rebooting. Useful checkpoints are:
 Retry a hang only once. Record the image filename, checksum, firmware mode, and
 the last marker when reporting a reproducible failure.
 
-`HHPT_SESSION_FAILED ... reason=cleanup_unconfirmed` means a graphics/display
-worker could not be confirmed stopped. The run stops before later tests,
+`HHPT_SESSION_FAILED ... reason=cleanup_unconfirmed` means an owned worker or
+CPU/RAM thermal observer could not be confirmed stopped. The run stops before later tests,
 signing, or saving; available diagnostic evidence remains in RAM. Record the marker and image
 version, then reboot into a verified image. Do not manually resume the stopped
-workflow. Direct graphics, display, and capture commands use exit code 12 for
+workflow. Direct CPU, memory, graphics, display, and capture commands use exit code 12 for
 this condition, including when diagnostic output could not be written.
+
+The strengthened local CPU/RAM guard records `thermal_coverage` separately
+from the worker result. `unavailable` means no valid temperature was observed;
+`partial` means incomplete or mixed coverage. Neither proves safe temperatures.
+An observed thermal limit stops the worker, and a known calculation or memory
+failure stays a failure. A one-second reading timeout can produce a diagnostic
+error only after cleanup is confirmed; an unconfirmed join remains terminal.
+The v2 guard in development source passed the full Windows suite, vet, and
+cross-builds; native/race and rebuilt-image qualification are still pending.
 
 ## Cancellation or deadline stop
 

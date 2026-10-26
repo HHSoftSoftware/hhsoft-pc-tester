@@ -143,7 +143,7 @@ if /usr/bin/hhpt inventory -fingerprint-key /run/hhpt/fingerprint.key -key-epoch
 			printf 'HHPT_FAILED test-plan\n' > /dev/console
 			exit 1
 		fi
-		if /usr/bin/timeout -s KILL 340 /usr/bin/hhpt session -fingerprint-key /run/hhpt/fingerprint.key -key-epoch "\$key_epoch" \$fixture_flag -plan /run/hhpt/plan.json -evidence-dir /run/hhpt -timeout 5m -output /run/hhpt/session.hhpcr <"\$ui_console" >"\$ui_console" 2>&1; then
+		if /usr/bin/timeout -s KILL 350 /usr/bin/hhpt session -fingerprint-key /run/hhpt/fingerprint.key -key-epoch "\$key_epoch" \$fixture_flag -plan /run/hhpt/plan.json -evidence-dir /run/hhpt -timeout 5m -output /run/hhpt/session.hhpcr <"\$ui_console" >"\$ui_console" 2>&1; then
 			check_safety final
 			if ! test -s /run/hhpt/session-ready.txt || test -L /run/hhpt/session-ready.txt || ! test -f /run/hhpt/session-ready.txt; then
 				printf 'HHPT_FAILED session-ready-metadata\n' > /dev/console

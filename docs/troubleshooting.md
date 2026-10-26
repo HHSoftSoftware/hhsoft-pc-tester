@@ -45,11 +45,13 @@ same stop. Completed failures remain failures, while unfinished work remains
 incomplete. Before signing or save, the input reader must finish and restore
 the input flags and terminal mode. A safely stopped session can still create
 a signed report with its stop reason, worker states, ordered safety history,
-and a fresh pre-sign check. A valid signature on that report does not make the
-inspection complete or prove a hardware pass.
+and a fresh pre-sign check. Periodic monitoring must also finish with a clean
+join; a monitor failure is not an ordinary reportable operator stop. A valid
+signature on that report does not make the inspection complete or prove a
+hardware pass.
 
 Collectors cooperate with cancellation and cannot preempt blocked kernel
-calls. The boot scripts have a terminal 340-second KILL guard. A nonzero session
+calls. The boot scripts have a terminal 350-second KILL guard. A nonzero session
 exit produces `HHPT_FAILED quick-session ... cleanup=unconfirmed` and blocks
 `HHPT_READY` and save, even if report artifacts already exist. That guard does
 not confirm child cleanup. Preserve sanitized diagnostics and reboot from
@@ -59,6 +61,28 @@ Continuous thermal monitoring, heartbeat/hang supervision, other profiles,
 and physical-hardware qualification remain incomplete. Direct capture and
 direct finalization without a session journal do not claim the quick session's
 stop or safety history.
+
+## Periodic mount or network safety stop
+
+The periodic-monitor increment samples read-only mount and network metadata
+once per second through final safety. A sample has a one-second deadline; an
+observation gap beyond 2,500 milliseconds also stops the run. The first unsafe,
+unknown, timed-out, or excessively delayed observation cancels active work and
+blocks signing even if a later observation is safe. Failure to join the monitor
+within two seconds also blocks signing. Do not edit evidence or retry a later
+safe check to force the stopped session into the save flow.
+
+Inspect `session-safety-monitor.json` beneath the configured evidence directory
+(`/run/hhpt` at boot). It records the first failure, bounded sample timing and
+counts, and whether cleanup was confirmed. Preserve that file and the other
+sanitized session diagnostics; do not edit them to force a report. Restart from
+verified media after resolving the cause.
+
+A sub-second session may have zero periodic samples, recorded honestly
+in journal v3 alongside its required independent safety snapshots. Sampling
+does not establish continuous safety or preempt blocked kernel calls. Automated
+and native Linux tests, race checks, and signed CLI workflows passed;
+rebuilt-image and physical qualification remain open.
 
 ## Image will not boot
 

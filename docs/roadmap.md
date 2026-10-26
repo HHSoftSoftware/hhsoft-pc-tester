@@ -102,8 +102,8 @@ run-wide watchdogs, rebuilt-image qualification, the remaining functional
 adapters, and the physical pilot below are still open.
 
 The guided-pointer increment adds relative movement and primary/advertised
-right/middle button cycles per interface. It expands quick selection to ten
-modern and eight legacy choices, with ten outcomes in session journal v2.
+right/middle button cycles per interface. It expanded quick selection to ten
+modern and eight legacy choices and introduced ten outcomes in session journal v2.
 Absolute or mixed interfaces and the rest of the input matrix remain outside
 this bounded check. The catalog change requires fresh plans while preserving
 historical signed-report verification. Portable and native Linux tests, race
@@ -111,14 +111,28 @@ checks, cross-builds, and signed CLI workflows pass for this increment.
 Rebuilt-image and physical qualification remain open; earlier image results do
 not qualify the new worker.
 
+The periodic safety increment implements read-only mount/network checks
+through quick execution and the final safety observation. One owned observer
+runs serialized samples at a one-second interval, with a one-second observation
+deadline, a 2,500-millisecond maximum gap, and a two-second join allowance.
+Its first unsafe, unknown, late, or excessively delayed observation cancels
+the session and prevents signing. Journal v3 adds the bounded coverage summary
+without changing the catalog or ten worker outcomes. Automated and native
+Linux suites, race checks, cross-builds, and 15 signed CLI scenarios passed.
+Rebuilt-image and physical gates remain open. Sampling does not establish
+continuous coverage, thermal or heartbeat monitoring, or preemption of a
+blocked kernel operation. The remaining functional adapters and beta/release
+requirements below still apply.
+
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.
 - Add CPU, partial memory, SMART/NVMe health, read-only storage, complete
   display/GPU, network, audio, input, USB, and camera quick checks.
 - Extend operator prompts and run-wide watchdog coverage around the existing
   signed reports, explicit unsupported states, and bounded CPU/RAM safeguards.
-- Extend snapshot-based quick-session safety into continuous monitoring and
-  broader profiles, preserving signed stop reasons and earlier unsafe evidence.
+- Extend the bounded quick-session safeguards to broader profiles and add
+  run-wide thermal and heartbeat monitoring, preserving signed stop reasons
+  and earlier unsafe evidence.
 - Complete the [physical pilot](beta-pilot.md) on at least ten varied PCs
   without destructive tests.
 

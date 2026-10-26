@@ -185,15 +185,18 @@ coverage fields preserve historical report rendering; new reports require a
 matching rebuilt companion verifier.
 The quick-session coordinator adds a signed session journal inside run-integrity
 evidence: stop reason, budget and elapsed time, each worker's execution state,
-and independent mount/network safety observations. Finalization validates these
-against the frozen plan and evidence, then adds a fresh pre-sign observation.
+independent mount/network safety observations, and a bounded periodic-monitor
+summary. Finalization validates these against the frozen plan and evidence,
+then adds a fresh pre-sign observation.
 
 Guided pointer execution uses the existing `input.pointer.quick` row, so reports
 still contain 21 catalog results plus run integrity. Enabling that row changes
-the catalog digest and requires fresh plans. New execution uses
-`hhsoft.pc-tester.quick-session/v2` with ten worker records; an older plan or
-journal is not an execution substitute. Historical signed-report verification
-and rendering remain unchanged. The new pointer integration's validation is
+the catalog digest and requires fresh plans. That increment introduced
+`hhsoft.pc-tester.quick-session/v2` with ten worker records. The subsequent
+periodic-monitor increment uses `hhsoft.pc-tester.quick-session/v3` and preserves
+the catalog, plan digest, and ten records; it requires a fresh execution journal.
+An older journal is not an execution substitute. Historical signed-report
+verification and rendering remain unchanged. Each increment's validation is
 tracked separately from the earlier session milestone.
 Direct capture and finalization without a session journal do not claim that
 session safety history.
@@ -217,7 +220,7 @@ Its default five-minute deadline is shared across the selected workers. Each
 worker also receives the smaller remaining session or frozen-test budget.
 Graphics shares 30 seconds across its tools; display shares 45 seconds across
 cards and the operator prompt. No timed-out adapter is detached to allow later
-work to proceed. A 340-second outer KILL guard is terminal: nonzero exit blocks
+work to proceed. A 350-second outer KILL guard is terminal: nonzero exit blocks
 ready/save even if a report was already written. It does not confirm cleanup
 of nested processes or establish preemption of a blocked kernel call.
 
@@ -225,16 +228,38 @@ One console reader owns cancellation and requested finding lines. Ctrl-C,
 SIGINT, or SIGTERM stops new work, preserves completed failures, and leaves
 non-scheduled dispositions unchanged. Before a clean stop is finalized, the
 reader is joined and terminal mode restored. Final safety has a fresh five-second
-context and finalization has a fresh 30-second context. Unsafe observations,
+context; the periodic safety monitor then joins within two seconds before
+finalization receives a fresh 30-second context. Unsafe observations,
 interrupted safety readiness, or unconfirmed cleanup prevent signing. Ordinary
 clean stops retain explicit incomplete results and a signed stop reason.
+
+The periodic monitor starts with the coordinator and remains active through
+workers, console cleanup, and final safety. It owns one serialized read-only
+mount/network observation at a time, using a one-second interval, a one-second
+observation deadline, and a 2,500-millisecond maximum observation gap. Its first
+unsafe, unknown, timed-out, or excessively delayed sample is retained and
+cancels active work. A later safe result cannot clear it. Operator cancellation
+does not invalidate an otherwise clean in-flight sample: the monitor must
+finish and join before signing can proceed. A blocked observation or uncertain
+join prevents signing, even if the final snapshot is safe.
+
+Journal v3 records bounded aggregate timing and coverage through final safety,
+including leading and trailing gaps. A session shorter than the first
+one-second tick can record zero periodic samples; its independent preflight
+and final snapshots remain required. This is periodic sampling, not continuous
+coverage or preemptive kernel containment. Automated and native validation of
+this increment passed, including race checks and signed CLI workflows.
+Rebuilt-image and physical qualification remain open.
+The outer guard allows the five-minute run plus worker cleanup (two seconds),
+input cleanup (two), final safety (five), monitor join (two), finalization (30),
+and nine seconds of margin.
 
 The CPU/RAM monitor samples Linux thermal zones and hwmon temperature inputs
 every 250 milliseconds. It filters disabled or faulted readings, uncalibrated
 VT1211/WM831x channels, and PECI control/threshold values. Exact path aliases
 count once; equal values do not establish sensor identity. Missing telemetry
 remains absent from the sensor count. Fan, power, throttling, and run-wide
-monitoring remain planned, as does representative physical sensor validation.
+thermal monitoring remain planned, as does representative physical sensor validation.
 
 ## Privilege and process model
 

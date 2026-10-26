@@ -68,6 +68,11 @@ func newSessionHarness(t *testing.T, architecture string, excluded []string) *se
 	h.arguments = []string{"-plan", planPath, "-fingerprint-key", filepath.Join(h.directory, "synthetic.key"),
 		"-evidence-dir", h.directory, "-output", filepath.Join(h.directory, "session.hhpcr")}
 	h.dependencies.Now = func() time.Time { return h.clock }
+	h.dependencies.StartMonitor = func(started time.Time, _ context.CancelFunc) (sessionSafetyMonitor, error) {
+		return &sessionMonitorFixture{result: func() safemode.MonitorResult {
+			return sessionMonitorSummary(h.clock.Sub(started).Milliseconds())
+		}}, nil
+	}
 	h.dependencies.ObserveSafety = func(ctx context.Context) safemode.Result {
 		if ctx.Err() != nil {
 			return safemode.Result{Schema: safemode.Schema, Status: "aborted"}
@@ -368,7 +373,7 @@ func TestSessionNeverSignsAfterUnconfirmedCleanupOrInputFailure(t *testing.T) {
 }
 
 func TestSessionFreshDestinationsRejectBeforeAnyWorker(t *testing.T) {
-	for _, name := range []string{"cpu.json", "graphics.json", "session-journal.json", "session-safety-final.json", "session-ready.txt", "session.hhpcr"} {
+	for _, name := range []string{"cpu.json", "graphics.json", "session-journal.json", "session-safety-final.json", "session-safety-monitor.json", "session-ready.txt", "session.hhpcr"} {
 		t.Run(name, func(t *testing.T) {
 			h := newSessionHarness(t, "x86_64", nil)
 			path := filepath.Join(h.directory, name)

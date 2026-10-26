@@ -268,8 +268,10 @@ Pointer observation defaults to 30 seconds with a 90-second whole-command
 limit, also shortened by the session deadline. It shares one observation
 window across the selected interfaces. Enabling the existing pointer catalog
 row changes the catalog digest, so execution requires a newly frozen plan.
-Current sessions record ten worker outcomes in journal v2. This does not add a
-catalog row or change historical signed-report verification; direct capture
+The pointer increment introduced ten worker outcomes in journal v2. The periodic
+safety increment advances the journal to v3 without changing those outcomes or
+the catalog. It requires a fresh execution journal, not a changed plan digest.
+Neither change alters historical signed-report verification; direct capture
 continues to omit the guided pointer worker.
 
 Ctrl-C uses one owned console reader shared with display findings. Linux
@@ -300,18 +302,39 @@ safety-readiness check or an earlier unsafe observation into permission to sign.
 An all-off selection still requires safety observations and records no completed
 quick-test coverage.
 
+The periodic safety increment adds a bounded aggregate summary to journal v3.
+One owned observer runs serialized read-only mount/network samples at a
+one-second interval, with a one-second observation deadline and a
+2,500-millisecond maximum gap. It starts with the coordinator, remains active
+through workers, input cleanup, and final safety, then joins within two seconds.
+The first unsafe, unknown, late, or excessively delayed sample cancels active
+work and blocks signing; safe later observations cannot clear that failure.
+Operator cancellation does not turn a clean in-flight sample into a safety
+failure, but signing still requires its confirmed completion and monitor join.
+The summary records leading and trailing coverage, and a short session before
+the first one-second tick records zero periodic samples rather than invented
+coverage. Independent preflight, final, and pre-sign snapshots remain required.
+Automated and native Linux validation passed, including 1,886 native test events
+without skips and 321 race-test events without skips or race reports. Fifteen
+real CLI scenarios passed; each 2.5-second session deadline case on modern
+x64/x86 and legacy x86 retained two periodic observations, with the signed
+summary exactly matching the monitor diagnostic. Rebuilt-image, physical,
+broader beta, and release qualification remain separate open gates. Detailed
+milestone counts appear in [requirements validation](requirements-validation.md).
+
 The shell independently checks safety before launching the session and after
 report creation. These outer checks gate `HHPT_READY` and save; their separate
 files are not the signed session history. Both boot scripts also use a terminal
-340-second KILL guard around the session command. Any nonzero session exit
+350-second KILL guard around the session command. Any nonzero session exit
 blocks ready/save, even if a report and ready file were already written. Killing
 the command does not establish nested-worker cleanup, and the failure marker
 explicitly leaves cleanup unconfirmed.
 
 Synchronous collectors use cooperative cancellation; a context deadline cannot
 preempt a blocked kernel call. The terminal shell guard is a failure path, not a
-claim of safe recovery or hardware qualification. Continuous thermal monitoring,
-heartbeat supervision, hang detection, and other profile execution remain open.
+claim of safe recovery or hardware qualification. Periodic observations are not
+continuous coverage. Run-wide thermal monitoring, heartbeat supervision, hang
+detection, and other profile execution remain open.
 Direct capture and finalization without a session journal keep their older
 limited evidence scope; they do not acquire session stop/safety claims.
 
@@ -333,6 +356,19 @@ Regression acceptance for this implementation requires:
   quick tests, are excluded. Signed session history cannot omit a required
   observation, and unsafe or incomplete final observations still block the
   normal ready/save path.
+- Periodic monitoring permits only one observation in flight. Unsafe-to-safe,
+  unknown-to-safe, timeout-to-late-pass, missed-tick, and cancellation races keep
+  the first failure and prevent signing. A blocked observer cannot be replaced
+  by overlapping observations, and an uncertain join remains terminal.
+- Coverage validation rejects missing or contradictory timing, excessive
+  leading/trailing gaps, fabricated zero-tick coverage, and an older execution
+  journal. Clean operator stops preserve completed failures after a confirmed
+  monitor join; the ten worker outcomes and historical report verification
+  remain unchanged.
+- Deterministic monitor fixtures control observation completion and time rather
+  than relying on sleeps. Native checks use private mount/network namespaces;
+  unsafe transition fixtures do not require changing real device mounts or
+  bringing up real network interfaces.
 - Terminal watchdog failure or invalid ready metadata blocks ready/save even
   when report artifacts exist. Shell fixtures exercise only the handoff; Go
   tests cover worker scheduling, cancellation, and journal validation.

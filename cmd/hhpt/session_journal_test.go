@@ -24,6 +24,14 @@ func journalSafeObservation() safemode.Result {
 	return safemode.Result{Schema: safemode.Schema, Status: "pass", StorageObserved: true, NetworkObserved: true}
 }
 
+func journalShortMonitor() safemode.MonitorResult {
+	return safemode.MonitorResult{
+		Schema: safemode.MonitorSchema, Status: "pass", IntervalMilliseconds: 1000,
+		ObservationTimeoutMilliseconds: 1000, MaximumAllowedGapMilliseconds: 2500,
+		ElapsedMilliseconds: 100, MaximumGapMilliseconds: 100, CleanupConfirmed: true,
+	}
+}
+
 type journalFixture struct {
 	directory, reportPath string
 	arguments             []string
@@ -73,7 +81,7 @@ func newJournalFixture(t *testing.T, selected ...string) *journalFixture {
 	fixture := &journalFixture{directory: directory, reportPath: filepath.Join(directory, "report.hhpcr"), frozen: frozen, snapshot: snapshot}
 	fixture.arguments = []string{"-fingerprint-key", keyPath, "-plan", planPath, "-evidence-dir", directory,
 		"-session-id", "journal-fixture", "-output", fixture.reportPath}
-	fixture.journal = sessionJournal{Schema: sessionJournalSchema, PlanID: frozen.ID, StopReason: "operator_cancelled", BudgetMilliseconds: 1000, ElapsedMilliseconds: 100}
+	fixture.journal = sessionJournal{Schema: sessionJournalSchema, PlanID: frozen.ID, StopReason: "operator_cancelled", BudgetMilliseconds: 1000, ElapsedMilliseconds: 100, Monitor: journalShortMonitor()}
 	planned := map[string]plan.TestStatus{}
 	for _, row := range frozen.Tests {
 		planned[row.ID] = row.Status
@@ -188,6 +196,7 @@ func TestSessionJournalRejectsContradictoryExecutionAndSafety(t *testing.T) {
 	for name, change := range map[string]func(*sessionJournal){
 		"schema":                   func(j *sessionJournal) { j.Schema = "unknown" },
 		"old-nine-worker-schema":   func(j *sessionJournal) { j.Schema = "hhsoft.pc-tester.quick-session/v1" },
+		"old-unmonitored-schema":   func(j *sessionJournal) { j.Schema = "hhsoft.pc-tester.quick-session/v2" },
 		"short budget":             func(j *sessionJournal) { j.BudgetMilliseconds = 9 },
 		"long budget":              func(j *sessionJournal) { j.BudgetMilliseconds = 900001 },
 		"negative elapsed":         func(j *sessionJournal) { j.ElapsedMilliseconds = -1 },
@@ -333,7 +342,8 @@ func TestFinalizeSessionPreservesFailureAndNeverStartedReadiness(t *testing.T) {
 				t.Fatal("signed session missing")
 			}
 			journal := evidence.Session
-			if journal.PlanID != fixture.frozen.ID || journal.StopReason != "worker_stop" || len(journal.Safety) != len(fixture.journal.Safety)+1 || journal.Safety[len(journal.Safety)-1].Phase != "pre-sign" || !journal.Safety[len(journal.Safety)-1].Result.Safe() {
+			if journal.Schema != "hhsoft.pc-tester.quick-session/v3" || journal.PlanID != fixture.frozen.ID || journal.StopReason != "worker_stop" || len(journal.Safety) != len(fixture.journal.Safety)+1 || journal.Safety[len(journal.Safety)-1].Phase != "pre-sign" || !journal.Safety[len(journal.Safety)-1].Result.Safe() ||
+				!bytes.Equal(encodeEvidenceFixture(t, journal.Monitor), encodeEvidenceFixture(t, fixture.journal.Monitor)) {
 				t.Fatal("fresh safety or session intent not bound")
 			}
 			found = true

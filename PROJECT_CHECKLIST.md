@@ -275,7 +275,8 @@ the alpha still requires the separate documented release gates.
 - [x] Clean up Linux workers and same-process-group descendants before reaping
   their leader, with bounded cleanup and output draining. Unconfirmed cleanup
   stops later graphics/display work and blocks capture or appliance signing.
-  Escaped process groups and whole-run cancellation remain outside this scope.
+  Escaped process groups remain outside this cleanup guarantee. Quick-session
+  cancellation is implemented separately by the coordinator.
 - [x] Generate local state in RAM and keep production signing keys out of images.
 - [x] Scan candidate source on every build and scan full Git history in CI for
   private identity terms, credentials, local paths/endpoints, keys, and forbidden artifacts.
@@ -290,6 +291,17 @@ the alpha still requires the separate documented release gates.
   observations, including mapped storage and software network interfaces.
   Native metadata and supervisor fixtures pass; fresh ISO boot qualification
   remains required for release.
+- [x] Implement and validate periodic read-only mount/network safety monitoring
+  throughout quick execution and final safety, using a
+  one-second interval and observation deadline, a 2,500-millisecond maximum
+  gap, and a two-second join allowance. The first failure cancels the session
+  and blocks signing; journal v3 records bounded aggregate coverage with the
+  same ten worker outcomes. Windows and native Linux suites, race checks,
+  cross-builds, and 15 signed CLI scenarios passed. Each 2.5-second deadline
+  case retained two periodic samples and an exact matching signed summary.
+- [ ] Qualify periodic mount/network monitoring in rebuilt bootable images and
+  on physical hardware. Application and isolated VM tests do not close these
+  gates or establish continuous safety, thermal, or heartbeat coverage.
 - [ ] Separate the unprivileged UI, privileged daemon, and sandboxed workers.
 - [ ] Complete run-wide thermal, heartbeat, hang, and deadline watchdogs beyond
   the quick-session coordinator, CPU/RAM thermal checks, terminal outer guard,
@@ -298,7 +310,8 @@ the alpha still requires the separate documented release gates.
   test's complete budget; support Ctrl-C and Linux termination signals, retain
   completed failures, and finalize clean stops with fresh bounded contexts.
   A terminal outer guard blocks ready/save on failure. Kernel stalls, escaped
-  process groups, and continuous run-wide monitoring remain separate limits.
+  process groups, and continuous coverage remain separate limits; periodic
+  mount/network sampling does not complete thermal or heartbeat monitoring.
 - [x] Implement deployment-keyed, same-boot typed authorization for separate
   removable USB report destinations with mounted boot/internal-media exclusion.
 - [ ] Implement typed authorization for destructive targets with boot-media,

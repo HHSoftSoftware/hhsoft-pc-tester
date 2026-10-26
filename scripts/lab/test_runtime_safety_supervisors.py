@@ -220,7 +220,7 @@ class RuntimeSafetySupervisorTests(unittest.TestCase):
                                        capture_output=True, text=True, timeout=5, check=True)
             script = generated.stdout
         if configuration.get("outer_timeout"):
-            guard = "/usr/bin/timeout -s KILL 340 /usr/bin/hhpt session "
+            guard = "/usr/bin/timeout -s KILL 350 /usr/bin/hhpt session "
             self.assertEqual(script.count(guard), 1, "expected one terminal session watchdog")
             script = script.replace(guard, "/usr/bin/timeout -s KILL 1 /usr/bin/hhpt session ")
         substitutions = {

@@ -153,10 +153,17 @@ hhpt pointer -duration 30s -timeout 90s -output pointer.json
 Pointer joins the quick session's shared five-minute budget and signed results;
 direct `capture` retains its existing subset and does not run this guided check.
 The selection menu now offers ten modern or eight legacy quick tests. The
-catalog change requires a fresh plan, and new sessions use a ten-outcome v2
+pointer catalog change requires a fresh plan and introduced a ten-outcome v2
 journal; historical signed reports remain independently verifiable. Automated
-and native Linux validation passed; rebuilt-image and physical qualification remain open.
+and native Linux pointer validation passed; rebuilt-image and physical qualification remain open.
 See [requirements validation](docs/requirements-validation.md).
+
+The quick session includes periodic read-only mount/network safety sampling
+and a v3 session journal, without changing the catalog or ten worker outcomes.
+Its first unsafe or uncertain observation stops active work and blocks signing.
+This is bounded periodic coverage, not continuous safety monitoring or kernel
+preemption. Automated tests, native Linux suites, race checks, and signed CLI
+workflows passed; rebuilt-image and physical qualification remain open.
 
 `hhpt audio` verifies that ALSA card, control, playback, and capture nodes match
 their confined sysfs metadata. It never opens a media stream or plays/records

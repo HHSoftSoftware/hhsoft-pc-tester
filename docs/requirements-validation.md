@@ -141,9 +141,9 @@ Pointer/session race checks passed 241 test events without skips or race reports
 The historical counts above describe their original catalogs. Current selection
 has ten modern and eight legacy choices; the
 existing 21 catalog rows plus run integrity still produce 22 results. Enabling
-pointer changes the catalog digest and requires fresh plans and a ten-outcome
-`hhsoft.pc-tester.quick-session/v2` journal. Historical signed-report
-verification and rendering remain unchanged; direct capture continues to
+pointer changes the catalog digest and introduced fresh plans and a ten-outcome
+`hhsoft.pc-tester.quick-session/v2` journal for that milestone. Historical
+signed-report verification and rendering remain unchanged; direct capture continues to
 omit guided pointer testing.
 
 Portable and native fixtures independently cover relative `EV_REL` X/Y movement in both
@@ -169,6 +169,45 @@ also passed. These exercise execution and honest non-pass reporting; they do
 not establish successful physical pointer actions. Rebuilt-image qualification,
 the physical pilot, continuous monitoring, and remaining functional adapters
 remain open.
+
+The periodic safety milestone implements bounded read-only mount/network
+monitoring through quick-session execution, input cleanup, and final safety. It uses one
+owned serialized observer, a one-second interval and observation deadline, a
+2,500-millisecond maximum gap, and a two-second join allowance. Its first unsafe,
+unknown, timed-out, or excessively delayed sample cancels active work and blocks
+signing, even if a later sample is safe. A clean operator stop may still finalize
+after the monitor joins and the independent pre-sign check passes.
+
+Journal `hhsoft.pc-tester.quick-session/v3` adds the bounded coverage summary
+while keeping the catalog, plan digest, and ten worker outcomes unchanged.
+Leading and trailing gaps must remain bounded; a session before the first
+one-second tick records zero samples rather than claiming observations it did
+not make. Fresh v3 execution journals are required, while historical signed
+verification remains unchanged. The boot guard increases to 350 seconds to
+include the monitor join allowance.
+
+For this milestone, the Windows suite passed 1,212 test events across 17 packages,
+with 12 platform skips and no failures. Vet, all five application targets, and
+cross-builds of 12 native test binaries passed. Native Linux amd64 and 386 passed
+1,886 test events across six suites without skips. Race checks passed 321 test
+events without skips or race reports. Nine compiler-supervision fixtures
+confirmed child cleanup, and six independent environment and input checks
+passed.
+
+Fifteen real CLI scenarios passed: twelve quick sessions and three standalone
+pointer-to-finalizer flows across modern x64/x86 and legacy x86 applications.
+Each 2.5-second session deadline case retained two periodic observations.
+The signed monitor evidence exactly matched `session-safety-monitor.json` in
+the evidence directory, and reports retained all 22 results. These isolated VM
+checks validate the application paths and bounded reporting claims; they do not
+replace rebuilt-image or physical qualification. Historical milestone counts
+above remain separate evidence.
+
+Rebuilt bootable images, the physical pilot, remaining functional adapters,
+broader beta qualification, and release gates remain open. Periodic sampling
+does not provide continuous coverage, run-wide thermal or heartbeat monitoring,
+stress qualification, privilege isolation, or preemptive containment of a
+blocked kernel operation. These results do not establish publication readiness.
 
 Regression coverage for these cases belongs with the corresponding feature,
 not with a blanket claim of complete product coverage. Linux mount/device

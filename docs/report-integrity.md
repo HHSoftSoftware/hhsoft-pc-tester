@@ -133,16 +133,19 @@ New reports require the matching companion utility.
 
 Quick-session reports additionally bind a `session` object inside the existing
 run-integrity evidence. It records the stop reason, session budget, elapsed time,
-all ten worker states/outcomes, and independent safety observations, including
-a fresh pre-sign observation. This adds no catalog row and does not turn graph
-integrity into an overall hardware pass. Unstarted tests stay incomplete;
+all ten worker states/outcomes, independent safety observations, and a bounded
+periodic-monitor summary. The safety history includes a fresh pre-sign
+observation. This adds no catalog row and does not turn graph integrity into
+an overall hardware pass. Unstarted tests stay incomplete;
 completed failures survive a stop. Unsafe or interrupted network/storage
 readiness cannot authorize signing. These checks occur during session
 finalization; the offline verifier authenticates the recorded claims without
-rerunning them. Current execution requires
-`hhsoft.pc-tester.quick-session/v2`, including `input.pointer.quick`. The enabled
-pointer definition changes the catalog digest and requires a fresh frozen plan;
-old execution journals cannot be reused. The catalog still has 21 rows, plus
+rerunning them. The periodic-monitor increment requires
+`hhsoft.pc-tester.quick-session/v3`, including the same `input.pointer.quick`
+outcome introduced in v2. The enabled pointer definition changes the catalog
+digest and requires a fresh frozen plan; periodic monitoring leaves that digest
+unchanged but requires a fresh v3 execution journal. Old execution journals
+cannot be reused. The catalog still has 21 rows, plus
 run integrity. Historical signed reports, including earlier session evidence,
 retain their existing verification and rendering behavior. Direct capture's
 limited subset does not include guided pointer evidence. Each retained pointer
@@ -151,6 +154,21 @@ frozen and final component identity and advertised capabilities. Kernel bitmap
 word width is independently observed and bound in the component fingerprint;
 worker evidence cannot choose a weaker button interpretation. Automated and
 native validation passed; physical pointer qualification remains separate.
+
+The monitor summary records bounded aggregate coverage through final safety,
+with a one-second interval, a one-second observation deadline, a
+2,500-millisecond maximum gap, and a two-second join allowance. The observer
+runs one sample at a time. Signing requires a clean join, consistent timing and
+sample counts, bounded leading and trailing gaps, and no latched failure.
+A session before the first one-second tick records zero periodic samples
+honestly; required preflight and final snapshots still apply. The first unsafe,
+unknown, timed-out, or excessively delayed sample cannot be erased by a later
+safe one, including the independent fresh pre-sign observation. This summary
+does not establish continuous coverage or preemption of blocked kernel calls.
+Automated and native Linux validation passed, including race checks and signed
+CLI workflows. Each 2.5-second deadline case on modern x64/x86 and legacy x86
+retained two periodic observations, and the signed summary exactly matched the
+monitor diagnostic. Rebuilt-image and physical gates remain open.
 
 ## Privacy-Preserving Fingerprints
 

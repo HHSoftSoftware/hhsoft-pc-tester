@@ -28,9 +28,15 @@ type sessionFinalization struct {
 type sessionDependencies struct {
 	RunWorker     func(context.Context, sessionWorker, io.Reader, io.Writer, io.Writer) int
 	ObserveSafety func(context.Context) safemode.Result
+	StartMonitor  func(time.Time, context.CancelFunc) (sessionSafetyMonitor, error)
 	Finalize      func(context.Context, sessionFinalization, io.Writer, io.Writer) int
 	FinishInput   func() error
 	Now           func() time.Time
+}
+
+type sessionSafetyMonitor interface {
+	Failed() bool
+	Stop(context.Context) safemode.MonitorResult
 }
 
 func runSession(ctx context.Context, arguments []string, input io.Reader, stdout, stderr io.Writer) int {
@@ -42,6 +48,9 @@ func runSession(ctx context.Context, arguments []string, input io.Reader, stdout
 	defer finish()
 	return runSessionWith(ctx, arguments, input, stdout, stderr, sessionDependencies{
 		RunWorker: runSessionWorker, ObserveSafety: safemode.Observe,
+		StartMonitor: func(started time.Time, cancel context.CancelFunc) (sessionSafetyMonitor, error) {
+			return safemode.StartMonitor(safemode.Observe, safemode.MonitorOptions{Started: started, Cancel: cancel})
+		},
 		Finalize: finalizeSession, FinishInput: finish, Now: time.Now,
 	})
 }
@@ -50,7 +59,7 @@ func runSession(ctx context.Context, arguments []string, input io.Reader, stdout
 // returned. Context deadlines request cooperative cancellation; they cannot
 // preempt an uninterruptible kernel operation. External graphics tools retain
 // workerexec's separate ownership and confirmed-cleanup requirement.
-func runSessionWith(ctx context.Context, arguments []string, input io.Reader, stdout, stderr io.Writer, dependencies sessionDependencies) int {
+func runSessionWith(ctx context.Context, arguments []string, input io.Reader, stdout, stderr io.Writer, dependencies sessionDependencies) (exitCode int) {
 	flags := flag.NewFlagSet("session", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	planPath := flags.String("plan", "", "frozen quick-test plan")
@@ -67,7 +76,7 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 		fmt.Fprintln(stderr, "session requires -plan, -fingerprint-key, -output, and a 10ms-15m timeout")
 		return 2
 	}
-	if ctx == nil || dependencies.RunWorker == nil || dependencies.ObserveSafety == nil || dependencies.Finalize == nil || dependencies.FinishInput == nil || dependencies.Now == nil {
+	if ctx == nil || dependencies.RunWorker == nil || dependencies.ObserveSafety == nil || dependencies.StartMonitor == nil || dependencies.Finalize == nil || dependencies.FinishInput == nil || dependencies.Now == nil {
 		fmt.Fprintln(stderr, "session dependencies are incomplete")
 		return 1
 	}
@@ -100,8 +109,9 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 		planned[test.ID] = test
 	}
 	journalPath := filepath.Join(*directory, "session-journal.json")
+	monitorPath := filepath.Join(*directory, "session-safety-monitor.json")
 	readyPath := filepath.Join(*directory, "session-ready.txt")
-	freshPaths := []string{journalPath, readyPath, *output, filepath.Join(*directory, "session-safety-preflight.json"), filepath.Join(*directory, "session-safety-final.json")}
+	freshPaths := []string{journalPath, monitorPath, readyPath, *output, filepath.Join(*directory, "session-safety-preflight.json"), filepath.Join(*directory, "session-safety-final.json")}
 	journal := sessionJournal{Schema: sessionJournalSchema, PlanID: frozen.ID,
 		StopReason: "completed", BudgetMilliseconds: budget.Milliseconds()}
 	scheduled := 0
@@ -130,6 +140,42 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 	deadline := started.Add(*budget)
 	runContext, cancel := context.WithDeadline(ctx, deadline)
 	defer cancel()
+	monitor, err := dependencies.StartMonitor(started, cancel)
+	if err != nil || monitor == nil {
+		fmt.Fprintln(stderr, "start session safety monitor failed")
+		return 1
+	}
+	// Monitoring has its own lifetime: operator cancellation must not stop it
+	// before worker/input cleanup and the final safety observation. Every exit
+	// joins it and preserves diagnostic evidence, even when an earlier step failed.
+	monitorStopped, monitorCode := false, 0
+	finishMonitor := func() int {
+		if monitorStopped {
+			return monitorCode
+		}
+		monitorStopped = true
+		bounded, stop := context.WithTimeout(context.Background(), safemode.MonitorStopTimeout)
+		journal.Monitor = monitor.Stop(bounded)
+		stop()
+		journal.ElapsedMilliseconds = journal.Monitor.ElapsedMilliseconds
+		if !journal.Monitor.CleanupConfirmed {
+			fmt.Fprintln(stderr, "HHPT_SESSION_FAILED reason=safety_monitor_cleanup_unconfirmed")
+			monitorCode = workerCleanupUncertainExitCode
+		} else if err := validateSessionMonitor(journal.Monitor, journal.ElapsedMilliseconds); err != nil || monitor.Failed() {
+			fmt.Fprintln(stderr, "HHPT_SESSION_UNSAFE phase=monitor")
+			monitorCode = 1
+		}
+		if writeQuickResult(journal.Monitor, monitorPath, stdout, stderr, "session safety monitor") != 0 && monitorCode == 0 {
+			monitorCode = 1
+		}
+		return monitorCode
+	}
+	defer func() {
+		code := finishMonitor()
+		if code == workerCleanupUncertainExitCode || exitCode == 0 && code != 0 {
+			exitCode = code
+		}
+	}()
 	observe := func(observationContext context.Context, phase string) bool {
 		bounded, stop := context.WithTimeout(observationContext, 5*time.Second)
 		result := dependencies.ObserveSafety(bounded)
@@ -159,6 +205,9 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 	}
 	fmt.Fprintf(stdout, "HHPT_SESSION_START budget_ms=%d scheduled=%d\n", budget.Milliseconds(), scheduled)
 	for index := range journal.Workers {
+		if monitor.Failed() {
+			return 1
+		}
 		record := &journal.Workers[index]
 		if record.State != "not_started" {
 			reportWorker(*record)
@@ -169,6 +218,9 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 			break
 		}
 		if !observe(runContext, "before-"+record.ID) {
+			return 1
+		}
+		if monitor.Failed() {
 			return 1
 		}
 		// An input stop racing the safety observation must not start a worker.
@@ -194,6 +246,9 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 		if code == workerCleanupUncertainExitCode {
 			fmt.Fprintf(stderr, "HHPT_SESSION_FAILED worker=%s reason=cleanup_unconfirmed\n", record.ID)
 			return workerCleanupUncertainExitCode
+		}
+		if monitor.Failed() {
+			return 1
 		}
 		outcome, state, evidenceErr := sessionWorkerOutcome(worker.OutputPath, definitions[record.ID].schema, code, reason != "")
 		if evidenceErr != nil {
@@ -228,6 +283,9 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 			break
 		}
 	}
+	if monitor.Failed() {
+		return 1
+	}
 	if journal.StopReason == "completed" {
 		if reason := sessionStopReason(ctx, runContext, nil, dependencies.Now(), deadline, time.Time{}); reason != "" {
 			journal.StopReason = reason
@@ -245,7 +303,9 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 	if !observe(context.Background(), "final") {
 		return 1
 	}
-	journal.ElapsedMilliseconds = max(0, dependencies.Now().Sub(started).Milliseconds())
+	if code := finishMonitor(); code != 0 {
+		return code
+	}
 	if err := writeSessionJournal(journalPath, journal); err != nil {
 		fmt.Fprintf(stderr, "write session journal: %v\n", err)
 		return 1

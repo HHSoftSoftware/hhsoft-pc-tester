@@ -281,11 +281,28 @@ coverage. Neither scope establishes an overall hardware pass.
 Reports produced by the quick-session workflow also sign the stop reason,
 worker execution states, and mount/network safety history: session preflight,
 checks before started workers, final observations, and a fresh check before
-signing. An unsafe or incomplete safety observation cannot be erased by a later
-safe one. These are snapshots, not continuous monitoring. The extra shell checks
-before session launch and after report creation remain separate operational
-gates. Direct capture and direct finalization without a session journal retain
-their older limited scope and do not claim this session history.
+signing. The periodic-monitor increment adds a journal v3 summary while retaining
+the same ten worker outcomes. It samples read-only mount and network metadata
+once per second, allows one second per observation and at most 2,500 milliseconds
+between observations, and remains active through final safety. Its first unsafe,
+unknown, timed-out, or excessively delayed observation stops active work and
+blocks signing; a later safe result cannot erase it. The monitor must join
+within two seconds before signing. A clean operator stop can still be reported.
+
+The monitor writes `session-safety-monitor.json` in the configured evidence
+directory (`/run/hhpt` at boot). It records bounded timing, sample counts, cleanup
+confirmation, and any first failure. On a signed session, the journal's monitor
+summary matches this diagnostic file. Preserve it with the other session
+evidence when investigating a stop; it cannot authorize signing by itself.
+
+A session shorter than the first one-second tick honestly records no periodic
+sample and still requires preflight and final snapshots. Periodic sampling
+cannot detect every change between observations and is not continuous coverage.
+Automated and native Linux suites, race checks, and signed CLI workflows passed;
+rebuilt-image and physical qualification remain open. The extra shell checks
+before session launch and after report creation remain separate operational gates. Direct
+capture and direct finalization without a session journal retain their older
+limited scope and do not claim this session history.
 
 | Status | Operator meaning | Required action |
 | --- | --- | --- |
@@ -410,11 +427,12 @@ controlled the corresponding key pair.
   boot path.
 - Cancellation and deadlines rely on synchronous collectors cooperating;
   they cannot preempt a blocked kernel operation. The boot script has a final
-  340-second KILL guard around the session command. A nonzero session exit
+  350-second KILL guard around the session command. A nonzero session exit
   blocks `HHPT_READY` and save, even if report files already exist, and does
   not confirm that nested workers were cleaned up. Do not manually resume that
-  workflow. Continuous run-wide thermal monitoring, heartbeat supervision,
-  and hang detection remain incomplete.
+  workflow. Periodic mount/network sampling cannot establish continuous safety
+  or stop an uninterruptible kernel call. Run-wide thermal monitoring, heartbeat
+  supervision, and hang detection remain incomplete.
 - Input readiness checks read-only event-device access. Guided pointer testing
   adds relative X/Y movement and primary/advertised right/middle button cycles;
   it does not prove every key, wheel, extra button, or touch/touchpad geometry.

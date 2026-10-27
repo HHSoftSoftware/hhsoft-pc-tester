@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "components": [],
+  "system_fingerprint": {
+    "algorithm": "hmac-sha256",
+    "key_epoch": "fixture",
+    "key_id": "hmac-sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "identified_parts": 0,
+    "unidentified_parts": 0
+  },
+  "test_results": [
+    {
+      "id": "cpu.quick",
+      "version": 2,
+      "status": "pass",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.cpu/v3",
+        "status": "pass",
+        "workers": 1,
+        "iterations": 1,
+        "state_aggregate": 17,
+        "known_answer_sha256": "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
+        "duration_ms": 3,
+        "scalar": {
+          "suite": "binary64-normal-exact-v1",
+          "vector_count": 12,
+          "checks_passed": 12,
+          "workers_completed": 1,
+          "workers": [
+            {
+              "index": 0,
+              "iterations": 1,
+              "checks_passed": 12
+            }
+          ]
+        },
+        "calculation_failures": {
+          "integer": false,
+          "sha256": false,
+          "scalar": false
+        },
+        "safety": {
+          "global_timeout_ms": 1000,
+          "thermal_limit_millicelsius": 90000,
+          "thermal_sensors": 0,
+          "thermal_samples": 0,
+          "monitor_status": "completed",
+          "cleanup_confirmed": true,
+          "thermal_observations": 1,
+          "thermal_coverage": "unavailable",
+          "thermal_rejected_readings": 0,
+          "thermal_unavailable_readings": 0,
+          "thermal_enumeration_errors": 0
+        }
+      }
+    }
+  ],
+  "coverage_scope": "direct_capture"
+}

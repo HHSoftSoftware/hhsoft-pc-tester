@@ -300,6 +300,7 @@ func TestFinalizeSessionPreservesFailureAndNeverStartedReadiness(t *testing.T) {
 	fixture := newJournalFixture(t, "cpu.quick", "memory.quick", "network.readiness.quick", "storage.readiness.quick")
 	cpu := completeCPUEvidence()
 	cpu.Status, cpu.Detail = quick.StatusFail, "synthetic calculation mismatch"
+	setCPUFixtureFailure(&cpu)
 	fixture.worker(t, "cpu.quick", "completed", "fail", cpu)
 	fixture.journal.StopReason = "worker_stop"
 	arguments := fixture.args(t)
@@ -474,6 +475,7 @@ func TestFinalizeSessionCannotDowngradeCompletedFailure(t *testing.T) {
 			fixture := newJournalFixture(t, "cpu.quick")
 			cpu := completeCPUEvidence()
 			cpu.Status = quick.StatusFail
+			setCPUFixtureFailure(&cpu)
 			fixture.worker(t, "cpu.quick", state, "aborted", cpu)
 			observed := false
 			var stderr bytes.Buffer
@@ -548,6 +550,7 @@ func TestFinalizeSessionSupportsCleanStopReasonsAndCommandErrors(t *testing.T) {
 func TestFinalizeSessionPreservesEveryCompletedFailure(t *testing.T) {
 	cpu := completeCPUEvidence()
 	cpu.Status = quick.StatusFail
+	setCPUFixtureFailure(&cpu)
 	memory := completeMemoryEvidence()
 	memory.Status, memory.ActualByte = quick.StatusFail, 1
 	graphic := completeGraphicsEvidence()

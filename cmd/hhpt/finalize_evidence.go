@@ -117,6 +117,9 @@ func testEvidenceStatus(encoded []byte, expectedSchema string) (string, error) {
 }
 
 func newValidatedQuickTestResult(id string, version int, status app.TestStatus, evidence any) (app.TestResult, error) {
+	if id == "cpu.quick" && version != 2 {
+		return app.TestResult{}, errUnsupportedEvidence
+	}
 	encoded, err := json.Marshal(evidence)
 	if err != nil {
 		return app.TestResult{}, err

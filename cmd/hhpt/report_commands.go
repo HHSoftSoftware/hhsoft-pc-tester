@@ -121,7 +121,7 @@ func runCaptureWith(ctx context.Context, arguments []string, stdout, stderr io.W
 		fmt.Fprintln(stderr, "capture stopped: CPU thermal observer cleanup could not be confirmed")
 		return workerCleanupUncertainExitCode
 	}
-	cpuResult, err := newValidatedQuickTestResult("cpu.quick", 1, app.TestStatus(cpuEvidence.Status), cpuEvidence)
+	cpuResult, err := newValidatedQuickTestResult("cpu.quick", 2, app.TestStatus(cpuEvidence.Status), cpuEvidence)
 	if err != nil {
 		fmt.Fprintf(stderr, "build CPU evidence: %v\n", err)
 		return 1

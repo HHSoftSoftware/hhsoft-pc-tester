@@ -19,7 +19,7 @@
     {"id":"audio.readiness.quick","version":1,"implemented":true,"capability":"audio","profiles":["quick","standard","extended","destructive"],"estimated_seconds":1,"timeout_seconds":5},
     {"id":"audio.quick","version":1,"capability":"audio","profiles":["quick","standard","extended","destructive"],"estimated_seconds":45,"timeout_seconds":90},
     {"id":"camera.quick","version":1,"capability":"camera","profiles":["quick","standard","extended","destructive"],"estimated_seconds":30,"timeout_seconds":60},
-    {"id":"cpu.quick","version":1,"implemented":true,"capability":"cpu","profiles":["quick","standard","extended","destructive"],"estimated_seconds":3,"timeout_seconds":20},
+    {"id":"cpu.quick","version":2,"implemented":true,"capability":"cpu","profiles":["quick","standard","extended","destructive"],"estimated_seconds":3,"timeout_seconds":20},
     {"id":"cpu.stress","version":1,"capability":"cpu","profiles":["standard","extended","destructive"],"estimated_seconds":600,"timeout_seconds":660},
     {"id":"display.operator.quick","version":1,"implemented":true,"capability":"display","profiles":["quick","standard","extended","destructive"],"estimated_seconds":20,"timeout_seconds":45},
     {"id":"graphics.quick","version":1,"implemented":true,"capability":"graphics","profiles":["quick","standard","extended","destructive"],"estimated_seconds":20,"timeout_seconds":30},

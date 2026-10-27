@@ -33,7 +33,7 @@ func TestSessionRejectsExistingQuickSafetyBeforeLaterPhases(t *testing.T) {
 		{"contradictory-cleanup", func(b []byte) []byte {
 			return bytes.Replace(b, []byte(`"cleanup_confirmed":true`), []byte(`"cleanup_confirmed":false,"cleanup_confirmed":true`), 1)
 		}, false, 1},
-		{"old-schema", func(b []byte) []byte { return bytes.Replace(b, []byte("/v2"), []byte("/v1"), 1) }, false, 1},
+		{"old-schema", historicalQuickSchemaFixture, false, 1},
 		{"empty", func([]byte) []byte { return nil }, false, 1},
 		{"nonregular", nil, true, 1},
 	}

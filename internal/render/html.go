@@ -26,6 +26,7 @@ type inventoryDocument struct {
 	CoverageDescription string
 	Thermal             *thermalDocument
 	Keyboard            *keyboardDocument
+	CPUScalar           *cpuScalarDocument
 	Pointer             *pointerDocument
 }
 
@@ -94,7 +95,19 @@ table{background:var(--panel);border-collapse:collapse;border:1px solid var(--li
 </tbody>
 </table>
 </section>
-{{if .Thermal}}<section class="section" aria-labelledby="thermal-heading">
+{{if .CPUScalar}}<section class="section" aria-labelledby="cpu-scalar-heading">
+<h2 id="cpu-scalar-heading">CPU Scalar Calculation Observations</h2>
+<p>{{.CPUScalar.Scope}}</p><p>{{.CPUScalar.Finding}}</p>
+<table><tbody>
+<tr><th class="label" scope="row">Suite</th><td>{{.CPUScalar.Suite}}</td></tr>
+<tr><th class="label" scope="row">Accepted scalar checks</th><td>{{.CPUScalar.Checks}}</td></tr>
+<tr><th class="label" scope="row">Started workers</th><td>{{.CPUScalar.Started}}</td></tr>
+<tr><th class="label" scope="row">Workers completing at least one suite</th><td>{{.CPUScalar.Completed}}</td></tr>
+<tr><th class="label" scope="row">Workers with scalar mismatches</th><td>{{.CPUScalar.Mismatched}}</td></tr>
+<tr><th class="label" scope="row">Integer mismatch</th><td>{{.CPUScalar.IntegerFailure}}</td></tr>
+<tr><th class="label" scope="row">SHA-256 mismatch</th><td>{{.CPUScalar.SHA256Failure}}</td></tr>
+<tr><th class="label" scope="row">Scalar mismatch</th><td>{{.CPUScalar.ScalarFailure}}</td></tr>
+</tbody></table></section>{{end}}{{if .Thermal}}<section class="section" aria-labelledby="thermal-heading">
 <h2 id="thermal-heading">Session Temperature Observations</h2>
 <table><tbody>
 <tr><th class="label" scope="row">Scope</th><td>{{.Thermal.Scope}}</td></tr>
@@ -227,6 +240,10 @@ func renderInventoryHTML(output io.Writer, payload app.InventoryPayload, version
 	if err != nil {
 		return err
 	}
+	cpuScalar, err := cpuScalarReportDocument(payload)
+	if err != nil {
+		return err
+	}
 	components := append([]app.ComponentRecord(nil), payload.Components...)
 	sort.SliceStable(components, func(left, right int) bool {
 		if components[left].Type != components[right].Type {
@@ -258,6 +275,7 @@ func renderInventoryHTML(output io.Writer, payload app.InventoryPayload, version
 		Thermal:             thermal,
 		Keyboard:            keyboard,
 		Pointer:             pointer,
+		CPUScalar:           cpuScalar,
 	}
 	return inventoryTemplate.Execute(&limitedWriter{destination: output}, document)
 }

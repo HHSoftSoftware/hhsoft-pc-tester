@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 	"time"
@@ -121,6 +122,9 @@ func TestFinalizeAcceptsActualWorkerJSONSerialization(t *testing.T) {
 			fingerprintPath := writeTestKey(t, directory, "fixture.key", fingerprintKey)
 			cpu := completeCPUEvidence()
 			cpu.Iterations = 9007199254740993
+			cpu.Scalar.Workers[0].Iterations = cpu.Iterations
+			cpu.Scalar.ChecksPassed = 12 * (cpu.Iterations/256 + 1)
+			cpu.Scalar.Workers[0].ChecksPassed = cpu.Scalar.ChecksPassed
 			cpu.Detail = "benign A<B & C>D \u2028 text"
 			var worker, workerError bytes.Buffer
 			if encoder == "worker-output" {
@@ -174,7 +178,7 @@ func TestFinalizeAcceptsActualWorkerJSONSerialization(t *testing.T) {
 					continue
 				}
 				var evidence quick.CPUResult
-				if err := json.Unmarshal(row.Evidence, &evidence); err != nil || evidence != cpu || row.Status != app.TestPass {
+				if err := json.Unmarshal(row.Evidence, &evidence); err != nil || !reflect.DeepEqual(evidence, cpu) || row.Status != app.TestPass {
 					t.Fatalf("finalization changed worker facts: %+v, %v", evidence, err)
 				}
 				found = true

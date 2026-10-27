@@ -342,7 +342,7 @@ channels, and PECI control/threshold values. Exact path aliases count once;
 equal values do not establish sensor identity. Typed snapshots distinguish
 available, partial, and unavailable telemetry, including rejected readings and
 enumeration failures. Missing or partial telemetry does not establish safe
-temperatures, even if the bounded computation passes. CPU/memory v2 evidence
+temperatures, even if the bounded computation passes. The initial CPU/memory v2 evidence
 retains aggregate coverage, peak, monitor failure, and cleanup state only after
 joining; a known calculation or RAM mismatch remains a failure during cleanup.
 Old v1 execution evidence cannot substitute for these observations, while
@@ -353,6 +353,18 @@ race checks, and command-line workflows. Rebuilt-image qualification remains ope
 Fan, power, throttling and representative physical sensor validation remain
 open. The local CPU/RAM guard retains its 250-millisecond sampling wait; the
 separate run-wide adapter covers the other session phases and all-off runs.
+
+The CPU scalar increment runs a fixed twelve-vector binary64 suite before the
+first integer iteration and at each 256-iteration boundary. Each operation
+checks cancellation, a shared failure latch and the actual immutable deadline;
+late successful work receives no credit, while an in-flight mismatch remains a
+failure. Joined per-worker rows form CPU v3 evidence with checked counter sums.
+Counter overflow makes the result structurally unsignable, even if cleanup
+changes its diagnostic. The shared decoder supplies copied scalar summaries to
+consumers and preserves CPU v2's immutable wire encoding for historical hashes.
+CPU definition 2 uses the existing v5 journal; no catalog row or worker is added.
+Host and native Linux validation passed, including race tests and signed CLI
+paths. Rebuilt-image and physical checks for this increment remain open.
 
 ## Privilege and process model
 

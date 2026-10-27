@@ -104,6 +104,10 @@ func inventoryPDFLines(payload app.InventoryPayload, version string) ([]string, 
 	if err != nil {
 		return nil, err
 	}
+	cpuScalar, err := cpuScalarReportDocument(payload)
+	if err != nil {
+		return nil, err
+	}
 	components := append([]app.ComponentRecord(nil), payload.Components...)
 	sort.SliceStable(components, func(left, right int) bool {
 		if components[left].Type != components[right].Type {
@@ -136,6 +140,7 @@ func inventoryPDFLines(payload app.InventoryPayload, version string) ([]string, 
 		lines.add("", "COVERAGE")
 		lines.field("Scope", description, "  ")
 	}
+	appendCPUScalarPDF(&lines, cpuScalar)
 	appendThermalPDF(&lines, thermal)
 	appendKeyboardPDF(&lines, keyboard)
 	appendPointerPDF(&lines, pointer)

@@ -21,6 +21,7 @@ type LocalEvidence struct {
 	Safety               quick.SafetyEvidence
 	DurationMilliseconds int64
 	TypedSHA256          string
+	Scalar               CPUScalarSummary
 }
 
 func DecodeLocal(workerID string, encoded []byte) (LocalEvidence, error) {
@@ -28,18 +29,11 @@ func DecodeLocal(workerID string, encoded []byte) (LocalEvidence, error) {
 	var canonical []byte
 	switch workerID {
 	case "cpu.quick":
-		var value quick.CPUResult
-		if evidencejson.ValidateShape(encoded, reflect.TypeOf(value)) != nil || json.Unmarshal(encoded, &value) != nil || value.Schema != quick.CPUSchema || !validStatus(value.Status) {
-			return result, ErrInvalid
+		var err error
+		result, canonical, err = decodeCPU(encoded)
+		if err != nil {
+			return LocalEvidence{}, err
 		}
-		if quickCleanupUnconfirmed(value.Safety) {
-			return result, ErrCleanupUnconfirmed
-		}
-		if !validateCPUEvidence(value) {
-			return result, ErrInvalid
-		}
-		result = LocalEvidence{Schema: value.Schema, Status: value.Status, Safety: value.Safety, DurationMilliseconds: value.DurationMilliseconds}
-		canonical, _ = json.Marshal(value)
 	case "memory.quick":
 		var value quick.MemoryResult
 		if evidencejson.ValidateShape(encoded, reflect.TypeOf(value)) != nil || json.Unmarshal(encoded, &value) != nil || value.Schema != quick.MemorySchema || !validStatus(value.Status) {

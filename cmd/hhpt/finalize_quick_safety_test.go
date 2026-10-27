@@ -23,8 +23,13 @@ func quickSafetyFixture(id string, status quick.Status, safety quick.SafetyEvide
 	if id == "cpu.quick" {
 		result := completeCPUEvidence()
 		result.Status, result.Safety = status, safety
+		if status == quick.StatusFail {
+			setCPUFixtureFailure(&result)
+		}
 		if safety.ThermalObservations == 0 {
 			result.Iterations, result.StateAggregate, result.DurationMilliseconds = 0, 0, 0
+			result.Scalar.ChecksPassed, result.Scalar.WorkersCompleted = 0, 0
+			result.Scalar.Workers = []quick.CPUScalarWorker{}
 		}
 		return result
 	}
@@ -95,7 +100,7 @@ func TestQuickSafetyAcceptsHonestCoverageAndJoinedStops(t *testing.T) {
 		for _, id := range []string{"cpu.quick", "memory.quick"} {
 			t.Run(id+"/"+name, func(t *testing.T) {
 				evidence := quickSafetyFixture(id, item.status, item.safety)
-				if _, err := newValidatedQuickTestResult(id, 1, app.TestStatus(item.status), evidence); err != nil {
+				if _, err := newValidatedQuickTestResult(id, currentQuickFixtureVersion(id), app.TestStatus(item.status), evidence); err != nil {
 					t.Fatalf("honest joined observation rejected: %v", err)
 				}
 			})
@@ -150,7 +155,7 @@ func TestQuickSafetyRejectsContradictoryAggregates(t *testing.T) {
 			t.Run(id+"/"+name, func(t *testing.T) {
 				safety := completeCPUEvidence().Safety
 				change(&safety)
-				if _, err := newValidatedQuickTestResult(id, 1, app.TestError, quickSafetyFixture(id, quick.StatusError, safety)); !errors.Is(err, errInvalidQuickSafety) {
+				if _, err := newValidatedQuickTestResult(id, currentQuickFixtureVersion(id), app.TestError, quickSafetyFixture(id, quick.StatusError, safety)); !errors.Is(err, errInvalidQuickSafety) {
 					t.Fatalf("contradictory aggregate accepted or wrong error: %v", err)
 				}
 			})
@@ -162,7 +167,7 @@ func TestFinalizeRejectsExistingInvalidQuickSafetyBeforeFallback(t *testing.T) {
 	for _, id := range []string{"cpu.quick", "memory.quick"} {
 		original := encodeEvidenceFixture(t, quickSafetyFixture(id, quick.StatusPass, completeCPUEvidence().Safety))
 		for name, change := range map[string]func([]byte) []byte{
-			"old-version":     func(b []byte) []byte { return bytes.Replace(b, []byte("/v2"), []byte("/v1"), 1) },
+			"old-version":     historicalQuickSchemaFixture,
 			"truncated":       func(b []byte) []byte { return b[:len(b)-1] },
 			"missing-cleanup": func(b []byte) []byte { return bytes.Replace(b, []byte(`"cleanup_confirmed":true,`), nil, 1) },
 			"duplicate-cleanup": func(b []byte) []byte {
@@ -195,6 +200,16 @@ func TestFinalizeRejectsExistingInvalidQuickSafetyBeforeFallback(t *testing.T) {
 			}
 		}
 	}
+}
+
+func historicalQuickSchemaFixture(encoded []byte) []byte {
+	for _, schema := range []string{quick.CPUSchema, quick.MemorySchema} {
+		if bytes.Contains(encoded, []byte(schema)) {
+			prefix, _, _ := strings.Cut(schema, "/")
+			return bytes.Replace(encoded, []byte(schema), []byte(prefix+"/v1"), 1)
+		}
+	}
+	return encoded
 }
 
 func assertQuickSafetyFinalizationRejected(t *testing.T, id string, evidence any, outcome string) {
@@ -305,7 +320,7 @@ func TestQuickCleanupSentinelSurvivesDirectValidation(t *testing.T) {
 	for _, id := range []string{"cpu.quick", "memory.quick"} {
 		safety := completeCPUEvidence().Safety
 		safety.CleanupConfirmed = false
-		if _, err := newValidatedQuickTestResult(id, 1, app.TestFail, quickSafetyFixture(id, quick.StatusFail, safety)); !errors.Is(err, errQuickCleanupUnconfirmed) {
+		if _, err := newValidatedQuickTestResult(id, currentQuickFixtureVersion(id), app.TestFail, quickSafetyFixture(id, quick.StatusFail, safety)); !errors.Is(err, errQuickCleanupUnconfirmed) {
 			t.Fatalf("cleanup sentinel lost for %s: %v", id, err)
 		}
 	}
@@ -345,7 +360,7 @@ func TestQuickSafetyRejectsWorkBeforeAnyThermalObservation(t *testing.T) {
 						}
 						evidence = result
 					}
-					if _, err := newValidatedQuickTestResult(id, 1, app.TestError, evidence); !errors.Is(err, errInvalidQuickSafety) {
+					if _, err := newValidatedQuickTestResult(id, currentQuickFixtureVersion(id), app.TestError, evidence); !errors.Is(err, errInvalidQuickSafety) {
 						t.Fatalf("unmonitored work accepted: %v", err)
 					}
 				})
@@ -360,11 +375,11 @@ func TestQuickSafetyLargeCountsDoNotOverflowProductCheck(t *testing.T) {
 		safety := completeCPUEvidence().Safety
 		safety.ThermalCoverage = "available"
 		safety.ThermalSensors, safety.ThermalSamples, safety.ThermalObservations = maximum, maximum, 2
-		if _, err := newValidatedQuickTestResult(id, 1, app.TestError, quickSafetyFixture(id, quick.StatusError, safety)); !errors.Is(err, errInvalidQuickSafety) {
+		if _, err := newValidatedQuickTestResult(id, currentQuickFixtureVersion(id), app.TestError, quickSafetyFixture(id, quick.StatusError, safety)); !errors.Is(err, errInvalidQuickSafety) {
 			t.Fatalf("overflowing impossible aggregate accepted for %s: %v", id, err)
 		}
 		safety.ThermalCoverage, safety.ThermalEnumerationErrors = "partial", 1
-		if _, err := newValidatedQuickTestResult(id, 1, app.TestError, quickSafetyFixture(id, quick.StatusError, safety)); err != nil {
+		if _, err := newValidatedQuickTestResult(id, currentQuickFixtureVersion(id), app.TestError, quickSafetyFixture(id, quick.StatusError, safety)); err != nil {
 			t.Fatalf("necessary count bound overflowed for %s: %v", id, err)
 		}
 	}

@@ -23,6 +23,7 @@ import (
 func TestFinalizeRejectsWorkerFailureDowngrades(t *testing.T) {
 	cpu := completeCPUEvidence()
 	cpu.Status, cpu.Detail = quick.StatusFail, "known-answer calculation mismatch"
+	setCPUFixtureFailure(&cpu)
 	memory := completeMemoryEvidence()
 	memory.Status, memory.ExaminedBytes, memory.ActualByte = quick.StatusFail, 0, 1
 	graphicsResult := completeGraphicsEvidence()
@@ -77,10 +78,12 @@ func TestFinalizePreservesMatchingQuickFailureAndPartialEvidence(t *testing.T) {
 	for _, status := range []quick.Status{quick.StatusFail, quick.StatusError, quick.StatusAborted, quick.StatusInconclusive} {
 		cpu := completeCPUEvidence()
 		cpu.Status, cpu.Iterations = status, 0
+		cpu.Scalar.Workers[0].Iterations = 0
 		memory := completeMemoryEvidence()
 		memory.Status, memory.ExaminedBytes = status, 0
 		if status == quick.StatusFail {
 			cpu.Detail = "known-answer calculation mismatch"
+			setCPUFixtureFailure(&cpu)
 			memory.ActualByte = 1 // A mismatch at byte zero is still a failure.
 		}
 		graphicsResult := completeGraphicsEvidence()

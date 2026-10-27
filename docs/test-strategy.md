@@ -557,6 +557,38 @@ Regression acceptance for the current coordinator requires:
   when report artifacts exist. Shell fixtures exercise only the handoff; Go
   tests cover worker scheduling, cancellation, and journal validation.
 
+The scalar CPU increment adds twelve fixed binary64 vectors to the bounded
+worker. Its acceptance cases include:
+
+- Independent bit oracles for addition, subtraction, multiplication and
+  division, with first/last and later-suite faults on a nonzero worker.
+- Stop before launch, between known-answer operations, during every scalar
+  operation and after a complete suite. Successful late work gets no credit;
+  an observed late mismatch remains a failure through cancellation and cleanup.
+- Ordered worker rows, exact cadence and checked counter sums. Distinct integer
+  and SHA failures require distinct eligible workers; a scalar mismatch cannot
+  serve as the same worker's earlier failure. Overflow cannot regain a signable
+  schema after a later diagnostic change.
+- Historical CPU v2 typed hashes and v4/v5 interpretation, current CPU v3 with
+  definition 2, and rejection of unknown, mismatched, duplicate or hidden claims.
+  Shared validation must also cover bundles without HTML/PDF views.
+- Real coordinator/finalizer tests retaining scalar failure details through
+  operator cancellation and local heat, without later work or signing before
+  confirmed monitor joins.
+
+Focused Windows regression checks exercise these boundaries. A controlled
+cancellation-propagation check also verifies that the coordinator test's wait
+uses an independent harness timeout and retains every numeric assertion.
+The full Windows suite passed 2,543 test/subtest events across 25 packages, with
+17 platform test skips and three packages without host tests. Vet, 28 Linux
+test-binary builds and five application builds passed. Native amd64/386 ran
+28 suites with 4,608 passing events; six race suites passed 1,745 events, with
+no native skips. All 30 CLI scenarios passed, including six standalone/session
+CPU capture and signed-finalization cases on amd64, x86 SSE2 and legacy
+soft-float. Rebuilt-image checks and physical CPU coverage remain open. Legacy soft-float results establish software arithmetic
+coverage only; cross-compilation does not establish native AArch64 execution.
+Broader CPU stress, instruction coverage and performance grading remain planned.
+
 The broader target policy remains:
 
 - Unless the matrix says otherwise, adapter startup times out after 30 seconds

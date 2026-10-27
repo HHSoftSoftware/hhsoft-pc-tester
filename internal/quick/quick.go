@@ -2,21 +2,18 @@ package quick
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strconv"
 	"strings"
-	"sync"
-	"sync/atomic"
 	"time"
 )
 
 const (
-	CPUSchema            = "hhsoft.pc-tester.cpu/v2"
+	CPUSchemaV2          = "hhsoft.pc-tester.cpu/v2"
+	CPUSchema            = "hhsoft.pc-tester.cpu/v3"
 	MemorySchema         = "hhsoft.pc-tester.memory/v2"
 	defaultMemoryBytes   = 64 << 20
 	minimumMemoryBytes   = 4 << 20
@@ -43,15 +40,17 @@ type CPUOptions struct {
 }
 
 type CPUResult struct {
-	Schema               string         `json:"schema"`
-	Status               Status         `json:"status"`
-	Workers              int            `json:"workers"`
-	Iterations           uint64         `json:"iterations"`
-	StateAggregate       uint64         `json:"state_aggregate"`
-	KnownAnswerSHA256    string         `json:"known_answer_sha256"`
-	DurationMilliseconds int64          `json:"duration_ms"`
-	Safety               SafetyEvidence `json:"safety"`
-	Detail               string         `json:"detail,omitempty"`
+	Schema               string                 `json:"schema"`
+	Status               Status                 `json:"status"`
+	Workers              int                    `json:"workers"`
+	Iterations           uint64                 `json:"iterations"`
+	StateAggregate       uint64                 `json:"state_aggregate"`
+	KnownAnswerSHA256    string                 `json:"known_answer_sha256"`
+	DurationMilliseconds int64                  `json:"duration_ms"`
+	Scalar               CPUScalarEvidence      `json:"scalar"`
+	CalculationFailures  CPUCalculationFailures `json:"calculation_failures"`
+	Safety               SafetyEvidence         `json:"safety"`
+	Detail               string                 `json:"detail,omitempty"`
 }
 
 type MemoryOptions struct {
@@ -78,93 +77,6 @@ type MemoryResult struct {
 }
 
 type safetyMonitorFactory func(context.Context, string, time.Duration, int) *safetyMonitor
-
-func RunCPU(ctx context.Context, options CPUOptions) CPUResult {
-	return runCPUWith(ctx, options, newSafetyMonitor)
-}
-
-func runCPUWith(ctx context.Context, options CPUOptions, startMonitor safetyMonitorFactory) (result CPUResult) {
-	result = CPUResult{Schema: CPUSchema, Status: StatusError, KnownAnswerSHA256: hex.EncodeToString(expectedKnownAnswer[:]), Safety: unstartedSafety()}
-	if options.Duration <= 0 || options.Duration > 5*time.Minute || options.GlobalTimeout < 10*time.Millisecond || options.GlobalTimeout > 10*time.Minute || options.ThermalLimit < 50000 || options.ThermalLimit > 125000 {
-		result.Detail = "invalid CPU quick-test limits"
-		return result
-	}
-	if options.Workers <= 0 {
-		options.Workers = runtime.NumCPU()
-	}
-	if options.Workers > 64 {
-		options.Workers = 64
-	}
-	result.Safety.GlobalTimeoutMilliseconds = options.GlobalTimeout.Milliseconds()
-	result.Safety.ThermalLimitMilliCelsius = options.ThermalLimit
-	if options.Root == "" {
-		options.Root = "/"
-	}
-	result.Workers = options.Workers
-	monitor := startMonitor(ctx, options.Root, options.GlobalTimeout, options.ThermalLimit)
-	defer finishSafety(monitor, &result.Status, &result.Detail, &result.Safety)
-	if err := monitor.failure(); err != nil {
-		result.Status = safetyStatus(err)
-		result.Detail = safetyDetail(err)
-		return result
-	}
-	started := time.Now()
-	workContext, stopWork := context.WithTimeout(monitor.context, options.Duration)
-	defer stopWork()
-	var iterations atomic.Uint64
-	var stateAggregate atomic.Uint64
-	var calculationFailure atomic.Bool
-	var workers sync.WaitGroup
-	for workerIndex := 0; workerIndex < options.Workers; workerIndex++ {
-		workers.Add(1)
-		go func(workerIndex int) {
-			defer workers.Done()
-			var localIterations uint64
-			state := uint64(workerIndex) + 0x0123456789abcdef
-			for {
-				if calculationFailure.Load() {
-					break
-				}
-				select {
-				case <-workContext.Done():
-					iterations.Add(localIterations)
-					stateAggregate.Add(state)
-					return
-				default:
-				}
-				if localIterations&0xff == 0 && (integerRound(0x0123456789abcdef) != expectedIntegerRound || sha256.Sum256(knownAnswerInput) != expectedKnownAnswer) {
-					calculationFailure.Store(true)
-					break
-				}
-				state = integerRound(state)
-				localIterations++
-			}
-			iterations.Add(localIterations)
-			stateAggregate.Add(state)
-		}(workerIndex)
-	}
-	workers.Wait()
-	result.DurationMilliseconds = time.Since(started).Milliseconds()
-	result.Iterations = iterations.Load()
-	result.StateAggregate = stateAggregate.Load()
-	if calculationFailure.Load() {
-		result.Status = StatusFail
-		result.Detail = "known-answer calculation mismatch"
-		return result
-	}
-	if err := monitor.failure(); err != nil {
-		result.Status = safetyStatus(err)
-		result.Detail = safetyDetail(err)
-		return result
-	}
-	if result.Iterations == 0 {
-		result.Status = StatusInconclusive
-		result.Detail = "no calculation completed"
-		return result
-	}
-	result.Status = StatusPass
-	return result
-}
 
 func RunMemory(ctx context.Context, options MemoryOptions) MemoryResult {
 	return runMemoryWith(ctx, options, newSafetyMonitor)

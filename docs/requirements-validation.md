@@ -210,8 +210,8 @@ observations do not provide continuous coverage, thermal or heartbeat monitoring
 stress qualification, privilege isolation, or preemptive containment of a
 blocked kernel operation. These results do not establish publication readiness.
 
-The subsequent local thermal prerequisite is implemented in source. CPU and
-memory evidence now use `hhsoft.pc-tester.cpu/v2` and
+The subsequent local thermal prerequisite is implemented in source. It introduced
+`hhsoft.pc-tester.cpu/v2` and
 `hhsoft.pc-tester.memory/v2`. The initial and subsequent observations have
 one-second deadlines; subsequent samples start after a 250-millisecond wait
 following completion. Results are constructed after a bounded two-second
@@ -518,6 +518,32 @@ metadata observations does not establish persistent physical identity or detect
 every replacement that reuses a kernel number. Health telemetry, sampled/full
 reads and the broader storage matrix remain planned. Rebuilt-image, physical
 replacement/cancellation, pilot and frozen-alpha release gates remain open.
+
+The next CPU increment implements twelve fixed binary64 addition, subtraction,
+multiplication and division vectors in the bounded worker. CPU v3 evidence adds
+ordered per-worker counts, exact mismatch bits and separate integer, SHA-256 and
+scalar failure flags. Current CPU definition 2 uses the existing v5 journal and
+22-row report. Historical CPU v2 hashes and definition 1 remain valid under their
+original strict v4/v5 rules; memory evidence is unchanged.
+
+Affected-package Windows regression tests passed 1,788 test/subtest events across
+nine packages, with 16 platform test skips and no failures. Cases cover cadence,
+late work, distinct failure workers, counter overflow, historical typed hashes,
+version pairing, no-view verification and HTML/PDF summaries. Completed-result
+fixtures with first, last and later-suite faults on a nonzero worker cross the
+real session coordinator and finalizer, including operator cancellation and local
+heat. Separate producer tests exercise the operation and worker-coordination
+boundaries. Full host validation passed 2,543 test/subtest events across 25
+packages, with 17 platform test skips and three packages without host tests.
+Vet, 28 Linux test-binary builds and five application builds passed. The 28
+native Linux amd64/386 suites passed 4,608 events; six race suites passed 1,745
+events, with no native skips. All 30 CLI scenarios passed, including six new
+standalone/session CPU capture and signed-finalization cases across amd64, x86
+SSE2 and legacy x86 soft-float. Fresh beta images and physical CPU checks
+remain open. The fixed suite does not establish wider instruction coverage or
+stress/performance behavior; legacy soft-float validates software arithmetic,
+not hardware FPU execution. The frozen initial alpha candidate and its release
+gates are unchanged.
 
 Regression coverage for these cases belongs with the corresponding feature,
 not with a blanket claim of complete product coverage. Linux mount/device

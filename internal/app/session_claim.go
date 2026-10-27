@@ -26,6 +26,9 @@ func HasKeyboardClaim(encoded []byte) bool {
 	return hasReportClaim(encoded, keyboardClaim)
 }
 
+// HasCPUScalarClaim selects strict CPU-v3/definition-2 validation before decoding can discard aliases or duplicate claims.
+func HasCPUScalarClaim(encoded []byte) bool { return hasReportClaim(encoded, cpuScalarClaim) }
+
 // HasPointerClaim selects strict validation for functional pointer evidence or
 // a newer definition, including claims hidden by duplicate fields or aliases.
 // ID-only session workers do not claim a definition or observed wheel coverage.
@@ -40,6 +43,7 @@ const (
 	keyboardClaim
 	anySessionClaim
 	pointerClaim
+	cpuScalarClaim
 )
 
 func hasReportClaim(encoded []byte, kind reportClaim) bool {
@@ -82,14 +86,20 @@ func findReportClaim(decoder *json.Decoder, depth int, kind reportClaim) (bool, 
 			if kind == pointerClaim && (strings.EqualFold(name, "wheel_axes") || strings.EqualFold(name, "wheels")) {
 				return true, nil, nil
 			}
+			if kind == cpuScalarClaim && (strings.EqualFold(name, "scalar") || strings.EqualFold(name, "calculation_failures")) {
+				return true, nil, nil
+			}
 			found, scalar, err := findReportClaim(decoder, depth+1, kind)
 			if found || err != nil {
 				return found, nil, err
 			}
-			if kind == keyboardClaim || kind == pointerClaim {
+			if kind == keyboardClaim || kind == pointerClaim || kind == cpuScalarClaim {
 				wantedID := "input.keyboard.quick"
 				if kind == pointerClaim {
 					wantedID = "input.pointer.quick"
+				}
+				if kind == cpuScalarClaim {
+					wantedID = "cpu.quick"
 				}
 				if value, ok := scalar.(string); ok && strings.EqualFold(name, "id") && strings.EqualFold(value, wantedID) {
 					definitionID = true
@@ -125,6 +135,10 @@ func findReportClaim(decoder *json.Decoder, depth int, kind reportClaim) (bool, 
 		if kind == pointerClaim {
 			name, _, versioned := strings.Cut(value, "/")
 			return ok && versioned && strings.EqualFold(name, "hhsoft.pc-tester.pointer-functional"), token, nil
+		}
+		if kind == cpuScalarClaim {
+			name, version, versioned := strings.Cut(value, "/")
+			return ok && versioned && strings.EqualFold(name, "hhsoft.pc-tester.cpu") && version != "v2", token, nil
 		}
 		if kind == anySessionClaim {
 			name, _, versioned := strings.Cut(value, "/")

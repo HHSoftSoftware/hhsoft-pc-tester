@@ -284,9 +284,9 @@ func TestSessionStopsAndFinalizesWithFreshContext(t *testing.T) {
 					evidence.Status = quick.StatusAborted
 					h.clock = h.clock.Add(21 * time.Second)
 				case "worker_stop":
-					evidence.Status = quick.StatusFail
+					setCPUFixtureFailure(&evidence)
 				case "failure_cancel_race":
-					evidence.Status = quick.StatusFail
+					setCPUFixtureFailure(&evidence)
 					cancel()
 				}
 				writeSessionFixture(t, worker.OutputPath, evidence)

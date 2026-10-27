@@ -182,7 +182,7 @@ CLI workflows. Each 2.5-second deadline case on modern x64/x86 and legacy x86
 retained two periodic observations, and the signed summary exactly matched the
 monitor diagnostic. Rebuilt-image and physical gates remain open.
 
-The subsequent local CPU/RAM guard uses v2 worker evidence with explicit
+The subsequent local CPU/RAM guard introduced v2 worker evidence with explicit
 thermal coverage, completed-observation counts, peak, monitor state/failure,
 and confirmed cleanup. That local-guard increment left journal v3 and the
 22-result report unchanged.
@@ -214,11 +214,11 @@ retained byte copy. `evidence_typed_sha256` hashes this canonical input:
 
 ```text
 "hhsoft.pc-tester.local-thermal-evidence/v1" || NUL || evidence_schema || NUL ||
-json.Marshal(strictly validated CPUResult or MemoryResult)
+json.Marshal(strictly validated version-specific CPU or memory wire value)
 ```
 
 Both digests use `sha256:` followed by lowercase hexadecimal SHA-256. The typed
-encoding uses the full v2 result, its declared field order and normal Go JSON
+encoding uses the full declared result version, its field order and normal Go JSON
 escaping, without indentation or a trailing newline. Report-only verification
 recomputes the typed digest from embedded evidence; it checks the file digest's
 format but cannot reconstruct original file whitespace. Duplicate, unknown,
@@ -226,6 +226,18 @@ case-aliased, missing or contradictory claims are rejected before interpretation
 The nested journal retains its 64 KiB limit even inside run-integrity evidence.
 Local duration must fit its recorded worker interval, and heat cannot be replaced
 by a missing-file execution note or a later cooler source.
+
+CPU v3 adds a fixed scalar suite, ordered per-worker counts, optional exact
+mismatch bits and separate integer/SHA-256/scalar failure flags. Its definition
+version is 2; current finalization requires that pair. Historical definition 1
+and CPU v2 keep their original field order, omission rules and typed hash through
+an immutable wire type, including in strict v4/v5 reports. New scalar evidence
+requires v5 for session reports, but remains supported in strict standalone
+capture/finalization. Unknown versions, impossible counter or failure
+relationships, hidden claims and definition downgrades fail shared validation,
+including bundles without views. The eleven workers and 22 report rows are
+unchanged. Host and native Linux validation passed, including signed standalone
+and v5 session CPU cases. Rebuilt-image and physical qualification remain open.
 
 New v4 claims use shared structural and binding validation in finalization,
 verification, comparison and HTML/PDF rendering, including bundles without

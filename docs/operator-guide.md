@@ -104,6 +104,15 @@ read. USB readiness issues no USB transfers. Network readiness configures
 nothing and sends no traffic. An active non-loopback interface or writable
 block mount causes safe mode to fail closed.
 
+The development CPU worker includes twelve fixed binary64 arithmetic checks.
+Reports show the validated scalar check count, workers with a completed suite,
+and distinct integer, SHA-256 and scalar failure flags. A worker may complete an
+earlier suite and fail later; its completed count does not erase the failure.
+These are bounded correctness samples, not performance scores or complete CPU
+coverage. On legacy x86, soft-float checks software arithmetic and does not
+validate a hardware FPU. Host and native Linux validation passed. Rebuilt-image
+and physical qualification of this scalar increment remain pending.
+
 Skipping a quick test does not disable the independent mount and network safety
 checks. The report records the choices and marks applicable skipped tests as
 `excluded`; hardware that is absent or lacks a driver keeps its corresponding

@@ -129,6 +129,16 @@ guard passed Windows tests, vet, cross-builds, native Linux suites, race checks,
 and command-line workflows. Rebuilt-image and physical-sensor qualification
 remain open.
 
+The CPU worker in development source also checks twelve fixed binary64
+addition, subtraction, multiplication and division results on every worker.
+CPU v3 evidence records completed checks and exact mismatch bits; integer, SHA-256
+and scalar failures remain distinct. Focused regression checks cover the signed
+report path and historical CPU v2 compatibility. Full host and native Linux
+validation passed, including race tests and signed CLI cases. Rebuilt images
+and physical CPU checks for this increment remain open. These
+bounded checks are not a benchmark or comprehensive instruction test; legacy
+x86 soft-float exercises software arithmetic rather than the hardware FPU.
+
 Development source now also monitors temperatures throughout the quick session,
 including excluded-test runs, cleanup and final inventory. Journal v4 records
 initial, periodic and final observations and requires both session monitors to

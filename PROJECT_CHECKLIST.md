@@ -164,6 +164,20 @@ the alpha still requires the separate documented release gates.
 
 - [x] Run a bounded CPU known-answer quick worker with independent thermal and
   global deadline monitoring.
+- [x] Add twelve fixed scalar binary64 checks to each CPU worker, with per-worker
+  counts and retained mismatch bits in CPU v3 evidence. Shared validation binds
+  CPU definition 2 through capture, v5 sessions, signed bundles and HTML/PDF
+  reports; historical CPU v2 hashes and v4/v5 verification remain supported.
+- [x] Validate the scalar CPU increment with the full host suite: 2,543
+  test/subtest passes across 25 packages, 17 platform test skips and three
+  packages without host test files. Vet, 28 Linux test-binary builds and five
+  application builds passed. Native Linux amd64/386 ran 28 suites with 4,608
+  test events; six race suites passed 1,745 events, with no native skips. All
+  30 CLI scenarios passed, including standalone and session CPU capture and
+  signed finalization on amd64, x86 SSE2 and legacy x86 soft-float.
+- [ ] Qualify the scalar CPU increment in rebuilt images and on representative
+  physical CPUs. Legacy soft-float execution establishes software arithmetic
+  coverage; hardware floating-point coverage remains separate.
 - [x] Include Linux hwmon temperature readings in the CPU/RAM thermal guard,
   filtering unavailable, disabled, faulted, uncalibrated, and known threshold
   channels. The earlier hwmon milestone passed native amd64 and 386 soft-float
@@ -174,7 +188,7 @@ the alpha still requires the separate documented release gates.
   automated and native Linux fixtures. The guard bounds the initial and later
   readings, joins the observer before returning evidence, reports
   available/partial/unavailable coverage, and blocks signing when cleanup is
-  unconfirmed. CPU and memory evidence use v2; known
+  unconfirmed. That milestone introduced CPU and memory v2 evidence; known
   calculation and memory failures remain failures. Windows tests, vet, five
   application builds, native amd64/386 suites, race checks, and command-line
   workflows passed; counts are recorded in

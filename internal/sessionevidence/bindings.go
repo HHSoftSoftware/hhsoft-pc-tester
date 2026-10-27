@@ -10,6 +10,7 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/evidencejson"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inputtest"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/keyboardevidence"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quick"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quickevidence"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/thermal"
 )
@@ -69,6 +70,10 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 			j.Schema == SchemaV4 && binding.ID == "input.pointer.quick" && binding.Version != 1 {
 			return ErrInvalid
 		}
+		if hasNewCPUClaim(binding.Evidence) && (binding.ID != "cpu.quick" || binding.Version != 2 || j.Schema != Schema) ||
+			binding.ID == "cpu.quick" && (binding.Version < 0 || binding.Version > 2 || j.Schema == SchemaV4 && binding.Version == 2) {
+			return ErrInvalid
+		}
 		byID[binding.ID] = binding
 	}
 	localSources := make(map[string]LocalThermalSource, len(j.LocalThermalSources))
@@ -106,6 +111,10 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 			return ErrInvalid
 		}
 		if header.Schema == "hhsoft.pc-tester.execution-note/v1" {
+			if worker.ID == "cpu.quick" && binding.Version == 2 && ValidateCPUExecutionNote(binding) != nil {
+				return ErrInvalid
+			}
+
 			var note executionNote
 			if evidencejson.ValidateShape(binding.Evidence, reflect.TypeOf(note)) != nil || json.Unmarshal(binding.Evidence, &note) != nil || note.Status != binding.ReportStatus || note.SourceStatus != worker.Outcome {
 				return ErrInvalid
@@ -123,6 +132,10 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 		}
 		local, err := quickevidence.DecodeLocal(worker.ID, binding.Evidence)
 		if err != nil || string(local.Status) != worker.Outcome || local.DurationMilliseconds > worker.Timing.FinishedMilliseconds-worker.Timing.StartedMilliseconds || local.Safety.ThermalObservations > 0 && local.Safety.ThermalLimitMilliCelsius != thermal.LimitMilliCelsius {
+			return ErrInvalid
+		}
+		if worker.ID == "cpu.quick" && (local.Schema == quick.CPUSchema && binding.Version != 2 ||
+			local.Schema == quick.CPUSchemaV2 && binding.Version != 0 && binding.Version != 1) {
 			return ErrInvalid
 		}
 		hot := local.Safety.ThermalSamples > 0 && local.Safety.PeakMilliCelsius >= local.Safety.ThermalLimitMilliCelsius

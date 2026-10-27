@@ -22,7 +22,7 @@ func TestValidateRejectsTamperedCatalogEvenAfterRehash(t *testing.T) {
 		{"duplicate test", func(t *testing.T, p *Plan) { p.Tests[1] = p.Tests[0] }},
 		{"reordered tests", func(t *testing.T, p *Plan) { p.Tests[0], p.Tests[1] = p.Tests[1], p.Tests[0] }},
 		{"unknown test", func(t *testing.T, p *Plan) { findPlanTest(t, p, "cpu.quick").ID = "cpu.fake" }},
-		{"changed version", func(t *testing.T, p *Plan) { findPlanTest(t, p, "cpu.quick").Version = 2 }},
+		{"changed version", func(t *testing.T, p *Plan) { findPlanTest(t, p, "cpu.quick").Version = 3 }},
 		{"zero version", func(t *testing.T, p *Plan) { findPlanTest(t, p, "cpu.quick").Version = 0 }},
 		{"changed estimate", func(t *testing.T, p *Plan) { findPlanTest(t, p, "cpu.quick").EstimatedSeconds = 4 }},
 		{"zero timeout", func(t *testing.T, p *Plan) { findPlanTest(t, p, "cpu.quick").TimeoutSeconds = 0 }},

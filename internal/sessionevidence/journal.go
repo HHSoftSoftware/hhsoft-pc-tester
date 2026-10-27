@@ -137,9 +137,12 @@ func ValidateStructure(j Journal) error {
 	previousSource := -1
 	for _, source := range j.LocalThermalSources {
 		index := 0
-		schema := quick.CPUSchema
+		schema := quick.CPUSchemaV2
 		switch source.WorkerID {
 		case "cpu.quick":
+			if j.Schema == Schema && source.EvidenceSchema == quick.CPUSchema {
+				schema = quick.CPUSchema
+			}
 		case "memory.quick":
 			index = 1
 			schema = quick.MemorySchema

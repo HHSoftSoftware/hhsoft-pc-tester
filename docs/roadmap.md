@@ -133,7 +133,7 @@ requirements below still apply.
 
 The next thermal prerequisite is implemented in source: local CPU/RAM guards
 bound the initial and periodic observations, join before returning results, and
-record truthful coverage in CPU/memory v2 evidence. Unconfirmed cleanup blocks
+record the coverage first introduced in CPU/memory v2 evidence. Unconfirmed cleanup blocks
 later work and signing; observed calculation or memory failures are preserved.
 Windows tests, vet, cross-builds, native Linux suites, race checks, and
 command-line workflows passed. Rebuilt-image and physical-sensor qualification
@@ -174,6 +174,16 @@ qualifying all four beta images and testing physical keyboards remain open.
 Layout-aware coverage, other keys, rollover and ghosting remain planned. The
 ten-PC beta pilot and the initial alpha's separate release gates remain open;
 this increment does not expand the frozen alpha candidate's scope.
+
+The CPU worker now adds twelve fixed scalar binary64 operations per suite, with
+per-worker counts and exact mismatch bits. Definition 2 uses CPU v3 evidence in
+the existing eleven-worker v5 session; CPU v2 evidence keeps its historical
+definition and typed hash. Focused tests cover arithmetic, stop boundaries and
+signed consumers. Full host and native Linux validation passed, including race
+checks and standalone/session CLI paths. Rebuilt images and physical CPU checks
+for this increment remain open. Legacy soft-float coverage is software
+arithmetic only. Wider ISA, compression, sustained stress, performance, power and
+throttling checks remain planned.
 
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.

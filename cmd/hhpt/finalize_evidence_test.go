@@ -18,9 +18,26 @@ import (
 
 func completeCPUEvidence() quick.CPUResult {
 	return quick.CPUResult{Schema: quick.CPUSchema, Status: quick.StatusPass, Workers: 1, Iterations: 42,
+		Scalar: quick.CPUScalarEvidence{Suite: quick.CPUScalarSuite, VectorCount: 12, ChecksPassed: 12, WorkersCompleted: 1,
+			Workers: []quick.CPUScalarWorker{{Index: 0, Iterations: 42, ChecksPassed: 12}}},
 		StateAggregate: 17, KnownAnswerSHA256: "ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad",
 		DurationMilliseconds: 20, Safety: quick.SafetyEvidence{GlobalTimeoutMilliseconds: 20000, ThermalLimitMilliCelsius: 90000,
 			MonitorStatus: "completed", CleanupConfirmed: true, ThermalObservations: 1, ThermalCoverage: "unavailable"}}
+}
+
+func setCPUFixtureFailure(cpu *quick.CPUResult) {
+	cpu.Status = quick.StatusFail
+	cpu.Iterations = 0
+	cpu.Scalar.ChecksPassed, cpu.Scalar.WorkersCompleted = 0, 0
+	cpu.Scalar.Workers = []quick.CPUScalarWorker{{Index: 0}}
+	cpu.CalculationFailures.Integer = true
+}
+
+func currentQuickFixtureVersion(id string) int {
+	if id == "cpu.quick" {
+		return 2
+	}
+	return 1
 }
 
 func completeMemoryEvidence() quick.MemoryResult {
@@ -194,6 +211,7 @@ func TestWorkerEvidenceRejectsAmbiguousJSON(t *testing.T) {
 func TestWorkerEvidencePreservesNonPassObservationsAndLimitedReadiness(t *testing.T) {
 	cpu := completeCPUEvidence()
 	cpu.Status, cpu.Iterations, cpu.Detail = quick.StatusAborted, 0, "global deadline exceeded"
+	cpu.Scalar.Workers[0].Iterations = 0
 	disk := completeStorageEvidence()
 	disk.Status, disk.WritableMounts, disk.Detail = storage.StatusError, 1, "a block device has a writable mount"
 	input := completeInputEvidence()

@@ -450,6 +450,44 @@ All four fresh beta images, physical wheel and sensor checks, and the pilot on
 at least ten varied PCs remain open. The frozen initial alpha candidate and its
 separate source, image and release-approval gates are unchanged.
 
+Storage readiness now binds the expected canonical unsigned 32-bit major/minor
+identity to both pathname metadata and the opened block descriptor. Registry and
+mount parsing reject numeric aliases and malformed identities. Duplicate device
+numbers fail across the complete registry, including excluded interfaces.
+Read-only opens use `O_NOFOLLOW`, and a later registry recheck must still match.
+Each acquired descriptor gets one close attempt; failed closure remains an error.
+Cancellation at the helper or caller boundary revokes the current observation's
+readable flag and credit while retaining earlier unsafe mount observations.
+
+Focused Windows checks passed five test/subtest events without skips or failures.
+Independent simulated registry, metadata and descriptor cases passed 71 events
+without failures, including stable wrong nodes, swaps, symlink insertion,
+duplicate identities, high device-number bits, close failures and cancellation.
+These cases exercised production decisions with inert device operations; they
+did not execute Linux kernel device operations. Linux storage vet and amd64/386
+test-binary cross-builds also passed. Full Windows qualification then passed
+2,369 test/subtest events across 25 packages, with 17 platform test skips,
+three packages without host test files and no failures. Vet, 28 Linux test-binary
+builds and five application builds passed against the same source.
+
+Native Linux amd64/386 qualification passed 4,220 test/subtest events across
+28 suite runs, including 67 storage events on each architecture. The five
+existing input, periodic, safemode, thermal and command
+race suites passed 1,508 events; native and race runs had no skips. All 24 CLI
+cases passed with confirmed cleanup. Nine compiler ownership, nine runtime
+ownership, 32 archive and 13 supervisor checks passed, and all six final
+environment checks were reconciled. Storage identity fixtures used simulated
+metadata and descriptors without accessing physical disks or reading media
+contents. AArch64 was cross-built only; these results establish no physical
+storage qualification.
+
+The storage-readiness v1 schema, catalog and session journal are unchanged, and
+the adapter performs no media-content reads or writes. Agreement between these
+metadata observations does not establish persistent physical identity or detect
+every replacement that reuses a kernel number. Health telemetry, sampled/full
+reads and the broader storage matrix remain planned. Rebuilt-image, physical
+replacement/cancellation, pilot and frozen-alpha release gates remain open.
+
 Regression coverage for these cases belongs with the corresponding feature,
 not with a blanket claim of complete product coverage. Linux mount/device
 fixtures and real APK selection require the appropriate Linux environment;

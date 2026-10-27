@@ -27,7 +27,36 @@ type mountState struct {
 }
 
 func runPlatform(ctx context.Context, options Options) Result {
+	return runPlatformWith(ctx, options, realBlockNodeOperations())
+}
+
+type blockNodeFile interface {
+	Stat() (os.FileInfo, error)
+	Close() error
+}
+
+type blockNodeOperations struct {
+	lstat        func(string) (os.FileInfo, error)
+	open         func(string, int, os.FileMode) (blockNodeFile, error)
+	deviceNumber func(string) (deviceNumber, bool)
+}
+
+func realBlockNodeOperations() blockNodeOperations {
+	return blockNodeOperations{
+		lstat: os.Lstat,
+		open: func(path string, flags int, mode os.FileMode) (blockNodeFile, error) {
+			return os.OpenFile(path, flags, mode)
+		},
+		deviceNumber: readDeviceNumber,
+	}
+}
+
+func runPlatformWith(ctx context.Context, options Options, operations blockNodeOperations) Result {
 	result := Result{Schema: Schema, Status: StatusError}
+	if ctx == nil || operations.lstat == nil || operations.open == nil || operations.deviceNumber == nil {
+		result.Detail = "storage readiness dependencies are incomplete"
+		return result
+	}
 	if ctx.Err() != nil {
 		result.Status = StatusAborted
 		result.Detail = "cancelled"
@@ -52,6 +81,8 @@ func runPlatform(ctx context.Context, options Options) Result {
 		return result
 	}
 	writableDevices := make(map[string]struct{})
+	registeredDevices := make(map[deviceNumber]struct{})
+	expectedDevices := make(map[string]deviceNumber)
 	for _, entry := range entries {
 		if ctx.Err() != nil {
 			result.Status = StatusAborted
@@ -63,18 +94,29 @@ func runPlatform(ctx context.Context, options Options) Result {
 			result.Detail = "block device registry contains an invalid interface"
 			return result
 		}
-		deviceNumber, ok := readSmallValue(filepath.Join(root, "sys/class/block", name, "dev"))
+		number, ok := operations.deviceNumber(filepath.Join(root, "sys/class/block", name, "dev"))
 		if !ok {
-			result.Detail = "block device registry lacks a device number"
+			result.Detail = "block device registry lacks a canonical device number"
 			return result
 		}
-		state := mounts[deviceNumber]
+		state := mounts[number.String()]
 		// Mount safety applies to every registered block device, including
 		// mappings and loop devices excluded from hardware readiness evidence.
 		if state.writable {
-			writableDevices[deviceNumber] = struct{}{}
+			writableDevices[number.String()] = struct{}{}
 			// Keep an unsafe observation if later enumeration fails or stops.
 			result.WritableMounts = len(writableDevices)
+		}
+		if _, duplicate := registeredDevices[number]; duplicate {
+			result.Detail = "block device registry repeats a device number"
+			return result
+		}
+		registeredDevices[number] = struct{}{}
+		expectedDevices[name] = number
+		if ctx.Err() != nil {
+			result.Status = StatusAborted
+			result.Detail = "cancelled"
+			return result
 		}
 		device, include, deviceErr := inspectRegistryDevice(root, name, state)
 		if deviceErr != nil {
@@ -111,7 +153,19 @@ func runPlatform(ctx context.Context, options Options) Result {
 		if device.Kind != "media" {
 			continue
 		}
-		device.NodePresent, device.Readable, device.ReadinessIssue = inspectBlockNode(root, device.Interface)
+		inspection := inspectBlockNode(ctx, root, device.Interface, expectedDevices[device.Interface], operations)
+		device.NodePresent, device.Readable, device.ReadinessIssue = inspection.present, inspection.readable, inspection.issue
+		if inspection.cleanupError != nil {
+			result.Detail = "block node closure could not be confirmed"
+			return result
+		}
+		if ctx.Err() != nil {
+			device.Readable = false
+			device.ReadinessIssue = "cancelled"
+			result.Status = StatusAborted
+			result.Detail = "cancelled"
+			return result
+		}
 		if device.Readable {
 			result.ReadableDevices++
 		}
@@ -167,31 +221,115 @@ func inspectRegistryDevice(root, name string, state mountState) (DeviceResult, b
 	return device, true, nil
 }
 
-func inspectBlockNode(root, name string) (bool, bool, string) {
-	devicePath := filepath.Join(root, "dev", name)
-	metadata, err := os.Lstat(devicePath)
-	if err != nil {
-		return false, false, "block node is absent"
-	}
-	if metadata.Mode()&os.ModeSymlink != 0 || metadata.Mode()&os.ModeDevice == 0 || metadata.Mode()&os.ModeCharDevice != 0 {
-		return true, false, "device path is not a direct block node"
-	}
-	file, err := os.OpenFile(devicePath, os.O_RDONLY|syscall.O_NONBLOCK|syscall.O_CLOEXEC, 0)
-	if err != nil {
-		return true, false, "block node cannot be opened read-only"
-	}
-	openedMetadata, statErr := file.Stat()
-	_ = file.Close()
-	if statErr != nil || openedMetadata.Mode()&os.ModeDevice == 0 || openedMetadata.Mode()&os.ModeCharDevice != 0 || !sameDevice(metadata, openedMetadata) {
-		return true, false, "opened node did not remain the expected block device"
-	}
-	return true, true, ""
+type blockNodeInspection struct {
+	present      bool
+	readable     bool
+	issue        string
+	cleanupError error
 }
 
-func sameDevice(first, second os.FileInfo) bool {
-	firstStat, firstOK := first.Sys().(*syscall.Stat_t)
-	secondStat, secondOK := second.Sys().(*syscall.Stat_t)
-	return firstOK && secondOK && firstStat.Rdev == secondStat.Rdev
+func inspectBlockNode(ctx context.Context, root, name string, expected deviceNumber, operations blockNodeOperations) (result blockNodeInspection) {
+	if ctx.Err() != nil {
+		result.issue = "cancelled"
+		return result
+	}
+	registryPath := filepath.Join(root, "sys/class/block", name, "dev")
+	number, ok := operations.deviceNumber(registryPath)
+	if !ok || number != expected {
+		result.issue = "block device registry identity changed"
+		return result
+	}
+	if ctx.Err() != nil {
+		result.issue = "cancelled"
+		return result
+	}
+	devicePath := filepath.Join(root, "dev", name)
+	metadata, err := operations.lstat(devicePath)
+	if err != nil {
+		result.issue = "block node is absent"
+		return result
+	}
+	result.present = true
+	if number, ok := directBlockNumber(metadata); !ok || number != expected {
+		result.issue = "device path is not the expected direct block node"
+		return result
+	}
+	if ctx.Err() != nil {
+		result.issue = "cancelled"
+		return result
+	}
+	file, err := operations.open(devicePath, os.O_RDONLY|syscall.O_NONBLOCK|syscall.O_CLOEXEC|syscall.O_NOFOLLOW, 0)
+	if err != nil {
+		result.issue = "block node cannot be opened read-only"
+		return result
+	}
+	if file == nil {
+		result.issue = "block node handle is unavailable"
+		return result
+	}
+	defer func() {
+		if err := file.Close(); err != nil {
+			result.readable = false
+			result.issue = "block node closure could not be confirmed"
+			result.cleanupError = err
+		}
+		if ctx.Err() != nil {
+			result.readable = false
+			if result.cleanupError == nil {
+				result.issue = "cancelled"
+			}
+		}
+	}()
+	if ctx.Err() != nil {
+		result.issue = "cancelled"
+		return result
+	}
+	openedMetadata, statErr := file.Stat()
+	if number, ok := directBlockNumber(openedMetadata); statErr != nil || !ok || number != expected {
+		result.issue = "opened node did not remain the expected block device"
+		return result
+	}
+	if ctx.Err() != nil {
+		result.issue = "cancelled"
+		return result
+	}
+	number, ok = operations.deviceNumber(registryPath)
+	if !ok || number != expected {
+		result.issue = "block device registry identity changed"
+		return result
+	}
+	if ctx.Err() != nil {
+		result.issue = "cancelled"
+		return result
+	}
+	result.readable = true
+	return result
+}
+
+func directBlockNumber(metadata os.FileInfo) (deviceNumber, bool) {
+	if metadata == nil || metadata.Mode()&os.ModeSymlink != 0 || metadata.Mode()&os.ModeDevice == 0 || metadata.Mode()&os.ModeCharDevice != 0 {
+		return deviceNumber{}, false
+	}
+	stat, ok := metadata.Sys().(*syscall.Stat_t)
+	if !ok || stat == nil {
+		return deviceNumber{}, false
+	}
+	value := uint64(stat.Rdev)
+	return deviceNumber{major: uint32((value>>8)&0xfff | (value >> 32 & 0xfffff000)),
+		minor: uint32(value&0xff | (value >> 12 & 0xffffff00))}, true
+}
+
+func readDeviceNumber(path string) (deviceNumber, bool) {
+	file, err := os.Open(path)
+	if err != nil {
+		return deviceNumber{}, false
+	}
+	data, readErr := io.ReadAll(io.LimitReader(file, 23))
+	closeErr := file.Close()
+	if readErr != nil || closeErr != nil || len(data) > 22 {
+		return deviceNumber{}, false
+	}
+	return parseDeviceNumber(strings.TrimSuffix(string(data), "\n"))
 }
 
 func readMounts(path string) (map[string]mountState, error) {
@@ -214,13 +352,17 @@ func parseMounts(source io.Reader) (map[string]mountState, error) {
 			return nil, errors.New("mount registry exceeds the supported limit")
 		}
 		fields := strings.Fields(scanner.Text())
-		if len(fields) < 7 || !strings.Contains(fields[2], ":") || fields[5] == "" {
+		if len(fields) < 7 || fields[5] == "" {
 			return nil, errors.New("malformed mount registry")
 		}
-		state := result[fields[2]]
+		number, ok := parseDeviceNumber(fields[2])
+		if !ok {
+			return nil, errors.New("mount registry lacks a canonical device number")
+		}
+		state := result[number.String()]
 		state.mounted = true
 		state.writable = state.writable || listContains(fields[5], "rw")
-		result[fields[2]] = state
+		result[number.String()] = state
 	}
 	return result, scanner.Err()
 }

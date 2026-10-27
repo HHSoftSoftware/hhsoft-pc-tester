@@ -167,9 +167,27 @@ Rebuilt images, physical devices and the broader input matrix below remain open;
 see [requirements validation](requirements-validation.md) for the exact counts.
 
 The current storage readiness adapter rejects writable block mounts and checks
-that each supported media-bearing kernel block interface remains a direct block
-node when opened read-only. It deliberately reads no sector data and therefore
-cannot claim health, read correctness, throughput, or surface coverage.
+canonical unsigned 32-bit major/minor identities in both the block registry and
+mount records. Duplicate registry identities fail, including excluded mappings
+and loop devices. Each supported media-bearing interface must match its registry
+identity at both pathname inspection and descriptor inspection after a read-only
+`O_NOFOLLOW` open. A later registry recheck and successful descriptor close are
+required for credit. Cancellation cannot credit the current observation, and a
+close failure remains an error; previously observed unsafe mounts are retained.
+
+The readiness v1 evidence schema is unchanged. These metadata observations do
+not establish persistent physical identity or detect every replacement that
+reuses the same kernel device number. No sector data is read or written, so the
+adapter cannot claim health, read correctness, throughput, or surface coverage.
+
+Focused Windows checks and independent simulated metadata/descriptor cases pass,
+as do Linux vet and amd64/386 test-binary cross-builds. The full Windows suite,
+vet, 28 Linux test-binary builds and five application builds also passed against
+the same source. Native Linux amd64/386 suites, existing race suites and CLI
+workflows also passed. Storage fixtures use simulated metadata and descriptors;
+these results do not qualify physical disks or media reads. Rebuilt-image and
+physical checks remain open; see
+[requirements validation](requirements-validation.md).
 
 The current network readiness adapter checks driver attachment and link state
 without configuring an address, associating Wi-Fi, or generating traffic. The

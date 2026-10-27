@@ -222,6 +222,22 @@ the alpha still requires the separate documented release gates.
   disconnects and cancellation. Full layouts and rollover remain separate.
 - [x] Check storage mount safety and read-only block-node readiness without
   reading or changing media contents.
+- [x] Bind storage readiness to canonical registry, pathname and open-descriptor
+  device numbers; reject duplicate identities and final-component
+  symlinks, recheck registry identity, and withhold current-device credit after
+  cancellation or failed closure. Focused and independent simulated checks pass;
+  the readiness v1 schema and no-media-I/O boundary are unchanged.
+- [x] Validate storage identity hardening with the full host suite: 2,369
+  test/subtest passes across 25 packages, 17 platform test skips and three
+  packages without host test files. Vet, 28 Linux test-binary builds and five
+  application builds passed against the same source.
+- [x] Validate storage identity hardening with native Linux amd64/386 fixtures.
+  The 28 suite runs passed 4,220 test/subtest events, and five existing race
+  suites passed 1,508, with no skips. All 24 CLI cases and cleanup checks passed;
+  this does not establish physical-disk behavior or media-read correctness.
+- [ ] Qualify storage readiness, replacement and cancellation in rebuilt images
+  and on physical devices. Matching kernel numbers do not prove persistent
+  physical identity or detect every same-number replacement.
 - [x] Check Ethernet/Wi-Fi driver and link readiness while failing closed on
   active non-loopback interfaces and generating no network traffic.
 - [x] Check USB root/device topology, authorization, speed, and read-only USBFS

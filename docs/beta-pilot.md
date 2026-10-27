@@ -51,7 +51,7 @@ tests, repairs, internal-drive mounts, or disabling firmware safety controls.
 | Run the applicable quick tests. | Each result, skipped/unsupported reason, operator findings, and elapsed time. | |
 | Exercise guided keyboard actions on each interface, including multiple keyboards. | Press/release left Shift, right Shift, Up, Down, Left and Right on each keyboard. Verify one device cannot complete another, withheld actions stay incomplete, and no typed text or raw events enter evidence. | |
 | Check keyboard baseline and interruption handling with a removable fixture. | Release an initially held control before starting fresh actions; leave a control held at completion; cancel or disconnect one keyboard while another completes. Retain partial observations and verify idle/neutral/identity failures do not pass. Keep boot and report media attached. | |
-| Exercise guided relative-pointer actions on every applicable interface. | Left/right and up/down movement; primary and advertised right/middle button press/release cycles; one device must not satisfy another. Absolute/mixed interfaces and incomplete actions must not pass. Do not retain raw events or typed text. | |
+| Exercise guided relative-pointer actions on every applicable interface. | Left/right and up/down movement; primary and advertised right/middle button press/release cycles; both directions on every advertised wheel axis. Include no-wheel, vertical/horizontal and high-resolution devices; one device must not satisfy another. Absolute/mixed interfaces and incomplete actions must not pass. Do not retain raw events or typed text. | |
 | Check thermal evidence across the quick session, including an all-off selection. | Initial observation, periodic coverage through workers and cleanup, final inventory and final safety/thermal observations, and confirmed monitor joins. Retain available/partial/unavailable coverage and plausible peaks; absent telemetry stays absent. Report encoding, output and saving follow this boundary. Do not force overheating or change fan controls. | |
 | Exercise cancellation where the UI supports it. | Worker termination, retained evidence, and return to a usable interface. Record unavailable cancellation paths. | |
 | Exercise a supported removable test peripheral's disconnect/reconnect. | Explicit device-change or partial-result handling. Keep boot and active report media attached. | |
@@ -64,7 +64,9 @@ that reaches 15 minutes for review; retain slow and failed runs in the evidence
 set. A readiness check does not establish functional transfer, audio playback,
 camera capture, RF performance, or sustained-load coverage. Use the exact
 coverage reported by the candidate, and track missing beta functionality openly.
-For the guided-pointer milestone, include multiple pointers, withheld actions,
+For pointer definition 2, use a newly rebuilt and qualified candidate; full
+software qualification of the wheel increment is still in progress. Include
+multiple pointers, withheld wheel directions and other actions,
 lost/disconnected-device handling, and cancellation with a supported removable
 fixture. Record unsupported absolute/mixed interfaces separately. VM and
 synthetic event checks do not complete these physical rows.

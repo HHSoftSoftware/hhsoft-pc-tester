@@ -270,8 +270,11 @@ func openPointerInterface(ctx context.Context, root, name string) (pointerOpened
 		validate: validate, close: file.Close,
 		read: func(buffer []byte) (int, error) {
 			count, err := syscall.Read(int(file.Fd()), buffer)
-			if errors.Is(err, syscall.EAGAIN) || errors.Is(err, syscall.EWOULDBLOCK) || errors.Is(err, syscall.EINTR) {
+			if errors.Is(err, syscall.EAGAIN) || errors.Is(err, syscall.EWOULDBLOCK) {
 				return 0, errPointerIdle
+			}
+			if errors.Is(err, syscall.EINTR) {
+				return 0, errPointerRetry
 			}
 			return count, err
 		}}
@@ -283,7 +286,7 @@ func openPointerInterface(ctx context.Context, root, name string) (pointerOpened
 // grab, clock, key-map, or other device-setting ioctl is issued.
 func queryPointerMetadata(query func(uintptr, []byte) (int, error)) (PointerIdentity, PointerCapabilities, error) {
 	var identity PointerIdentity
-	capabilities := PointerCapabilities{Buttons: []string{}}
+	capabilities := PointerCapabilities{Buttons: []string{}, WheelAxes: []PointerWheelCapability{}}
 	request := func(number byte, bytes []byte) (int, error) {
 		return query(uintptr(0x80000000|uint32(len(bytes))<<16|uint32('E')<<8|uint32(number)), bytes)
 	}
@@ -313,10 +316,18 @@ func queryPointerMetadata(query func(uintptr, []byte) (int, error)) (PointerIden
 		}
 	}
 	if capabilities.Relative {
-		if count, err := request(0x22, relative); err != nil || count < 1 || count > len(relative) {
+		if count, err := request(0x22, relative); err != nil || count < 2 || count > len(relative) {
 			return identity, capabilities, errors.New("cannot establish evdev relative axes")
 		}
 		capabilities.RelativeX, capabilities.RelativeY = relative[0]&1 != 0, relative[0]&2 != 0
+		for _, wheel := range []PointerWheelCapability{
+			{Axis: "vertical", Legacy: relative[1]&1 != 0, HighResolution: relative[1]&8 != 0},
+			{Axis: "horizontal", Legacy: relative[0]&64 != 0, HighResolution: relative[1]&16 != 0},
+		} {
+			if wheel.Legacy || wheel.HighResolution {
+				capabilities.WheelAxes = append(capabilities.WheelAxes, wheel)
+			}
+		}
 	}
 	return identity, capabilities, nil
 }

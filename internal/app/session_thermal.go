@@ -14,6 +14,9 @@ func ValidatedSessionThermal(payload InventoryPayload) (*sessionevidence.Thermal
 	if err := validateCoverage(payload); err != nil {
 		return nil, err
 	}
+	if err := validatePointerReport(payload); err != nil {
+		return nil, err
+	}
 	return validatedSessionThermal(payload)
 }
 

@@ -17,6 +17,7 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inputtest"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/plan"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/pointerevidence"
 )
 
 func completePointerEvidence() inputtest.PointerResult {
@@ -26,14 +27,34 @@ func completePointerEvidence() inputtest.PointerResult {
 		Devices: []inputtest.PointerDeviceResult{{
 			Interface: "event0", Status: inputtest.StatusPass, Supported: true, Readable: true,
 			Identity:     &inputtest.PointerIdentity{Bus: 3, Vendor: 0x1234, Product: 0x5678, Version: 0x100},
-			Capabilities: &inputtest.PointerCapabilities{Key: true, Relative: true, RelativeX: true, RelativeY: true, Buttons: []string{"left", "right", "middle"}},
+			Capabilities: &inputtest.PointerCapabilities{Key: true, Relative: true, RelativeX: true, RelativeY: true, Buttons: []string{"left", "right", "middle"}, WheelAxes: []inputtest.PointerWheelCapability{}},
 			XPositive:    1, XNegative: 1, YPositive: 1, YNegative: 1, Frames: 4,
+			Wheels: []inputtest.PointerWheelResult{},
 			Buttons: []inputtest.PointerButtonResult{
 				{Button: "left", Presses: 1, Releases: 1, Pairs: 1},
 				{Button: "right", Presses: 1, Releases: 1, Pairs: 1},
 				{Button: "middle", Presses: 1, Releases: 1, Pairs: 1},
 			},
 		}},
+	}
+}
+
+func withPointerWheelCriteria(value *inputtest.PointerResult, snapshots ...*inventory.Snapshot) {
+	value.Devices[0].Capabilities.WheelAxes = []inputtest.PointerWheelCapability{
+		{Axis: "vertical", Legacy: true, HighResolution: true}, {Axis: "horizontal", Legacy: true},
+	}
+	value.Devices[0].Wheels = []inputtest.PointerWheelResult{
+		{Axis: "vertical", PositiveFrames: 1, NegativeFrames: 1}, {Axis: "horizontal", PositiveFrames: 1, NegativeFrames: 1},
+	}
+	for _, snapshot := range snapshots {
+		attributes := map[string]string{}
+		for _, attribute := range snapshot.Components[0].Attributes {
+			attributes[attribute.Name] = attribute.Value
+		}
+		// Independently specified kernel bits: X/Y, coarse horizontal/vertical,
+		// and high-resolution vertical. No horizontal high-resolution bit.
+		attributes["rel_capabilities"] = "943"
+		snapshot.Components[0] = inventory.NewComponent(inventory.ComponentInput, "input:0", attributes)
 	}
 }
 
@@ -256,8 +277,7 @@ func TestPointerCapabilityBindingRejectsContradictoryInventory(t *testing.T) {
 		}
 		attributes[item.attribute] = item.value
 		component := inventory.NewComponent(inventory.ComponentInput, "input:0", attributes)
-		device := completePointerEvidence().Devices[0]
-		if pointerIdentityMatches(component, *device.Identity) && pointerCapabilitiesMatch(component, *device.Capabilities) {
+		if pointerevidence.ValidateInventoryBinding(completePointerEvidence(), []inventory.Component{component}) == nil {
 			t.Fatalf("contradictory inventory accepted: %s", item.attribute)
 		}
 	}
@@ -267,16 +287,21 @@ func TestPointerCannotChooseWeakerBitmapLayout(t *testing.T) {
 	component := inventory.NewComponent(inventory.ComponentInput, "input:0", map[string]string{
 		"category": "pointer", "handlers": "mouse0 event0", "bitmap_word_bits": "32",
 		"ev_capabilities": "7", "rel_capabilities": "3",
+		"bus": "0003", "vendor": "1234", "product": "5678", "version": "0100",
 		// In a 32-bit kernel this advertises all primary buttons plus KEY_FILE.
 		// The same words misread as 64-bit words appear to advertise only left.
 		"key_capabilities": "70000 0 0 0 10000 0 0 0 0",
 	})
-	capabilities := *completePointerEvidence().Devices[0].Capabilities
-	if !pointerCapabilitiesMatch(component, capabilities) {
+	value := completePointerEvidence()
+	if pointerevidence.ValidateInventoryBinding(value, []inventory.Component{component}) != nil {
 		t.Fatal("complete primary-button evidence rejected for the bound kernel layout")
 	}
-	capabilities.Buttons = []string{"left"}
-	if pointerCapabilitiesMatch(component, capabilities) {
+	value.Devices[0].Capabilities.Buttons = []string{"left"}
+	value.Devices[0].Buttons = value.Devices[0].Buttons[:1]
+	if pointerevidence.ValidateResult(value) != nil {
+		t.Fatal("independent weaker-layout fixture is not internally valid")
+	}
+	if pointerevidence.ValidateInventoryBinding(value, []inventory.Component{component}) == nil {
 		t.Fatal("submitted evidence selected a weaker kernel bitmap interpretation")
 	}
 }
@@ -334,6 +359,33 @@ func TestFinalizeRejectsUnboundOrIncompletePointerPassBeforeSigning(t *testing.T
 		collect bool
 	}{
 		{"unpaired button", func(v *inputtest.PointerResult, _, _ *inventory.Snapshot) { v.Devices[0].Buttons[0].Pairs = 0 }, false},
+		{"missing wheel direction", func(v *inputtest.PointerResult, initial, final *inventory.Snapshot) {
+			withPointerWheelCriteria(v, initial, final)
+			v.Devices[0].Wheels[1].NegativeFrames = 0
+		}, false},
+		{"unadvertised wheel claim", func(v *inputtest.PointerResult, _, _ *inventory.Snapshot) {
+			withPointerWheelCriteria(v)
+		}, true},
+		{"omitted advertised wheels", func(v *inputtest.PointerResult, initial, final *inventory.Snapshot) {
+			withPointerWheelCriteria(v, initial, final)
+			v.Devices[0].Capabilities.WheelAxes = []inputtest.PointerWheelCapability{}
+			v.Devices[0].Wheels = []inputtest.PointerWheelResult{}
+		}, true},
+		{"weaker advertised wheel stream", func(v *inputtest.PointerResult, initial, final *inventory.Snapshot) {
+			withPointerWheelCriteria(v, initial, final)
+			v.Devices[0].Capabilities.WheelAxes[0].HighResolution = false
+		}, true},
+		{"retained wheel pass after capability change", func(v *inputtest.PointerResult, initial, _ *inventory.Snapshot) {
+			withPointerWheelCriteria(v, initial)
+			v.Status, v.StopReason = inputtest.StatusError, "deadline"
+		}, true},
+		{"null wheel observations", func(v *inputtest.PointerResult, _, _ *inventory.Snapshot) {
+			v.Devices[0].Wheels = nil
+		}, false},
+		{"malformed wheel evidence cannot become an error note", func(v *inputtest.PointerResult, _, _ *inventory.Snapshot) {
+			v.Status, v.StopReason = inputtest.StatusError, "error"
+			v.Devices[0].Wheels = nil
+		}, false},
 		{"cancelled late pass", func(v *inputtest.PointerResult, _, _ *inventory.Snapshot) { v.StopReason = "operator_cancelled" }, false},
 		{"unsupported absolute device", func(v *inputtest.PointerResult, _, _ *inventory.Snapshot) { v.Devices[0].Capabilities.Absolute = true }, false},
 		{"wrong interface", func(v *inputtest.PointerResult, _, _ *inventory.Snapshot) { v.Devices[0].Interface = "event9" }, true},
@@ -433,21 +485,26 @@ func TestFinalizeRejectsUnboundOrIncompletePointerPassBeforeSigning(t *testing.T
 
 func TestFinalizeSignsPointerCoverageAndPreservesUnrelatedHotplugFailure(t *testing.T) {
 	for _, scenario := range []struct {
-		changed, cancelled, removeUnfinished bool
+		changed, cancelled, removeUnfinished, wheels bool
 	}{
 		{}, {changed: true}, {cancelled: true}, {cancelled: true, removeUnfinished: true},
+		{wheels: true}, {wheels: true, changed: true}, {wheels: true, cancelled: true},
+		{wheels: true, cancelled: true, removeUnfinished: true},
 	} {
 		directory := t.TempDir()
 		key := bytes.Repeat([]byte{0x45}, 32)
 		keyPath := writeTestKey(t, directory, "fingerprint.key", key)
 		initial := pointerInventoryFixture(false, false)
 		pointerEvidence := completePointerEvidence()
+		if scenario.wheels {
+			withPointerWheelCriteria(&pointerEvidence, &initial)
+		}
 		if scenario.cancelled {
 			pointerEvidence.Status, pointerEvidence.StopReason = inputtest.StatusAborted, "operator_cancelled"
 		}
 		if scenario.removeUnfinished {
 			initial.Components = append(initial.Components, inventory.NewComponent(inventory.ComponentInput, "input:1", map[string]string{"category": "pointer", "handlers": "mouse1 event1"}))
-			pointerEvidence.Devices = append(pointerEvidence.Devices, inputtest.PointerDeviceResult{Interface: "event1", Status: inputtest.StatusInconclusive})
+			pointerEvidence.Devices = append(pointerEvidence.Devices, inputtest.PointerDeviceResult{Interface: "event1", Status: inputtest.StatusInconclusive, Wheels: []inputtest.PointerWheelResult{}})
 		}
 		frozen, err := plan.BuildWithSelection(initial, plan.ProfileQuick, "x86_64", key, "ephemeral-session", []string{"input.readiness.quick"})
 		if err != nil {

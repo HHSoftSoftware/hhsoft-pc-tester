@@ -182,15 +182,21 @@ qualification remain open.
 ## Guided pointer check is incomplete
 
 Move every supported relative pointer in all four directions and press/release
-its primary button plus each advertised right or middle button during the
-observation window. Actions on one interface do not satisfy another. The default
+its primary button plus each advertised right or middle button. Scroll each
+advertised wheel axis in both directions during the observation window. Actions
+on one interface do not satisfy another. The default
 window is 30 seconds, within a 90-second command limit and the remaining shared
 session budget. Missing actions are incomplete evidence, not a hardware pass.
 Absolute or mixed relative/absolute interfaces cannot pass this check; touch
-geometry, wheels, extra buttons, and gesture testing remain outside its scope.
+geometry, wheel precision, extra buttons and gesture testing remain outside
+its scope. Wheel frame counts are not detent counts. A high-resolution wheel
+with only coarse events observed remains incomplete; coarse companions do not
+substitute for the advertised high-resolution stream.
 Lost events, disconnected devices, or cancellation also prevent a complete pass.
 Keep the original report and use a fresh plan for a later session. Direct
 capture's aggregate input-readiness option does not run the guided pointer test.
+Pointer definition 2 requires a new plan; v1 reports retain their earlier scope.
+Full wheel software qualification, rebuilt images and physical tests remain open.
 
 ## Empty inventory or safety stop
 

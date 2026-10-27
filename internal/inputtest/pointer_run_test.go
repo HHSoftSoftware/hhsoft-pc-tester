@@ -99,6 +99,7 @@ func TestPointerRunnerKeepsDeviceCriteriaIndependent(t *testing.T) {
 			t.Fatalf("complete interfaces were not independently passed: %#v", result)
 		}
 		first, second = completePointerSource(size), completePointerSource(size)
+		second.capabilities.WheelAxes = []PointerWheelCapability{{Axis: "vertical", Legacy: true}}
 		second.data = pointerFixtureBytes(size, []pointerEvent{{2, 8, 1}, {0, 0, 0}})
 		result = runPointerWith(t.Context(), PointerOptions{Duration: 20 * time.Millisecond}, pointerFixtureBackend(first, second))
 		if result.Status == StatusPass || result.StopReason != "observation_timeout" || result.Devices[1].XPositive != 0 || first.closes != 1 || second.closes != 1 {

@@ -101,7 +101,7 @@ modern x64/x86 and legacy x86 applications. Broader profile orchestration,
 run-wide watchdogs, rebuilt-image qualification, the remaining functional
 adapters, and the physical pilot below are still open.
 
-The guided-pointer increment adds relative movement and primary/advertised
+The original guided-pointer increment adds relative movement and primary/advertised
 right/middle button cycles per interface. It expanded quick selection to ten
 modern and eight legacy choices and introduced ten outcomes in session journal v2.
 Absolute or mixed interfaces and the rest of the input matrix remain outside
@@ -110,6 +110,12 @@ historical signed-report verification. Portable and native Linux tests, race
 checks, cross-builds, and signed CLI workflows pass for this increment.
 Rebuilt-image and physical qualification remain open; earlier image results do
 not qualify the new worker.
+
+Pointer definition 2 now adds both directions of each advertised wheel axis.
+It preserves standalone finalization and historical pointer-v1 report scope;
+current sessions keep the eleven-worker v5 journal. Full software qualification
+of this extension is in progress. Fresh images and physical wheel devices remain
+separate gates; wheel precision, extra buttons and touch gestures remain planned.
 
 The periodic safety increment implements read-only mount/network checks
 through quick execution and the final safety observation. One owned observer

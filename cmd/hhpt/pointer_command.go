@@ -21,7 +21,7 @@ func runPointer(ctx context.Context, arguments []string, stdout, stderr io.Write
 func runPointerWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect pointerCollector) int {
 	flags := flag.NewFlagSet("pointer", flag.ContinueOnError)
 	flags.SetOutput(stderr)
-	duration := flags.Duration("duration", 30*time.Second, "time to observe movement and button actions on every relative pointer")
+	duration := flags.Duration("duration", 30*time.Second, "time to observe movement, button and advertised wheel actions on every relative pointer")
 	timeout := flags.Duration("timeout", pointerCommandTimeout, "whole-command deadline, from 10ms to 90s")
 	outputPath := flags.String("output", "-", "new JSON output file, or - for stdout")
 	if err := flags.Parse(arguments); err != nil {
@@ -36,7 +36,7 @@ func runPointerWith(ctx context.Context, arguments []string, stdout, stderr io.W
 	defer cancel()
 	result := inputtest.PointerResult{Schema: inputtest.PointerSchema, LimitMilliseconds: duration.Milliseconds()}
 	if commandStopReason(runContext) == nil {
-		fmt.Fprintf(stderr, "For up to %s, move each relative pointer left, right, up, and down. Press and release its primary button and each advertised right or middle button. Every supported device must complete these actions.\n", *duration)
+		fmt.Fprintf(stderr, "For up to %s, move each relative pointer left, right, up, and down. Press and release its primary button and each advertised right or middle button. Scroll each advertised wheel axis in both directions. Every supported device must complete these actions.\n", *duration)
 		result = collect(runContext, inputtest.PointerOptions{Root: "/", Duration: *duration})
 	}
 	result.MarkInterrupted(commandStopReason(runContext))

@@ -48,7 +48,7 @@ func TestUISelectionChoicesSurviveWaitAndDeploymentKey(t *testing.T) {
 		t.Fatalf("ui returned %d: %s", got, &output)
 	}
 	assertUISelectionFile(t, path, `{"excluded_tests":["cpu.quick","memory.quick"]}`+"\n")
-	for _, text := range []string{"[C]", "CPU computation", "Memory patterns", "Pointer movement and buttons", "Quick tests selected: 9 of 11.", "Automatic start remains disabled."} {
+	for _, text := range []string{"[C]", "CPU computation", "Memory patterns", "Pointer movement, buttons and wheels", "Quick tests selected: 9 of 11.", "Automatic start remains disabled."} {
 		if !strings.Contains(output.String(), text) {
 			t.Errorf("output is missing %q: %s", text, &output)
 		}

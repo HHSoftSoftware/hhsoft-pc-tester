@@ -26,12 +26,20 @@ func HasKeyboardClaim(encoded []byte) bool {
 	return hasReportClaim(encoded, keyboardClaim)
 }
 
+// HasPointerClaim selects strict validation for functional pointer evidence or
+// a newer definition, including claims hidden by duplicate fields or aliases.
+// ID-only session workers do not claim a definition or observed wheel coverage.
+func HasPointerClaim(encoded []byte) bool {
+	return hasReportClaim(encoded, pointerClaim)
+}
+
 type reportClaim int
 
 const (
 	thermalClaim reportClaim = iota
 	keyboardClaim
 	anySessionClaim
+	pointerClaim
 )
 
 func hasReportClaim(encoded []byte, kind reportClaim) bool {
@@ -58,7 +66,7 @@ func findReportClaim(decoder *json.Decoder, depth int, kind reportClaim) (bool, 
 	}
 	switch token {
 	case json.Delim('{'):
-		keyboardID, newVersion := false, false
+		definitionID, newVersion := false, false
 		for decoder.More() {
 			key, err := decoder.Token()
 			if err != nil {
@@ -71,13 +79,20 @@ func findReportClaim(decoder *json.Decoder, depth int, kind reportClaim) (bool, 
 			if kind == anySessionClaim && strings.EqualFold(name, "session") || kind == thermalClaim && (strings.EqualFold(name, "thermal") || strings.EqualFold(name, "local_thermal_sources")) {
 				return true, nil, nil
 			}
+			if kind == pointerClaim && (strings.EqualFold(name, "wheel_axes") || strings.EqualFold(name, "wheels")) {
+				return true, nil, nil
+			}
 			found, scalar, err := findReportClaim(decoder, depth+1, kind)
 			if found || err != nil {
 				return found, nil, err
 			}
-			if kind == keyboardClaim {
-				if value, ok := scalar.(string); ok && strings.EqualFold(name, "id") && strings.EqualFold(value, "input.keyboard.quick") {
-					keyboardID = true
+			if kind == keyboardClaim || kind == pointerClaim {
+				wantedID := "input.keyboard.quick"
+				if kind == pointerClaim {
+					wantedID = "input.pointer.quick"
+				}
+				if value, ok := scalar.(string); ok && strings.EqualFold(name, "id") && strings.EqualFold(value, wantedID) {
+					definitionID = true
 				}
 				if strings.EqualFold(name, "version") {
 					if value, ok := scalar.(json.Number); ok {
@@ -86,7 +101,7 @@ func findReportClaim(decoder *json.Decoder, depth int, kind reportClaim) (bool, 
 						newVersion = true
 					}
 				}
-				if keyboardID && newVersion {
+				if definitionID && newVersion {
 					return true, nil, nil
 				}
 			}
@@ -106,6 +121,10 @@ func findReportClaim(decoder *json.Decoder, depth int, kind reportClaim) (bool, 
 		value, ok := token.(string)
 		if kind == keyboardClaim {
 			return ok && strings.EqualFold(value, inputtest.KeyboardSchema), token, nil
+		}
+		if kind == pointerClaim {
+			name, _, versioned := strings.Cut(value, "/")
+			return ok && versioned && strings.EqualFold(name, "hhsoft.pc-tester.pointer-functional"), token, nil
 		}
 		if kind == anySessionClaim {
 			name, _, versioned := strings.Cut(value, "/")

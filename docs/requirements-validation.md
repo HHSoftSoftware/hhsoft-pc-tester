@@ -407,6 +407,30 @@ open. They do not replace or expand the frozen initial alpha candidate's
 separate source, image and release gates. Full layouts, rollover, ghosting and
 other keyboard functions remain planned.
 
+The pointer wheel-direction extension is integrated in source and undergoing
+full software qualification. Definition 2 and functional evidence v2 require
+both directions of every advertised vertical/horizontal axis on each supported
+relative pointer. High-resolution streams are preferred; their coarse companions
+are accepted when advertised but are not counted again. Net-zero packets do not
+credit a direction, and malformed packets cannot partially satisfy criteria.
+
+Shared validation preserves the exact historical v1 wire shape and scope. New
+v2 evidence is bound to the advertised wheel bits in final inventory and the
+frozen plan, including retained device passes in partial results. Standalone
+pointer finalization remains supported without session monitoring. V5 sessions
+also bind worker status and duration; v4 cannot claim pointer definition 2.
+Raw hidden, duplicate, aliased and viewless claims select strict validation.
+The full host suite passed 2,364 test events across 24 packages, with 17
+platform test skips and four packages without host test files. Vet, 28 Linux
+test-binary builds and five application builds passed against the same source.
+Independent review reproduced and verified the correction of an interrupted-read
+bug: an interrupted syscall now retries without establishing queue idle, so stale
+baseline input and queued event loss cannot earn a pass through that boundary.
+
+Native/race/CLI qualification, rebuilt images and physical wheel checks remain
+open. Cross-built binaries are not native execution evidence. The frozen alpha
+candidate and its release gates are unchanged.
+
 Regression coverage for these cases belongs with the corresponding feature,
 not with a blanket claim of complete product coverage. Linux mount/device
 fixtures and real APK selection require the appropriate Linux environment;

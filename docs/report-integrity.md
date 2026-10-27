@@ -153,7 +153,16 @@ pass, including a completed device inside a partial result, must match the
 frozen and final component identity and advertised capabilities. Kernel bitmap
 word width is independently observed and bound in the component fingerprint;
 worker evidence cannot choose a weaker button interpretation. Automated and
-native validation passed; physical pointer qualification remains separate.
+native validation passed for pointer v1; physical qualification remains separate.
+
+Pointer evidence v2 records canonical advertised wheel axes and positive/negative
+complete-frame counts for one selected stream per axis. Definition 2 requires
+fresh plans and cannot be substituted with v1 or hidden in a historical v4
+session or execution note. V5 sessions bind its status and duration to the
+worker; standalone pointer reports retain their existing frozen-plan workflow
+without claiming session monitoring. Exact v1 decoding and historical rendering
+remain separate. Consumers validate current claims even without optional views.
+Full software qualification of the wheel increment is in progress.
 
 The mount/network monitor summary records bounded aggregate coverage,
 with a one-second interval, a one-second observation deadline, a

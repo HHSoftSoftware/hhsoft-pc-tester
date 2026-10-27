@@ -6,7 +6,10 @@ import (
 	"time"
 )
 
-const PointerSchema = "hhsoft.pc-tester.pointer-functional/v1"
+const (
+	PointerSchema   = "hhsoft.pc-tester.pointer-functional/v2"
+	PointerSchemaV1 = "hhsoft.pc-tester.pointer-functional/v1"
+)
 
 type PointerOptions struct {
 	Root     string
@@ -23,12 +26,25 @@ type PointerIdentity struct {
 // Only advertised criteria tested by this worker are exported. Extra buttons,
 // wheel resolution, and absolute coordinates are not qualified.
 type PointerCapabilities struct {
-	Key       bool     `json:"key"`
-	Relative  bool     `json:"relative"`
-	RelativeX bool     `json:"relative_x"`
-	RelativeY bool     `json:"relative_y"`
-	Absolute  bool     `json:"absolute"`
-	Buttons   []string `json:"buttons"`
+	Key       bool                     `json:"key"`
+	Relative  bool                     `json:"relative"`
+	RelativeX bool                     `json:"relative_x"`
+	RelativeY bool                     `json:"relative_y"`
+	Absolute  bool                     `json:"absolute"`
+	Buttons   []string                 `json:"buttons"`
+	WheelAxes []PointerWheelCapability `json:"wheel_axes"`
+}
+
+type PointerWheelCapability struct {
+	Axis           string `json:"axis"`
+	Legacy         bool   `json:"legacy"`
+	HighResolution bool   `json:"high_resolution"`
+}
+
+type PointerWheelResult struct {
+	Axis           string `json:"axis"`
+	PositiveFrames uint64 `json:"positive_frames"`
+	NegativeFrames uint64 `json:"negative_frames"`
 }
 
 type PointerButtonResult struct {
@@ -50,6 +66,7 @@ type PointerDeviceResult struct {
 	YPositive    uint64                `json:"y_positive"`
 	YNegative    uint64                `json:"y_negative"`
 	Buttons      []PointerButtonResult `json:"buttons,omitempty"`
+	Wheels       []PointerWheelResult  `json:"wheels"`
 	Frames       uint64                `json:"frames"`
 	EvidenceLoss bool                  `json:"evidence_loss"`
 	Detail       string                `json:"detail,omitempty"`

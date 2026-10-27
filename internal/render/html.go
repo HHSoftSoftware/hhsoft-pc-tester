@@ -26,6 +26,7 @@ type inventoryDocument struct {
 	CoverageDescription string
 	Thermal             *thermalDocument
 	Keyboard            *keyboardDocument
+	Pointer             *pointerDocument
 }
 
 type testDocument struct {
@@ -126,6 +127,21 @@ table{background:var(--panel);border-collapse:collapse;border:1px solid var(--li
 {{end}}</tbody></table>
 {{else}}<p>No keyboard interface observations were obtained.</p>
 {{end}}</section>
+{{end}}{{if .Pointer}}<section class="section" aria-labelledby="pointer-heading">
+<h2 id="pointer-heading">Guided Pointer Wheel Observations</h2>
+<p>{{.Pointer.Scope}}</p>
+<table><tbody>
+<tr><th class="label" scope="row">Status</th><td>{{.Pointer.Status}}</td></tr>
+<tr><th class="label" scope="row">Finding</th><td>{{.Pointer.Finding}}</td></tr>
+<tr><th class="label" scope="row">Stop reason</th><td>{{.Pointer.StopReason}}</td></tr>
+</tbody></table>
+{{range .Pointer.Devices}}<h3>Interface {{.Interface}}</h3>
+<p>Status: {{.Status}}. {{.WheelCoverage}}</p>
+{{if .Wheels}}<table><thead><tr><th>Wheel axis</th><th>Credited stream</th><th>Positive frames</th><th>Negative frames</th></tr></thead><tbody>
+{{range .Wheels}}<tr><td>{{.Axis}}</td><td>{{.Stream}}</td><td>{{.Positive}}</td><td>{{.Negative}}</td></tr>
+{{end}}</tbody></table>{{end}}
+{{else}}<p>No pointer interface observations were obtained.</p>
+{{end}}</section>
 {{end}}<section class="section" aria-labelledby="tests-heading">
 <h2 id="tests-heading">Functional Test Evidence</h2>
 {{if .TestResults}}
@@ -207,6 +223,10 @@ func renderInventoryHTML(output io.Writer, payload app.InventoryPayload, version
 	if err != nil {
 		return err
 	}
+	pointer, err := pointerReportDocument(payload)
+	if err != nil {
+		return err
+	}
 	components := append([]app.ComponentRecord(nil), payload.Components...)
 	sort.SliceStable(components, func(left, right int) bool {
 		if components[left].Type != components[right].Type {
@@ -237,6 +257,7 @@ func renderInventoryHTML(output io.Writer, payload app.InventoryPayload, version
 		CoverageDescription: coverageDescription(payload.CoverageScope),
 		Thermal:             thermal,
 		Keyboard:            keyboard,
+		Pointer:             pointer,
 	}
 	return inventoryTemplate.Execute(&limitedWriter{destination: output}, document)
 }

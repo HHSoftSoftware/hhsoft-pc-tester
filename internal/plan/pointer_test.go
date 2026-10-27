@@ -22,7 +22,7 @@ func TestPointerPlanSchedulesEveryPointerWithoutEnablingTouchInput(t *testing.T)
 			t.Run(architecture+"/"+string(profile), func(t *testing.T) {
 				p := buildValidationPlan(t, snapshot, profile, architecture)
 				pointer := findPlanTest(t, &p, "input.pointer.quick")
-				if pointer.Status != TestScheduled || pointer.Destructive || pointer.Version != 1 ||
+				if pointer.Status != TestScheduled || pointer.Destructive || pointer.Version != 2 ||
 					pointer.EstimatedSeconds != 30 || pointer.TimeoutSeconds != 90 ||
 					!slices.Equal(pointer.ComponentIDs, []string{"input:0", "input:1"}) {
 					t.Fatalf("incorrect pointer plan: %+v", pointer)
@@ -68,6 +68,11 @@ func TestPointerSelectionRetainsReadinessAndAbsence(t *testing.T) {
 }
 
 func TestPointerCatalogRequiresFreshFrozenPlan(t *testing.T) {
+	current := buildValidationPlan(t, fullValidationSnapshot(), ProfileQuick, "x86_64")
+	findPlanTest(t, &current, "input.pointer.quick").Version = 1
+	if _, err := Decode(rehashPlanForTest(t, &current)); err == nil {
+		t.Fatal("accepted the movement/buttons-only definition in a current execution plan")
+	}
 	p := buildValidationPlan(t, fullValidationSnapshot(), ProfileQuick, "x86_64")
 	catalog, _, err := loadDefinitions(definitionData)
 	if err != nil {

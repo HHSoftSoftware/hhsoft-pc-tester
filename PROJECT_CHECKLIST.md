@@ -10,9 +10,10 @@ complete; real-hardware requirements remain open until physically tested.
 The 2026-10-24 requirements audit compared the retained test matrix with the
 catalog and execution paths. Development source now contains eleven implemented
 safe quick test definitions, subject to hardware and architecture applicability.
-The guided pointer increment has automated and native validation; rebuilt-image
-and physical qualification remain open. Guided keyboard software qualification
-also passed; rebuilt-image and physical gates remain open. The planner also
+The original pointer movement/button increment has automated and native
+validation. Its new wheel-direction increment is undergoing software
+qualification; rebuilt-image and physical gates remain open. Guided keyboard
+software qualification also passed; rebuilt-image and physical gates remain open. The planner also
 accepts standard, extended, and destructive profile names, but
 their complete execution workflows remain unfinished. Burn-in is a planned
 profile. The unchecked requirements below include those broader matrix items;
@@ -193,8 +194,17 @@ the alpha still requires the separate documented release gates.
   each interface; absolute/mixed interfaces and broader mouse/touch coverage
   remain unsupported. Cancellation, device changes, queued event loss, forged
   capabilities, and retained partial passes have regression coverage.
+- [x] Validate the pointer wheel-direction increment with the full host suite,
+  vet, 28 Linux test-binary builds and five application builds. The suite recorded
+  2,364 test passes across 24 packages, 17 platform test skips and four packages
+  without host test files. Both advertised wheel directions, stream selection,
+  strict evidence/plan binding and interrupted-read regressions are covered.
+- [ ] Complete native Linux, race and signed CLI qualification for pointer wheel
+  evidence v2 and definition 2. Standalone and v5 session consumers preserve
+  historical v1 coverage; host results do not close native or physical gates.
 - [ ] Qualify guided pointer actions in rebuilt images and on physical devices,
-  including multiple pointers and incomplete-action/disconnect cases.
+  including no-wheel, vertical/horizontal, high-resolution and multiple pointers,
+  withheld directions, cancellation and disconnects.
 - [x] Validate the guided keyboard increment with host and native Linux fixtures.
   Six fixed press/release controls per interface, strict typed evidence,
   exclusive console ownership, final neutral/idle/identity checks and cleanup

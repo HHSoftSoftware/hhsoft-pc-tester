@@ -214,15 +214,21 @@ validation remain separate gates.
 The pointer step observes all supported relative pointers during one default
 30-second window, within a 90-second whole-test limit and the remaining session
 budget. Move each pointer left, right, up, and down. Press and release its
-primary button and every advertised right or middle button. Each interface must
+primary button and every advertised right or middle button. Scroll each
+advertised vertical or horizontal wheel in both directions. Each interface must
 complete its own actions; using one mouse does not qualify another. The check
 requires relative X/Y events. Absolute or mixed relative/absolute interfaces,
 including many touch devices, are outside this check and cannot pass it.
-Wheels, extra buttons, tracking accuracy, and touch gestures remain untested.
+A device without an advertised wheel does not require wheel actions. Reports
+show positive/negative frame counts, not detents or precision. High-resolution
+events are used when advertised; their coarse companion events are not counted
+again. Extra buttons, tracking accuracy, wheel precision and touch gestures
+remain untested.
 Only bounded action summaries and counts enter evidence, not raw events or
 typed text. Missing actions, lost records, and disconnects leave the inspection
-incomplete. Automated and native Linux checks validate these paths; rebuilt-image
-and physical qualification remain open.
+incomplete. Pointer definition 2 requires a fresh plan. Its full software
+qualification is in progress; rebuilt images and physical qualification remain
+open. Historical pointer v1 reports retain their movement/button scope.
 
 Press Ctrl-C to request a stop. One owned console reader handles cancellation
 and display findings, so those inputs do not compete. Linux SIGINT and SIGTERM
@@ -489,9 +495,10 @@ controlled the corresponding key pair.
   and native software qualification; rebuilt-image and physical-sensor gates
   remain open. Heartbeat supervision and hang detection remain incomplete.
 - Input readiness checks read-only event-device access. Guided pointer testing
-  adds relative X/Y movement and primary/advertised right/middle button cycles;
-  guided keyboard testing adds six fixed press/release controls on each keyboard.
-  These checks do not prove every key, wheel, extra button or touch geometry.
+  adds relative X/Y movement, primary/advertised right/middle button cycles and
+  advertised wheel directions. Guided keyboard testing adds six fixed
+  press/release controls on each keyboard. These checks do not prove every key,
+  wheel precision, extra button or touch geometry.
   Direct capture retains the readiness subset and omits both guided workers.
 - Storage testing is readiness only: no SMART/NVMe health qualification,
   sampled sector verification, throughput, optical-media read, or complete

@@ -201,6 +201,16 @@ may retain only exact nonexecution notes for `excluded`, `not_present`,
 `unsupported` or `missing_driver` keyboards. This exception grants no functional
 or session-safety claim. Direct capture omits guided keyboard and pointer work.
 
+Pointer definition 2 uses strict shared evidence validation for wheel axes and
+complete-frame direction counts. It credits one advertised stream per axis and
+rejects lost records, unadvertised wheel events and malformed packets before
+credit. Retained device passes remain bound to final identity/capabilities.
+Existing malformed current evidence cannot become an error note. Standalone
+pointer finalization remains available without session monitoring; v5 sessions
+also bind its worker interval. Historical pointer v1 retains its original scope.
+Full wheel software qualification is in progress; image and physical gates stay
+open.
+
 Privilege separation below is a target architecture, not an implemented
 containment boundary for the current in-process CPU/RAM workers.
 Run workers as a dedicated account when possible. Grant device access through

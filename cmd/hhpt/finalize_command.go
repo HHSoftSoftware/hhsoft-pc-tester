@@ -19,6 +19,7 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/keyboardevidence"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/plan"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/pointerevidence"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quick"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/sessionevidence"
 )
@@ -43,7 +44,7 @@ var quickResultDefinitions = []quickResultDefinition{
 	{id: "display.operator.quick", filename: "display.json", schema: "hhsoft.pc-tester.display-visual/v1"},
 	{id: "graphics.quick", filename: "graphics.json", schema: "hhsoft.pc-tester.graphics/v1"},
 	{id: "input.keyboard.quick", filename: "keyboard.json", schema: inputtest.KeyboardSchema},
-	{id: "input.pointer.quick", filename: "pointer.json", schema: "hhsoft.pc-tester.pointer-functional/v1"},
+	{id: "input.pointer.quick", filename: "pointer.json", schema: inputtest.PointerSchema},
 	{id: "input.readiness.quick", filename: "input.json", schema: "hhsoft.pc-tester.input-readiness/v1"},
 	{id: "memory.quick", filename: "memory.json", schema: quick.MemorySchema},
 	{id: "network.readiness.quick", filename: "network.json", schema: "hhsoft.pc-tester.network-readiness/v1"},
@@ -155,6 +156,10 @@ func runFinalizeOwned(ctx context.Context, arguments []string, stdout, stderr io
 				retainedEvidence[definition.id] = append([]byte(nil), encoded...)
 			}
 			if readErr != nil {
+				if definition.schema == inputtest.PointerSchema && readErr != os.ErrNotExist {
+					fmt.Fprintln(stderr, "validate pointer evidence: existing evidence is unreadable")
+					return 1
+				}
 				if definition.schema == inputtest.KeyboardSchema && readErr != os.ErrNotExist {
 					fmt.Fprintln(stderr, "validate keyboard evidence: existing evidence cannot establish confirmed cleanup")
 					return 1
@@ -175,6 +180,10 @@ func runFinalizeOwned(ctx context.Context, arguments []string, stdout, stderr io
 					return 1
 				}
 				evidenceSourceStatus, statusErr := testEvidenceStatus(encoded, definition.schema)
+				if errors.Is(statusErr, pointerevidence.ErrInvalid) {
+					fmt.Fprintln(stderr, "validate pointer evidence: malformed observations")
+					return 1
+				}
 				if errors.Is(statusErr, keyboardevidence.ErrCleanupUnconfirmed) {
 					fmt.Fprintln(stderr, "validate keyboard evidence: cleanup unconfirmed")
 					return workerCleanupUncertainExitCode
@@ -281,10 +290,12 @@ func runFinalizeOwned(ctx context.Context, arguments []string, stdout, stderr io
 					}
 				}
 			}
-			if result.ID == "input.pointer.quick" && (result.Status == app.TestPass || pointerEvidenceHasPassedDevice(result.Evidence)) &&
-				!validatePointerPlanEvidence(result.Evidence, plannedTests[result.ID], frozenPlan, finalPlan, snapshot) {
-				fmt.Fprintln(stderr, "validate pointer evidence: interfaces or capabilities do not match the frozen hardware")
-				return 1
+			if result.ID == "input.pointer.quick" {
+				if raw, present := retainedEvidence[result.ID]; present &&
+					!validatePointerPlanEvidence(raw, plannedTests[result.ID], frozenPlan, finalPlan, snapshot) {
+					fmt.Fprintln(stderr, "validate pointer evidence: interfaces or capabilities do not match the frozen hardware")
+					return 1
+				}
 			}
 		}
 		for index, result := range testResults {

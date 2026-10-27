@@ -155,7 +155,9 @@ func sessionCompleteEvidence(id string) any {
 	case "input.readiness.quick":
 		return completeInputEvidence()
 	case "input.pointer.quick":
-		return completePointerEvidence()
+		value := completePointerEvidence()
+		value.DurationMilliseconds = 0 // The fixture does not advance its clock.
+		return value
 	case "input.keyboard.quick":
 		return completeKeyboardEvidence()
 	case "network.readiness.quick":
@@ -187,6 +189,7 @@ func TestSessionPointerIncompleteActionsRemainVisibleAndAllowLaterWorkers(t *tes
 		result := completePointerEvidence()
 		result.Status, result.StopReason = inputtest.StatusInconclusive, "observation_timeout"
 		result.DurationMilliseconds = result.LimitMilliseconds
+		h.clock = h.clock.Add(time.Duration(result.DurationMilliseconds) * time.Millisecond)
 		result.Devices[0].Status = inputtest.StatusInconclusive
 		result.Devices[0].XNegative = 0
 		writeSessionFixture(t, worker.OutputPath, result)
@@ -217,6 +220,7 @@ func TestSessionCancellationDuringPointerPreservesPartialEvidence(t *testing.T) 
 		h.calls = append(h.calls, worker.ID)
 		result := completePointerEvidence()
 		cancel()
+		result.DurationMilliseconds = 0 // Cancellation is immediate on this fixture clock.
 		result.MarkInterrupted(context.Canceled)
 		writeSessionFixture(t, worker.OutputPath, result)
 		return 0

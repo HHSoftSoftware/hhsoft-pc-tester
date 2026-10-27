@@ -5,6 +5,7 @@ import "math"
 const maximumPointerFrameEvents = 4096
 
 var pointerPrimaryButtons = [...]string{"left", "right", "middle"}
+var pointerWheelAxes = [...]string{"vertical", "horizontal"}
 
 type pointerEvent struct {
 	typeCode, code uint16
@@ -16,6 +17,7 @@ type pointerState struct {
 	down        [3]bool
 	transition  [3]int8
 	x, y        int64
+	wheel       [2]int64
 	frameEvents int
 	failed      bool
 }
@@ -38,13 +40,42 @@ func supportedPointer(capabilities PointerCapabilities) bool {
 		}
 		previous = index
 	}
+	if capabilities.WheelAxes == nil {
+		return false
+	}
+	previous = -1
+	for _, wheel := range capabilities.WheelAxes {
+		index := pointerWheelIndex(wheel.Axis)
+		if index <= previous || !wheel.Legacy && !wheel.HighResolution {
+			return false
+		}
+		previous = index
+	}
 	return true
+}
+
+func pointerWheelIndex(axis string) int {
+	for index, name := range pointerWheelAxes {
+		if axis == name {
+			return index
+		}
+	}
+	return -1
+}
+
+func pointerWheelObservations(capabilities PointerCapabilities) []PointerWheelResult {
+	result := make([]PointerWheelResult, len(capabilities.WheelAxes))
+	for index, wheel := range capabilities.WheelAxes {
+		result[index].Axis = wheel.Axis
+	}
+	return result
 }
 
 func newPointerState(result *PointerDeviceResult) *pointerState {
 	for _, button := range result.Capabilities.Buttons {
 		result.Buttons = append(result.Buttons, PointerButtonResult{Button: button})
 	}
+	result.Wheels = pointerWheelObservations(*result.Capabilities)
 	return &pointerState{result: result}
 }
 
@@ -102,10 +133,43 @@ func (state *pointerState) consume(event pointerEvent) {
 			state.x += int64(event.value)
 		} else if event.code == 1 {
 			state.y += int64(event.value)
+		} else {
+			state.consumeWheel(event)
 		}
 	case 3:
 		state.reject("absolute events are outside the relative-pointer test", false)
 	}
+}
+
+func (state *pointerState) consumeWheel(event pointerEvent) {
+	axis, highResolution := -1, false
+	switch event.code {
+	case 8: // REL_WHEEL
+		axis = 0
+	case 6: // REL_HWHEEL
+		axis = 1
+	case 11: // REL_WHEEL_HI_RES
+		axis, highResolution = 0, true
+	case 12: // REL_HWHEEL_HI_RES
+		axis, highResolution = 1, true
+	default:
+		return
+	}
+	for _, capability := range state.result.Capabilities.WheelAxes {
+		if capability.Axis != pointerWheelAxes[axis] {
+			continue
+		}
+		if highResolution && !capability.HighResolution || !highResolution && !capability.Legacy {
+			break
+		}
+		// A legacy companion is valid but never credited when high-resolution
+		// events are advertised. Its sign and packet need not match that stream.
+		if highResolution || !capability.HighResolution {
+			state.wheel[axis] += int64(event.value)
+		}
+		return
+	}
+	state.reject("pointer emitted an unadvertised wheel axis", false)
 }
 
 func (state *pointerState) hasButton(name string) bool {
@@ -140,6 +204,15 @@ func (state *pointerState) commit() {
 	} else if state.y < 0 {
 		state.result.YNegative++
 	}
+	for index := range state.result.Wheels {
+		wheel := &state.result.Wheels[index]
+		value := state.wheel[pointerWheelIndex(wheel.Axis)]
+		if value > 0 {
+			wheel.PositiveFrames++
+		} else if value < 0 {
+			wheel.NegativeFrames++
+		}
+	}
 	for index, transition := range state.transition {
 		for buttonIndex := range state.result.Buttons {
 			button := &state.result.Buttons[buttonIndex]
@@ -157,6 +230,7 @@ func (state *pointerState) commit() {
 		}
 	}
 	state.x, state.y, state.frameEvents, state.transition = 0, 0, 0, [3]int8{}
+	state.wheel = [2]int64{}
 }
 
 func (state *pointerState) complete() bool {
@@ -166,6 +240,11 @@ func (state *pointerState) complete() bool {
 	}
 	for _, button := range result.Buttons {
 		if button.Pairs == 0 || button.Presses != button.Pairs || button.Releases != button.Pairs {
+			return false
+		}
+	}
+	for _, wheel := range result.Wheels {
+		if wheel.PositiveFrames == 0 || wheel.NegativeFrames == 0 {
 			return false
 		}
 	}

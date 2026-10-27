@@ -146,14 +146,21 @@ remain pending.
 The separate guided `input.pointer.quick` worker observes relative `EV_REL`
 interfaces with both X and Y axes. During a default 30-second window, every
 supported interface must show left/right and up/down movement, a primary-button
-press/release cycle, and cycles for each advertised right or middle button.
-One device cannot satisfy another device's requirements. Absolute `EV_ABS` or
-mixed interfaces cannot pass this relative-pointer check. Wheel behavior, extra
-buttons, accuracy, touch geometry, and gestures remain outside its scope.
+press/release cycle, cycles for each advertised right or middle button, and both
+directions of every advertised wheel axis. One device cannot satisfy another
+device's requirements. High-resolution streams take precedence over coarse
+companions without double counting or fallback. Absolute `EV_ABS` or mixed
+interfaces cannot pass this check. Wheel precision, extra buttons, accuracy,
+touch geometry and gestures remain outside its scope.
 Evidence contains bounded per-interface counters and action summaries, not raw
 events or typed text. Lost records, incomplete actions, or device changes must
-not produce a pass. Automated and native Linux validation passed for this
-bounded worker; the broader input matrix below remains a target.
+not produce a pass. The original movement/button worker passed automated and
+native Linux validation. Full qualification of wheel evidence v2 is in progress.
+Its acceptance includes absent/single/multiple axes, high-resolution-only
+capabilities, opposed or delayed coarse companions, net-zero packets, counter
+bounds, whole-packet rejection and no post-stop credit. Strict version, final
+inventory, standalone and session bindings require independent negative cases.
+The broader input matrix below remains a target.
 
 The current storage readiness adapter rejects writable block mounts and checks
 that each supported media-bearing kernel block interface remains a direct block

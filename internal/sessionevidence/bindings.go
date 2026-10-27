@@ -64,6 +64,11 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 			j.Schema == SchemaV4 && binding.ID == "input.keyboard.quick" && binding.Version >= 2 {
 			return ErrInvalid
 		}
+		if hasPointerSchema(binding.Evidence) && binding.ID != "input.pointer.quick" ||
+			strings.EqualFold(binding.ID, "input.pointer.quick") && binding.ID != "input.pointer.quick" ||
+			j.Schema == SchemaV4 && binding.ID == "input.pointer.quick" && binding.Version != 1 {
+			return ErrInvalid
+		}
 		byID[binding.ID] = binding
 	}
 	localSources := make(map[string]LocalThermalSource, len(j.LocalThermalSources))
@@ -81,6 +86,12 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 		}
 		if worker.ID == "input.keyboard.quick" {
 			if binding.Version != 2 || validateKeyboardBinding(worker, binding) != nil {
+				return ErrInvalid
+			}
+			continue
+		}
+		if worker.ID == "input.pointer.quick" {
+			if validatePointerBinding(worker, binding) != nil {
 				return ErrInvalid
 			}
 			continue

@@ -100,6 +100,10 @@ func inventoryPDFLines(payload app.InventoryPayload, version string) ([]string, 
 	if err != nil {
 		return nil, err
 	}
+	pointer, err := pointerReportDocument(payload)
+	if err != nil {
+		return nil, err
+	}
 	components := append([]app.ComponentRecord(nil), payload.Components...)
 	sort.SliceStable(components, func(left, right int) bool {
 		if components[left].Type != components[right].Type {
@@ -134,6 +138,7 @@ func inventoryPDFLines(payload app.InventoryPayload, version string) ([]string, 
 	}
 	appendThermalPDF(&lines, thermal)
 	appendKeyboardPDF(&lines, keyboard)
+	appendPointerPDF(&lines, pointer)
 	lines.add("", "FUNCTIONAL TEST EVIDENCE")
 	if len(tests) == 0 {
 		lines.add("No functional test evidence is included.")

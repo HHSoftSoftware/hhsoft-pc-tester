@@ -30,7 +30,7 @@ func TestPointerCommandGuidancePreservesMachineReadableEvidence(t *testing.T) {
 	if err := json.Unmarshal(stdout.Bytes(), &result); err != nil || result.Status != inputtest.StatusPass {
 		t.Fatal("guidance corrupted JSON or the completed result")
 	}
-	for _, text := range []string{"each relative pointer", "left, right, up, and down", "Press and release", "right or middle", "Every supported device"} {
+	for _, text := range []string{"each relative pointer", "left, right, up, and down", "Press and release", "right or middle", "each advertised wheel axis in both directions", "Every supported device"} {
 		if !strings.Contains(stderr.String(), text) {
 			t.Errorf("missing guidance: %s", text)
 		}

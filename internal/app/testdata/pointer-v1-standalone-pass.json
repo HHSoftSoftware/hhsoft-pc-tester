@@ -1,0 +1,438 @@
+{
+  "schema_version": 1,
+  "components": [
+    {
+      "type": "input",
+      "id": "event0",
+      "attributes": [
+        {
+          "name": "bitmap_word_bits",
+          "value": "64"
+        },
+        {
+          "name": "bus",
+          "value": "0003"
+        },
+        {
+          "name": "category",
+          "value": "pointer"
+        },
+        {
+          "name": "ev_capabilities",
+          "value": "7"
+        },
+        {
+          "name": "handlers",
+          "value": "mouse0 event0"
+        },
+        {
+          "name": "interface",
+          "value": "event0"
+        },
+        {
+          "name": "key_capabilities",
+          "value": "30000 0 0 0 0"
+        },
+        {
+          "name": "product",
+          "value": "0002"
+        },
+        {
+          "name": "rel_capabilities",
+          "value": "843"
+        },
+        {
+          "name": "vendor",
+          "value": "0001"
+        },
+        {
+          "name": "version",
+          "value": "0001"
+        }
+      ],
+      "identity": {
+        "algorithm": "hmac-sha256",
+        "key_epoch": "fixture",
+        "confidence": "unavailable"
+      }
+    }
+  ],
+  "system_fingerprint": {
+    "algorithm": "hmac-sha256",
+    "key_epoch": "fixture",
+    "key_id": "hmac-sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "identified_parts": 0,
+    "unidentified_parts": 1
+  },
+  "test_results": [
+    {
+      "id": "audio.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "unsupported",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "unsupported"
+    },
+    {
+      "id": "audio.readiness.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "excluded",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "excluded"
+    },
+    {
+      "id": "camera.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "unsupported",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "unsupported"
+    },
+    {
+      "id": "cpu.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "excluded",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "excluded"
+    },
+    {
+      "id": "cpu.stress",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "unsupported",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "unsupported"
+    },
+    {
+      "id": "display.operator.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "excluded",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "excluded"
+    },
+    {
+      "id": "graphics.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "excluded",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "excluded"
+    },
+    {
+      "id": "input.keyboard.quick",
+      "version": 2,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "excluded",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "excluded"
+    },
+    {
+      "id": "input.pointer.quick",
+      "version": 1,
+      "status": "pass",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.pointer-functional/v1",
+        "status": "pass",
+        "stop_reason": "completed",
+        "limit_ms": 30000,
+        "duration_ms": 6,
+        "devices": [
+          {
+            "interface": "event0",
+            "status": "pass",
+            "supported": true,
+            "readable": true,
+            "identity": {
+              "bus": 3,
+              "vendor": 1,
+              "product": 2,
+              "version": 1
+            },
+            "capabilities": {
+              "key": true,
+              "relative": true,
+              "relative_x": true,
+              "relative_y": true,
+              "absolute": false,
+              "buttons": [
+                "left",
+                "right"
+              ]
+            },
+            "x_positive": 1,
+            "x_negative": 1,
+            "y_positive": 1,
+            "y_negative": 1,
+            "buttons": [
+              {
+                "button": "left",
+                "presses": 1,
+                "releases": 1,
+                "pairs": 1
+              },
+              {
+                "button": "right",
+                "presses": 1,
+                "releases": 1,
+                "pairs": 1
+              }
+            ],
+            "frames": 4,
+            "evidence_loss": false
+          }
+        ]
+      },
+      "planned_status": "scheduled"
+    },
+    {
+      "id": "input.readiness.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "excluded",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "excluded"
+    },
+    {
+      "id": "input.touchpad.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "unsupported",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "unsupported"
+    },
+    {
+      "id": "input.touchscreen.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "unsupported",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "unsupported"
+    },
+    {
+      "id": "memory.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "excluded",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "excluded"
+    },
+    {
+      "id": "memory.stress",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "unsupported",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "unsupported"
+    },
+    {
+      "id": "network.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "unsupported",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "unsupported"
+    },
+    {
+      "id": "network.readiness.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "excluded",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "excluded"
+    },
+    {
+      "id": "storage.destructive",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "unsupported",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "unsupported"
+    },
+    {
+      "id": "storage.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "unsupported",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "unsupported"
+    },
+    {
+      "id": "storage.readiness.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "excluded",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "excluded"
+    },
+    {
+      "id": "usb.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "unsupported",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "unsupported"
+    },
+    {
+      "id": "usb.readiness.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "excluded",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "excluded"
+    },
+    {
+      "id": "run.integrity.quick",
+      "version": 1,
+      "status": "pass",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.run-integrity/v1",
+        "status": "pass",
+        "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "planned_hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "final_hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "planned_component_count": 1,
+        "final_component_count": 1,
+        "excluded_tests": [
+          "audio.readiness.quick",
+          "cpu.quick",
+          "display.operator.quick",
+          "graphics.quick",
+          "input.keyboard.quick",
+          "input.readiness.quick",
+          "memory.quick",
+          "network.readiness.quick",
+          "storage.readiness.quick",
+          "usb.readiness.quick"
+        ]
+      }
+    }
+  ],
+  "coverage_scope": "frozen_plan"
+}

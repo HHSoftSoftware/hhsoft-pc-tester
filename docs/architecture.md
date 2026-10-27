@@ -210,6 +210,15 @@ validation is tracked separately from the earlier session milestone.
 Direct capture and finalization without a session journal do not claim that
 session safety history.
 
+Pointer definition 2 uses functional evidence v2 for advertised vertical and
+horizontal wheel directions. One credited event stream per axis prefers
+high-resolution events; legacy companion events are not added to that count.
+A shared decoder validates exact v1/v2 wire shapes and binds retained passes to
+final inventory and the frozen plan. Standalone pointer finalization remains
+available without a session-safety claim; v2 evidence in a v5 session also
+requires the worker interval. Historical v4/v5 reports with pointer v1 retain
+movement/button scope. Full wheel software qualification is in progress.
+
 The guided keyboard increment activates definition version 2 of the existing
 `input.keyboard.quick` row and requires fresh plans. Journal v5 inserts its
 eleventh worker between input readiness and pointer testing. Shared validation

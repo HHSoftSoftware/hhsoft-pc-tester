@@ -13,6 +13,7 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inputtest"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/keyboardevidence"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/plan"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/pointerevidence"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quick"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/safemode"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/sessionevidence"
@@ -498,6 +499,9 @@ func sessionStopReason(parent, run, worker context.Context, now, runDeadline, wo
 }
 
 func sessionWorkerOutcomeEvidence(encoded []byte, readErr error, schema string, code int, interrupted bool) (string, string, error) {
+	if schema == inputtest.PointerSchema && readErr != nil && readErr != os.ErrNotExist {
+		return "", "", pointerevidence.ErrInvalid
+	}
 	if schema == inputtest.KeyboardSchema && readErr != nil && readErr != os.ErrNotExist {
 		return "", "", keyboardevidence.ErrInvalid
 	}
@@ -507,6 +511,9 @@ func sessionWorkerOutcomeEvidence(encoded []byte, readErr error, schema string, 
 		return "", "", errInvalidQuickSafety
 	}
 	status, statusErr := testEvidenceStatus(encoded, schema)
+	if readErr == nil && errors.Is(statusErr, pointerevidence.ErrInvalid) {
+		return "", "", statusErr
+	}
 	if readErr == nil && (errors.Is(statusErr, keyboardevidence.ErrCleanupUnconfirmed) || errors.Is(statusErr, keyboardevidence.ErrInvalid)) {
 		return "", "", statusErr
 	}
@@ -520,7 +527,7 @@ func sessionWorkerOutcomeEvidence(encoded []byte, readErr error, schema string, 
 		if status == "fail" {
 			return "fail", "completed", nil
 		}
-		if code == 0 || schema == quick.CPUSchema || schema == quick.MemorySchema || schema == inputtest.KeyboardSchema {
+		if code == 0 || schema == quick.CPUSchema || schema == quick.MemorySchema || schema == inputtest.KeyboardSchema || schema == inputtest.PointerSchema {
 			if interrupted && (status == "aborted" || status == "error") {
 				return status, "interrupted", nil
 			}

@@ -3,7 +3,7 @@ package inputtest
 import "testing"
 
 func pointerTestCapabilities(buttons ...string) PointerCapabilities {
-	return PointerCapabilities{Key: true, Relative: true, RelativeX: true, RelativeY: true, Buttons: buttons}
+	return PointerCapabilities{Key: true, Relative: true, RelativeX: true, RelativeY: true, Buttons: buttons, WheelAxes: []PointerWheelCapability{}}
 }
 
 func pointerTestState(buttons ...string) *pointerState {

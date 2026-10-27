@@ -13,6 +13,7 @@ import (
 const maximumPointerDevices = 128
 
 var errPointerIdle = errors.New("no pointer events available")
+var errPointerRetry = errors.New("pointer event read interrupted")
 
 type pointerOpened struct {
 	identity              PointerIdentity
@@ -45,8 +46,9 @@ func pointerContextError(ctx context.Context) error {
 
 func runPointerWith(ctx context.Context, options PointerOptions, backend pointerBackend) (result PointerResult) {
 	result = PointerResult{Schema: PointerSchema, Status: StatusError, StopReason: "error", LimitMilliseconds: options.Duration.Milliseconds()}
-	if ctx == nil || options.Duration < 10*time.Millisecond || options.Duration > 5*time.Minute {
-		result.Detail = "pointer duration must be between 10ms and 5m with a valid context"
+	if ctx == nil || options.Duration < 10*time.Millisecond || options.Duration > 90*time.Second {
+		result.LimitMilliseconds = 0
+		result.Detail = "pointer duration must be between 10ms and 90s with a valid context"
 		return
 	}
 	started := time.Now()
@@ -99,7 +101,7 @@ func runPointerWith(ctx context.Context, options PointerOptions, backend pointer
 	}
 	result.Devices = make([]PointerDeviceResult, len(interfaces))
 	for index, name := range interfaces {
-		result.Devices[index] = PointerDeviceResult{Interface: name, Status: StatusInconclusive, Detail: "pointer interface was not observed"}
+		result.Devices[index] = PointerDeviceResult{Interface: name, Status: StatusInconclusive, Wheels: []PointerWheelResult{}, Detail: "pointer interface was not observed"}
 	}
 	if len(interfaces) == 0 {
 		result.Status, result.Detail = StatusInconclusive, "no pointer event interfaces were discovered"
@@ -131,6 +133,7 @@ func runPointerWith(ctx context.Context, options PointerOptions, backend pointer
 			device.Detail = "requires relative X/Y, a left button, and no absolute axes"
 			continue
 		}
+		device.Wheels = pointerWheelObservations(source.capabilities)
 		if source.eventSize < 8 || source.eventSize > 64 || source.typeOffset != source.eventSize-8 {
 			device.Detail = "unsupported pointer event record layout"
 			continue
@@ -192,7 +195,7 @@ func runPointerWith(ctx context.Context, options PointerOptions, backend pointer
 				}
 				device.pending = device.pending[device.source.eventSize:]
 			}
-			if readErr != nil && !errors.Is(readErr, errPointerIdle) || count == 0 && readErr == nil {
+			if readErr != nil && !errors.Is(readErr, errPointerIdle) && !errors.Is(readErr, errPointerRetry) || count == 0 && readErr == nil {
 				device.state.reject("pointer event stream disconnected or became unreadable", false)
 			}
 			idle := count == 0 && errors.Is(readErr, errPointerIdle)

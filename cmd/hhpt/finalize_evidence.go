@@ -15,6 +15,7 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inputtest"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/keyboardevidence"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/networktest"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/pointerevidence"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quick"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quickevidence"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/storage"
@@ -33,6 +34,13 @@ var errInvalidQuickSafety = quickevidence.ErrInvalid
 // worker's status. It does not infer health, performance, or physical coverage
 // from a node-readiness result. Partial non-pass observations remain reportable.
 func testEvidenceStatus(encoded []byte, expectedSchema string) (string, error) {
+	if expectedSchema == inputtest.PointerSchema || expectedSchema == inputtest.PointerSchemaV1 {
+		value, err := pointerevidence.Decode(encoded)
+		if err != nil || value.Schema != expectedSchema {
+			return "", pointerevidence.ErrInvalid
+		}
+		return string(value.Status), nil
+	}
 	if expectedSchema == inputtest.KeyboardSchema {
 		value, err := keyboardevidence.Decode(encoded)
 		if err != nil {
@@ -79,8 +87,6 @@ func testEvidenceStatus(encoded []byte, expectedSchema string) (string, error) {
 		err = acceptEvidence(encoded, validateUSBEvidence)
 	case inputtest.Schema:
 		err = acceptEvidence(encoded, validateInputEvidence)
-	case inputtest.PointerSchema:
-		err = acceptEvidence(encoded, validatePointerEvidence)
 	case audio.Schema:
 		err = acceptEvidence(encoded, validateAudioEvidence)
 	case graphics.Schema:

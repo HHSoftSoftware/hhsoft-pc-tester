@@ -155,10 +155,11 @@ includes the bounded aggregate activity evidence in the signed report.
 
 The guided `hhpt pointer` check observes relative `EV_REL` X/Y interfaces.
 Move each supported pointer left, right, up, and down, then press and release
-its primary button and every advertised right or middle button. Each interface
-must supply its own observations. Absolute `EV_ABS` and mixed relative/absolute
-interfaces are outside this check and cannot pass it. Wheels, extra buttons,
-touch gestures, and tracking accuracy remain separate coverage. Evidence keeps
+its primary button and every advertised right or middle button. Scroll every
+advertised wheel axis in both directions. Each interface must supply its own
+observations. Absolute `EV_ABS` and mixed relative/absolute interfaces cannot
+pass this check. Extra buttons, touch gestures, tracking accuracy and wheel
+resolution remain separate coverage. Evidence keeps
 bounded counts and action summaries, never raw input events or typed text.
 
 ```sh
@@ -167,10 +168,11 @@ hhpt pointer -duration 30s -timeout 90s -output pointer.json
 
 Pointer joins the quick session's shared five-minute budget and signed results;
 direct `capture` retains its existing subset and does not run this guided check.
-The selection menu now offers eleven modern or nine legacy quick tests. The
-pointer catalog change requires a fresh plan and introduced a ten-outcome v2
-journal; historical signed reports remain independently verifiable. Automated
-and native Linux pointer validation passed; rebuilt-image and physical qualification remain open.
+The selection menu offers eleven modern or nine legacy quick tests. Pointer
+definition 2 and evidence v2 add advertised wheel directions and require a fresh
+plan. Session v5 keeps eleven workers. Historical pointer v1 retains its original
+movement/button scope and rendering. Full software qualification of the wheel
+increment is in progress; rebuilt images and physical qualification remain open.
 See [requirements validation](docs/requirements-validation.md).
 
 The guided `hhpt keyboard` check asks for a press and release of left Shift,

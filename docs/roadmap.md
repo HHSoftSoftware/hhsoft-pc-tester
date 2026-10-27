@@ -131,6 +131,14 @@ continuous coverage, thermal or heartbeat monitoring, or preemption of a
 blocked kernel operation. The remaining functional adapters and beta/release
 requirements below still apply.
 
+The shared mount parser rejects conflicting filesystem types for one canonical
+zero-major device while retaining valid same-type aliases, diskless views and
+previously observed writable block counts. Focused and full Windows suites,
+vet and cross-builds passed, along with native Linux amd64/386 suites, race
+checks and all 39 CLI cases. The existing runtime-safety/readiness v1 evidence,
+catalog and session versions are unchanged. Sampled storage reads remain
+planned; rebuilt-image and physical-device qualification remain open.
+
 The next thermal prerequisite is implemented in source: local CPU/RAM guards
 bound the initial and periodic observations, join before returning results, and
 record the coverage first introduced in CPU/memory v2 evidence. Unconfirmed cleanup blocks

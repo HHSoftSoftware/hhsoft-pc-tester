@@ -519,6 +519,28 @@ every replacement that reuses a kernel number. Health telemetry, sampled/full
 reads and the broader storage matrix remain planned. Rebuilt-image, physical
 replacement/cancellation, pilot and frozen-alpha release gates remain open.
 
+The shared parser's mount-identity follow-up rejects a snapshot that assigns
+different filesystem types to one canonical zero-major device, such as `0:31`
+reported as both `tmpfs` and `proc`. Same-type aliases may differ in path,
+mount-source name and access options, and valid diskless observations remain
+supported. Writable block counts already observed survive a later conflict.
+The existing input bounds, runtime-safety v1 and storage-readiness v1 evidence,
+catalog and session versions are unchanged.
+
+Focused Windows regressions passed 1,733 test/subtest events across eight
+packages, with five platform test skips and no failures. The full Windows suite
+passed 2,791 events across 25 packages, with 17 platform test skips, three
+packages without host test files and no failures. Formatting, vet, 28 Linux
+test-binary builds and five application builds passed against the same source.
+
+Native Linux amd64/386 validation passed 5,072 test/subtest events across 28
+suites. Six race suites passed 1,930 events; both groups had no skips or failures.
+All 39 CLI cases passed, with confirmed cleanup and all six final environment
+checks reconciled. Mount/storage fixtures use simulated metadata and descriptors;
+these results establish neither loop backing nor physical-device or media-read
+correctness. AArch64 was cross-built only. The broader storage, rebuilt-image,
+physical-device, pilot and release gates remain open.
+
 The next CPU increment implements twelve fixed binary64 addition, subtraction,
 multiplication and division vectors in the bounded worker. CPU v3 evidence adds
 ordered per-worker counts, exact mismatch bits and separate integer, SHA-256 and

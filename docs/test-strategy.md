@@ -215,6 +215,26 @@ qualification. AArch64 was cross-built only. Rebuilt-image and physical checks
 remain open; sampled-media reads and their stricter backing-device exclusions
 remain unimplemented.
 
+The mount-identity follow-up adds these acceptance cases:
+
+- Conflicting known filesystem types for the same canonical zero-major device
+  fail in either order; same-type aliases and valid diskless views remain valid.
+- A conflict before, between or after writable block records preserves exactly
+  the unsafe counts already observed. Separate observations share no alias state.
+- Malformed aliases retain the existing rejection rules, including duplicate
+  mount IDs, noncanonical numbers, unknown types and ambiguous access options.
+- A conflict in the last of 4,096 records is detected at the exact 4 MiB input
+  limit. An extra byte is rejected; existing record and token limits remain.
+- Literal runtime-safety v1 JSON retains pass, error and failure after an earlier
+  unsafe observation. An already-cancelled observation remains aborted without
+  claiming storage or network observations.
+
+Focused and full Windows suites, formatting, vet and cross-builds passed for
+this correction. Native Linux amd64/386 suites, six race suites and all 39 CLI
+cases also passed with confirmed cleanup. These fixtures exercise metadata
+admission without media reads; sampled-media reads, backing-device proof and
+physical qualification remain open.
+
 The current network readiness adapter checks driver attachment and link state
 without configuring an address, associating Wi-Fi, or generating traffic. The
 safe profile fails closed when any non-loopback interface is administratively

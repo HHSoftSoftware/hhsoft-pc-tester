@@ -159,9 +159,19 @@ type MountState struct {
 // their complete block registry. On error, previously parsed observations remain
 // available for retaining unsafe findings; they cannot establish a safe view.
 func ParseMounts(data []byte) (map[string]MountState, error) {
-	mounts, ids := map[string]MountState{}, map[string]bool{}
+	projection, err := parseMountProjection(data)
+	return projection.blockDevices, err
+}
+
+type mountProjection struct {
+	blockDevices map[string]MountState
+}
+
+func parseMountProjection(data []byte) (mountProjection, error) {
+	projection := mountProjection{blockDevices: map[string]MountState{}}
+	ids, virtualTypes := map[string]bool{}, map[string]string{}
 	if len(data) > 4<<20 {
-		return mounts, errors.New("mount observations exceed the supported limit")
+		return projection, errors.New("mount observations exceed the supported limit")
 	}
 	scanner := bufio.NewScanner(strings.NewReader(string(data)))
 	scanner.Buffer(make([]byte, 4096), 64<<10)
@@ -175,40 +185,47 @@ func ParseMounts(data []byte) (map[string]MountState, error) {
 			}
 		}
 		if separator < 6 || len(fields) != separator+4 || len(ids) >= 4096 || !validDeviceNumber(fields[2]) {
-			return mounts, errors.New("invalid mount record")
+			return projection, errors.New("invalid mount record")
 		}
 		id, idErr := strconv.ParseUint(fields[0], 10, 64)
 		parent, parentErr := strconv.ParseUint(fields[1], 10, 64)
 		if idErr != nil || parentErr != nil || strconv.FormatUint(id, 10) != fields[0] || strconv.FormatUint(parent, 10) != fields[1] || id == 0 || ids[fields[0]] || !strings.HasPrefix(fields[3], "/") || !strings.HasPrefix(fields[4], "/") {
-			return mounts, errors.New("invalid mount identity")
+			return projection, errors.New("invalid mount identity")
 		}
 		ids[fields[0]] = true
 		rw, err := mountWritable(fields[5])
 		if err != nil {
-			return mounts, err
+			return projection, err
 		}
 		if _, err := mountWritable(fields[separator+3]); err != nil {
-			return mounts, err
+			return projection, err
 		}
 		number := fields[2]
 		if strings.HasPrefix(number, "0:") {
-			if !virtualFilesystems[fields[separator+1]] {
-				return mounts, errors.New("unknown non-block mount")
+			filesystem := fields[separator+1]
+			if !virtualFilesystems[filesystem] {
+				return projection, errors.New("unknown non-block mount")
 			}
-			if rw && fields[separator+1] == "overlay" {
-				return mounts, errors.New("writable overlay backing is unknown")
+			if rw && filesystem == "overlay" {
+				return projection, errors.New("writable overlay backing is unknown")
 			}
+			// Aliases of one filesystem may differ in paths and access flags,
+			// but its canonical device number cannot identify two types.
+			if previous, present := virtualTypes[number]; present && previous != filesystem {
+				return projection, errors.New("conflicting non-block filesystem identity")
+			}
+			virtualTypes[number] = filesystem
 		} else {
-			state := mounts[number]
+			state := projection.blockDevices[number]
 			state.Mounted = true
 			state.Writable = state.Writable || rw
-			mounts[number] = state
+			projection.blockDevices[number] = state
 		}
 	}
 	if scanner.Err() != nil || len(ids) == 0 {
-		return mounts, errors.New("mount observations unavailable")
+		return projection, errors.New("mount observations unavailable")
 	}
-	return mounts, nil
+	return projection, nil
 }
 
 func parseMounts(data []byte, devices map[string]bool) (int, error) {

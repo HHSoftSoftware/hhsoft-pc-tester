@@ -283,6 +283,18 @@ the alpha still requires the separate documented release gates.
   1,545, with no skips. All 24 CLI cases and cleanup checks passed. Storage
   fixtures use simulated metadata and descriptors; storage has no separate
   race suite in this cohort.
+- [x] Reject contradictory filesystem types for one canonical zero-major
+  device in the shared mount parser. Valid same-type aliases and diskless views
+  remain supported, and earlier writable block counts survive a later conflict.
+  Runtime-safety v1 and storage-readiness v1 evidence remain unchanged.
+- [x] Validate the mount-identity correction with focused Windows regressions
+  and the full host suite: 2,791 test/subtest passes across 25 packages, 17
+  platform test skips and three packages without host test files. Formatting,
+  vet, 28 Linux test-binary builds and five application builds passed.
+- [x] Validate the mount-identity correction on native Linux amd64/386: 5,072
+  test/subtest passes across 28 suites, 1,930 race-test passes across six suites
+  and all 39 CLI cases, with no native or race skips and confirmed cleanup.
+  Mount/storage fixtures do not establish physical-device or media-read behavior.
 - [ ] Qualify storage readiness, replacement and cancellation in rebuilt images
   and on physical devices. Matching kernel numbers do not prove persistent
   physical identity or detect every same-number replacement.

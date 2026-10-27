@@ -28,6 +28,8 @@ func TestMonitorUnsafeSnapshotLatchesBeforeCancellation(t *testing.T) {
 	})
 	clock.advance(time.Second, true)
 	awaitMonitorCount(t, monitor, 1)
+	nextTick := clock.now().Add(time.Second)
+	awaitMonitor(t, "next periodic timer", func() bool { return clock.waitingFor(nextTick) })
 	clock.advance(time.Second, true)
 	awaitMonitor(t, "unsafe failure and cancellation", func() bool { return monitor.Failed() && cancellations.Load() == 1 })
 	recovered.Store(true)

@@ -236,7 +236,10 @@ Complete initial/final inventory cannot be reconstructed by an offline verifier.
 Case aliases, duplicate or hidden modern claims and omitted bundle views cannot
 turn functional evidence into an opaque historical or unexecuted note. A strict
 nonexecution note can preserve standalone finalization without a session;
-functional keyboard observations require v5. Software qualification is in progress.
+functional keyboard observations require v5. Windows and native Linux
+amd64/386 qualification, including race checks and signed CLI workflows,
+passed. These checks establish software behavior, not physical input coverage;
+rebuilt-image and physical-keyboard validation remain open.
 
 ## Privacy-Preserving Fingerprints
 

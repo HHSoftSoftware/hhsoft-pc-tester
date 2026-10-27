@@ -50,6 +50,10 @@ func TestMonitorLateCleanResultCannotClearDeadline(t *testing.T) {
 			monitor := startTestMonitor(t, clock, observe, nil)
 			clock.advance(time.Second, true)
 			ctx := awaitObserver(t, started)
+			if deliverTimer {
+				deadline, _ := ctx.Deadline()
+				awaitMonitor(t, "observation deadline timer", func() bool { return clock.waitingFor(deadline) })
+			}
 			clock.advance(time.Second, deliverTimer)
 			if deliverTimer {
 				awaitMonitor(t, "observation timeout", monitor.Failed)
@@ -100,6 +104,8 @@ func TestMonitorIgnoringContextMakesCleanupUncertainAndImmutable(t *testing.T) {
 	monitor := startTestMonitor(t, clock, observe, nil)
 	clock.advance(time.Second, true)
 	ctx := awaitObserver(t, started)
+	deadline, _ := ctx.Deadline()
+	awaitMonitor(t, "observation deadline timer", func() bool { return clock.waitingFor(deadline) })
 	clock.advance(time.Second, true)
 	awaitMonitor(t, "observation timeout", monitor.Failed)
 	if ctx.Err() != context.DeadlineExceeded {

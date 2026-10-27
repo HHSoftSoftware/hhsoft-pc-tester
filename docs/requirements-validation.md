@@ -333,9 +333,9 @@ These native runs cover Linux amd64 and 386; AArch64 was cross-built only. Rebui
 images, representative physical sensors, the beta pilot and release gates remain
 open.
 
-The current guided-keyboard increment is implemented in source; full software
-qualification is in progress. It activates definition version 2 of
-`input.keyboard.quick`, requires fresh frozen plans, and introduces session v5
+The guided-keyboard increment completed software qualification on 2026-10-26.
+It activates definition version 2 of `input.keyboard.quick`, requires fresh
+frozen plans, and introduces session v5
 with eleven ordered workers. Keyboard runs between input readiness and pointer
 testing. Selection offers eleven modern and nine legacy quick tests, subject
 to applicability. The catalog remains 21 rows plus run integrity, producing 22
@@ -369,9 +369,43 @@ rules; v1-v3 evidence keeps its historical interpretation. Duplicate, escaped,
 case-aliased or hidden modern claims cannot use a historical or viewless-bundle
 bypass. Direct capture still omits guided keyboard and pointer workers.
 
-Keyboard native qualification, rebuilt images, physical multi-keyboard and
-held-key/disconnect checks, and the ten-PC beta pilot remain pending. Earlier
-VM results do not close those gates.
+Windows qualification with Go 1.27.2 passed 2,156 test/subtest events across 23
+packages, with 21 platform-specific skips and no failures. Vet, 26 Linux test
+binary cross-builds and all five application targets passed. Native Linux
+amd64/386 qualification passed 3,784 events across 26 suite runs; five race
+suites passed 1,461 events, with no skips. All 21 CLI scenarios passed: twelve
+session, three pointer, three standalone keyboard and three keyboard-session
+cases. Owned-process checks passed nine compiler and nine runtime cases with
+confirmed teardown; all 32 archive and 13 supervisor checks passed.
+
+The three standalone keyboard cases observed an interface but no completed
+press/release pairs and correctly remained inconclusive at the observation
+timeout. The three keyboard-session cases retained an error at the run deadline,
+with no completed pairs. Their terminal state and descriptor flags were restored,
+children were reaped and cleanup was confirmed. These expected outcomes validate
+bounded behavior; they do not establish successful physical keyboard actions.
+
+All fifteen session cases reported unavailable temperature telemetry. All-off
+cases retained initial and final observations; run-deadline cases retained four
+observations, including two periodic samples. No VM result establishes safe
+physical temperatures.
+
+Earlier unsuccessful native attempts remain recorded separately. The positive
+heat fixture now waits for a second serialized safety callback, which proves
+the first safe completion was accepted before heat is induced. Fake-clock
+success cases wait for the exact next timer to be registered before advancing
+time. Independent counterexamples demonstrate the timing assumptions; the
+original native interleavings were not recorded, so their precise causes remain
+unconfirmed. A separate negative requires zero samples at the first interval to
+retain a sampling-gap failure despite confirmed cleanup. Production timing,
+coverage, cancellation, cleanup and signing guards were not relaxed.
+
+These results cover Linux amd64 and 386; AArch64 was cross-built only. Fresh
+construction and qualification of all four beta images, physical multi-keyboard
+and held-key/disconnect checks, and the pilot on at least ten varied PCs remain
+open. They do not replace or expand the frozen initial alpha candidate's
+separate source, image and release gates. Full layouts, rollover, ghosting and
+other keyboard functions remain planned.
 
 Regression coverage for these cases belongs with the corresponding feature,
 not with a blanket claim of complete product coverage. Linux mount/device

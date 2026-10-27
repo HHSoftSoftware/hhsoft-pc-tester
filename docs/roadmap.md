@@ -161,9 +161,12 @@ remain open. See [requirements validation](requirements-validation.md).
 Guided keyboard source now implements six fixed controls on each evdev keyboard,
 with no typed text or raw event stream retained. It activates the existing row
 as definition version 2 and uses an eleven-worker v5 journal while preserving
-strict v4 verification. Source integration and focused checks are complete;
-full software qualification, rebuilt images and physical keyboard testing remain
-open. Layout-aware coverage, other keys, rollover and ghosting remain planned.
+strict v4 verification. Windows tests, vet and cross-builds, native Linux
+amd64/386 suites, race checks and command-line workflows passed. Rebuilding and
+qualifying all four beta images and testing physical keyboards remain open.
+Layout-aware coverage, other keys, rollover and ghosting remain planned. The
+ten-PC beta pilot and the initial alpha's separate release gates remain open;
+this increment does not expand the frozen alpha candidate's scope.
 
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.

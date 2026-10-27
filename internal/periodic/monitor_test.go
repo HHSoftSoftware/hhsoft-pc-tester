@@ -68,6 +68,19 @@ func (clock *testMonitorClock) waiting() bool {
 	return len(clock.timers) > 0
 }
 
+// A completed observation does not imply that its successor timer was installed.
+// Match the exact next tick before advancing this manually controlled clock.
+func (clock *testMonitorClock) waitingFor(due time.Time) bool {
+	clock.mutex.Lock()
+	defer clock.mutex.Unlock()
+	for timer := range clock.timers {
+		if timer.due.Equal(due) {
+			return true
+		}
+	}
+	return false
+}
+
 func monitorSafeResult() testObservation {
 	return testObservation{Schema: Schema, Status: "pass", StorageObserved: true, NetworkObserved: true}
 }
@@ -144,6 +157,8 @@ func TestMonitorShortRunAndPeriodicCoverage(t *testing.T) {
 		}, nil)
 		clock.advance(time.Second, true)
 		awaitMonitorCount(t, monitor, 1)
+		nextTick := clock.now().Add(time.Second)
+		awaitMonitor(t, "next periodic timer", func() bool { return clock.waitingFor(nextTick) })
 		clock.advance(time.Second, true)
 		awaitMonitorCount(t, monitor, 2)
 		clock.advance(400*time.Millisecond, true)
@@ -175,9 +190,11 @@ func TestMonitorFifteenMinuteCoverageRetainsOnlyBoundedAggregates(t *testing.T) 
 	monitor := startTestMonitor(t, clock, func(context.Context) testObservation { return monitorSafeResult() }, nil)
 	const samples = uint64(900)
 	for count := uint64(1); count <= samples; count++ {
+		nextTick := clock.now().Add(time.Second)
+		awaitMonitor(t, "next periodic timer", func() bool { return clock.waitingFor(nextTick) })
 		clock.advance(time.Second, true)
-		// Acknowledge each completion before the next synthetic tick, without
-		// waiting for the simulated fifteen-minute observation window.
+		// Account for the completion and then its next timer admission before
+		// another synthetic tick; the full simulated window remains instant.
 		awaitMonitorCount(t, monitor, count)
 	}
 	// Include the final join window after the maximum session work duration.

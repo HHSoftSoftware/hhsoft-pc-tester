@@ -94,6 +94,10 @@ the supported boundary.
 
 ## Runtime components
 
+These are the planned service boundaries. Current quick execution uses one Go
+coordinator with in-process workers; separate UI/service processes and confined
+adapter processes remain unimplemented.
+
 - `hhptd`: root-owned Go orchestrator and local API. It owns discovery,
   policy, scheduling, evidence, fingerprinting, and final report state.
 - `hhpt-ui`: unprivileged local operator UI. It cannot open raw storage or run
@@ -216,6 +220,10 @@ unchanged per-device identity/capabilities. Raw input events and typed text are
 never exported. Standalone finalization may retain strict nonexecution notes
 for excluded, absent, unsupported or missing-driver keyboards without claiming
 session coverage; functional keyboard evidence requires the live v5 workflow.
+Windows and native Linux amd64/386 qualification, including race checks and CLI
+workflows, passed for this integration. This qualifies the application source;
+rebuilt images and physical keyboards remain separate gates. See
+[requirements validation](requirements-validation.md).
 
 A graph change does not discard evidence. It fails run integrity and preserves
 the final report with the original/final graph HMACs and component-level delta,
@@ -303,8 +311,9 @@ stays explicit and cannot establish safe temperatures. The monitoring boundary
 includes execution, cleanup, final inventory and the final gate; report encoding,
 output and saving are outside it.
 
-Full Windows tests, vet and cross-builds passed for this increment. The 24 native
-Linux amd64/386 suite runs passed 3,032 test/subtest events and four race suites
+Full Windows tests, vet and cross-builds passed for the earlier v4 thermal
+increment. Its 24 native Linux amd64/386 suite runs passed 3,032 test/subtest
+events and four race suites
 passed 1,203, with no skips. All 15 CLI scenarios passed with confirmed cleanup;
 the twelve session scenarios retained explicit unavailable temperature coverage.
 Rebuilt images, physical sensor validation and the beta pilot remain open.

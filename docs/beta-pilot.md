@@ -4,8 +4,10 @@ This run sheet supports the ten-PC pilot in the [roadmap](roadmap.md).
 It records physical evidence; VM checks do not fill these rows. Pilot results
 do not replace the [release gates](release-process.md) or the open functional
 requirements in the [master checklist](../PROJECT_CHECKLIST.md).
-The ten-PC gate remains open. Guided keyboard software qualification is in
-progress; implementation and synthetic checks do not fill physical pilot rows.
+The ten-PC gate remains open. Guided keyboard software qualification passed,
+including native Linux amd64/386, race and CLI checks. These results do not fill
+physical pilot rows. Use newly rebuilt and qualified beta images; the initial
+alpha candidate retains its separate release gates.
 
 ## Candidate and fleet
 

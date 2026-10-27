@@ -170,8 +170,10 @@ The current keyboard increment retains those monitoring boundaries in journal
 v5 and inserts an eleventh worker between input readiness and pointer testing.
 Keyboard definition version 2 requires a fresh plan. Original v4 journals keep
 their strict ten-worker rules; earlier evidence is not reinterpreted as current
-execution. Full software qualification of the keyboard increment is in progress;
-the preceding native results apply to v4, not v5.
+execution. The keyboard increment passed its own Windows and native Linux
+amd64/386 software qualification, including race checks and CLI workflows.
+The preceding v4 counts retain their original scope. Rebuilt-image and physical
+validation remain open; software checks do not prove hardware truth.
 
 The keyboard worker opens event interfaces read-only and checks only left
 Shift, right Shift, Up, Down, Left and Right. Each interface must establish a

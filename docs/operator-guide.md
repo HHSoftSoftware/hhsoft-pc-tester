@@ -207,8 +207,9 @@ Missing actions mean incomplete coverage, not proof of a defective key. Full
 layout maps, other keys, rollover and ghosting remain untested. Reports retain
 fixed action-completion booleans, without text or an event sequence. The console
 owner discards queued keyboard input before accepting later display findings.
-This source increment is undergoing software qualification; rebuilt images and
-physical keyboard validation remain separate gates.
+Software qualification passed on Windows and native Linux amd64/386, including
+race checks and command-line workflows. Rebuilt images and physical keyboard
+validation remain separate gates.
 
 The pointer step observes all supported relative pointers during one default
 30-second window, within a 90-second whole-test limit and the remaining session
@@ -340,8 +341,8 @@ before session launch and after report creation remain separate operational gate
 capture and direct finalization without a session journal retain their older
 limited scope and do not claim this session history.
 
-New v4 reports also show run-wide thermal coverage and any observed limit. The
-initial and final thermal readings are required even in a sub-second or all-off
+Reports using v4 or v5 also show run-wide thermal coverage and any observed limit.
+The initial and final thermal readings are required even in a sub-second or all-off
 session. `thermal_finding=limit_reached` means a valid global or local CPU/RAM
 observation reached the limit; `no_limit_observed` means no such observation was
 recorded. Read that finding together with `thermal_coverage=available`, `partial`
@@ -354,8 +355,8 @@ signed journal determines `session_stop` and the readiness thermal fields;
 hardware-graph integrity remains a separate result. The thermal monitoring
 window includes execution, cleanup, final inventory and the final safety gate.
 Report encoding, output and saving are outside it. Host and native software
-qualification passed for this increment; rebuilt images, physical sensors and
-the beta pilot remain open.
+qualification passed for the original v4 thermal increment; rebuilt images,
+physical sensors and the beta pilot remain open.
 
 | Status | Operator meaning | Required action |
 | --- | --- | --- |

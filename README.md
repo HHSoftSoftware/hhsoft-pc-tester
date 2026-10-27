@@ -37,12 +37,12 @@ remain gated on the complete reviewed bootable ISO set.
 ## Architecture direction
 
 The initial platform is a pinned Alpine Linux stable branch running in
-diskless mode. A small Go service inventories hardware, constructs and runs the
-test plan, enforces storage-write policy, and creates reports. A local UI talks
-only to that service. Long-running and interactive tests remain isolated
-workers with timeouts and bounded logs.
+diskless mode. The Go coordinator inventories hardware, constructs and runs the
+quick test plan, enforces storage-write policy, and creates reports. Separate
+UI/service processes and isolated workers are planned. Current quick workers
+run in process with bounded execution and signed outcomes.
 
-Complete memory qualification is a separate open-source Memtest86+ boot entry
+Complete memory qualification is planned through a separate Memtest86+ boot entry
 because an operating system cannot test memory allocated to itself. Buildroot
 is used only for a reduced-feature legacy fallback.
 
@@ -187,8 +187,10 @@ Keyboard definition version 2 requires fresh plans. Session journal v5 has
 eleven workers and retains v4's thermal and safety boundaries. Existing v4
 reports continue through strict validation. The report still has 21 catalog
 rows plus run integrity; direct capture omits both guided input workers.
-Software qualification of this increment is in progress. Rebuilt-image,
-physical-keyboard and full layout/rollover validation remain open.
+Windows tests, vet and cross-builds, native Linux amd64/386 suites, race checks
+and command-line workflows passed. Rebuilt images, physical keyboards and full
+layout/rollover validation remain open. See
+[requirements validation](docs/requirements-validation.md).
 
 The periodic-monitor milestone introduced read-only mount/network sampling
 and a v3 session journal, without changing the catalog or ten worker outcomes.
@@ -209,7 +211,7 @@ block nodes read-only without issuing a sector read. It rejects symlinks and
 non-block substitutions, records inaccessible or unusable devices, and makes
 any writable block mount visible as an error. This is readiness evidence, not
 SMART health, sampled-read correctness, throughput, or full-media coverage;
-those remain separate contained workers. The signed capture includes this
+those remain planned workers. The signed capture includes this
 readiness result.
 
 `hhpt network` inventories only hardware-backed Ethernet and Wi-Fi interfaces,

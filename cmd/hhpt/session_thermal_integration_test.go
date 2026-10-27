@@ -34,6 +34,25 @@ func useRealSessionFinalizer(t *testing.T, h *sessionHarness, collect snapshotCo
 		random = bytes.NewReader(bytes.Repeat([]byte{0x52}, 128))
 	}
 	h.dependencies.Finalize = func(ctx context.Context, request sessionFinalization, out, errOut io.Writer) sessionFinalizationResult {
+		gate := request.Gate
+		request.Gate = func(ctx context.Context) (sessionJournal, error) {
+			journal, err := gate(ctx)
+			if err != nil {
+				cause := "journal_io_or_other"
+				switch {
+				case errors.Is(err, sessionevidence.ErrInvalid):
+					cause = "journal_structure"
+				case err.Error() == "pre-sign safety failed":
+					cause = "pre_sign_safety"
+				case err.Error() == "final thermal observation failed":
+					cause = "final_thermal_observation"
+				case err.Error() == "session monitors did not complete safely":
+					cause = "monitor_completion"
+				}
+				t.Logf("live thermal gate diagnostic: cause=%s context_cancelled=%t", cause, ctx.Err() != nil)
+			}
+			return journal, err
+		}
 		args := []string{"-plan", request.PlanPath, "-fingerprint-key", request.FingerprintKeyPath, "-key-epoch", request.KeyEpoch, "-evidence-dir", request.EvidenceDirectory, "-output", request.OutputPath, "-session-id", "live-thermal-fixture"}
 		for _, outcome := range request.Outcomes {
 			args = append(args, "-outcome", outcome)
@@ -51,6 +70,11 @@ func useRealSessionFinalizer(t *testing.T, h *sessionHarness, collect snapshotCo
 func realThermalHarness(t *testing.T, excluded []string, temperature string) (*sessionHarness, func(string)) {
 	t.Helper()
 	h := newSessionHarness(t, "x86_64", excluded)
+	t.Cleanup(func() {
+		if t.Failed() {
+			logRealThermalHarnessDiagnostics(t, h)
+		}
+	})
 	root := t.TempDir()
 	path := filepath.Join(root, "sys/class/thermal/thermal_zone0/temp")
 	write := func(value string) {
@@ -82,6 +106,27 @@ func realThermalHarness(t *testing.T, excluded []string, temperature string) (*s
 	}
 	useRealSessionFinalizer(t, h, nil, nil)
 	return h, write
+}
+
+// Failure output is deliberately limited to fixed labels, booleans and timing
+// counters from this test's own retained files. Never print paths or raw data.
+func logRealThermalHarnessDiagnostics(t *testing.T, h *sessionHarness) {
+	t.Helper()
+	var safety safemode.MonitorResult
+	raw, err := readSmallRegularFile(filepath.Join(h.directory, "session-safety-monitor.json"), 65536)
+	safetyRead := err == nil && json.Unmarshal(raw, &safety) == nil
+	var temperature thermal.Result
+	raw, err = readSmallRegularFile(filepath.Join(h.directory, "session-thermal-monitor.json"), 65536)
+	thermalRead := err == nil && json.Unmarshal(raw, &temperature) == nil
+	t.Logf("live thermal monitor diagnostic: safety_read=%t safety_valid=%t safety_cleanup=%t safety_failure=%t safety_completed=%d safety_elapsed_ms=%d safety_gap_ms=%d thermal_read=%t thermal_valid=%t thermal_cleanup=%t thermal_joined=%t thermal_failure=%t thermal_attempted=%d thermal_completed=%d thermal_elapsed_ms=%d thermal_gap_ms=%d initial_completed_ms=%d final_requested_ms=%d final_completed_ms=%d",
+		safetyRead, safetyRead && validateSessionMonitor(safety, safety.ElapsedMilliseconds) == nil,
+		safety.CleanupConfirmed, safety.FirstFailure != nil, safety.CompletedObservations,
+		safety.ElapsedMilliseconds, safety.MaximumGapMilliseconds, thermalRead,
+		thermalRead && thermal.ValidateResult(temperature, true) == nil, temperature.CleanupConfirmed,
+		temperature.Joined, temperature.FirstFailure != nil, temperature.AttemptedObservations,
+		temperature.CompletedObservations, temperature.ElapsedMilliseconds, temperature.MaximumGapMilliseconds,
+		temperature.Initial.CompletedMilliseconds, temperature.Final.RequestedMilliseconds,
+		temperature.Final.CompletedMilliseconds)
 }
 
 func verifiedThermalView(t *testing.T, h *sessionHarness) *sessionevidence.ThermalView {
@@ -149,11 +194,34 @@ func TestSessionRealThermalCancelsEveryWorkerAndLatchesAfterCooling(t *testing.T
 	for _, target := range sessionWorkerIDs {
 		t.Run(target, func(t *testing.T) {
 			h, write := realThermalHarness(t, nil, "41000\n")
+			acceptedSafetySample := make(chan struct{})
+			h.dependencies.StartMonitor = func(started time.Time, fail context.CancelFunc) (sessionSafetyMonitor, error) {
+				observations := 0
+				return safemode.StartMonitor(func(context.Context) safemode.Result {
+					observations++
+					// The owner admits another serialized observation only after
+					// consuming the previous safe completion. Do not race heat
+					// cancellation against the safety monitor's first due tick.
+					if observations == 2 {
+						close(acceptedSafetySample)
+					}
+					return journalSafeObservation()
+				}, safemode.MonitorOptions{Started: started, Cancel: fail})
+			}
 			worker := h.dependencies.RunWorker
 			h.dependencies.RunWorker = func(ctx context.Context, w sessionWorker, in io.Reader, out, errOut io.Writer) int {
 				code := worker(ctx, w, in, out, errOut)
 				if w.ID != target {
 					return code
+				}
+				coverageDeadline := time.NewTimer(4 * time.Second)
+				defer coverageDeadline.Stop()
+				select {
+				case <-acceptedSafetySample:
+				case <-ctx.Done():
+					t.Fatal("target worker cancelled before accepted safety coverage")
+				case <-coverageDeadline.C:
+					t.Fatal("safety monitor did not establish accepted coverage")
 				}
 				write("98000\n")
 				select {
@@ -168,7 +236,7 @@ func TestSessionRealThermalCancelsEveryWorkerAndLatchesAfterCooling(t *testing.T
 				t.Fatalf("joined hot worker was not reportable: %d %s", code, &h.stderr)
 			}
 			view := verifiedThermalView(t, h)
-			if h.calls[len(h.calls)-1] != target || view.Finding != "limit_reached" || h.journal.Thermal.FirstFinding == nil || h.journal.Thermal.Final.Observation.PeakMilliCelsius != 41000 || view.PeakMilliCelsius != 98000 {
+			if h.calls[len(h.calls)-1] != target || h.journal.Monitor.CompletedObservations == 0 || view.Finding != "limit_reached" || h.journal.Thermal.FirstFinding == nil || h.journal.Thermal.Final.Observation.PeakMilliCelsius != 41000 || view.PeakMilliCelsius != 98000 {
 				t.Fatal("heat latch, stop ordering, or cooling evidence lost")
 			}
 		})

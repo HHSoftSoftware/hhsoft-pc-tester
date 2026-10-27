@@ -46,9 +46,9 @@ and missing-driver states retain their applicability reason, and unsupported
 or destructive work cannot be enabled through selection. Reports retain explicit
 selection reasons and the frozen exclusion intent. The broader profile budgets
 and coverage below remain targets, not completed workflows.
-The [validation milestones](requirements-validation.md) distinguish earlier
-qualified catalogs from the current keyboard increment, whose full software
-qualification is in progress.
+The [validation milestones](requirements-validation.md) distinguish each
+qualified catalog, including the current keyboard increment. Software
+qualification does not close rebuilt-image or physical gates.
 
 | Profile | Objective and default budget | Required coverage | Explicit exclusions |
 | --- | --- | --- | --- |
@@ -139,8 +139,9 @@ cannot produce a complete pass. Evidence contains fixed action booleans, with
 no raw events, typed text or event sequence. One console owner handles Ctrl-C
 and discards queued input before a later display prompt. Full layout maps,
 rollover, ghosting and other keys remain outside this implemented subset.
-Full software qualification of this increment is in progress; native,
-rebuilt-image and physical keyboard qualification remain pending.
+Windows and native Linux amd64/386 software qualification passed, including
+race checks and CLI workflows. Rebuilt-image and physical keyboard qualification
+remain pending.
 
 The separate guided `input.pointer.quick` worker observes relative `EV_REL`
 interfaces with both X and Y axes. During a default 30-second window, every
@@ -197,7 +198,7 @@ the duration precedes the hard timeout.
 | Audio | Enumerate routes and open playback/capture streams without xrun or transport failures. | A / R/O | Q S E B D | 30 sec / 2 min | Codec/routes, format, xrun count. |
 | Audio | Play left/right/stereo tones; operator confirms channels, clarity, and usable volume. | OA / R/O | Q S E B D | 60 sec/route / 3 min | Tone, route, volume, rating. |
 | Audio | Record each microphone; assess level, clipping, dropouts, and playback intelligibility. | MIX / R/O | S E B D | 60 sec/source / 3 min | Levels/noise/dropouts, rating. |
-| Input | Implemented quick subset: press/release left Shift, right Shift and four arrows on every keyboard interface. | OA / R/O | Q | 30 sec / 90 sec, shortened by session | Fixed action booleans, neutral state, identity and cleanup; software qualification in progress. |
+| Input | Implemented quick subset: press/release left Shift, right Shift and four arrows on every keyboard interface. | OA / R/O | Q | 30 sec / 90 sec, shortened by session | Fixed action booleans, neutral state, identity and cleanup; software qualified, image and physical gates open. |
 | Input | Planned full coverage: detect every keyboard key in a layout-aware map, including modifiers, function keys, and selected rollover combinations. | OA / R/O | Q S E B D | 2 min / 5 min | Press/release map, missing/stuck keys. |
 | Input | Verify mouse buttons, wheel/axis, movement, and event continuity. | MIX / R/O | Q S E B D | 60 sec / 3 min | Event count/rate, confirmation. |
 | Input | Verify touchpad edges, click, tap, two-finger scroll, and advertised gestures without unintended input. | MIX / R/O | Q S E B D | 90 sec / 4 min | Event traces and capabilities. |
@@ -457,8 +458,14 @@ Its acceptance cases must also establish:
   in an excluded or never-started row. The 21 catalog rows plus run integrity
   still produce 22 report results.
 
-Full keyboard software qualification remains in progress. The preceding v4
-counts do not qualify v5, rebuilt images or physical devices.
+Keyboard software qualification passed independently of the earlier v4
+milestone. The [current validation record](requirements-validation.md) gives its
+own host, native, race and CLI counts; rebuilt images and physical devices remain
+open. Positive heat fixtures require accepted safety coverage before inducing
+heat. Fake-clock success cases acknowledge the exact due timer before advancing
+time. The zero-first-tick negative still requires a sampling-gap failure, and
+late or withheld-timer negatives retain their original guards. These fixture
+changes do not relax production deadlines, observation requirements or cleanup.
 
 Regression acceptance for the current coordinator requires:
 

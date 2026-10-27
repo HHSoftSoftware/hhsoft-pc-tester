@@ -11,9 +11,9 @@ The 2026-10-24 requirements audit compared the retained test matrix with the
 catalog and execution paths. Development source now contains eleven implemented
 safe quick test definitions, subject to hardware and architecture applicability.
 The guided pointer increment has automated and native validation; rebuilt-image
-and physical qualification remain open. Guided keyboard source is integrated;
-its full software qualification is in progress. The
-planner also accepts standard, extended, and destructive profile names, but
+and physical qualification remain open. Guided keyboard software qualification
+also passed; rebuilt-image and physical gates remain open. The planner also
+accepts standard, extended, and destructive profile names, but
 their complete execution workflows remain unfinished. Burn-in is a planned
 profile. The unchecked requirements below include those broader matrix items;
 the alpha still requires the separate documented release gates.
@@ -195,14 +195,15 @@ the alpha still requires the separate documented release gates.
   capabilities, and retained partial passes have regression coverage.
 - [ ] Qualify guided pointer actions in rebuilt images and on physical devices,
   including multiple pointers and incomplete-action/disconnect cases.
-- [ ] Complete full software qualification of the guided keyboard increment.
-  Source implements six fixed press/release controls per interface, strict
-  typed evidence, exclusive console ownership, final neutral/idle/identity
-  checks, cleanup uncertainty and signed v5 session integration. The journal has
-  eleven workers; original v4 reports remain strictly validated. Full host
-  validation passed 2,153 test/subtest events across 23 packages, with 21
-  Windows platform skips, vet, 26 Linux test builds and five application
-  targets. Native runtime, race and CLI qualification remain open.
+- [x] Validate the guided keyboard increment with host and native Linux fixtures.
+  Six fixed press/release controls per interface, strict typed evidence,
+  exclusive console ownership, final neutral/idle/identity checks and cleanup
+  uncertainty have validated v5 integration. Its eleven workers preserve strict
+  historical v4 verification. Windows passed 2,156 test/subtest events across 23
+  packages, with 21 platform skips; vet, 26 Linux test builds and five application
+  targets passed. Native Linux amd64/386 passed 3,784 events across 26 suite
+  runs, and five race suites passed 1,461 events, with no skips. All 21 CLI
+  scenarios passed with confirmed cleanup.
 - [ ] Qualify the six-control keyboard check in rebuilt images and on physical
   keyboards, including multiple devices, held keys, incomplete actions,
   disconnects and cancellation. Full layouts and rollover remain separate.

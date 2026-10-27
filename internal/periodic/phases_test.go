@@ -160,8 +160,12 @@ func TestInitialHeatDoesNotStopSamplingAndFailureCannotEraseIt(t *testing.T) {
 	if monitor.Failed() || heat.Load() != 1 {
 		t.Fatal("heat poisoned monitor integrity")
 	}
+	nextTick := clock.now().Add(time.Second)
+	awaitMonitor(t, "next periodic timer", func() bool { return clock.waitingFor(nextTick) })
 	clock.advance(time.Second, true)
 	awaitMonitor(t, "cool periodic read", func() bool { return phaseSnapshot(monitor).CompletedObservations == 2 })
+	nextTick = clock.now().Add(time.Second)
+	awaitMonitor(t, "next periodic timer", func() bool { return clock.waitingFor(nextTick) })
 	clock.advance(time.Second, true)
 	awaitMonitor(t, "later invalid observation", monitor.Failed)
 	result := monitor.Stop(nil)
@@ -185,6 +189,8 @@ func TestFinalQueuesBehindOwnedReadWithoutInventingPeriodicTick(t *testing.T) {
 	if err := monitor.WaitInitial(context.Background()); err != nil {
 		t.Fatal(err)
 	}
+	nextTick := clock.now().Add(time.Second)
+	awaitMonitor(t, "next periodic timer", func() bool { return clock.waitingFor(nextTick) })
 	clock.advance(time.Second, true)
 	awaitMonitor(t, "owned periodic read", func() bool { return calls.Load() == 2 })
 	final := make(chan error, 1)
@@ -220,6 +226,8 @@ func TestFinalRevocationAndDuplicateNeverAuthorizeQueuedRead(t *testing.T) {
 			if err := monitor.WaitInitial(context.Background()); err != nil {
 				t.Fatal(err)
 			}
+			nextTick := clock.now().Add(time.Second)
+			awaitMonitor(t, "next periodic timer", func() bool { return clock.waitingFor(nextTick) })
 			clock.advance(time.Second, true)
 			awaitMonitor(t, "blocked periodic read", func() bool { return calls.Load() == 2 })
 			ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
@@ -423,6 +431,8 @@ func TestPhasedFifteenMinuteRunRetainsOnlyBoundedAggregate(t *testing.T) {
 		t.Fatal(err)
 	}
 	for count := uint64(2); count <= 901; count++ {
+		nextTick := clock.now().Add(time.Second)
+		awaitMonitor(t, "next periodic timer", func() bool { return clock.waitingFor(nextTick) })
 		clock.advance(time.Second, true)
 		awaitMonitor(t, "periodic aggregate", func() bool { return phaseSnapshot(monitor).CompletedObservations == count })
 	}

@@ -62,8 +62,8 @@ scenarios passed. The VM session scenarios reported unavailable temperature
 telemetry; rebuilt-image and physical-sensor qualification remain open.
 
 These are historical v4 qualification results. The current v5 keyboard workflow
-retains the same monitoring boundary, but its full software qualification is
-in progress. Preserve `session-thermal-monitor.json` beneath the evidence
+retains the same monitoring boundary and passed its own software qualification.
+Preserve `session-thermal-monitor.json` beneath the evidence
 directory with the safety diagnostic and journal when investigating either
 workflow. Monitoring failures block signing, and a file
 cannot replace the one-use live final gate. Do not edit or replay the journal
@@ -124,7 +124,7 @@ honestly alongside its required independent safety snapshots. V4 and v5 require
 initial and final thermal observations. Sampling
 does not establish continuous safety or preempt blocked kernel calls. The
 earlier periodic and v4 milestones passed automated and native Linux tests,
-race checks and signed CLI workflows. V5 qualification is in progress;
+race checks and signed CLI workflows. V5 passed separate software qualification;
 rebuilt-image and physical qualification remain open.
 
 ## Image will not boot
@@ -175,8 +175,9 @@ Keyboard definition version 2 requires a fresh plan. Current session v5 records
 eleven workers, with eleven modern or nine legacy choices subject to hardware
 applicability, and still produces 22 report results. Original v4 reports retain
 strict historical validation. Direct capture's aggregate input readiness does
-not run this guided check. Full keyboard software qualification is in progress;
-rebuilt images and physical keyboard qualification remain open.
+not run this guided check. Keyboard software qualification passed, including
+native Linux amd64/386, race and CLI checks; rebuilt images and physical keyboard
+qualification remain open.
 
 ## Guided pointer check is incomplete
 

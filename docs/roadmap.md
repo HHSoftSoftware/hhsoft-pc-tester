@@ -138,10 +138,10 @@ separation, and the physical pilot remain subsequent work.
 The shared periodic observer engine is now extracted in source, with the
 existing safemode API and v1 evidence preserved. Focused checks passed 217 test
 events, including compatibility with six wire cases executed before extraction.
-Full Windows tests, vet and cross-builds passed; native and race qualification
-of this change remain pending. Immediate thermal sampling, final thermal
-observations, and run-wide thermal reporting remain subsequent implementation
-work.
+Full Windows tests, vet, cross-builds, native Linux suites, race checks and all
+15 CLI scenarios passed with confirmed cleanup. Immediate thermal sampling,
+final thermal observations, and run-wide thermal reporting remain subsequent
+implementation work. Rebuilt-image and physical qualification remain open.
 
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.

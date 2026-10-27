@@ -318,9 +318,10 @@ the alpha still requires the separate documented release gates.
 - [x] Extract the shared periodic observer engine in source, preserving the
   safemode API and v1 evidence. Focused checks passed 217 test events with no
   failures or skips; six exact wire cases were executed before extraction and
-  remain unchanged. Full Windows tests, vet and cross-builds passed; native and
-  race qualification of this extraction remain pending. Run-wide thermal
-  monitoring is still open.
+  remain unchanged. Full Windows tests, vet and cross-builds passed. Native
+  Linux amd64/386 suites passed 2,724 test events; race checks passed 1,105,
+  and all 15 CLI scenarios passed with confirmed cleanup. Run-wide thermal,
+  rebuilt-image and physical-hardware qualification remain open.
 - [ ] Separate the unprivileged UI, privileged daemon, and sandboxed workers.
 - [ ] Complete run-wide thermal, heartbeat, hang, and deadline watchdogs beyond
   the quick-session coordinator, CPU/RAM thermal checks, terminal outer guard,

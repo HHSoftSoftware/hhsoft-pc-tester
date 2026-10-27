@@ -259,9 +259,15 @@ classification, assessment-panic cleanup, and completion timestamps captured
 before policy evaluation. The full Windows suite then passed 1,549 test/subtest
 events across 18 packages, with 21 Windows-specific skips and no failures. Vet
 passed; 16 Linux test binaries across eight packages on amd64/386 and all five
-application targets compiled successfully. Native execution and race validation
-of this extraction remain pending. It adds no run-wide thermal coverage or new
-catalog/report rows.
+application targets compiled successfully. The subsequent 16 native Linux
+amd64/386 suite executions passed 2,724 test/subtest events with no skips.
+Periodic, safemode and command race checks passed 1,105 events with no skips;
+all 15 CLI scenarios passed. Nine compiler and nine runtime ownership cases
+confirmed fixture cleanup without signaling foreign process groups. Root checks
+reconciled the actual logs and archive against the frozen inputs, confirmed
+cleanup, and passed all six postchecks. The extracted engine adds no run-wide
+thermal coverage or new catalog/report rows. Rebuilt-image and physical
+qualification remain open.
 
 Regression coverage for these cases belongs with the corresponding feature,
 not with a blanket claim of complete product coverage. Linux mount/device

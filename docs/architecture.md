@@ -258,9 +258,9 @@ The `internal/periodic` engine now owns the observer lifecycle, scheduling,
 deadlines, coverage gaps and immutable Stop result. Safemode supplies its
 observation policy and unchanged v1 serialization. Focused tests preserve six
 pre-extraction wire cases and the existing timing/cleanup rules. Full Windows
-tests, vet and cross-builds passed; native and race qualification of this
-extraction remain pending. Run-wide thermal sampling and its finalization
-integration remain planned.
+tests, vet, cross-builds, native Linux suites, race checks and CLI scenarios
+passed with confirmed cleanup. Run-wide thermal sampling and its finalization
+integration remain planned; rebuilt-image and physical qualification are open.
 
 The local CPU/RAM monitor supervises an initial Linux thermal-zone/hwmon
 observation before starting load. Each observation has a one-second deadline;

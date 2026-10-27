@@ -338,6 +338,16 @@ detection, and other profile execution remain open.
 Direct capture and finalization without a session journal keep their older
 limited evidence scope; they do not acquire session stop/safety claims.
 
+The shared periodic-engine extraction preserves the safemode API, v1 evidence
+and existing scheduling/cleanup rules. Six exact wire cases were executed
+against the previous implementation before migration. Full host tests, vet and
+cross-builds passed; 16 native Linux amd64/386 suite runs passed 2,724 test events,
+and periodic/safemode/command race checks passed 1,105 events, with no native
+skips. All 15 CLI scenarios passed with confirmed cleanup. Independent checks
+reconciled saved log counts, archive hashes and all six final checks. This
+qualifies the application change in the VM; fresh images and physical hardware
+remain separate gates.
+
 The strengthened local CPU/RAM thermal guard passed Windows tests, vet,
 cross-builds, native Linux suites, race checks, and command-line workflows. It
 supervises the first observation before load, limits each reading to one second,

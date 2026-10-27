@@ -8,10 +8,11 @@ are complete. Architecture and policy documents alone do not make an item
 complete; real-hardware requirements remain open until physically tested.
 
 The 2026-10-24 requirements audit compared the retained test matrix with the
-catalog and execution paths. Development source now contains ten implemented
+catalog and execution paths. Development source now contains eleven implemented
 safe quick test definitions, subject to hardware and architecture applicability.
 The guided pointer increment has automated and native validation; rebuilt-image
-and physical qualification remain open. The
+and physical qualification remain open. Guided keyboard source is integrated;
+its full software qualification is in progress. The
 planner also accepts standard, extended, and destructive profile names, but
 their complete execution workflows remain unfinished. Burn-in is a planned
 profile. The unchecked requirements below include those broader matrix items;
@@ -194,6 +195,17 @@ the alpha still requires the separate documented release gates.
   capabilities, and retained partial passes have regression coverage.
 - [ ] Qualify guided pointer actions in rebuilt images and on physical devices,
   including multiple pointers and incomplete-action/disconnect cases.
+- [ ] Complete full software qualification of the guided keyboard increment.
+  Source implements six fixed press/release controls per interface, strict
+  typed evidence, exclusive console ownership, final neutral/idle/identity
+  checks, cleanup uncertainty and signed v5 session integration. The journal has
+  eleven workers; original v4 reports remain strictly validated. Full host
+  validation passed 2,153 test/subtest events across 23 packages, with 21
+  Windows platform skips, vet, 26 Linux test builds and five application
+  targets. Native runtime, race and CLI qualification remain open.
+- [ ] Qualify the six-control keyboard check in rebuilt images and on physical
+  keyboards, including multiple devices, held keys, incomplete actions,
+  disconnects and cancellation. Full layouts and rollover remain separate.
 - [x] Check storage mount safety and read-only block-node readiness without
   reading or changing media contents.
 - [x] Check Ethernet/Wi-Fi driver and link readiness while failing closed on

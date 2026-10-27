@@ -41,7 +41,7 @@ func HasHeat(value Journal) bool {
 }
 
 func ValidateStructure(j Journal) error {
-	if j.Schema != Schema || !validDigest(j.PlanID) || j.BudgetMilliseconds < 10 || j.BudgetMilliseconds > 900000 || j.ElapsedMilliseconds < 0 || j.ElapsedMilliseconds > 3600000 {
+	if !IsStrictSchema(j.Schema) || !validDigest(j.PlanID) || j.BudgetMilliseconds < 10 || j.BudgetMilliseconds > 900000 || j.ElapsedMilliseconds < 0 || j.ElapsedMilliseconds > 3600000 {
 		return ErrInvalid
 	}
 	if j.PreparationStartedMilliseconds < 0 || j.InventoryPreparedMilliseconds < j.PreparationStartedMilliseconds || j.StopRequestedMilliseconds < j.InventoryPreparedMilliseconds || j.ElapsedMilliseconds < j.StopRequestedMilliseconds || j.ElapsedMilliseconds-j.StopRequestedMilliseconds > 2000 {
@@ -61,7 +61,7 @@ func ValidateStructure(j Journal) error {
 	if (j.StopReason == "thermal_limit") != HasHeat(j) {
 		return ErrInvalid
 	}
-	ids := WorkerIDs()
+	ids := workerIDs(j.Schema)
 	if len(j.Workers) != len(ids) || j.Safety == nil || j.LocalThermalSources == nil || len(j.LocalThermalSources) > 2 {
 		return ErrInvalid
 	}

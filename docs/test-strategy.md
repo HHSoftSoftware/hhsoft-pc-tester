@@ -40,14 +40,15 @@ Operators may deselect a test, but it remains `skip` in the report. A custom
 profile inherits one below and discloses every override.
 
 The implemented operator selection currently covers the safe quick catalog:
-ten tests on modern images and eight on legacy x86. Only otherwise scheduled
+eleven tests on modern images and nine on legacy x86. Only otherwise scheduled
 tests become `excluded`, reported as `skip` with the exclusion reason. Absent
 and missing-driver states retain their applicability reason, and unsupported
 or destructive work cannot be enabled through selection. Reports retain explicit
 selection reasons and the frozen exclusion intent. The broader profile budgets
 and coverage below remain targets, not completed workflows.
-The [selection validation milestone](requirements-validation.md) records the
-completed native and host checks.
+The [validation milestones](requirements-validation.md) distinguish earlier
+qualified catalogs from the current keyboard increment, whose full software
+qualification is in progress.
 
 | Profile | Objective and default budget | Required coverage | Explicit exclusions |
 | --- | --- | --- | --- |
@@ -127,6 +128,20 @@ kernel event records as inconclusive, and retains counts rather than key codes
 or typed text. This readiness/activity evidence does not replace the complete
 operator coverage criteria below.
 
+The guided `input.keyboard.quick` worker checks only left Shift, right Shift,
+Up, Down, Left and Right. Each keyboard interface must support all six controls
+and show its own press-and-release pairs within a default 30-second window and
+90-second command limit. Initially held controls must become neutral before
+new actions count. Complete event frames, an idle queue, neutral controls and
+a final identity check are required before a device can retain a pass. Lost or
+partial records, replacement, disconnect, missing actions and uncertain cleanup
+cannot produce a complete pass. Evidence contains fixed action booleans, with
+no raw events, typed text or event sequence. One console owner handles Ctrl-C
+and discards queued input before a later display prompt. Full layout maps,
+rollover, ghosting and other keys remain outside this implemented subset.
+Full software qualification of this increment is in progress; native,
+rebuilt-image and physical keyboard qualification remain pending.
+
 The separate guided `input.pointer.quick` worker observes relative `EV_REL`
 interfaces with both X and Y axes. During a default 30-second window, every
 supported interface must show left/right and up/down movement, a primary-button
@@ -182,7 +197,8 @@ the duration precedes the hard timeout.
 | Audio | Enumerate routes and open playback/capture streams without xrun or transport failures. | A / R/O | Q S E B D | 30 sec / 2 min | Codec/routes, format, xrun count. |
 | Audio | Play left/right/stereo tones; operator confirms channels, clarity, and usable volume. | OA / R/O | Q S E B D | 60 sec/route / 3 min | Tone, route, volume, rating. |
 | Audio | Record each microphone; assess level, clipping, dropouts, and playback intelligibility. | MIX / R/O | S E B D | 60 sec/source / 3 min | Levels/noise/dropouts, rating. |
-| Input | Detect every keyboard key in a layout-aware map, including modifiers, function keys, and selected rollover combinations. | OA / R/O | Q S E B D | 2 min / 5 min | Press/release map, missing/stuck keys. |
+| Input | Implemented quick subset: press/release left Shift, right Shift and four arrows on every keyboard interface. | OA / R/O | Q | 30 sec / 90 sec, shortened by session | Fixed action booleans, neutral state, identity and cleanup; software qualification in progress. |
+| Input | Planned full coverage: detect every keyboard key in a layout-aware map, including modifiers, function keys, and selected rollover combinations. | OA / R/O | Q S E B D | 2 min / 5 min | Press/release map, missing/stuck keys. |
 | Input | Verify mouse buttons, wheel/axis, movement, and event continuity. | MIX / R/O | Q S E B D | 60 sec / 3 min | Event count/rate, confirmation. |
 | Input | Verify touchpad edges, click, tap, two-finger scroll, and advertised gestures without unintended input. | MIX / R/O | Q S E B D | 90 sec / 4 min | Event traces and capabilities. |
 | Input | Verify trackpoints, controllers, dials, remotes, and digitizers with capability-specific event maps. | OA / R/O | S E B D | 2 min / 5 min | Controls and activation results. |
@@ -264,15 +280,18 @@ cards, patterns, and the finding prompt. Shortening a command timeout cannot
 extend either frozen limit. Cleanup and stopped-run finalization have separate
 bounded allowances.
 
-Pointer observation defaults to 30 seconds with a 90-second whole-command
-limit, also shortened by the session deadline. It shares one observation
-window across the selected interfaces. Enabling the existing pointer catalog
+Keyboard and pointer observation each default to 30 seconds with a 90-second
+whole-command limit, also shortened by the session deadline. Each worker shares
+one observation window across its selected interfaces. Enabling the existing pointer catalog
 row changes the catalog digest, so execution requires a newly frozen plan.
 The pointer increment introduced ten worker outcomes in journal v2. The periodic
-safety increment advances the journal to v3 without changing those outcomes or
-the catalog. It requires a fresh execution journal, not a changed plan digest.
-Neither change alters historical signed-report verification; direct capture
-continues to omit the guided pointer worker.
+safety increment introduced journal v3 without changing those outcomes or
+the catalog, and the run-wide thermal increment retained ten outcomes in v4.
+The current keyboard definition version 2 changes the catalog digest and
+requires fresh plans. Journal v5 inserts its eleventh worker between input
+readiness and pointer testing. Original v4 journals retain their strict
+ten-worker validation; earlier signed evidence keeps its historical meaning.
+Direct capture continues to omit both guided workers.
 
 Ctrl-C uses one owned console reader shared with display findings. Linux
 SIGINT/SIGTERM also cancel the session. The coordinator stops starting new work,
@@ -296,14 +315,14 @@ The coordinator takes snapshots at
 session preflight, before each started worker, and after execution stops. The
 finalizer validates that history against the plan, outcomes, and worker evidence.
 The current live final gate supplies the fresh pre-sign observation before the
-completed v4 journal is written. Missing, contradictory, unsafe, or
+completed v5 journal is written. Missing, contradictory, unsafe, or
 incomplete observations block signing. A clean cancellation/deadline can use a
 fresh finalization context after confirmed cleanup, but cannot turn an aborted
 safety-readiness check or an earlier unsafe observation into permission to sign.
 An all-off selection still requires safety observations and records no completed
 quick-test coverage.
 
-The periodic safety increment adds a bounded aggregate summary to journal v3.
+The periodic safety increment introduced a bounded aggregate summary in journal v3.
 One owned observer runs serialized read-only mount/network samples at a
 one-second interval, with a one-second observation deadline and a
 2,500-millisecond maximum gap. It starts with the coordinator, remains active
@@ -378,8 +397,8 @@ Independent acceptance cases for this prerequisite include:
   historical signed reports remain verifiable. Native filesystem fixtures
   passed; representative physical sensor validation remains open.
 
-The run-wide increment adds initial, one-second periodic and final thermal
-observations across the quick session. Its v4 journal binds worker intervals,
+The qualified run-wide v4 increment added initial, one-second periodic and final
+thermal observations across the quick session. Its v4 journal binds worker intervals,
 preparation and join boundaries, available/partial/unavailable coverage, and
 the exact-file and canonical full-evidence digests for local CPU/RAM heat.
 The one-use final gate completes after final inventory and before key generation
@@ -418,7 +437,30 @@ not establish a physical cooling or thermal-stress result. See
 [requirements validation](requirements-validation.md) for the qualification scope
 and resolved test-harness failure.
 
-Regression acceptance for this implementation requires:
+The current keyboard increment preserves these monitoring boundaries in v5.
+Its acceptance cases must also establish:
+
+- Six complete press/release pairs on each interface; no credit from another
+  keyboard, initially held controls, stale events, repeats or partial frames.
+- Final idle, neutral and identity checks for every retained device pass,
+  including partial results after cancellation. Finalization binds those passes
+  to unchanged frozen components and final inventory.
+- One console owner and a completed input-discard handoff before later prompts.
+  Ordinary input failure blocks success with exit 1; typed unconfirmed cleanup
+  forces exit 12, including after diagnostic-write failure or an earlier error.
+- Strict v5 functional evidence and eleven ordered outcomes, with duplicate,
+  escaped, case-aliased or hidden claims rejected even without bundle views.
+  Actual observations require the current live finalization gate. Standalone
+  frozen-plan finalization may use exact nonexecution notes only for
+  `excluded`, `not_present`, `unsupported` or `missing_driver` keyboards.
+- Unchanged original v4 fixture interpretation and no stale keyboard evidence
+  in an excluded or never-started row. The 21 catalog rows plus run integrity
+  still produce 22 report results.
+
+Full keyboard software qualification remains in progress. The preceding v4
+counts do not qualify v5, rebuilt images or physical devices.
+
+Regression acceptance for the current coordinator requires:
 
 - Sequential tools and multi-card display work stay within the complete frozen
   test deadline and the shared run budget; child cleanup has its own finite
@@ -443,8 +485,8 @@ Regression acceptance for this implementation requires:
 - Coverage validation rejects missing or contradictory timing, excessive
   leading/trailing gaps, fabricated zero-tick coverage, and an older execution
   journal. Clean operator stops preserve completed failures after a confirmed
-  monitor join; the ten worker outcomes and historical report verification
-  remain unchanged.
+  monitor join; all eleven v5 worker outcomes remain present. Original v4
+  journals retain their ten-worker rules and historical report verification.
 - Deterministic monitor fixtures control observation completion and time rather
   than relying on sleeps. Native checks use private mount/network namespaces;
   unsafe transition fixtures do not require changing real device mounts or

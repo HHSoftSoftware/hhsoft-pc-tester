@@ -7,6 +7,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -148,14 +149,13 @@ func TestSessionMonitorJoinsOnEveryExitAndBlocksUncertainOrMalformedSummary(t *t
 func TestSessionMonitorWindowIncludesInputCleanupAndFinalSafety(t *testing.T) {
 	h := newSessionHarness(t, "x86_64", nil)
 	h.dependencies.FinishInput = func() error { h.inputFinished = true; h.clock = h.clock.Add(2500 * time.Millisecond); return nil }
+	var earlyStop atomic.Bool
 	monitor := &sessionMonitorFixture{result: func() safemode.MonitorResult {
-		if !h.inputFinished || h.safetyCalls != 13 {
-			t.Fatal("monitor stopped before cleanup and final safety")
-		}
+		earlyStop.Store(!h.inputFinished || h.safetyCalls != 14)
 		return sessionMonitorSummary(2500)
 	}}
 	h.dependencies.StartMonitor = func(time.Time, context.CancelFunc) (sessionSafetyMonitor, error) { return monitor, nil }
-	if code := h.run(t.Context()); code != 0 || monitor.stops != 1 || h.journal.ElapsedMilliseconds != 2500 || h.journal.Monitor.CompletedObservations != 2 {
+	if code := h.run(t.Context()); code != 0 || earlyStop.Load() || monitor.stops != 1 || h.journal.ElapsedMilliseconds != 2500 || h.journal.Monitor.CompletedObservations != 2 {
 		t.Fatalf("coverage window not preserved: code=%d stops=%d", code, monitor.stops)
 	}
 }

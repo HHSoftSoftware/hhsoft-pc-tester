@@ -1,10 +1,15 @@
 package sessionevidence
 
 import (
+	"bytes"
 	"encoding/json"
+	"io"
 	"reflect"
+	"strings"
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/evidencejson"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inputtest"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/keyboardevidence"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quickevidence"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/thermal"
 )
@@ -27,16 +32,36 @@ type executionNote struct {
 	Detail       string `json:"detail"`
 }
 
+func hasKeyboardSchema(raw []byte) bool {
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	for {
+		token, err := decoder.Token()
+		if err == io.EOF {
+			return false
+		}
+		if err != nil {
+			return true
+		}
+		if value, ok := token.(string); ok && strings.EqualFold(value, inputtest.KeyboardSchema) {
+			return true
+		}
+	}
+}
+
 func ValidateBindings(j Journal, bindings []ResultBinding) error {
 	if ValidateStructure(j) != nil {
 		return ErrInvalid
 	}
 	byID := make(map[string]ResultBinding, len(bindings))
 	for _, binding := range bindings {
-		if binding.ID == "" {
+		if binding.ID == "" || len(binding.Evidence) == 0 || len(binding.Evidence) > 1<<20 || !json.Valid(binding.Evidence) {
 			return ErrInvalid
 		}
 		if _, exists := byID[binding.ID]; exists {
+			return ErrInvalid
+		}
+		if hasKeyboardSchema(binding.Evidence) && (j.Schema != Schema || binding.ID != "input.keyboard.quick") ||
+			j.Schema == SchemaV4 && binding.ID == "input.keyboard.quick" && binding.Version >= 2 {
 			return ErrInvalid
 		}
 		byID[binding.ID] = binding
@@ -53,6 +78,12 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 		}
 		if len(binding.Evidence) == 0 || len(binding.Evidence) > 1<<20 || !json.Valid(binding.Evidence) {
 			return ErrInvalid
+		}
+		if worker.ID == "input.keyboard.quick" {
+			if binding.Version != 2 || validateKeyboardBinding(worker, binding) != nil {
+				return ErrInvalid
+			}
+			continue
 		}
 		if worker.ID != "cpu.quick" && worker.ID != "memory.quick" {
 			continue
@@ -96,6 +127,50 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 		}
 	}
 	if wanted != len(localSources) {
+		return ErrInvalid
+	}
+	return nil
+}
+
+func validateKeyboardBinding(worker WorkerRecord, binding ResultBinding) error {
+	var header struct {
+		Schema string `json:"schema"`
+	}
+	if json.Unmarshal(binding.Evidence, &header) != nil {
+		return ErrInvalid
+	}
+	if header.Schema == "hhsoft.pc-tester.execution-note/v1" {
+		var note executionNote
+		if evidencejson.ValidateShape(binding.Evidence, reflect.TypeOf(note)) != nil || json.Unmarshal(binding.Evidence, &note) != nil || note.Status != binding.ReportStatus || note.SourceStatus != worker.Outcome || hasKeyboardSchema(binding.Evidence) {
+			return ErrInvalid
+		}
+		if worker.State != "not_started" && worker.State != "not_scheduled" && worker.Outcome != "error" && worker.Outcome != "aborted" {
+			return ErrInvalid
+		}
+		return nil
+	}
+	value, err := keyboardevidence.Decode(binding.Evidence)
+	if err != nil || worker.Timing == nil || string(value.Status) != worker.Outcome || value.DurationMilliseconds > worker.Timing.FinishedMilliseconds-worker.Timing.StartedMilliseconds {
+		return ErrInvalid
+	}
+	return nil
+}
+
+// ValidateUnexecutedKeyboard permits a standalone frozen-plan report to retain
+// a non-scheduled keyboard disposition. Functional or attempted observations
+// require the current session journal and its worker interval.
+func ValidateUnexecutedKeyboard(binding ResultBinding) error {
+	if binding.ID != "input.keyboard.quick" || binding.Version != 2 || binding.ReportStatus != reportStatus(binding.PlannedStatus) {
+		return ErrInvalid
+	}
+	switch binding.PlannedStatus {
+	case "excluded", "not_present", "unsupported", "missing_driver":
+	default:
+		return ErrInvalid
+	}
+	var note executionNote
+	if evidencejson.ValidateShape(binding.Evidence, reflect.TypeOf(note)) != nil || json.Unmarshal(binding.Evidence, &note) != nil ||
+		note.Schema != "hhsoft.pc-tester.execution-note/v1" || note.Status != binding.ReportStatus || note.SourceStatus != binding.PlannedStatus || hasKeyboardSchema(binding.Evidence) {
 		return ErrInvalid
 	}
 	return nil

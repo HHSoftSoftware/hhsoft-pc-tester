@@ -13,6 +13,7 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/evidencejson"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/graphics"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inputtest"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/keyboardevidence"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/networktest"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quick"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quickevidence"
@@ -32,6 +33,13 @@ var errInvalidQuickSafety = quickevidence.ErrInvalid
 // worker's status. It does not infer health, performance, or physical coverage
 // from a node-readiness result. Partial non-pass observations remain reportable.
 func testEvidenceStatus(encoded []byte, expectedSchema string) (string, error) {
+	if expectedSchema == inputtest.KeyboardSchema {
+		value, err := keyboardevidence.Decode(encoded)
+		if err != nil {
+			return "", err
+		}
+		return string(value.Status), nil
+	}
 	invalid := errUnsupportedEvidence
 	quickEvidence := expectedSchema == quick.CPUSchema || expectedSchema == quick.MemorySchema
 	if quickEvidence {

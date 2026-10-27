@@ -96,9 +96,9 @@ After the HHSoft splash appears, a 15-second inactivity timer begins.
 
 The quick profile is offline and uses read-only device discovery. It runs a
 short CPU known-answer load, bounded RAM data/address patterns, device-node
-readiness checks, guided relative-pointer actions, and modern-image
-graphics/display checks where applicable. The choices cover ten tests on modern
-images and eight on legacy x86, subject to hardware applicability.
+readiness checks, guided keyboard and relative-pointer actions, and modern-image
+graphics/display checks where applicable. The choices cover eleven tests on modern
+images and nine on legacy x86, subject to hardware applicability.
 Storage readiness opens eligible block devices read-only and issues no sector
 read. USB readiness issues no USB transfers. Network readiness configures
 nothing and sends no traffic. An active non-loopback interface or writable
@@ -197,6 +197,18 @@ Each scheduled test also uses its frozen plan limit. Graphics has a 30-second
 whole-test limit and display has a 45-second limit shared across sequential
 tools, cards, patterns, and the operator-finding prompt. Cleanup and safe report
 finalization have separate bounded allowances.
+
+The keyboard step asks for left Shift, right Shift, Up, Down, Left and Right.
+Press and release each control on every keyboard; do not type text. Its default
+window is 30 seconds within a 90-second limit and the remaining session budget.
+Release initially held controls before beginning. Every interface must support
+and complete all six controls; one keyboard cannot supply another's actions.
+Missing actions mean incomplete coverage, not proof of a defective key. Full
+layout maps, other keys, rollover and ghosting remain untested. Reports retain
+fixed action-completion booleans, without text or an event sequence. The console
+owner discards queued keyboard input before accepting later display findings.
+This source increment is undergoing software qualification; rebuilt images and
+physical keyboard validation remain separate gates.
 
 The pointer step observes all supported relative pointers during one default
 30-second window, within a 90-second whole-test limit and the remaining session
@@ -304,7 +316,7 @@ checks before started workers, final observations, and a fresh check before
 signing. The periodic-monitor increment introduced a journal v3 summary while retaining
 the same ten worker outcomes. It samples read-only mount and network metadata
 once per second, allows one second per observation and at most 2,500 milliseconds
-between observations. In the v4 development workflow it remains active through
+between observations. In v4 and the current v5 workflow it remains active through
 final inventory and the final gate. Its first unsafe,
 unknown, timed-out, or excessively delayed observation stops active work and
 blocks signing; a later safe result cannot erase it. The monitor must join
@@ -477,8 +489,9 @@ controlled the corresponding key pair.
   remain open. Heartbeat supervision and hang detection remain incomplete.
 - Input readiness checks read-only event-device access. Guided pointer testing
   adds relative X/Y movement and primary/advertised right/middle button cycles;
-  it does not prove every key, wheel, extra button, or touch/touchpad geometry.
-  Direct capture retains the readiness subset and omits guided pointer testing.
+  guided keyboard testing adds six fixed press/release controls on each keyboard.
+  These checks do not prove every key, wheel, extra button or touch geometry.
+  Direct capture retains the readiness subset and omits both guided workers.
 - Storage testing is readiness only: no SMART/NVMe health qualification,
   sampled sector verification, throughput, optical-media read, or complete
   media scan.

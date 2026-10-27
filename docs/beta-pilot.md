@@ -4,6 +4,8 @@ This run sheet supports the ten-PC pilot in the [roadmap](roadmap.md).
 It records physical evidence; VM checks do not fill these rows. Pilot results
 do not replace the [release gates](release-process.md) or the open functional
 requirements in the [master checklist](../PROJECT_CHECKLIST.md).
+The ten-PC gate remains open. Guided keyboard software qualification is in
+progress; implementation and synthetic checks do not fill physical pilot rows.
 
 ## Candidate and fleet
 
@@ -45,8 +47,10 @@ tests, repairs, internal-drive mounts, or disabling firmware safety controls.
 | Exercise automatic safe start on a separate boot. | Countdown behavior and the selected frozen quick plan. | |
 | Compare discovery with the installed hardware. | Missing or duplicated devices, diskless behavior where applicable, driver gaps. | |
 | Run the applicable quick tests. | Each result, skipped/unsupported reason, operator findings, and elapsed time. | |
+| Exercise guided keyboard actions on each interface, including multiple keyboards. | Press/release left Shift, right Shift, Up, Down, Left and Right on each keyboard. Verify one device cannot complete another, withheld actions stay incomplete, and no typed text or raw events enter evidence. | |
+| Check keyboard baseline and interruption handling with a removable fixture. | Release an initially held control before starting fresh actions; leave a control held at completion; cancel or disconnect one keyboard while another completes. Retain partial observations and verify idle/neutral/identity failures do not pass. Keep boot and report media attached. | |
 | Exercise guided relative-pointer actions on every applicable interface. | Left/right and up/down movement; primary and advertised right/middle button press/release cycles; one device must not satisfy another. Absolute/mixed interfaces and incomplete actions must not pass. Do not retain raw events or typed text. | |
-| Check thermal evidence during CPU/RAM work. | Exposed sensor count and plausible peak temperature; absent telemetry stays absent. Do not force overheating or change fan controls. | |
+| Check thermal evidence across the quick session, including an all-off selection. | Initial observation, periodic coverage through workers and cleanup, final inventory and final safety/thermal observations, and confirmed monitor joins. Retain available/partial/unavailable coverage and plausible peaks; absent telemetry stays absent. Report encoding, output and saving follow this boundary. Do not force overheating or change fan controls. | |
 | Exercise cancellation where the UI supports it. | Worker termination, retained evidence, and return to a usable interface. Record unavailable cancellation paths. | |
 | Exercise a supported removable test peripheral's disconnect/reconnect. | Explicit device-change or partial-result handling. Keep boot and active report media attached. | |
 | Save the report through destination selection and typed confirmation. | Save receipt, selected removable destination, and any recovery behavior. | |
@@ -62,6 +66,16 @@ For the guided-pointer milestone, include multiple pointers, withheld actions,
 lost/disconnected-device handling, and cancellation with a supported removable
 fixture. Record unsupported absolute/mixed interfaces separately. VM and
 synthetic event checks do not complete these physical rows.
+
+For the guided-keyboard increment, use a candidate with keyboard definition 2
+and session v5. Its eleven modern or nine legacy choices remain subject to
+hardware applicability; reports still contain 22 results. Check the six fixed
+controls only, within the default 30-second window, 90-second command limit and
+remaining session budget. Missing actions do not establish a defective key.
+Verify that queued arrow input does not answer a later display prompt and that
+Ctrl-C has one console owner. Record ordinary console errors separately from
+terminal exit 12 cleanup uncertainty; neither authorizes ready/save. Full layout,
+rollover, ghosting and other keyboard functions remain outside this pilot subset.
 
 Self-issued report verification checks integrity, not independent signer trust:
 

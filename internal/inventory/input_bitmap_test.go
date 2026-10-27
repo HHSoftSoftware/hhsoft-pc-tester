@@ -61,6 +61,35 @@ func TestInputBitmapKernelMachineWhitelist(t *testing.T) {
 	}
 }
 
+func TestUnknownKernelWidthPreservesOnlyUnambiguousPropertyHints(t *testing.T) {
+	for _, item := range []struct {
+		name, properties, want string
+	}{
+		{"direct", "2", "touchscreen"},
+		{"buttonpad", "4", "touchpad"},
+		{"semi-mt", "8", "touchpad"},
+		{"topbuttonpad", "10", "touchpad"},
+		{"whitespace", "  2\n", "touchscreen"},
+		{"pointer-only", "1", "input"},
+		{"empty", "", "input"},
+		{"malformed", "zz2", "input"},
+		{"overflow", "100000002", "input"},
+		{"ambiguous-word-count", "1 2", "input"},
+	} {
+		t.Run(item.name, func(t *testing.T) {
+			if got := ClassifyInputWithBitmapWidth("FixturePanel", "event0", "", "", "3", item.properties, 0); got != item.want {
+				t.Fatalf("category = %q, want %q", got, item.want)
+			}
+		})
+	}
+	if got := ClassifyInputWithBitmapWidth("Generic Input", "kbd event0", "40010000", "", "", "2", 0); got != "input" {
+		t.Fatalf("unknown-width key map established keyboard category: %q", got)
+	}
+	if got := ClassifyInputWithBitmapWidth("Generic Input", "kbd event0", "40010000", "", "", "2", 32); got != "keyboard" {
+		t.Fatalf("observed-width key map did not establish keyboard category: %q", got)
+	}
+}
+
 func TestInputBitmapKernelWidthIsObservedForProcAndSysfs(t *testing.T) {
 	for _, source := range []string{"proc", "sysfs"} {
 		for _, width := range []int{0, 32, 64} {

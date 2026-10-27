@@ -79,6 +79,9 @@ func validateSessionMonitor(result safemode.MonitorResult, elapsed int64) error 
 }
 
 func validateSessionJournal(journal sessionJournal, frozen plan.Plan, outcomes map[string]string, stopReason, evidenceDirectory string) error {
+	if journal.Schema != sessionJournalSchema {
+		return errors.New("current session requires the current journal schema")
+	}
 	if err := validateSessionJournalStructure(journal); err != nil {
 		return err
 	}

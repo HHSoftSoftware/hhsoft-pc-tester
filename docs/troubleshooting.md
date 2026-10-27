@@ -13,6 +13,8 @@ last marker before rebooting. Useful checkpoints are:
 - `HHPT_PLAN`: discovery completed and the applicable plan was frozen.
 - `HHPT_CPU`, `HHPT_MEMORY`, and other test markers: a worker completed or was
   classified as not scheduled.
+- `HHPT_KEYBOARD`: the guided six-control check completed or retained an
+  incomplete, excluded or unavailable disposition; inspect the status.
 - `HHPT_RUN_INTEGRITY`: the final graph either matched the frozen plan or records
   a component delta.
 - `HHPT_SESSION_STOP`: the session ended through completion, cancellation,
@@ -30,8 +32,12 @@ workflow uses `reason=monitor_cleanup_unconfirmed` for an unjoined session
 safety or thermal monitor. The run stops before later tests,
 signing, or saving; available diagnostic evidence remains in RAM. Record the marker and image
 version, then reboot into a verified image. Do not manually resume the stopped
-workflow. Direct CPU, memory, graphics, display, and capture commands use exit code 12 for
-this condition, including when diagnostic output could not be written.
+workflow. Direct CPU, memory, keyboard, graphics, display, and capture commands
+use exit code 12 for unconfirmed owned-resource cleanup, including when
+diagnostic output could not be written. In the current keyboard/session
+workflow, an unjoined console reader or unconfirmed restoration also forces
+exit 12. An ordinary console error after confirmed cleanup uses exit 1 instead;
+it still blocks success and ready/save.
 
 The strengthened local CPU/RAM guard records `thermal_coverage` separately
 from the worker result. `unavailable` means no valid temperature was observed;
@@ -55,8 +61,11 @@ vet, cross-builds, native Linux amd64/386 suites, race checks and all 15 CLI
 scenarios passed. The VM session scenarios reported unavailable temperature
 telemetry; rebuilt-image and physical-sensor qualification remain open.
 
-Preserve `session-thermal-monitor.json` with the safety diagnostic and journal
-when investigating a v4 stop. Monitoring failures block signing, and a file
+These are historical v4 qualification results. The current v5 keyboard workflow
+retains the same monitoring boundary, but its full software qualification is
+in progress. Preserve `session-thermal-monitor.json` beneath the evidence
+directory with the safety diagnostic and journal when investigating either
+workflow. Monitoring failures block signing, and a file
 cannot replace the one-use live final gate. Do not edit or replay the journal
 to force finalization or saving.
 
@@ -65,7 +74,9 @@ to force finalization or saving.
 Quick-session work defaults to five minutes. Direct `session -timeout` accepts
 `10ms` through `15m`; boot uses `5m`. Frozen whole-test limits also apply:
 graphics has 30 seconds across its sequential tools, and display has 45 seconds
-across every card, pattern, and finding prompt. Cleanup and safe finalization
+across every card, pattern, and finding prompt. Keyboard and pointer observation
+each default to 30 seconds within a 90-second command limit, shortened by the
+remaining session budget. Cleanup and safe finalization
 have separate bounded allowances, so a stop is not necessarily instantaneous.
 
 Ctrl-C requests cancellation through the session's single owned console reader;
@@ -94,7 +105,7 @@ stop or safety history.
 ## Periodic mount or network safety stop
 
 The periodic-monitor increment samples read-only mount and network metadata
-once per second. The v4 development workflow retains it through final inventory
+once per second. The v4 and current v5 workflows retain it through final inventory
 and the final gate. A sample has a one-second deadline; an
 observation gap beyond 2,500 milliseconds also stops the run. The first unsafe,
 unknown, timed-out, or excessively delayed observation cancels active work and
@@ -109,10 +120,11 @@ sanitized session diagnostics; do not edit them to force a report. Restart from
 verified media after resolving the cause.
 
 A sub-second session may have zero periodic mount/network samples, recorded
-honestly alongside its required independent safety snapshots. V4 still requires
+honestly alongside its required independent safety snapshots. V4 and v5 require
 initial and final thermal observations. Sampling
-does not establish continuous safety or preempt blocked kernel calls. Automated
-and native Linux tests, race checks, and signed CLI workflows passed;
+does not establish continuous safety or preempt blocked kernel calls. The
+earlier periodic and v4 milestones passed automated and native Linux tests,
+race checks and signed CLI workflows. V5 qualification is in progress;
 rebuilt-image and physical qualification remain open.
 
 ## Image will not boot
@@ -138,6 +150,33 @@ Keyboard, pointer, touchpad, or touchscreen activity cancels the countdown. Use
 `1` or Enter to start it manually. A drifting pointer or defective touchscreen
 can repeatedly count as activity; temporarily disconnect that peripheral and
 record the symptom for its later input test.
+
+## Guided keyboard check is incomplete
+
+Press and release left Shift, right Shift, Up, Down, Left and Right on every
+keyboard interface. Do not type text. Release controls held before the check,
+then perform fresh actions; an initial release does not complete a pair. One
+keyboard cannot supply another's actions. Before retaining a device pass, the
+worker requires complete frames, an idle input queue, released controls and
+unchanged identity. Missing actions, lost or partial events, disconnection,
+replacement or cancellation prevent a complete pass. Missing actions alone do
+not establish a defective key. Full layout maps, rollover, ghosting and other
+keys are outside this check.
+
+The shared console owner discards queued keyboard input before a later display
+prompt. A `console_unavailable` diagnostic means ordinary console failure after
+confirmed cleanup; the command fails with exit 1. Unconfirmed reader, terminal
+or descriptor cleanup forces exit 12 even if an earlier error occurred or the
+diagnostic could not be saved. Preserve sanitized diagnostics and start a fresh
+session; do not force later prompts, finalization or saving after either failure.
+Evidence contains fixed action booleans without raw events or typed text.
+
+Keyboard definition version 2 requires a fresh plan. Current session v5 records
+eleven workers, with eleven modern or nine legacy choices subject to hardware
+applicability, and still produces 22 report results. Original v4 reports retain
+strict historical validation. Direct capture's aggregate input readiness does
+not run this guided check. Full keyboard software qualification is in progress;
+rebuilt images and physical keyboard qualification remain open.
 
 ## Guided pointer check is incomplete
 
@@ -235,6 +274,13 @@ its status to force a report. Valid partial non-pass observations remain
 reportable; an error or abort without usable worker evidence can instead carry
 an explicit supervisor execution note.
 
+Actual keyboard observations require the live current v5 finalization gate;
+an old journal or standalone replay cannot supply it. Standalone frozen-plan
+finalization without a session may retain exact nonexecution notes only for
+`excluded`, `not_present`, `unsupported` or `missing_driver` keyboards, with no
+functional observations. Existing malformed evidence, stale files for unstarted
+tests, hidden schema claims or unbound retained device passes are rejected.
+
 ## Report verification fails
 
 Use the version-matched `hhpt` verifier and the expected public key/key ID. A
@@ -244,8 +290,10 @@ archive, duplicate entry, digest mismatch, or unexpected active content as
 evidence rejection. Do not open embedded HTML/PDF views first to decide whether
 the report is trustworthy.
 
-Verification establishes bundle integrity and signature validity. It does not
-repeat the evidence checks performed during capture/finalization or prove the
+Verification establishes bundle integrity and signature validity. Strict v4/v5
+claims also undergo shared evidence validation, and functional keyboard passes
+must match signed final inventory even without optional views. Verification
+does not repeat hardware tests, reconstruct the original inventory or prove the
 health of the tested hardware.
 
 ## Hardware changed during a run

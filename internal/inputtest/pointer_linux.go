@@ -25,6 +25,12 @@ func runPointerPlatform(ctx context.Context, options PointerOptions) PointerResu
 }
 
 func openPointerPath(root string, parts []string, flags int) (*os.File, error) {
+	return openInputPath(root, parts, flags, false)
+}
+
+// The keyboard owner also accounts for temporary metadata/directory handles.
+// The pointer caller retains its established error behavior.
+func openInputPath(root string, parts []string, flags int, strictCleanup bool) (*os.File, error) {
 	directory, err := syscall.Open(filepath.Clean(root), syscall.O_RDONLY|syscall.O_DIRECTORY|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0)
 	if err != nil {
 		return nil, err
@@ -35,7 +41,13 @@ func openPointerPath(root string, parts []string, flags int) (*os.File, error) {
 			mode = flags
 		}
 		next, openErr := syscall.Openat(directory, part, mode|syscall.O_NONBLOCK|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0)
-		_ = syscall.Close(directory)
+		closeErr := syscall.Close(directory)
+		if strictCleanup && closeErr != nil {
+			if openErr == nil {
+				_ = syscall.Close(next)
+			}
+			return nil, errKeyboardCleanup
+		}
 		if openErr != nil {
 			return nil, openErr
 		}
@@ -65,11 +77,18 @@ func discoverPointerInterfaces(ctx context.Context, root string) ([]string, erro
 }
 
 func parsePointerInterfaces(reader io.Reader) ([]string, error) {
+	return parseFunctionalInputInterfaces(reader, "pointer", 0)
+}
+
+func parseFunctionalInputInterfaces(reader io.Reader, wanted string, wordBits int) ([]string, error) {
 	var result []string
 	seen := map[string]bool{}
 	fields := map[string]string{}
 	flush := func() error {
 		category := inventory.ClassifyInput(fields["name"], fields["handlers"], fields["KEY"], fields["REL"], fields["ABS"], fields["PROP"])
+		if wanted == "keyboard" {
+			category = inventory.ClassifyInputWithBitmapWidth(fields["name"], fields["handlers"], fields["KEY"], fields["REL"], fields["ABS"], fields["PROP"], wordBits)
+		}
 		hasEvent := false
 		for _, handler := range strings.Fields(fields["handlers"]) {
 			if !strings.HasPrefix(handler, "event") {
@@ -80,14 +99,14 @@ func parsePointerInterfaces(reader io.Reader) ([]string, error) {
 			}
 			seen[handler] = true
 			hasEvent = true
-			if category == "pointer" {
+			if category == wanted {
 				result = append(result, handler)
 				if len(result) > maximumPointerDevices {
 					return errors.New("pointer registry exceeds device limit")
 				}
 			}
 		}
-		if category == "pointer" && !hasEvent {
+		if category == wanted && !hasEvent {
 			return errors.New("pointer registry record has no event interface")
 		}
 		fields = map[string]string{}
@@ -129,6 +148,10 @@ func parsePointerInterfaces(reader io.Reader) ([]string, error) {
 }
 
 func pointerSysfsDevice(root, name string) (string, error) {
+	return inputSysfsDevice(root, name, false)
+}
+
+func inputSysfsDevice(root, name string, strictCleanup bool) (value string, err error) {
 	sysRoot := filepath.Join(filepath.Clean(root), "sys")
 	rootMetadata, err := os.Lstat(sysRoot)
 	if err != nil || !rootMetadata.IsDir() || rootMetadata.Mode()&os.ModeSymlink != 0 {
@@ -142,11 +165,15 @@ func pointerSysfsDevice(root, name string) (string, error) {
 	if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) || filepath.IsAbs(relative) {
 		return "", errors.New("pointer sysfs identity escapes its root")
 	}
-	file, err := openPointerPath(sysRoot, strings.Split(relative, string(filepath.Separator)), syscall.O_RDONLY)
+	file, err := openInputPath(sysRoot, strings.Split(relative, string(filepath.Separator)), syscall.O_RDONLY, strictCleanup)
 	if err != nil {
 		return "", err
 	}
-	defer file.Close()
+	defer func() {
+		if closeErr := file.Close(); strictCleanup && closeErr != nil {
+			value, err = "", errKeyboardCleanup
+		}
+	}()
 	metadata, err := file.Stat()
 	if err != nil || !metadata.Mode().IsRegular() {
 		return "", errors.New("invalid pointer sysfs identity")
@@ -155,7 +182,7 @@ func pointerSysfsDevice(root, name string) (string, error) {
 	if err != nil || len(encoded) > 128 {
 		return "", errors.New("invalid pointer device number")
 	}
-	value := strings.TrimSpace(string(encoded))
+	value = strings.TrimSpace(string(encoded))
 	majorText, minorText, found := strings.Cut(value, ":")
 	major, majorErr := strconv.ParseUint(majorText, 10, 32)
 	minor, minorErr := strconv.ParseUint(minorText, 10, 32)

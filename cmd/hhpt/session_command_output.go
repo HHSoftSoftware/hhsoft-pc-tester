@@ -79,9 +79,9 @@ func writeSessionReady(path, reportPath, keyEpoch string, frozen plan.Plan, jour
 	for _, worker := range journal.Workers {
 		outcomes[worker.ID] = worker.Outcome
 	}
-	marker := fmt.Sprintf("HHPT_READY report=%s plan=%s components=%d integrity=%s audio=%s cpu=%s memory=%s input=%s pointer=%s network=%s storage=%s usb=%s graphics=%s display=%s writable_block_mounts=0 active_non_loop_interfaces=0",
+	marker := fmt.Sprintf("HHPT_READY report=%s plan=%s components=%d integrity=%s audio=%s cpu=%s memory=%s input=%s keyboard=%s pointer=%s network=%s storage=%s usb=%s graphics=%s display=%s writable_block_mounts=0 active_non_loop_interfaces=0",
 		sessionMarkerValue(reportPath), frozen.ID, counts[1], status, outcomes["audio.readiness.quick"], outcomes["cpu.quick"], outcomes["memory.quick"],
-		outcomes["input.readiness.quick"], outcomes["input.pointer.quick"], outcomes["network.readiness.quick"], outcomes["storage.readiness.quick"], outcomes["usb.readiness.quick"], outcomes["graphics.quick"], outcomes["display.operator.quick"])
+		outcomes["input.readiness.quick"], outcomes["input.keyboard.quick"], outcomes["input.pointer.quick"], outcomes["network.readiness.quick"], outcomes["storage.readiness.quick"], outcomes["usb.readiness.quick"], outcomes["graphics.quick"], outcomes["display.operator.quick"])
 	if safeSessionToken(keyEpoch) {
 		marker += " key_epoch=" + keyEpoch
 	}

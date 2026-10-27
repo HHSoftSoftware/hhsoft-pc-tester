@@ -133,7 +133,7 @@ New reports require the matching companion utility.
 
 Quick-session reports additionally bind a `session` object inside the existing
 run-integrity evidence. It records the stop reason, session budget, elapsed time,
-all ten worker states/outcomes, independent safety observations, and bounded
+all worker states/outcomes, independent safety observations, and bounded
 monitor summaries. The safety history includes a fresh pre-sign
 observation. This adds no catalog row and does not turn graph integrity into
 an overall hardware pass. Unstarted tests stay incomplete;
@@ -141,14 +141,14 @@ completed failures survive a stop. Unsafe or interrupted network/storage
 readiness cannot authorize signing. These checks occur during session
 finalization; the offline verifier authenticates the recorded claims without
 rerunning them. The periodic-monitor increment introduced
-`hhsoft.pc-tester.quick-session/v3`; the current run-wide thermal implementation
-uses v4 with the same ten worker outcomes. The enabled pointer definition
+`hhsoft.pc-tester.quick-session/v3`; the run-wide thermal increment
+introduced v4 with the same ten worker outcomes. The enabled pointer definition
 changed the catalog digest and required a fresh frozen plan. The monitoring
 increments leave that digest unchanged. A journal file cannot authorize new
 execution or signing in place of the one-use live final gate. The catalog still
 has 21 rows, plus run integrity. Historical signed reports, including earlier session evidence,
 retain their existing verification and rendering behavior. Direct capture's
-limited subset does not include guided pointer evidence. Each retained pointer
+limited subset does not include guided keyboard or pointer evidence. Each retained pointer
 pass, including a completed device inside a partial result, must match the
 frozen and final component identity and advertised capabilities. Kernel bitmap
 word width is independently observed and bound in the component fingerprint;
@@ -224,6 +224,19 @@ amd64/386 suites passed 3,032 test/subtest events and four race suites passed
 reported unavailable temperature telemetry and retained matching diagnostic,
 journal and signed summaries. Rebuilt-image and physical-sensor qualification
 remain open.
+
+The guided keyboard increment introduces session v5 with eleven ordered workers
+and keyboard definition version 2, while retaining 21 catalog rows plus run
+integrity. Original v4 journals remain strictly validated under their ten-worker
+schema. Keyboard evidence uses `hhsoft.pc-tester.keyboard-functional/v1` and
+records only fixed completion booleans for left/right Shift and four arrows.
+Every retained device pass must match the final signed inventory; finalization
+also checks its unchanged frozen component, worker interval and cleanup.
+Complete initial/final inventory cannot be reconstructed by an offline verifier.
+Case aliases, duplicate or hidden modern claims and omitted bundle views cannot
+turn functional evidence into an opaque historical or unexecuted note. A strict
+nonexecution note can preserve standalone finalization without a session;
+functional keyboard observations require v5. Software qualification is in progress.
 
 ## Privacy-Preserving Fingerprints
 

@@ -198,7 +198,7 @@ func TestSessionRealThermalCoversCleanupAndFinalInventory(t *testing.T) {
 				t.Fatalf("late heat failed finalization: %d %s", code, &h.stderr)
 			}
 			view := verifiedThermalView(t, h)
-			if len(h.calls) != 10 || view.Finding != "limit_reached" || view.StopReason != "thermal_limit" || h.journal.Thermal.Final.Observation.PeakMilliCelsius != 98000 {
+			if len(h.calls) != 11 || view.Finding != "limit_reached" || view.StopReason != "thermal_limit" || h.journal.Thermal.Final.Observation.PeakMilliCelsius != 98000 {
 				t.Fatal("final inventory window did not retain late heat")
 			}
 		})

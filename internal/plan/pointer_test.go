@@ -9,7 +9,7 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
 )
 
-func TestPointerPlanSchedulesEveryPointerWithoutEnablingOtherGuidedInput(t *testing.T) {
+func TestPointerPlanSchedulesEveryPointerWithoutEnablingTouchInput(t *testing.T) {
 	snapshot := inventory.NewSnapshot([]inventory.Component{
 		inventory.NewComponent(inventory.ComponentInput, "input:0", map[string]string{"category": "pointer", "handlers": "mouse0 event2"}),
 		inventory.NewComponent(inventory.ComponentInput, "input:1", map[string]string{"category": "pointer", "handlers": "mouse1 event5"}),
@@ -30,7 +30,8 @@ func TestPointerPlanSchedulesEveryPointerWithoutEnablingOtherGuidedInput(t *test
 				if len(p.Tests) != 21 {
 					t.Fatalf("catalog row count changed: %d", len(p.Tests))
 				}
-				for _, id := range []string{"input.keyboard.quick", "input.touchpad.quick", "input.touchscreen.quick"} {
+				assertTestStatus(t, p, "input.keyboard.quick", TestScheduled)
+				for _, id := range []string{"input.touchpad.quick", "input.touchscreen.quick"} {
 					assertTestStatus(t, p, id, TestUnsupported)
 				}
 				if _, err := Decode(rehashPlanForTest(t, &p)); err != nil {

@@ -7,13 +7,28 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/thermal"
 )
 
-const Schema = "hhsoft.pc-tester.quick-session/v4"
+const SchemaV4 = "hhsoft.pc-tester.quick-session/v4"
+const Schema = "hhsoft.pc-tester.quick-session/v5"
 const IntegritySchema = "hhsoft.pc-tester.run-integrity/v1"
 const MaximumBytes = 64 << 10
 const Scope = "Quick-session execution, cleanup, final inventory and final safety gate; report encoding, output and saving are outside this monitoring window."
 
-func WorkerIDs() [10]string {
-	return [10]string{"cpu.quick", "memory.quick", "audio.readiness.quick", "input.readiness.quick", "input.pointer.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick", "graphics.quick", "display.operator.quick"}
+func IsStrictSchema(schema string) bool { return schema == SchemaV4 || schema == Schema }
+
+func WorkerIDs() [11]string {
+	return [11]string{"cpu.quick", "memory.quick", "audio.readiness.quick", "input.readiness.quick", "input.keyboard.quick", "input.pointer.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick", "graphics.quick", "display.operator.quick"}
+}
+
+func workerIDs(schema string) []string {
+	switch schema {
+	case SchemaV4:
+		return []string{"cpu.quick", "memory.quick", "audio.readiness.quick", "input.readiness.quick", "input.pointer.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick", "graphics.quick", "display.operator.quick"}
+	case Schema:
+		ids := WorkerIDs()
+		return ids[:]
+	default:
+		return nil
+	}
 }
 
 type Journal struct {
@@ -58,6 +73,7 @@ type LocalThermalSource struct {
 }
 type ResultBinding struct {
 	ID, PlannedStatus, ReportStatus string
+	Version                         int
 	Evidence                        []byte
 }
 type ThermalView struct {
@@ -71,7 +87,7 @@ type ThermalView struct {
 }
 
 // IntegrityEvidence preserves the graph-integrity v1 envelope. Only new v4
-// claims use its strict decoder; historical evidence remains opaque.
+// and v5 claims use its strict decoder; earlier evidence remains opaque.
 type IntegrityEvidence struct {
 	Schema                string                      `json:"schema"`
 	Status                string                      `json:"status"`

@@ -32,6 +32,7 @@ gaps despite existing passing tests:
 | Signed pass results contain sufficient consistent observations | Header-only results, zero work, missing safety fields, ambiguous JSON, and contradictory mount/traffic evidence |
 | Display acceptance requires every applicable pattern and operator criterion to pass | One successful output must not hide another failed or incomplete pattern; partial operator findings and explicit failures must survive aggregation and finalization |
 | Operator exclusions remain explicit in the frozen plan and signed report | Default selections changing plan bytes; excluded workers running; absent or missing-driver reasons being overwritten; omitted frozen test rows; stale evidence for an excluded worker |
+| Guided keyboard claims cover six fixed controls on every applicable interface | One complete device hiding another incomplete device; initially held or stale actions; partial frames; disconnect/replacement; retained passes without final neutral/identity checks; hidden functional claims in execution notes |
 | Frozen test deadlines bound complete work, and cancellation preserves evidence | Sequential subprocesses or multiple display cards exceeding a row's timeout; stopped workers or descendants surviving; cancelled finalization losing completed failures |
 | Build inventories retain the exact selected package versions | Native APK resolver behavior differs from a mocked command runner |
 | Source publication scans the objects actually transferred | Dangling outgoing commits, replacement refs, merge-only secrets, and deleted instruction backups |
@@ -138,8 +139,8 @@ packages, with 12 platform skips and no failures; vet and all five application
 targets also passed. Native Linux amd64 and 386 suites passed 1,650 test events
 across input, inventory, graphics, storage, safety, and CLI code, without skips.
 Pointer/session race checks passed 241 test events without skips or race reports.
-The historical counts above describe their original catalogs. Current selection
-has ten modern and eight legacy choices; the
+The historical counts above describe their original catalogs. Selection at the
+pointer milestone had ten modern and eight legacy choices; the
 existing 21 catalog rows plus run integrity still produce 22 results. Enabling
 pointer changes the catalog digest and introduced fresh plans and a ten-outcome
 `hhsoft.pc-tester.quick-session/v2` journal for that milestone. Historical
@@ -240,8 +241,8 @@ skips. All 15 command-line workflows passed: 12 quick-session cases and three
 pointer cases. Nine compiler and nine runtime process-ownership controls also
 passed with confirmed fixture cleanup. Pass counts were independently checked
 against the test logs. Historical signed-report verification and journal v3 are
-unchanged. The catalog still has ten implemented workers and 21 rows, plus run
-integrity in the report.
+unchanged. That milestone retained ten implemented workers and 21 catalog rows,
+plus run integrity in the report.
 
 This local guard is a prerequisite for the separate run-wide increment. It
 does not monitor other workers or an all-off selection, implement heartbeat or
@@ -269,9 +270,9 @@ cleanup, and passed all six postchecks. The extraction itself added no run-wide
 thermal coverage or new catalog/report rows. Rebuilt-image and physical
 qualification remain open.
 
-The run-wide increment implements sampled thermal supervision in the safe
-quick session and introduces `hhsoft.pc-tester.quick-session/v4` with embedded
-`hhsoft.pc-tester.run-thermal/v1`. It keeps ten worker outcomes and the existing
+The qualified run-wide increment implemented sampled thermal supervision in the
+safe quick session and introduced `hhsoft.pc-tester.quick-session/v4` with embedded
+`hhsoft.pc-tester.run-thermal/v1`. It retained ten worker outcomes and the existing
 catalog. Initial thermal completion precedes execution and preparation, even
 with all tests excluded. Serialized one-second sampling continues through all
 workers, input cleanup and final inventory, with a one-second reading deadline
@@ -332,6 +333,46 @@ These native runs cover Linux amd64 and 386; AArch64 was cross-built only. Rebui
 images, representative physical sensors, the beta pilot and release gates remain
 open.
 
+The current guided-keyboard increment is implemented in source; full software
+qualification is in progress. It activates definition version 2 of
+`input.keyboard.quick`, requires fresh frozen plans, and introduces session v5
+with eleven ordered workers. Keyboard runs between input readiness and pointer
+testing. Selection offers eleven modern and nine legacy quick tests, subject
+to applicability. The catalog remains 21 rows plus run integrity, producing 22
+report results. These changes do not relabel any preceding v4 or earlier
+validation results as v5 evidence.
+
+The bounded check requires a press and release of left Shift, right Shift, Up,
+Down, Left and Right on every applicable keyboard interface. It waits for a
+neutral baseline and accepts complete event frames only. Every retained device
+pass requires final idle, neutral and identity checks before its descriptor
+closes, including when cancellation leaves other devices incomplete. One
+interface cannot supply another's actions. Evidence records fixed completion
+booleans, not typed text, raw input events or their sequence. The default window
+is 30 seconds within a 90-second command limit and the remaining five-minute
+session budget. Full layout, rollover, ghosting and other keys remain open.
+
+The session's single console owner handles Ctrl-C and discards queued keyboard
+input before later display findings. Ordinary console failures block success
+with exit 1 after confirmed cleanup. Unconfirmed descriptor or console cleanup
+forces exit 12, even after another failure or failed diagnostic output. A later
+successful cleanup attempt cannot erase an earlier uncertain receipt.
+
+Shared decoding binds functional evidence to v5 worker status and timing;
+finalization additionally binds each retained device pass to the unchanged
+frozen component and final inventory. Actual keyboard observations require the
+current live finalization gate. Without a session journal, standalone
+frozen-plan finalization accepts only exact nonexecution notes for `excluded`,
+`not_present`, `unsupported` or `missing_driver` keyboards. Such notes contain
+no functional observations. Original v4 journals retain their strict ten-worker
+rules; v1-v3 evidence keeps its historical interpretation. Duplicate, escaped,
+case-aliased or hidden modern claims cannot use a historical or viewless-bundle
+bypass. Direct capture still omits guided keyboard and pointer workers.
+
+Keyboard native qualification, rebuilt images, physical multi-keyboard and
+held-key/disconnect checks, and the ten-PC beta pilot remain pending. Earlier
+VM results do not close those gates.
+
 Regression coverage for these cases belongs with the corresponding feature,
 not with a blanket claim of complete product coverage. Linux mount/device
 fixtures and real APK selection require the appropriate Linux environment;
@@ -363,10 +404,11 @@ aborted by either direct capture or finalization. Explicit renderer or pattern
 failures also require an overall graphics failure. Matching failure and partial
 results retain their original evidence in the signed report. These checks do
 not upgrade readiness into physical qualification.
-The standalone report verifier checks bundle integrity and signatures. New v4
-claims additionally require the shared journal and local-thermal evidence
-checks described above. Verification does not rerun hardware tests or establish
-physical truth.
+The standalone report verifier checks bundle integrity and signatures. Strict
+v4/v5 claims additionally require the shared journal and local-thermal evidence
+checks described above; v5 functional keyboard claims also require their shared
+decoder and final-inventory bindings. Verification does not rerun hardware
+tests or establish physical truth.
 
 Both appliance startup scripts check mount/network safety before handing the
 frozen plan to the quick-session coordinator and again before announcing a ready

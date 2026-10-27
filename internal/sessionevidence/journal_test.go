@@ -33,10 +33,14 @@ func shortJournal() Journal {
 }
 
 func shortBindings(j Journal) []ResultBinding {
-	rows := make([]ResultBinding, 0, 10)
+	rows := make([]ResultBinding, 0, len(j.Workers))
 	for _, w := range j.Workers {
 		raw, _ := json.Marshal(executionNote{Schema: "hhsoft.pc-tester.execution-note/v1", Status: reportStatus(w.Outcome), SourceStatus: w.Outcome, Detail: "not run"})
-		rows = append(rows, ResultBinding{ID: w.ID, PlannedStatus: "excluded", ReportStatus: reportStatus(w.Outcome), Evidence: raw})
+		version := 1
+		if w.ID == "input.keyboard.quick" {
+			version = 2
+		}
+		rows = append(rows, ResultBinding{ID: w.ID, Version: version, PlannedStatus: "excluded", ReportStatus: reportStatus(w.Outcome), Evidence: raw})
 	}
 	return rows
 }

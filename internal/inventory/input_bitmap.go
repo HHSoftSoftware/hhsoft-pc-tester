@@ -2,6 +2,10 @@ package inventory
 
 import "strconv"
 
+// ObservedInputBitmapWordBits observes the kernel format without changing state.
+// Zero means that a functional input test cannot rely on registry bitmaps.
+func ObservedInputBitmapWordBits() int { return kernelInputBitmapWordBits() }
+
 func observedInputBitmapWordBits(personality func() (uintptr, error), machine func() (string, error)) int {
 	value, err := personality()
 	if err != nil || value&0xff != 0 {
@@ -46,6 +50,10 @@ func (collector *LinuxCollector) collectInput() []Component {
 		if wordBits == 32 || wordBits == 64 {
 			attributes["bitmap_word_bits"] = strconv.Itoa(wordBits)
 		}
+		attributes["category"] = ClassifyInputWithBitmapWidth(attributes["name"], attributes["handlers"],
+			attributes["key_capabilities"], firstNonEmpty(attributes["relative_capabilities"], attributes["rel_capabilities"]),
+			firstNonEmpty(attributes["absolute_capabilities"], attributes["abs_capabilities"]),
+			firstNonEmpty(attributes["properties"], attributes["prop_capabilities"]), wordBits)
 		// Registry text cannot supply this reserved observation when the kernel
 		// layout is unknown; that cannot establish a functional input pass.
 		components[index] = NewComponent(component.Type, component.ID, attributes)

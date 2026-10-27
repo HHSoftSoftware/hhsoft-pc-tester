@@ -15,7 +15,9 @@ import (
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/app"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/graphics"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inputtest"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/keyboardevidence"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/plan"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quick"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/sessionevidence"
@@ -40,6 +42,7 @@ var quickResultDefinitions = []quickResultDefinition{
 	{id: "cpu.quick", filename: "cpu.json", schema: quick.CPUSchema},
 	{id: "display.operator.quick", filename: "display.json", schema: "hhsoft.pc-tester.display-visual/v1"},
 	{id: "graphics.quick", filename: "graphics.json", schema: "hhsoft.pc-tester.graphics/v1"},
+	{id: "input.keyboard.quick", filename: "keyboard.json", schema: inputtest.KeyboardSchema},
 	{id: "input.pointer.quick", filename: "pointer.json", schema: "hhsoft.pc-tester.pointer-functional/v1"},
 	{id: "input.readiness.quick", filename: "input.json", schema: "hhsoft.pc-tester.input-readiness/v1"},
 	{id: "memory.quick", filename: "memory.json", schema: quick.MemorySchema},
@@ -152,6 +155,10 @@ func runFinalizeOwned(ctx context.Context, arguments []string, stdout, stderr io
 				retainedEvidence[definition.id] = append([]byte(nil), encoded...)
 			}
 			if readErr != nil {
+				if definition.schema == inputtest.KeyboardSchema && readErr != os.ErrNotExist {
+					fmt.Fprintln(stderr, "validate keyboard evidence: existing evidence cannot establish confirmed cleanup")
+					return 1
+				}
 				// Only readOptionalEvidence's direct absence sentinel permits a
 				// missing-file note. Existing unreadable or oversized quick evidence
 				// cannot establish that the thermal observer was joined.
@@ -168,6 +175,18 @@ func runFinalizeOwned(ctx context.Context, arguments []string, stdout, stderr io
 					return 1
 				}
 				evidenceSourceStatus, statusErr := testEvidenceStatus(encoded, definition.schema)
+				if errors.Is(statusErr, keyboardevidence.ErrCleanupUnconfirmed) {
+					fmt.Fprintln(stderr, "validate keyboard evidence: cleanup unconfirmed")
+					return workerCleanupUncertainExitCode
+				}
+				if errors.Is(statusErr, keyboardevidence.ErrInvalid) {
+					fmt.Fprintln(stderr, "validate keyboard evidence: malformed observations")
+					return 1
+				}
+				if definition.schema == inputtest.KeyboardSchema && gate == nil {
+					fmt.Fprintln(stderr, "functional keyboard evidence requires the live current session gate")
+					return 1
+				}
 				if errors.Is(statusErr, errQuickCleanupUnconfirmed) || errors.Is(statusErr, errInvalidQuickSafety) {
 					fmt.Fprintf(stderr, "validate evidence %s: %v\n", definition.id, statusErr)
 					return 1
@@ -253,6 +272,15 @@ func runFinalizeOwned(ctx context.Context, arguments []string, stdout, stderr io
 			return 1
 		}
 		for _, result := range testResults {
+			if result.ID == "input.keyboard.quick" {
+				if raw, exists := retainedEvidence[result.ID]; exists {
+					value, decodeErr := keyboardevidence.Decode(raw)
+					if decodeErr != nil || keyboardevidence.ValidatePlanBinding(value, plannedTests[result.ID], frozenPlan, finalPlan, snapshot) != nil {
+						fmt.Fprintln(stderr, "validate keyboard evidence: interfaces or capabilities do not match the frozen hardware")
+						return 1
+					}
+				}
+			}
 			if result.ID == "input.pointer.quick" && (result.Status == app.TestPass || pointerEvidenceHasPassedDevice(result.Evidence)) &&
 				!validatePointerPlanEvidence(result.Evidence, plannedTests[result.ID], frozenPlan, finalPlan, snapshot) {
 				fmt.Fprintln(stderr, "validate pointer evidence: interfaces or capabilities do not match the frozen hardware")
@@ -282,6 +310,10 @@ func runFinalizeOwned(ctx context.Context, arguments []string, stdout, stderr io
 				return 1
 			}
 			value = sessionevidence.CloneJournal(value)
+			if value.Schema != sessionJournalSchema {
+				fmt.Fprintln(stderr, "live finalization requires the current session journal schema")
+				return 1
+			}
 			journal = &value
 			if err := validateSessionJournal(value, frozenPlan, outcomeValues, value.StopReason, *evidenceDirectory); err != nil {
 				fmt.Fprintf(stderr, "validate live session journal: %v\n", err)
@@ -289,7 +321,7 @@ func runFinalizeOwned(ctx context.Context, arguments []string, stdout, stderr io
 			}
 			bindings := make([]sessionevidence.ResultBinding, 0, len(testResults))
 			for _, row := range testResults {
-				bindings = append(bindings, sessionevidence.ResultBinding{ID: row.ID, PlannedStatus: string(row.PlannedStatus), ReportStatus: string(row.Status), Evidence: row.Evidence})
+				bindings = append(bindings, sessionevidence.ResultBinding{ID: row.ID, Version: row.Version, PlannedStatus: string(row.PlannedStatus), ReportStatus: string(row.Status), Evidence: row.Evidence})
 				raw, present := retainedEvidence[row.ID]
 				sourceStatus, statusErr := "", error(nil)
 				readErr := error(os.ErrNotExist)

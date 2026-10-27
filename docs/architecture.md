@@ -164,7 +164,7 @@ choices. Canonically ordered exclusions become part of the plan ID. An empty
 selection preserves the default plan encoding and ID within the same catalog.
 Exclusions only change tests that would otherwise be scheduled, preserving absent-hardware and
 missing-driver evidence. Both boot supervisors retain their unconditional mount
-and network safety checks and pass all ten quick outcomes to finalization.
+and network safety checks and pass all eleven quick outcomes to finalization.
 Signed run-integrity evidence includes the exclusions, including choices for
 hardware that was not available.
 
@@ -180,7 +180,7 @@ Each catalog result carries its definition version and `planned_status`, even
 when no adapter runs. The signed `coverage_scope` is `frozen_plan`; HTML/PDF
 views show the planned disposition and its reason alongside the final outcome.
 Direct capture instead labels its seven collected checks `direct_capture` and
-does not run the guided pointer check or claim a frozen plan. Optional absent
+does not run guided keyboard/pointer checks or claim a frozen plan. Optional absent
 coverage fields preserve historical report rendering; new reports require a
 matching rebuilt companion verifier.
 The quick-session coordinator adds a signed session journal inside run-integrity
@@ -197,7 +197,7 @@ still contain 21 catalog results plus run integrity. Enabling that row changes
 the catalog digest and requires fresh plans. That increment introduced
 `hhsoft.pc-tester.quick-session/v2` with ten worker records. The subsequent
 periodic-monitor increment introduced `hhsoft.pc-tester.quick-session/v3`.
-Run-wide thermal monitoring now uses `hhsoft.pc-tester.quick-session/v4`, keeping
+The run-wide thermal increment introduced `hhsoft.pc-tester.quick-session/v4`, keeping
 the catalog, plan digest, and ten records. It adds execution intervals, final
 preparation/join boundaries, thermal coverage and local heat-source bindings.
 A serialized journal cannot substitute for the live final gate. Historical
@@ -205,6 +205,17 @@ signed-report verification and rendering remain unchanged. Each increment's
 validation is tracked separately from the earlier session milestone.
 Direct capture and finalization without a session journal do not claim that
 session safety history.
+
+The guided keyboard increment activates definition version 2 of the existing
+`input.keyboard.quick` row and requires fresh plans. Journal v5 inserts its
+eleventh worker between input readiness and pointer testing. Shared validation
+dispatches v4 to its original ten-worker rules and v5 to eleven-worker rules;
+unknown versions and relabeled journals cannot bypass those checks. A shared
+keyboard decoder binds fixed action summaries, cleanup, worker timing and
+unchanged per-device identity/capabilities. Raw input events and typed text are
+never exported. Standalone finalization may retain strict nonexecution notes
+for excluded, absent, unsupported or missing-driver keyboards without claiming
+session coverage; functional keyboard evidence requires the live v5 workflow.
 
 A graph change does not discard evidence. It fails run integrity and preserves
 the final report with the original/final graph HMACs and component-level delta,

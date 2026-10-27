@@ -47,6 +47,7 @@ func newSessionHarness(t *testing.T, architecture string, excluded []string) *se
 		inventory.NewComponent(inventory.ComponentMemory, "memory:system", nil),
 		inventory.NewComponent(inventory.ComponentSound, "sound:card0", nil),
 		pointerInventoryFixture(true, architecture == "legacy-x86" || architecture == "x86").Components[0],
+		keyboardInventoryFixture(),
 		inventory.NewComponent(inventory.ComponentNetwork, "network:eth0", map[string]string{"name": "eth0"}),
 		inventory.NewComponent(inventory.ComponentBlock, "block:sda", map[string]string{"kind": "device"}),
 		inventory.NewComponent(inventory.ComponentUSB, "usb:1-1", nil),
@@ -155,6 +156,8 @@ func sessionCompleteEvidence(id string) any {
 		return completeInputEvidence()
 	case "input.pointer.quick":
 		return completePointerEvidence()
+	case "input.keyboard.quick":
+		return completeKeyboardEvidence()
 	case "network.readiness.quick":
 		return completeNetworkEvidence()
 	case "storage.readiness.quick":
@@ -189,10 +192,10 @@ func TestSessionPointerIncompleteActionsRemainVisibleAndAllowLaterWorkers(t *tes
 		writeSessionFixture(t, worker.OutputPath, result)
 		return 0
 	}
-	if code := h.run(t.Context()); code != 0 || !h.finalized || len(h.calls) != 10 || h.journal.StopReason != "completed" {
+	if code := h.run(t.Context()); code != 0 || !h.finalized || len(h.calls) != 11 || h.journal.StopReason != "completed" {
 		t.Fatalf("incomplete pointer interrupted unrelated work: code=%d", code)
 	}
-	if h.journal.Workers[4].Outcome != "inconclusive" || h.journal.Workers[4].State != "completed" ||
+	if h.journal.Workers[5].Outcome != "inconclusive" || h.journal.Workers[5].State != "completed" ||
 		!strings.Contains(h.stdout.String(), "HHPT_POINTER status=inconclusive") {
 		t.Fatal("pointer action gaps were hidden")
 	}
@@ -218,10 +221,10 @@ func TestSessionCancellationDuringPointerPreservesPartialEvidence(t *testing.T) 
 		writeSessionFixture(t, worker.OutputPath, result)
 		return 0
 	}
-	if code := h.run(ctx); code != 0 || !h.finalized || len(h.calls) != 5 || h.journal.StopReason != "operator_cancelled" {
+	if code := h.run(ctx); code != 0 || !h.finalized || len(h.calls) != 6 || h.journal.StopReason != "operator_cancelled" {
 		t.Fatalf("pointer cancellation did not finalize the stopped run: code=%d", code)
 	}
-	if h.journal.Workers[4].State != "interrupted" || h.journal.Workers[4].Outcome != "aborted" || h.journal.Workers[5].State != "not_started" {
+	if h.journal.Workers[5].State != "interrupted" || h.journal.Workers[5].Outcome != "aborted" || h.journal.Workers[6].State != "not_started" {
 		t.Fatal("pointer cancellation started a later worker or discarded its outcome")
 	}
 }
@@ -233,7 +236,7 @@ func TestSessionExecutesFrozenAllowlistAndRetainsSelection(t *testing.T) {
 			if code := h.run(t.Context()); code != 0 {
 				t.Fatalf("code=%d stderr=%s", code, &h.stderr)
 			}
-			want := []string{"cpu.quick", "memory.quick", "input.readiness.quick", "input.pointer.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick"}
+			want := []string{"cpu.quick", "memory.quick", "input.readiness.quick", "input.keyboard.quick", "input.pointer.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick"}
 			if architecture != "legacy-x86" {
 				want = append(want, "graphics.quick", "display.operator.quick")
 			}
@@ -243,7 +246,7 @@ func TestSessionExecutesFrozenAllowlistAndRetainsSelection(t *testing.T) {
 			if h.journal.Workers[2].State != "not_scheduled" || h.journal.Workers[2].Outcome != "excluded" {
 				t.Fatal("excluded choice was changed")
 			}
-			if architecture == "legacy-x86" && (h.journal.Workers[8].Outcome != "unsupported" || h.journal.Workers[9].Outcome != "unsupported") {
+			if architecture == "legacy-x86" && (h.journal.Workers[9].Outcome != "unsupported" || h.journal.Workers[10].Outcome != "unsupported") {
 				t.Fatal("legacy unsupported rows were changed")
 			}
 			if !strings.Contains(h.stdout.String(), "HHPT_SESSION_RESULT reason=completed") || !strings.Contains(h.stdout.String(), "HHPT_AUDIO_READINESS status=excluded") {
@@ -383,7 +386,7 @@ func TestSessionNeverSignsAfterUnconfirmedCleanupOrInputFailure(t *testing.T) {
 }
 
 func TestSessionFreshDestinationsRejectBeforeAnyWorker(t *testing.T) {
-	for _, name := range []string{"cpu.json", "graphics.json", "session-journal.json", "session-safety-final.json", "session-safety-monitor.json", "session-ready.txt", "session.hhpcr"} {
+	for _, name := range []string{"cpu.json", "keyboard.json", "graphics.json", "session-journal.json", "session-safety-final.json", "session-safety-monitor.json", "session-ready.txt", "session.hhpcr"} {
 		t.Run(name, func(t *testing.T) {
 			h := newSessionHarness(t, "x86_64", nil)
 			path := filepath.Join(h.directory, name)
@@ -411,7 +414,7 @@ func TestSessionOrdinaryGraphicsErrorRemainsReportable(t *testing.T) {
 		}
 		return worker(ctx, w, in, out, errOut)
 	}
-	if code := h.run(t.Context()); code != 0 || !h.finalized || len(h.calls) != 10 || h.journal.Workers[8].Outcome != "error" {
+	if code := h.run(t.Context()); code != 0 || !h.finalized || len(h.calls) != 11 || h.journal.Workers[9].Outcome != "error" {
 		t.Fatalf("ordinary error behavior changed: code=%d stderr=%s", code, &h.stderr)
 	}
 }
@@ -441,7 +444,7 @@ func TestSessionCannotClaimReadyFromMissingOrAmbiguousIntegrity(t *testing.T) {
 				case "changed-plan":
 					text = strings.ReplaceAll(text, h.frozen.ID, "sha256:"+strings.Repeat("0", 64))
 				case "bad-count":
-					text = strings.ReplaceAll(text, "final_components=9", "final_components=09")
+					text = strings.ReplaceAll(text, fmt.Sprintf("final_components=%d", len(h.frozen.HardwareGraph.Components)), fmt.Sprintf("final_components=0%d", len(h.frozen.HardwareGraph.Components)))
 				case "output-failure":
 					stdout.(*sessionFinalOutput).destination = cleanupFailedWriter{}
 				case "existing-ready":
@@ -523,8 +526,8 @@ func TestSessionExplicitGraphicsFailureStopsDisplayAndRemainsFailure(t *testing.
 		writeSessionFixture(t, w.OutputPath, result)
 		return 0
 	}
-	if code := h.run(t.Context()); code != 0 || !h.finalized || len(h.calls) != 9 || h.journal.StopReason != "worker_stop" ||
-		h.journal.Workers[8].Outcome != "fail" || h.journal.Workers[8].State != "completed" || h.journal.Workers[9].State != "not_started" {
+	if code := h.run(t.Context()); code != 0 || !h.finalized || len(h.calls) != 10 || h.journal.StopReason != "worker_stop" ||
+		h.journal.Workers[9].Outcome != "fail" || h.journal.Workers[9].State != "completed" || h.journal.Workers[10].State != "not_started" {
 		t.Fatalf("graphics failure was lost: code=%d calls=%v stderr=%s", code, h.calls, &h.stderr)
 	}
 	marker, err := os.ReadFile(filepath.Join(h.directory, "session-ready.txt"))

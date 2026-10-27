@@ -112,7 +112,20 @@ func parseInputDevices(content string) []Component {
 }
 
 func ClassifyInput(name, handlers, keyCapabilities, relativeCapabilities, absoluteCapabilities, properties string) string {
+	return ClassifyInputWithBitmapWidth(name, handlers, keyCapabilities, relativeCapabilities, absoluteCapabilities, properties, strconv.IntSize)
+}
+
+// ClassifyInputWithBitmapWidth uses an independently observed kernel word size.
+// Device names remain discovery hints; functional tests check descriptor ioctls.
+func ClassifyInputWithBitmapWidth(name, handlers, keyCapabilities, relativeCapabilities, absoluteCapabilities, properties string, wordBits int) string {
 	identity := strings.ToLower(name + " " + handlers)
+	propertyWordBits := wordBits
+	if wordBits != 32 && wordBits != 64 && len(strings.Fields(properties)) == 1 {
+		// A single 32-bit property word has the same low property bits on
+		// both kernel layouts. This discovery hint does not establish the
+		// kernel width required to validate functional keyboard evidence.
+		propertyWordBits = 32
+	}
 	switch {
 	case strings.Contains(identity, "touchpad"):
 		return "touchpad"
@@ -120,15 +133,15 @@ func ClassifyInput(name, handlers, keyCapabilities, relativeCapabilities, absolu
 		return "touchpad"
 	case strings.Contains(identity, "touchscreen") || strings.Contains(identity, "touch screen"):
 		return "touchscreen"
-	case absoluteCapabilities != "" && inputCapabilityBit(properties, 1):
+	case absoluteCapabilities != "" && inputCapabilityBitWidth(properties, 1, propertyWordBits):
 		return "touchscreen"
-	case absoluteCapabilities != "" && (inputCapabilityBit(properties, 2) || inputCapabilityBit(properties, 3) || inputCapabilityBit(properties, 4)):
+	case absoluteCapabilities != "" && (inputCapabilityBitWidth(properties, 2, propertyWordBits) || inputCapabilityBitWidth(properties, 3, propertyWordBits) || inputCapabilityBitWidth(properties, 4, propertyWordBits)):
 		return "touchpad"
 	case strings.Contains(identity, "mouse") || strings.Contains(identity, "trackball") || strings.Contains(identity, "pointing") || handlerHasPrefix(handlers, "mouse"):
 		return "pointer"
 	case strings.Contains(identity, "keyboard"):
 		return "keyboard"
-	case handlerHas(handlers, "kbd") && keyboardKeyMap(keyCapabilities):
+	case handlerHas(handlers, "kbd") && keyboardKeyMapWidth(keyCapabilities, wordBits):
 		return "keyboard"
 	case strings.Contains(identity, "joystick") || strings.Contains(identity, "gamepad"):
 		return "controller"
@@ -143,24 +156,27 @@ func ClassifyInput(name, handlers, keyCapabilities, relativeCapabilities, absolu
 	}
 }
 
-func keyboardKeyMap(value string) bool {
+func keyboardKeyMapWidth(value string, wordBits int) bool {
 	matches := 0
 	for _, code := range []int{2, 16, 28, 30, 44, 57} {
-		if inputCapabilityBit(value, code) {
+		if inputCapabilityBitWidth(value, code, wordBits) {
 			matches++
 		}
 	}
 	return matches >= 2
 }
 
-func inputCapabilityBit(value string, code int) bool {
+func inputCapabilityBitWidth(value string, code, wordBits int) bool {
+	if wordBits != 32 && wordBits != 64 || code < 0 {
+		return false
+	}
 	words := strings.Fields(value)
-	wordIndex := code / strconv.IntSize
+	wordIndex := code / wordBits
 	if wordIndex >= len(words) {
 		return false
 	}
-	word, err := strconv.ParseUint(words[len(words)-1-wordIndex], 16, strconv.IntSize)
-	return err == nil && word&(1<<uint(code%strconv.IntSize)) != 0
+	word, err := strconv.ParseUint(words[len(words)-1-wordIndex], 16, wordBits)
+	return err == nil && word&(1<<uint(code%wordBits)) != 0
 }
 
 func handlerHas(handlers, wanted string) bool {

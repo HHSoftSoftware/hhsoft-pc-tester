@@ -19,7 +19,7 @@ ALPINE = ROOT / "platform/alpine/mkimage/genapkovl-hhpt.sh"
 LEGACY = ROOT / "platform/buildroot/board/legacy-x86/rootfs-overlay/etc/init.d/S50hhpt"
 SELECTABLE_IDS = (
     "audio.readiness.quick", "cpu.quick", "display.operator.quick", "graphics.quick",
-    "input.pointer.quick", "input.readiness.quick", "memory.quick", "network.readiness.quick",
+    "input.keyboard.quick", "input.pointer.quick", "input.readiness.quick", "memory.quick", "network.readiness.quick",
     "storage.readiness.quick", "usb.readiness.quick",
 )
 LEGACY_UNSUPPORTED = {"graphics.quick", "display.operator.quick"}

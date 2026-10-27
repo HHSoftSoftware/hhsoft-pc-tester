@@ -158,6 +158,13 @@ cleanup. The twelve session scenarios reported unavailable temperature telemetry
 Rebuilt images, physical sensor validation, the beta pilot and release gates
 remain open. See [requirements validation](requirements-validation.md).
 
+Guided keyboard source now implements six fixed controls on each evdev keyboard,
+with no typed text or raw event stream retained. It activates the existing row
+as definition version 2 and uses an eleven-worker v5 journal while preserving
+strict v4 verification. Source integration and focused checks are complete;
+full software qualification, rebuilt images and physical keyboard testing remain
+open. Layout-aware coverage, other keys, rollover and ghosting remain planned.
+
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.
 - Add CPU, partial memory, SMART/NVMe health, read-only storage, complete

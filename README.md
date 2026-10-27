@@ -167,15 +167,33 @@ hhpt pointer -duration 30s -timeout 90s -output pointer.json
 
 Pointer joins the quick session's shared five-minute budget and signed results;
 direct `capture` retains its existing subset and does not run this guided check.
-The selection menu now offers ten modern or eight legacy quick tests. The
+The selection menu now offers eleven modern or nine legacy quick tests. The
 pointer catalog change requires a fresh plan and introduced a ten-outcome v2
 journal; historical signed reports remain independently verifiable. Automated
 and native Linux pointer validation passed; rebuilt-image and physical qualification remain open.
 See [requirements validation](docs/requirements-validation.md).
 
+The guided `hhpt keyboard` check asks for a press and release of left Shift,
+right Shift, Up, Down, Left and Right on each keyboard. Only these six controls
+are checked; do not type text. Missing controls, incomplete actions, changed
+devices and lost event records cannot pass. Evidence retains fixed completion
+booleans, without typed text, raw events or the order of the operator's actions.
+
+```sh
+hhpt keyboard -duration 30s -timeout 90s -output keyboard.json
+```
+
+Keyboard definition version 2 requires fresh plans. Session journal v5 has
+eleven workers and retains v4's thermal and safety boundaries. Existing v4
+reports continue through strict validation. The report still has 21 catalog
+rows plus run integrity; direct capture omits both guided input workers.
+Software qualification of this increment is in progress. Rebuilt-image,
+physical-keyboard and full layout/rollover validation remain open.
+
 The periodic-monitor milestone introduced read-only mount/network sampling
 and a v3 session journal, without changing the catalog or ten worker outcomes.
-The current v4 workflow retains that monitor summary and adds thermal evidence.
+The v4 increment retained that monitor summary and added thermal evidence;
+the current v5 workflow keeps those same monitoring requirements.
 Its first unsafe or uncertain observation stops active work and blocks signing.
 This is bounded periodic coverage, not continuous safety monitoring or kernel
 preemption. Automated tests, native Linux suites, race checks, and signed CLI

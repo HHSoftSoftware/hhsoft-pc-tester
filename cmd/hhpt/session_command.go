@@ -10,6 +10,8 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inputtest"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/keyboardevidence"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/plan"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quick"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/safemode"
@@ -45,12 +47,31 @@ type sessionSafetyMonitor interface {
 }
 
 func runSession(ctx context.Context, arguments []string, input io.Reader, stdout, stderr io.Writer) int {
-	ctx, input, finish, err := prepareSessionInput(ctx, input)
+	return runSessionWithInput(ctx, arguments, input, stdout, stderr, prepareSessionInput)
+}
+
+func runSessionWithInput(ctx context.Context, arguments []string, input io.Reader, stdout, stderr io.Writer,
+	prepare func(context.Context, io.Reader) (context.Context, io.Reader, func() error, error)) (exitCode int) {
+	ctx, input, finish, err := prepare(ctx, input)
 	if err != nil {
 		fmt.Fprintf(stderr, "prepare session input: %v\n", err)
+		if errors.Is(err, errSessionInputCleanup) {
+			return workerCleanupUncertainExitCode
+		}
 		return 1
 	}
-	defer finish()
+	// This boundary also owns input on returns before the coordinator starts its
+	// monitors. The preparer retains one finish receipt for both boundaries.
+	defer func() {
+		if err := finish(); err != nil {
+			fmt.Fprintf(stderr, "finish session input: %v\n", err)
+			if errors.Is(err, errSessionInputCleanup) {
+				exitCode = workerCleanupUncertainExitCode
+			} else if exitCode == 0 {
+				exitCode = 1
+			}
+		}
+	}()
 	return runSessionWith(ctx, arguments, input, stdout, stderr, sessionDependencies{
 		RunWorker: runSessionWorker, ObserveSafety: safemode.Observe,
 		StartMonitor: func(started time.Time, cancel context.CancelFunc) (sessionSafetyMonitor, error) {
@@ -199,9 +220,13 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 	defer func() {
 		// Even an unsuccessful worker must release console ownership while both
 		// monitors are still alive. The production input owner makes this idempotent.
-		if err := finishInput(); err != nil && exitCode == 0 {
+		if err := finishInput(); err != nil {
 			fmt.Fprintf(stderr, "finish session input: %v\n", err)
-			exitCode = 1
+			if errors.Is(err, errSessionInputCleanup) {
+				exitCode = workerCleanupUncertainExitCode
+			} else if exitCode == 0 {
+				exitCode = 1
+			}
 		}
 		if !stopped {
 			bounded, stop := context.WithTimeout(context.Background(), thermal.StopTimeout)
@@ -322,7 +347,7 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 		outcome, state, evidenceErr := sessionWorkerOutcomeEvidence(workerEvidence, workerReadErr, definitions[record.ID].schema, code, reason != "")
 		if evidenceErr != nil {
 			fmt.Fprintf(stderr, "session worker evidence: %v\n", evidenceErr)
-			if errors.Is(evidenceErr, errQuickCleanupUnconfirmed) {
+			if errors.Is(evidenceErr, errQuickCleanupUnconfirmed) || errors.Is(evidenceErr, keyboardevidence.ErrCleanupUnconfirmed) {
 				fmt.Fprintf(stderr, "HHPT_SESSION_FAILED worker=%s reason=cleanup_unconfirmed\n", record.ID)
 				return workerCleanupUncertainExitCode
 			}
@@ -378,6 +403,9 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 	}
 	if err := finishInput(); err != nil {
 		fmt.Fprintf(stderr, "finish session input: %v\n", err)
+		if errors.Is(err, errSessionInputCleanup) {
+			return workerCleanupUncertainExitCode
+		}
 		return 1
 	}
 	// No worker or input reader remains active. Final observations and report
@@ -448,7 +476,7 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 
 func printSessionWorkerResult(output io.Writer, record sessionWorkerRecord) {
 	labels := map[string]string{"cpu.quick": "CPU", "memory.quick": "MEMORY", "audio.readiness.quick": "AUDIO_READINESS",
-		"input.readiness.quick": "INPUT_READINESS", "input.pointer.quick": "POINTER", "network.readiness.quick": "NETWORK_READINESS", "storage.readiness.quick": "STORAGE_READINESS",
+		"input.readiness.quick": "INPUT_READINESS", "input.keyboard.quick": "KEYBOARD", "input.pointer.quick": "POINTER", "network.readiness.quick": "NETWORK_READINESS", "storage.readiness.quick": "STORAGE_READINESS",
 		"usb.readiness.quick": "USB_READINESS", "graphics.quick": "GRAPHICS", "display.operator.quick": "DISPLAY"}
 	fmt.Fprintf(output, "HHPT_%s status=%s\n", labels[record.ID], record.Outcome)
 }
@@ -470,12 +498,18 @@ func sessionStopReason(parent, run, worker context.Context, now, runDeadline, wo
 }
 
 func sessionWorkerOutcomeEvidence(encoded []byte, readErr error, schema string, code int, interrupted bool) (string, string, error) {
+	if schema == inputtest.KeyboardSchema && readErr != nil && readErr != os.ErrNotExist {
+		return "", "", keyboardevidence.ErrInvalid
+	}
 	if (schema == quick.CPUSchema || schema == quick.MemorySchema) && readErr != nil && readErr != os.ErrNotExist {
 		// Only direct absence permits an execution note. Existing quick
 		// evidence must establish that the thermal observer was joined.
 		return "", "", errInvalidQuickSafety
 	}
 	status, statusErr := testEvidenceStatus(encoded, schema)
+	if readErr == nil && (errors.Is(statusErr, keyboardevidence.ErrCleanupUnconfirmed) || errors.Is(statusErr, keyboardevidence.ErrInvalid)) {
+		return "", "", statusErr
+	}
 	if readErr == nil && (errors.Is(statusErr, errQuickCleanupUnconfirmed) || errors.Is(statusErr, errInvalidQuickSafety)) {
 		return "", "", statusErr
 	}
@@ -486,7 +520,7 @@ func sessionWorkerOutcomeEvidence(encoded []byte, readErr error, schema string, 
 		if status == "fail" {
 			return "fail", "completed", nil
 		}
-		if code == 0 || schema == quick.CPUSchema || schema == quick.MemorySchema {
+		if code == 0 || schema == quick.CPUSchema || schema == quick.MemorySchema || schema == inputtest.KeyboardSchema {
 			if interrupted && (status == "aborted" || status == "error") {
 				return status, "interrupted", nil
 			}

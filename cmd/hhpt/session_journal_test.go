@@ -352,7 +352,7 @@ func TestFinalizeSessionPreservesFailureAndNeverStartedReadiness(t *testing.T) {
 				t.Fatal("signed session missing")
 			}
 			journal := evidence.Session
-			if journal.Schema != "hhsoft.pc-tester.quick-session/v4" || journal.PlanID != fixture.frozen.ID || journal.StopReason != "worker_stop" || len(journal.Safety) != len(fixture.journal.Safety) || journal.Safety[len(journal.Safety)-1].Phase != "pre-sign" || !journal.Safety[len(journal.Safety)-1].Result.Safe() ||
+			if journal.Schema != "hhsoft.pc-tester.quick-session/v5" || journal.PlanID != fixture.frozen.ID || journal.StopReason != "worker_stop" || len(journal.Safety) != len(fixture.journal.Safety) || journal.Safety[len(journal.Safety)-1].Phase != "pre-sign" || !journal.Safety[len(journal.Safety)-1].Result.Safe() ||
 				!bytes.Equal(encodeEvidenceFixture(t, journal.Monitor), encodeEvidenceFixture(t, fixture.journal.Monitor)) {
 				t.Fatal("fresh safety or session intent not bound")
 			}

@@ -154,7 +154,7 @@ both session monitors before report-key generation. Their common cleanup
 allowance retains the preparation deadline while remaining independent of a
 monitor's failure cancellation. A journal file cannot supply that authority.
 
-The v4 journal uses immutable typed summaries and binds local CPU/RAM heat to
+The qualified v4 journal uses immutable typed summaries and binds local CPU/RAM heat to
 worker intervals, original file bytes and canonical full worker evidence.
 Retained heat cannot be erased by a cooler replacement or unavailable global
 telemetry. Partial/unavailable coverage never establishes safe temperatures.
@@ -165,6 +165,39 @@ confirmed cleanup. The session scenarios correctly reported unavailable
 temperature telemetry. Rebuilt images, physical sensors and the beta pilot
 remain open. Heartbeat/hang supervision and continuous coverage remain
 unimplemented.
+
+The current keyboard increment retains those monitoring boundaries in journal
+v5 and inserts an eleventh worker between input readiness and pointer testing.
+Keyboard definition version 2 requires a fresh plan. Original v4 journals keep
+their strict ten-worker rules; earlier evidence is not reinterpreted as current
+execution. Full software qualification of the keyboard increment is in progress;
+the preceding native results apply to v4, not v5.
+
+The keyboard worker opens event interfaces read-only and checks only left
+Shift, right Shift, Up, Down, Left and Right. Each interface must establish a
+neutral baseline, its own complete press/release pairs, and final idle, neutral
+and identity observations before a pass is retained and its descriptor closes.
+Evidence contains fixed action booleans without raw events, typed text or an
+event sequence. One console owner handles cancellation and discards queued
+keyboard input before later display findings. Full-keyboard coverage and
+physical validation remain separate requirements.
+
+Ordinary console failure blocks success with exit 1 after confirmed cleanup.
+Unconfirmed restoration, reader join or owned-descriptor cleanup forces exit
+12 and prevents later work, signing and ready/save, even if diagnostic output
+fails. The console owner retains the first finish receipt so repeated cleanup
+calls cannot erase uncertainty. These bounds do not preempt kernel I/O.
+
+Functional keyboard observations require the live current v5 finalization gate.
+Strict shared decoding binds status, timing and cleanup; finalization also
+checks every retained device pass against the unchanged frozen component and
+final inventory. Report consumers repeat the applicable signed-evidence and
+final-inventory checks even when optional views are absent. Duplicate, escaped,
+case-aliased and hidden functional claims cannot become opaque historical data
+or an execution note. Standalone frozen-plan finalization without a session
+may retain only exact nonexecution notes for `excluded`, `not_present`,
+`unsupported` or `missing_driver` keyboards. This exception grants no functional
+or session-safety claim. Direct capture omits guided keyboard and pointer work.
 
 Privilege separation below is a target architecture, not an implemented
 containment boundary for the current in-process CPU/RAM workers.

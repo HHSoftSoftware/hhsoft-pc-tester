@@ -48,6 +48,8 @@ func run(ctx context.Context, arguments []string, stdin io.Reader, stdout, stder
 		return runInput(ctx, arguments[1:], stdout, stderr)
 	case "inventory":
 		return runInventory(ctx, arguments[1:], stdout, stderr)
+	case "keyboard":
+		return runKeyboard(ctx, arguments[1:], stdin, stdout, stderr)
 	case "memory":
 		return runMemory(ctx, arguments[1:], stdout, stderr)
 	case "network":
@@ -160,6 +162,7 @@ func usage(destination io.Writer) {
 	fmt.Fprintln(destination, "       hhpt display [-pattern-duration 5s] [-finding-timeout 15s] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt memory [-bytes N] [-passes 2] [-timeout 30s] [-thermal-limit-c 90] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt input [-duration 0] [-categories LIST] [-output FILE]")
+	fmt.Fprintln(destination, "       hhpt keyboard [-duration 30s] [-timeout 90s] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt pointer [-duration 30s] [-timeout 90s] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt network [-allow-active] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt report-target -fingerprint-key FILE [-device /dev/DEVICE -confirm CODE] [-output FILE]")

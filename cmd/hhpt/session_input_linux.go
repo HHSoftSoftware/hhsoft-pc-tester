@@ -23,6 +23,14 @@ type sessionLineRequest struct {
 	result chan sessionLineResult
 }
 
+type sessionDiscardRequest struct {
+	ctx    context.Context
+	bytes  int
+	result chan error
+}
+
+const maximumSessionDiscardBytes = 64 << 10
+
 type sessionConsole struct {
 	ctx        context.Context
 	cancel     context.CancelFunc
@@ -31,6 +39,7 @@ type sessionConsole struct {
 	terminal   *syscall.Termios
 	mutex      sync.Mutex
 	request    *sessionLineRequest
+	discard    *sessionDiscardRequest
 	failure    error
 	stopped    bool
 	stop, done chan struct{}
@@ -52,7 +61,7 @@ func prepareSessionConsole(ctx context.Context, input io.Reader) (context.Contex
 	}
 	owned, cancel := context.WithCancel(ctx)
 	console := &sessionConsole{ctx: owned, cancel: cancel, raw: raw, stop: make(chan struct{}), done: make(chan struct{})}
-	var setupErr error
+	var setupErr, rollbackErr error
 	err = raw.Control(func(fd uintptr) {
 		flags, _, callErr := syscall.Syscall(syscall.SYS_FCNTL, fd, syscall.F_GETFL, 0)
 		if callErr != 0 {
@@ -79,12 +88,16 @@ func prepareSessionConsole(ctx context.Context, input io.Reader) (context.Contex
 		if callErr != 0 {
 			setupErr = callErr
 			if console.terminal != nil {
-				setupErr = errors.Join(setupErr, ioctlTermios(fd, syscall.TCSETS, console.terminal))
+				rollbackErr = ioctlTermios(fd, syscall.TCSETS, console.terminal)
+				setupErr = errors.Join(setupErr, rollbackErr)
 			}
 		}
 	})
 	if err != nil || setupErr != nil {
 		cancel()
+		if rollbackErr != nil {
+			return ctx, input, func() error { return errSessionInputCleanup }, errors.Join(errSessionInput, errSessionInputCleanup)
+		}
 		return ctx, input, func() error { return nil }, errSessionInput
 	}
 	go console.listen()
@@ -104,7 +117,7 @@ func (console *sessionConsole) ReadFindingLine(ctx context.Context, limit int) (
 	}
 	request := &sessionLineRequest{ctx: ctx, limit: limit, result: make(chan sessionLineResult, 1)}
 	console.mutex.Lock()
-	if console.stopped || console.failure != nil || console.request != nil || console.ctx.Err() != nil {
+	if console.stopped || console.failure != nil || console.request != nil || console.discard != nil || console.ctx.Err() != nil {
 		console.mutex.Unlock()
 		return "", errSessionInput
 	}
@@ -130,6 +143,41 @@ func (console *sessionConsole) ReadFindingLine(ctx context.Context, limit int) (
 	}
 }
 
+// Acknowledgement means the same input owner observed an empty nonblocking
+// queue. It does not attribute input arriving later to an earlier worker.
+func (console *sessionConsole) DiscardUnpromptedInput(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	request := &sessionDiscardRequest{ctx: ctx, result: make(chan error, 1)}
+	console.mutex.Lock()
+	if console.stopped || console.failure != nil || console.request != nil || console.discard != nil || console.ctx.Err() != nil {
+		failure := errors.Join(errSessionInput, console.failure)
+		console.mutex.Unlock()
+		return failure
+	}
+	console.discard = request
+	console.mutex.Unlock()
+	select {
+	case err := <-request.result:
+		return errors.Join(err, ctx.Err(), console.ctx.Err())
+	case <-ctx.Done():
+		console.mutex.Lock()
+		if console.discard == request {
+			console.discard = nil
+		}
+		console.mutex.Unlock()
+		return ctx.Err()
+	}
+}
+
+func (console *sessionConsole) respondDiscard(err error) {
+	if console.discard != nil {
+		console.discard.result <- err
+		console.discard = nil
+	}
+}
+
 func (console *sessionConsole) respond(result sessionLineResult) {
 	if console.request != nil {
 		console.request.result <- result
@@ -152,6 +200,9 @@ func (console *sessionConsole) listen() {
 		count := 0
 		var readErr error
 		console.mutex.Lock()
+		if console.discard != nil && console.discard.ctx.Err() != nil {
+			console.respondDiscard(console.discard.ctx.Err())
+		}
 		err := console.raw.Control(func(fd uintptr) { count, readErr = syscall.Read(int(fd), data[:]) })
 		if err != nil || readErr != nil && !errors.Is(readErr, syscall.EAGAIN) && !errors.Is(readErr, syscall.EWOULDBLOCK) && !errors.Is(readErr, syscall.EINTR) {
 			console.mutex.Unlock()
@@ -163,6 +214,14 @@ func (console *sessionConsole) listen() {
 				console.mutex.Unlock()
 				console.cancel()
 				return
+			}
+			if console.discard != nil {
+				console.discard.bytes += count
+				if console.discard.bytes > maximumSessionDiscardBytes {
+					console.mutex.Unlock()
+					console.fail()
+					return
+				}
 			}
 			request := console.request
 			if request != nil {
@@ -179,6 +238,9 @@ func (console *sessionConsole) listen() {
 			}
 			console.mutex.Unlock()
 			continue
+		}
+		if errors.Is(readErr, syscall.EAGAIN) || errors.Is(readErr, syscall.EWOULDBLOCK) {
+			console.respondDiscard(nil)
 		}
 		console.mutex.Unlock()
 		if readErr == nil && count == 0 {
@@ -216,10 +278,11 @@ func (console *sessionConsole) restore() {
 	console.mutex.Lock()
 	defer console.mutex.Unlock()
 	if err != nil || restoreErr != nil {
-		console.failure = errSessionInput
+		console.failure = errors.Join(console.failure, errSessionInputCleanup)
 	}
 	console.stopped = true
-	console.respond(sessionLineResult{err: errors.Join(console.ctx.Err(), errSessionInput)})
+	console.respond(sessionLineResult{err: errors.Join(console.ctx.Err(), errSessionInput, console.failure)})
+	console.respondDiscard(errors.Join(console.ctx.Err(), errSessionInput, console.failure))
 }
 
 func (console *sessionConsole) finish() error {
@@ -230,6 +293,6 @@ func (console *sessionConsole) finish() error {
 		defer console.mutex.Unlock()
 		return console.failure
 	case <-time.After(2 * time.Second):
-		return errSessionInput
+		return errSessionInputCleanup
 	}
 }

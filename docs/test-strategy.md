@@ -589,6 +589,45 @@ soft-float. Rebuilt-image checks and physical CPU coverage remain open. Legacy s
 coverage only; cross-compilation does not establish native AArch64 execution.
 Broader CPU stress, instruction coverage and performance grading remain planned.
 
+The RAM moving-inversion acceptance cases include:
+
+- Independent byte and counter oracles for all ten phases and six read/write
+  sweeps, with forward/reverse traversal and first/last-byte or chunk-tail faults.
+- Final-only corruption at offset zero, later-pass faults and overwrite-before-
+  verification controls. A logical alias model and equivalent corruption between
+  real small-span calls do not imply physical aliasing between Go slice indices
+  or detection of every hardware fault.
+- Stop before allocation, exact deadline equality, phase/chunk boundaries and
+  provisional completion. Correct late work remains uncredited; a late mismatch
+  remains a failure through heat, cancellation and joined cleanup.
+- Checked 64-bit arithmetic, partial and fully uncredited terminal chunks,
+  explicit offset-zero mismatch and impossible phase-prefix rejection. Negative
+  or overflowing availability values cannot wrap into a large recommendation;
+  the unreadable-file fallback remains 4 MiB.
+- Historical v2 canonical bytes, nested safety and v4/v5 typed hashes; current
+  definition 2/v3 pairing; direct/session/finalizer and comparison paths; bundles
+  with or without views; copied HTML/PDF summaries.
+
+Focused Windows checks passed 2,082 test/subtest events across nine packages,
+with sixteen platform test skips and no failures. Real 4 MiB runs exercise
+capture and command/session/finalizer paths; completed-result fault fixtures
+separately exercise signed failure boundaries. Full Windows validation passed
+2,755 test/subtest events across 25 packages, with seventeen platform test skips
+and three packages without host tests. Vet, 28 Linux test-binary builds and five
+application builds passed. Compiled x86 inspection confirms buffer accesses and
+reverse indexing, not physical DRAM traffic or cache bypass.
+
+Native Linux validation passed 5,000 test/subtest events across 28 amd64/386
+suites, with no skipped tests or failures. Six race suites passed 1,894 events,
+also without skips or failures. All 39 CLI cases passed across amd64, x86 SSE2
+and legacy x86, including nine RAM cases covering signed standalone finalization,
+memory-only sessions and direct capture. Modern standalone/session cases use
+64 MiB and two passes; legacy cases use 16 MiB and one pass. Direct-capture
+cases use 4 MiB and one pass. The 30-second RAM worker limit is unchanged,
+and cleanup and terminal restoration were confirmed. VM thermal coverage is
+explicitly unavailable. AArch64 is cross-built only; rebuilt images, physical
+memory, SPD/ECC, extended stress and Memtest86+ remain open.
+
 The broader target policy remains:
 
 - Unless the matrix says otherwise, adapter startup times out after 30 seconds
@@ -653,8 +692,9 @@ external signer identity.
 
 ## Hardware and environment limitations
 
-- The live OS cannot test memory occupied by itself; Memtest86+ supplies the
-  pre-boot phase, but cannot prove indefinite fault-free operation.
+- The live OS cannot test memory occupied by itself. A separate Memtest86+
+  boot entry remains planned; pre-boot testing cannot prove indefinite
+  fault-free operation.
 - A VM validates planning, statuses, timeout/recovery, reports, and synthetic
   failures. It cannot certify ports, analog audio, pixels, cameras, sensors, RF,
   thermals, power delivery, battery behavior, or physical condition.

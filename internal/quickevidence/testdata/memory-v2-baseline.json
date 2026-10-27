@@ -1,0 +1,23 @@
+[
+  {
+    "name": "pass",
+    "canonical": "{\"schema\":\"hhsoft.pc-tester.memory/v2\",\"status\":\"pass\",\"allocated_bytes\":4194304,\"examined_bytes\":12582912,\"passes\":1,\"patterns_per_pass\":3,\"duration_ms\":20,\"safety\":{\"global_timeout_ms\":30000,\"thermal_limit_millicelsius\":90000,\"thermal_sensors\":0,\"thermal_samples\":0,\"monitor_status\":\"completed\",\"cleanup_confirmed\":true,\"thermal_observations\":1,\"thermal_coverage\":\"unavailable\",\"thermal_rejected_readings\":0,\"thermal_unavailable_readings\":0,\"thermal_enumeration_errors\":0}}",
+    "source": "{\n  \"schema\": \"hhsoft.pc-tester.memory/v2\",\n  \"status\": \"pass\",\n  \"allocated_bytes\": 4194304,\n  \"examined_bytes\": 12582912,\n  \"passes\": 1,\n  \"patterns_per_pass\": 3,\n  \"duration_ms\": 20,\n  \"safety\": {\n    \"global_timeout_ms\": 30000,\n    \"thermal_limit_millicelsius\": 90000,\n    \"thermal_sensors\": 0,\n    \"thermal_samples\": 0,\n    \"monitor_status\": \"completed\",\n    \"cleanup_confirmed\": true,\n    \"thermal_observations\": 1,\n    \"thermal_coverage\": \"unavailable\",\n    \"thermal_rejected_readings\": 0,\n    \"thermal_unavailable_readings\": 0,\n    \"thermal_enumeration_errors\": 0\n  }\n}\n",
+    "source_sha256": "80bbdac94bb2a3ce7f66d9047568660d6bd9caa581684b07fb1e5158b0f2f3af",
+    "typed_sha256": "sha256:fa22922501f91290c6ff59d6e98572954b75568cf0b9e7fd64035094e80d58eb"
+  },
+  {
+    "name": "fail",
+    "canonical": "{\"schema\":\"hhsoft.pc-tester.memory/v2\",\"status\":\"fail\",\"allocated_bytes\":4194304,\"examined_bytes\":0,\"passes\":1,\"patterns_per_pass\":3,\"duration_ms\":20,\"safety\":{\"global_timeout_ms\":30000,\"thermal_limit_millicelsius\":90000,\"thermal_sensors\":0,\"thermal_samples\":0,\"monitor_status\":\"completed\",\"cleanup_confirmed\":true,\"thermal_observations\":1,\"thermal_coverage\":\"unavailable\",\"thermal_rejected_readings\":0,\"thermal_unavailable_readings\":0,\"thermal_enumeration_errors\":0},\"actual_byte\":1}",
+    "source": "{\n  \"schema\": \"hhsoft.pc-tester.memory/v2\",\n  \"status\": \"fail\",\n  \"allocated_bytes\": 4194304,\n  \"examined_bytes\": 0,\n  \"passes\": 1,\n  \"patterns_per_pass\": 3,\n  \"duration_ms\": 20,\n  \"safety\": {\n    \"global_timeout_ms\": 30000,\n    \"thermal_limit_millicelsius\": 90000,\n    \"thermal_sensors\": 0,\n    \"thermal_samples\": 0,\n    \"monitor_status\": \"completed\",\n    \"cleanup_confirmed\": true,\n    \"thermal_observations\": 1,\n    \"thermal_coverage\": \"unavailable\",\n    \"thermal_rejected_readings\": 0,\n    \"thermal_unavailable_readings\": 0,\n    \"thermal_enumeration_errors\": 0\n  },\n  \"actual_byte\": 1\n}\n",
+    "source_sha256": "09b86cc3d5e615af3304c6605c0b082b9ce91388611f1badffd59844e6447568",
+    "typed_sha256": "sha256:4e61c602caf3b5d25e10e227a0e8ffe81805f63bf3ba3e644a286e34c9eb47ba"
+  },
+  {
+    "name": "aborted",
+    "canonical": "{\"schema\":\"hhsoft.pc-tester.memory/v2\",\"status\":\"aborted\",\"allocated_bytes\":4194304,\"examined_bytes\":0,\"passes\":1,\"patterns_per_pass\":3,\"duration_ms\":20,\"safety\":{\"global_timeout_ms\":30000,\"thermal_limit_millicelsius\":90000,\"thermal_sensors\":1,\"thermal_samples\":1,\"peak_millicelsius\":95000,\"monitor_status\":\"failed\",\"monitor_failure\":\"thermal_limit\",\"cleanup_confirmed\":true,\"thermal_observations\":1,\"thermal_coverage\":\"available\",\"thermal_rejected_readings\":0,\"thermal_unavailable_readings\":0,\"thermal_enumeration_errors\":0}}",
+    "source": "{\n  \"schema\": \"hhsoft.pc-tester.memory/v2\",\n  \"status\": \"aborted\",\n  \"allocated_bytes\": 4194304,\n  \"examined_bytes\": 0,\n  \"passes\": 1,\n  \"patterns_per_pass\": 3,\n  \"duration_ms\": 20,\n  \"safety\": {\n    \"global_timeout_ms\": 30000,\n    \"thermal_limit_millicelsius\": 90000,\n    \"thermal_sensors\": 1,\n    \"thermal_samples\": 1,\n    \"peak_millicelsius\": 95000,\n    \"monitor_status\": \"failed\",\n    \"monitor_failure\": \"thermal_limit\",\n    \"cleanup_confirmed\": true,\n    \"thermal_observations\": 1,\n    \"thermal_coverage\": \"available\",\n    \"thermal_rejected_readings\": 0,\n    \"thermal_unavailable_readings\": 0,\n    \"thermal_enumeration_errors\": 0\n  }\n}\n",
+    "source_sha256": "c384b04a1fcbfb1683d958c0e7e3522418a23f683630a0616960c6141ec67455",
+    "typed_sha256": "sha256:7bbf8c5e06e46b3b9d1e7a18af7c97dc0d7955e6019caac57fc6d2750c77e8b7"
+  }
+]

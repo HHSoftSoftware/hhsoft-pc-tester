@@ -25,7 +25,7 @@ func TestFinalizeRejectsWorkerFailureDowngrades(t *testing.T) {
 	cpu.Status, cpu.Detail = quick.StatusFail, "known-answer calculation mismatch"
 	setCPUFixtureFailure(&cpu)
 	memory := completeMemoryEvidence()
-	memory.Status, memory.ExaminedBytes, memory.ActualByte = quick.StatusFail, 0, 1
+	setMemoryFixtureFailure(&memory, 0)
 	graphicsResult := completeGraphicsEvidence()
 	graphicsResult.Status, graphicsResult.Pattern.Status = graphics.StatusFail, graphics.StatusFail
 	for id, evidence := range map[string]any{"cpu.quick": cpu, "memory.quick": memory, "graphics.quick": graphicsResult} {
@@ -42,8 +42,9 @@ func TestMemoryMismatchCannotBeHiddenByWorkerStatus(t *testing.T) {
 		for _, status := range []quick.Status{quick.StatusPass, quick.StatusInconclusive, quick.StatusError, quick.StatusAborted} {
 			t.Run(string(status)+"/offset-"+strconv.FormatInt(offset, 10), func(t *testing.T) {
 				memory := completeMemoryEvidence()
-				memory.Status, memory.FailureOffset, memory.ExpectedByte, memory.ActualByte = status, offset, 0, 1
-				if _, err := newValidatedQuickTestResult("memory.quick", 1, app.TestStatus(status), memory); err == nil {
+				setMemoryFixtureFailure(&memory, offset)
+				memory.Status = status
+				if _, err := newValidatedQuickTestResult("memory.quick", 2, app.TestStatus(status), memory); err == nil {
 					t.Fatal("direct capture accepted a memory mismatch without fail")
 				}
 				assertFinalizationRejected(t, "memory.quick", memory, string(status))
@@ -81,10 +82,11 @@ func TestFinalizePreservesMatchingQuickFailureAndPartialEvidence(t *testing.T) {
 		cpu.Scalar.Workers[0].Iterations = 0
 		memory := completeMemoryEvidence()
 		memory.Status, memory.ExaminedBytes = status, 0
+		memory.Coverage = quick.MemoryCoverage{Suite: quick.MemorySuite}
 		if status == quick.StatusFail {
 			cpu.Detail = "known-answer calculation mismatch"
 			setCPUFixtureFailure(&cpu)
-			memory.ActualByte = 1 // A mismatch at byte zero is still a failure.
+			setMemoryFixtureFailure(&memory, 0) // Byte zero remains an explicit failure.
 		}
 		graphicsResult := completeGraphicsEvidence()
 		graphicsResult.Status, graphicsResult.Pattern.Status = graphics.Status(status), graphics.Status(status)

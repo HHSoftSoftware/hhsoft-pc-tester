@@ -95,7 +95,7 @@ After the HHSoft splash appears, a 15-second inactivity timer begins.
   test. Legacy images do not offer `K`.
 
 The quick profile is offline and uses read-only device discovery. It runs a
-short CPU known-answer load, bounded RAM data/address patterns, device-node
+short CPU known-answer load, bounded RAM patterns and inversions, device-node
 readiness checks, guided keyboard and relative-pointer actions, and modern-image
 graphics/display checks where applicable. The choices cover eleven tests on modern
 images and nine on legacy x86, subject to hardware applicability.
@@ -112,6 +112,21 @@ These are bounded correctness samples, not performance scores or complete CPU
 coverage. On legacy x86, soft-float checks software arithmetic and does not
 validate a hardware FPU. Host and native Linux validation passed. Rebuilt-image
 and physical qualification of this scalar increment remain pending.
+
+The development RAM worker adds ascending and descending moving inversions
+after the three original patterns, then verifies the final `0xaa` pattern.
+Reports show completed passes and phases, accepted work, observed uncredited
+work and any byte mismatch. Interrupted work is not a completed phase. A retained
+mismatch remains a failure even when cancellation or heat also stops the worker.
+
+The quick-session RAM worker keeps its 30-second limit and shares the remaining
+session budget. Modern automatic selection uses at most a quarter of reported
+available memory, capped at 64 MiB; legacy sessions use 16 MiB and one pass.
+Unreadable availability data retains the conservative 4 MiB fallback. Explicit
+standalone limits stay bounded to 4-512 MiB and one to eight passes. This is an
+owned userspace working set, not all installed RAM. Full Windows and native
+Linux checks passed, including race tests and signed CLI workflows. Rebuilt-image
+and physical-memory qualification remain pending.
 
 Skipping a quick test does not disable the independent mount and network safety
 checks. The report records the choices and marks applicable skipped tests as

@@ -120,7 +120,7 @@ public key is covered inside the bundle: this detects changes to the saved copy
 but deliberately does not claim an enrolled operator or deployment identity.
 
 The safe quick profile also runs bounded CPU known-answer calculations and
-RAM data/address patterns. Both have configurable short deadlines, independently
+RAM byte patterns and inversions. Both have short deadlines, independently
 sample exposed thermal-zone and hwmon inputs, and record safety coverage in JSON
 and signed reports. The strengthened v2 guard bounds readings and observer
 cleanup; unconfirmed cleanup stops later work and signing. Partial or unavailable
@@ -138,6 +138,15 @@ validation passed, including race tests and signed CLI cases. Rebuilt images
 and physical CPU checks for this increment remain open. These
 bounded checks are not a benchmark or comprehensive instruction test; legacy
 x86 soft-float exercises software arithmetic rather than the hardware FPU.
+
+The RAM worker follows its three original patterns with `0xaa` initialization,
+ascending verification and inversion to `0x55`, descending verification and
+inversion back to `0xaa`, and final ascending verification. Memory v3 distinguishes
+completed work, interrupted work and retained byte mismatches. Full Windows
+tests, vet, cross-builds, native Linux suites, race tests and signed CLI
+workflows passed.
+These checks cover an owned userspace working set, not all installed RAM or every
+hardware fault. Rebuilt-image and physical-memory validation remain open.
 
 Development source now also monitors temperatures throughout the quick session,
 including excluded-test runs, cleanup and final inventory. Journal v4 records

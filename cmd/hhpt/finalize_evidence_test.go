@@ -34,17 +34,24 @@ func setCPUFixtureFailure(cpu *quick.CPUResult) {
 }
 
 func currentQuickFixtureVersion(id string) int {
-	if id == "cpu.quick" {
+	if id == "cpu.quick" || id == "memory.quick" {
 		return 2
 	}
 	return 1
 }
 
 func completeMemoryEvidence() quick.MemoryResult {
-	return quick.MemoryResult{Schema: quick.MemorySchema, Status: quick.StatusPass, AllocatedBytes: 4 << 20, ExaminedBytes: 12 << 20,
+	return quick.MemoryResult{Schema: quick.MemorySchema, Status: quick.StatusPass, AllocatedBytes: 4 << 20, ExaminedBytes: 24 << 20,
 		Passes: 1, PatternsPerPass: 3, DurationMilliseconds: 20,
+		Coverage: quick.MemoryCoverage{Suite: quick.MemorySuite, CompletedPhases: 10, CompletedPasses: 1, WrittenBytes: 24 << 20},
 		Safety: quick.SafetyEvidence{GlobalTimeoutMilliseconds: 30000, ThermalLimitMilliCelsius: 90000,
 			MonitorStatus: "completed", CleanupConfirmed: true, ThermalObservations: 1, ThermalCoverage: "unavailable"}}
+}
+
+func setMemoryFixtureFailure(value *quick.MemoryResult, offset int64) {
+	value.Status, value.ExaminedBytes = quick.StatusFail, offset
+	value.Coverage = quick.MemoryCoverage{Suite: quick.MemorySuite, CompletedPhases: 1, PhaseBytes: offset, WrittenBytes: value.AllocatedBytes}
+	value.Mismatch = &quick.MemoryMismatch{Offset: offset, ExpectedByte: 0, ActualByte: 1}
 }
 
 func completeStorageEvidence() storage.Result {
@@ -139,7 +146,9 @@ func TestWorkerEvidenceRejectsMissingSafetyAndContradictions(t *testing.T) {
 		{"memory no work", quick.MemorySchema, func(v map[string]any) { v["examined_bytes"] = 0 }},
 		{"memory partial pass", quick.MemorySchema, func(v map[string]any) { v["examined_bytes"] = 4 << 20 }},
 		{"memory wrong pattern coverage", quick.MemorySchema, func(v map[string]any) { v["patterns_per_pass"] = 1; v["examined_bytes"] = 4 << 20 }},
-		{"memory mismatch", quick.MemorySchema, func(v map[string]any) { v["actual_byte"] = 1 }},
+		{"memory mismatch", quick.MemorySchema, func(v map[string]any) {
+			v["mismatch"] = map[string]any{"offset": 0, "expected_byte": 0, "actual_byte": 1}
+		}},
 		{"storage writable mount", storage.Schema, func(v map[string]any) { v["writable_mounts"] = 1 }},
 		{"storage hidden writable device", storage.Schema, func(v map[string]any) { first(v, "devices")["writable_mount"] = true }},
 		{"storage no devices", storage.Schema, func(v map[string]any) { delete(v, "devices") }},

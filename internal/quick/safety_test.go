@@ -60,7 +60,7 @@ func TestHwmonOnlyColdWorkersAndCancellation(t *testing.T) {
 		Root: root, ThermalLimit: 90000,
 	}
 	memory := RunMemory(context.Background(), memoryOptions)
-	if memory.Status != StatusPass || memory.ExaminedBytes != minimumMemoryBytes*3 || memory.Safety.ThermalSensors != 1 || memory.Safety.PeakMilliCelsius != 42000 {
+	if memory.Status != StatusPass || memory.ExaminedBytes != minimumMemoryBytes*6 || memory.Coverage.CompletedPhases != 10 || memory.Safety.ThermalSensors != 1 || memory.Safety.PeakMilliCelsius != 42000 {
 		t.Fatalf("cold hwmon memory run did not pass: %+v", memory)
 	}
 	ctx, cancel := context.WithCancel(context.Background())

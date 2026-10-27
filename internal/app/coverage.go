@@ -29,6 +29,9 @@ func ValidateCoverage(payload InventoryPayload) error {
 	if err := validateCPUReport(payload); err != nil {
 		return err
 	}
+	if err := validateMemoryReport(payload); err != nil {
+		return err
+	}
 	if err := validatePointerReport(payload); err != nil {
 		return err
 	}

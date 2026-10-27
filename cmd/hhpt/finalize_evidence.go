@@ -51,7 +51,7 @@ func testEvidenceStatus(encoded []byte, expectedSchema string) (string, error) {
 	invalid := errUnsupportedEvidence
 	quickEvidence := expectedSchema == quick.CPUSchema || expectedSchema == quick.MemorySchema
 	if quickEvidence {
-		// Existing v2 evidence must establish cleanup. A malformed or older
+		// Current quick evidence must establish cleanup. A malformed or older
 		// file cannot be replaced with an ordinary execution-error note.
 		invalid = errInvalidQuickSafety
 	}
@@ -117,7 +117,7 @@ func testEvidenceStatus(encoded []byte, expectedSchema string) (string, error) {
 }
 
 func newValidatedQuickTestResult(id string, version int, status app.TestStatus, evidence any) (app.TestResult, error) {
-	if id == "cpu.quick" && version != 2 {
+	if (id == "cpu.quick" || id == "memory.quick") && version != 2 {
 		return app.TestResult{}, errUnsupportedEvidence
 	}
 	encoded, err := json.Marshal(evidence)

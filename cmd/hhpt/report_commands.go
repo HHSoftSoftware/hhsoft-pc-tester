@@ -127,6 +127,7 @@ func runCaptureWith(ctx context.Context, arguments []string, stdout, stderr io.W
 		return 1
 	}
 	memoryEvidence := quick.MemoryResult{Schema: quick.MemorySchema, Status: quick.StatusAborted, Detail: "not run after CPU safety or correctness stop",
+		PatternsPerPass: 3, Coverage: quick.MemoryCoverage{Suite: quick.MemorySuite},
 		Safety: quick.SafetyEvidence{GlobalTimeoutMilliseconds: memoryTimeout.Milliseconds(), ThermalLimitMilliCelsius: *thermalLimit * 1000,
 			MonitorStatus: "not_started", CleanupConfirmed: true, ThermalCoverage: "unavailable"}}
 	if cpuEvidence.Status == quick.StatusPass {
@@ -136,7 +137,7 @@ func runCaptureWith(ctx context.Context, arguments []string, stdout, stderr io.W
 		fmt.Fprintln(stderr, "capture stopped: memory thermal observer cleanup could not be confirmed")
 		return workerCleanupUncertainExitCode
 	}
-	memoryResult, err := newValidatedQuickTestResult("memory.quick", 1, app.TestStatus(memoryEvidence.Status), memoryEvidence)
+	memoryResult, err := newValidatedQuickTestResult("memory.quick", 2, app.TestStatus(memoryEvidence.Status), memoryEvidence)
 	if err != nil {
 		fmt.Fprintf(stderr, "build memory evidence: %v\n", err)
 		return 1

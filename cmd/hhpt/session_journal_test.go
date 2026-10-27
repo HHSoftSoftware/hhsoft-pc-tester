@@ -552,7 +552,7 @@ func TestFinalizeSessionPreservesEveryCompletedFailure(t *testing.T) {
 	cpu.Status = quick.StatusFail
 	setCPUFixtureFailure(&cpu)
 	memory := completeMemoryEvidence()
-	memory.Status, memory.ActualByte = quick.StatusFail, 1
+	setMemoryFixtureFailure(&memory, 0)
 	graphic := completeGraphicsEvidence()
 	graphic.Status, graphic.Pattern.Status = "fail", "fail"
 	display := completeDisplayEvidence()

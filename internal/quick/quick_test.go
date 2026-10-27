@@ -45,7 +45,7 @@ func TestMemoryQuickPassAndCancellation(t *testing.T) {
 		Bytes: minimumMemoryBytes, Passes: 1, GlobalTimeout: 2 * time.Second,
 		Root: t.TempDir(), ThermalLimit: 90000,
 	})
-	if result.Status != StatusPass || result.ExaminedBytes != minimumMemoryBytes*3 {
+	if result.Status != StatusPass || result.ExaminedBytes != minimumMemoryBytes*6 || result.Coverage.CompletedPhases != 10 || result.Coverage.WrittenBytes != minimumMemoryBytes*6 {
 		t.Fatalf("unexpected memory result: %#v", result)
 	}
 

@@ -524,7 +524,7 @@ multiplication and division vectors in the bounded worker. CPU v3 evidence adds
 ordered per-worker counts, exact mismatch bits and separate integer, SHA-256 and
 scalar failure flags. Current CPU definition 2 uses the existing v5 journal and
 22-row report. Historical CPU v2 hashes and definition 1 remain valid under their
-original strict v4/v5 rules; memory evidence is unchanged.
+original strict v4/v5 rules; that CPU increment left memory evidence unchanged.
 
 Affected-package Windows regression tests passed 1,788 test/subtest events across
 nine packages, with 16 platform test skips and no failures. Cases cover cadence,
@@ -544,6 +544,50 @@ remain open. The fixed suite does not establish wider instruction coverage or
 stress/performance behavior; legacy soft-float validates software arithmetic,
 not hardware FPU execution. The frozen initial alpha candidate and its release
 gates are unchanged.
+
+The subsequent RAM increment adds `0xaa` initialization, ascending verify/invert
+to `0x55`, descending verify/invert to `0xaa`, and final ascending verification
+after the three existing patterns. Each pass has ten phases and six logical
+read and write sweeps. Definition 2/memory v3 records partial phases, uncredited
+terminal work and explicit mismatch presence, including offset zero. Historical
+memory v2 and nested safety preserve their canonical and typed hashes. The v5
+journal keeps eleven workers and the full report has 22 rows; direct capture
+keeps its seven-row subset.
+
+Final focused Windows checks passed 2,082 test/subtest events across nine
+packages, with sixteen platform test skips and no failures. Independent phase
+and corruption oracles cover both directions, late mismatch, provisional
+completion, partial/full uncredited chunks, overflow and malformed availability.
+Real 4 MiB runs exercise capture and session/finalization; completed-result fault
+fixtures exercise signed failure paths separately. An earlier focused attempt
+retained a stale three-read-sweep expectation; its corrected assertion requires
+all six sweeps without changing production guards.
+
+Full Windows validation passed 2,755 test/subtest events across 25 packages,
+with seventeen platform test skips, three packages without host tests and no
+failures. Vet, 28 Linux test-binary cross-builds and all five application targets
+passed. Inspection of amd64, x86 SSE2 and legacy x86 application builds confirmed
+a separate non-inlined kernel with buffer loads, comparisons, stores and reverse
+indexing. This does not establish physical DRAM traffic, cache bypass or actual
+hardware-fault detection.
+
+Native Linux validation passed 5,000 test/subtest events across 28 amd64/386
+suites, with no skipped tests or failures. Six race suites passed 1,894 events
+without skips or failures. All 39 CLI cases passed across amd64, x86 SSE2 and
+legacy x86, including nine RAM cases for standalone execution and signed
+finalization, memory-only sessions and direct capture. Modern standalone/session
+cases completed 64 MiB/two passes; legacy cases completed 16 MiB/one pass.
+Direct-capture cases completed 4 MiB/one pass. Cleanup was confirmed and thermal
+coverage remains explicitly unavailable in these VMs.
+
+The preceding native attempt is retained as failed after the command race
+package exhausted its 120-second qualification budget. The successful fresh run
+uses 180 seconds for that package and a 210-second supervisor limit; the other
+race budgets and the product's 30-second RAM worker limit are unchanged.
+
+AArch64 was cross-built only. All four rebuilt beta images, physical-memory
+validation, the ten-PC pilot, broader RAM/SPD/ECC/stress coverage and Memtest86+
+remain open. Frozen alpha release gates are unchanged.
 
 Regression coverage for these cases belongs with the corresponding feature,
 not with a blanket claim of complete product coverage. Linux mount/device

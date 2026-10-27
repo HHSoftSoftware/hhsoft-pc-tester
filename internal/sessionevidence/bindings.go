@@ -74,6 +74,10 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 			binding.ID == "cpu.quick" && (binding.Version < 0 || binding.Version > 2 || j.Schema == SchemaV4 && binding.Version == 2) {
 			return ErrInvalid
 		}
+		if hasNewMemoryClaim(binding.Evidence) && (binding.ID != "memory.quick" || binding.Version != 2 || j.Schema != Schema) ||
+			binding.ID == "memory.quick" && (binding.Version < 0 || binding.Version > 2 || j.Schema == SchemaV4 && binding.Version == 2) {
+			return ErrInvalid
+		}
 		byID[binding.ID] = binding
 	}
 	localSources := make(map[string]LocalThermalSource, len(j.LocalThermalSources))
@@ -114,6 +118,9 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 			if worker.ID == "cpu.quick" && binding.Version == 2 && ValidateCPUExecutionNote(binding) != nil {
 				return ErrInvalid
 			}
+			if worker.ID == "memory.quick" && binding.Version == 2 && ValidateMemoryExecutionNote(binding) != nil {
+				return ErrInvalid
+			}
 
 			var note executionNote
 			if evidencejson.ValidateShape(binding.Evidence, reflect.TypeOf(note)) != nil || json.Unmarshal(binding.Evidence, &note) != nil || note.Status != binding.ReportStatus || note.SourceStatus != worker.Outcome {
@@ -136,6 +143,10 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 		}
 		if worker.ID == "cpu.quick" && (local.Schema == quick.CPUSchema && binding.Version != 2 ||
 			local.Schema == quick.CPUSchemaV2 && binding.Version != 0 && binding.Version != 1) {
+			return ErrInvalid
+		}
+		if worker.ID == "memory.quick" && (local.Schema == quick.MemorySchema && binding.Version != 2 ||
+			local.Schema == quick.MemorySchemaV2 && binding.Version != 0 && binding.Version != 1) {
 			return ErrInvalid
 		}
 		hot := local.Safety.ThermalSamples > 0 && local.Safety.PeakMilliCelsius >= local.Safety.ThermalLimitMilliCelsius

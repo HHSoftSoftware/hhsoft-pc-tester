@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "components": [],
+  "system_fingerprint": {
+    "algorithm": "hmac-sha256",
+    "key_epoch": "fixture",
+    "key_id": "hmac-sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "identified_parts": 0,
+    "unidentified_parts": 0
+  },
+  "test_results": [
+    {
+      "id": "memory.quick",
+      "version": 2,
+      "status": "pass",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.memory/v3",
+        "status": "pass",
+        "allocated_bytes": 4194304,
+        "examined_bytes": 25165824,
+        "passes": 1,
+        "patterns_per_pass": 3,
+        "duration_ms": 20,
+        "memory_coverage": {
+          "suite": "byte-patterns-aa55-inversions-v1",
+          "completed_phases": 10,
+          "completed_passes": 1,
+          "phase_bytes": 0,
+          "uncredited_bytes": 0,
+          "written_bytes": 25165824
+        },
+        "safety": {
+          "global_timeout_ms": 30000,
+          "thermal_limit_millicelsius": 90000,
+          "thermal_sensors": 0,
+          "thermal_samples": 0,
+          "monitor_status": "completed",
+          "cleanup_confirmed": true,
+          "thermal_observations": 1,
+          "thermal_coverage": "unavailable",
+          "thermal_rejected_readings": 0,
+          "thermal_unavailable_readings": 0,
+          "thermal_enumeration_errors": 0
+        }
+      }
+    }
+  ],
+  "coverage_scope": "direct_capture"
+}

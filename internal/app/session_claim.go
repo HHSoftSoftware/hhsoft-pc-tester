@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inputtest"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quick"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/sessionevidence"
 )
 
@@ -29,6 +30,9 @@ func HasKeyboardClaim(encoded []byte) bool {
 // HasCPUScalarClaim selects strict CPU-v3/definition-2 validation before decoding can discard aliases or duplicate claims.
 func HasCPUScalarClaim(encoded []byte) bool { return hasReportClaim(encoded, cpuScalarClaim) }
 
+// HasMemoryClaim selects strict v3 validation before aliases or duplicates can hide it.
+func HasMemoryClaim(encoded []byte) bool { return hasReportClaim(encoded, memoryClaim) }
+
 // HasPointerClaim selects strict validation for functional pointer evidence or
 // a newer definition, including claims hidden by duplicate fields or aliases.
 // ID-only session workers do not claim a definition or observed wheel coverage.
@@ -44,6 +48,7 @@ const (
 	anySessionClaim
 	pointerClaim
 	cpuScalarClaim
+	memoryClaim
 )
 
 func hasReportClaim(encoded []byte, kind reportClaim) bool {
@@ -89,17 +94,23 @@ func findReportClaim(decoder *json.Decoder, depth int, kind reportClaim) (bool, 
 			if kind == cpuScalarClaim && (strings.EqualFold(name, "scalar") || strings.EqualFold(name, "calculation_failures")) {
 				return true, nil, nil
 			}
+			if kind == memoryClaim && strings.EqualFold(name, "memory_coverage") {
+				return true, nil, nil
+			}
 			found, scalar, err := findReportClaim(decoder, depth+1, kind)
 			if found || err != nil {
 				return found, nil, err
 			}
-			if kind == keyboardClaim || kind == pointerClaim || kind == cpuScalarClaim {
+			if kind == keyboardClaim || kind == pointerClaim || kind == cpuScalarClaim || kind == memoryClaim {
 				wantedID := "input.keyboard.quick"
 				if kind == pointerClaim {
 					wantedID = "input.pointer.quick"
 				}
 				if kind == cpuScalarClaim {
 					wantedID = "cpu.quick"
+				}
+				if kind == memoryClaim {
+					wantedID = "memory.quick"
 				}
 				if value, ok := scalar.(string); ok && strings.EqualFold(name, "id") && strings.EqualFold(value, wantedID) {
 					definitionID = true
@@ -139,6 +150,10 @@ func findReportClaim(decoder *json.Decoder, depth int, kind reportClaim) (bool, 
 		if kind == cpuScalarClaim {
 			name, version, versioned := strings.Cut(value, "/")
 			return ok && versioned && strings.EqualFold(name, "hhsoft.pc-tester.cpu") && version != "v2", token, nil
+		}
+		if kind == memoryClaim {
+			name, version, versioned := strings.Cut(value, "/")
+			return ok && (strings.EqualFold(value, quick.MemorySuite) || versioned && strings.EqualFold(name, "hhsoft.pc-tester.memory") && version != "v2"), token, nil
 		}
 		if kind == anySessionClaim {
 			name, _, versioned := strings.Cut(value, "/")

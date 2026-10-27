@@ -53,9 +53,13 @@ func TestCaptureAndVerifyRoundTrip(t *testing.T) {
 		workerCalls["cpu.quick"]++
 		return completeCPUEvidence()
 	}
-	probeMemory := func(context.Context, quick.MemoryOptions) quick.MemoryResult {
+	probeMemory := func(ctx context.Context, options quick.MemoryOptions) quick.MemoryResult {
 		workerCalls["memory.quick"]++
-		return completeMemoryEvidence()
+		if options.Bytes != 4<<20 || options.Passes != 1 || options.GlobalTimeout != 30*time.Second {
+			t.Fatal("capture changed RAM options")
+		}
+		options.Root = directory
+		return quick.RunMemory(ctx, options)
 	}
 	probeInput := func(context.Context, inputtest.Options) inputtest.Result {
 		workerCalls["input.readiness.quick"]++
@@ -74,7 +78,7 @@ func TestCaptureAndVerifyRoundTrip(t *testing.T) {
 		return completeUSBEvidence()
 	}
 	now := time.Date(2026, time.October, 12, 13, 14, 15, 123456789, time.FixedZone("PDT", -7*60*60))
-	arguments := []string{"-fingerprint-key", fingerprintKeyPath, "-key-epoch", "lab-2", "-signing-key", privateKeyPath, "-key-id", "signer-7", "-output", reportPath, "-graphics-pattern-frames", "12"}
+	arguments := []string{"-fingerprint-key", fingerprintKeyPath, "-key-epoch", "lab-2", "-signing-key", privateKeyPath, "-key-id", "signer-7", "-output", reportPath, "-graphics-pattern-frames", "12", "-memory-bytes", "4194304", "-memory-passes", "1"}
 	var stdout, stderr bytes.Buffer
 	if result := runCaptureWith(context.Background(), arguments, &stdout, &stderr, collect, probe, probeCPU, probeMemory, probeInput, probeNetwork, probeStorage, probeUSB, bytes.NewReader(bytes.Repeat([]byte{0xab}, sessionIDLength)), func() time.Time { return now }); result != 0 {
 		t.Fatalf("capture returned %d: %s", result, stderr.String())
@@ -113,6 +117,10 @@ func TestCaptureAndVerifyRoundTrip(t *testing.T) {
 	var payload app.InventoryPayload
 	if err := json.Unmarshal(artifact.InventoryJSON, &payload); err != nil {
 		t.Fatal(err)
+	}
+	memory, err := app.ValidatedMemory(payload)
+	if err != nil || memory == nil || memory.CompletedPhases != 10 || memory.ExaminedBytes != 25165824 || memory.WrittenBytes != 25165824 || payload.TestResults[3].Version != 2 {
+		t.Fatal("direct capture lost actual RAM coverage", err)
 	}
 	if len(payload.TestResults) != 7 || payload.TestResults[0].ID != "cpu.quick" || payload.TestResults[1].ID != "graphics.quick" || payload.TestResults[2].ID != "input.readiness.quick" || payload.TestResults[3].ID != "memory.quick" || payload.TestResults[4].ID != "network.readiness.quick" || payload.TestResults[5].ID != "storage.readiness.quick" || payload.TestResults[6].ID != "usb.readiness.quick" || payload.TestResults[0].Status != app.TestPass {
 		t.Fatalf("test results = %#v", payload.TestResults)

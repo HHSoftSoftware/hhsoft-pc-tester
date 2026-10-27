@@ -4,11 +4,8 @@ package quickevidence
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"errors"
-	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/evidencejson"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quick"
-	"reflect"
 )
 
 var ErrInvalid = errors.New("CPU or memory execution evidence does not establish valid safety and cleanup")
@@ -22,6 +19,7 @@ type LocalEvidence struct {
 	DurationMilliseconds int64
 	TypedSHA256          string
 	Scalar               CPUScalarSummary
+	Memory               MemorySummary
 }
 
 func DecodeLocal(workerID string, encoded []byte) (LocalEvidence, error) {
@@ -35,21 +33,11 @@ func DecodeLocal(workerID string, encoded []byte) (LocalEvidence, error) {
 			return LocalEvidence{}, err
 		}
 	case "memory.quick":
-		var value quick.MemoryResult
-		if evidencejson.ValidateShape(encoded, reflect.TypeOf(value)) != nil || json.Unmarshal(encoded, &value) != nil || value.Schema != quick.MemorySchema || !validStatus(value.Status) {
-			return result, ErrInvalid
+		var err error
+		result, canonical, err = decodeMemory(encoded)
+		if err != nil {
+			return LocalEvidence{}, err
 		}
-		if quickCleanupUnconfirmed(value.Safety) {
-			return result, ErrCleanupUnconfirmed
-		}
-		if value.ExpectedByte != value.ActualByte && value.Status != quick.StatusFail {
-			return result, ErrFailureDowngrade
-		}
-		if !validateMemoryEvidence(value) {
-			return result, ErrInvalid
-		}
-		result = LocalEvidence{Schema: value.Schema, Status: value.Status, Safety: value.Safety, DurationMilliseconds: value.DurationMilliseconds}
-		canonical, _ = json.Marshal(value)
 	default:
 		return result, ErrInvalid
 	}
@@ -153,11 +141,11 @@ func validateCPUEvidence(result quick.CPUResult) bool {
 	return result.Workers > 0 && result.Workers <= 64 && result.Iterations > 0 && result.KnownAnswerSHA256 == hex.EncodeToString(known[:])
 }
 
-func validateMemoryEvidence(result quick.MemoryResult) bool {
+func validateMemoryEvidence(result memoryV2) bool {
 	if result.ExpectedByte != result.ActualByte && result.Status != quick.StatusFail {
 		return false
 	}
-	if !validQuickSafety(result.Safety, result.Status, result.DurationMilliseconds, 1000) ||
+	if !validQuickSafety(result.Safety.current(), result.Status, result.DurationMilliseconds, 1000) ||
 		result.Safety.ThermalObservations == 0 && (result.ExaminedBytes != 0 || result.FailureOffset != 0 || result.ExpectedByte != 0 || result.ActualByte != 0 || result.DurationMilliseconds != 0) {
 		return false
 	}

@@ -185,6 +185,16 @@ for this increment remain open. Legacy soft-float coverage is software
 arithmetic only. Wider ISA, compression, sustained stress, performance, power and
 throttling checks remain planned.
 
+The RAM worker adds a fixed moving-inversion sequence after its three existing
+patterns. Memory v3 records completed phases and passes, accepted and uncredited
+logical work, and an explicit mismatch, including offset zero. Definition 2
+uses the existing eleven-worker v5 journal; historical memory v2 keeps its typed
+hash. Full Windows tests, vet and cross-builds passed; compiled x86 inspection
+confirmed buffer accesses and reverse indexing. Native Linux suites, race tests
+and signed direct, standalone and session workflows passed. Rebuilt images,
+physical memory, broader working sets, SPD/ECC, extended stress and Memtest86+
+remain open. The frozen alpha scope is unchanged.
+
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.
 - Add CPU, partial memory, SMART/NVMe health, read-only storage, complete

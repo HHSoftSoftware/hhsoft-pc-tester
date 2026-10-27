@@ -17,6 +17,9 @@ func ValidatedSessionThermal(payload InventoryPayload) (*sessionevidence.Thermal
 	if err := validateCPUReport(payload); err != nil {
 		return nil, err
 	}
+	if err := validateMemoryReport(payload); err != nil {
+		return nil, err
+	}
 	if err := validatePointerReport(payload); err != nil {
 		return nil, err
 	}

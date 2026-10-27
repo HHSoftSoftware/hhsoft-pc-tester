@@ -27,6 +27,7 @@ type inventoryDocument struct {
 	Thermal             *thermalDocument
 	Keyboard            *keyboardDocument
 	CPUScalar           *cpuScalarDocument
+	Memory              *memoryDocument
 	Pointer             *pointerDocument
 }
 
@@ -107,6 +108,21 @@ table{background:var(--panel);border-collapse:collapse;border:1px solid var(--li
 <tr><th class="label" scope="row">Integer mismatch</th><td>{{.CPUScalar.IntegerFailure}}</td></tr>
 <tr><th class="label" scope="row">SHA-256 mismatch</th><td>{{.CPUScalar.SHA256Failure}}</td></tr>
 <tr><th class="label" scope="row">Scalar mismatch</th><td>{{.CPUScalar.ScalarFailure}}</td></tr>
+</tbody></table></section>{{end}}{{if .Memory}}<section class="section" aria-labelledby="memory-heading">
+<h2 id="memory-heading">RAM Pattern and Inversion Observations</h2>
+<p>{{.Memory.Scope}}</p><p>{{.Memory.Finding}}</p>
+<table><tbody>
+<tr><th class="label" scope="row">Suite</th><td>{{.Memory.Suite}}</td></tr>
+<tr><th class="label" scope="row">Allocated bytes</th><td>{{.Memory.Allocated}}</td></tr>
+<tr><th class="label" scope="row">Completed/requested passes</th><td>{{.Memory.CompletedPasses}}/{{.Memory.Passes}}</td></tr>
+<tr><th class="label" scope="row">Completed phases</th><td>{{.Memory.CompletedPhases}}</td></tr>
+<tr><th class="label" scope="row">Phase / direction</th><td>{{.Memory.Phase}} / {{.Memory.Direction}}</td></tr>
+<tr><th class="label" scope="row">Accepted matching read bytes</th><td>{{.Memory.AcceptedReads}}</td></tr>
+<tr><th class="label" scope="row">Accepted write bytes</th><td>{{.Memory.AcceptedWrites}}</td></tr>
+<tr><th class="label" scope="row">Observed matching read bytes</th><td>{{.Memory.ObservedMatches}}</td></tr>
+<tr><th class="label" scope="row">Attempted read bytes (including mismatch)</th><td>{{.Memory.AttemptedReads}}</td></tr>
+<tr><th class="label" scope="row">Observed write bytes</th><td>{{.Memory.ObservedWrites}}</td></tr>
+<tr><th class="label" scope="row">Uncredited terminal units</th><td>{{.Memory.Uncredited}}</td></tr>
 </tbody></table></section>{{end}}{{if .Thermal}}<section class="section" aria-labelledby="thermal-heading">
 <h2 id="thermal-heading">Session Temperature Observations</h2>
 <table><tbody>
@@ -244,6 +260,10 @@ func renderInventoryHTML(output io.Writer, payload app.InventoryPayload, version
 	if err != nil {
 		return err
 	}
+	memory, err := memoryReportDocument(payload)
+	if err != nil {
+		return err
+	}
 	components := append([]app.ComponentRecord(nil), payload.Components...)
 	sort.SliceStable(components, func(left, right int) bool {
 		if components[left].Type != components[right].Type {
@@ -276,6 +296,7 @@ func renderInventoryHTML(output io.Writer, payload app.InventoryPayload, version
 		Keyboard:            keyboard,
 		Pointer:             pointer,
 		CPUScalar:           cpuScalar,
+		Memory:              memory,
 	}
 	return inventoryTemplate.Execute(&limitedWriter{destination: output}, document)
 }

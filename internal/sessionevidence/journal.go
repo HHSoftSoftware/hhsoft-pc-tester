@@ -145,7 +145,10 @@ func ValidateStructure(j Journal) error {
 			}
 		case "memory.quick":
 			index = 1
-			schema = quick.MemorySchema
+			schema = quick.MemorySchemaV2
+			if j.Schema == Schema && source.EvidenceSchema == quick.MemorySchema {
+				schema = quick.MemorySchema
+			}
 		default:
 			return ErrInvalid
 		}

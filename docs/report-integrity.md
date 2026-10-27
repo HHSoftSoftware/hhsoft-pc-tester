@@ -239,6 +239,23 @@ including bundles without views. The eleven workers and 22 report rows are
 unchanged. Host and native Linux validation passed, including signed standalone
 and v5 session CPU cases. Rebuilt-image and physical qualification remain open.
 
+Memory definition 2 pairs with `hhsoft.pc-tester.memory/v3`. Its ten-phase pass
+retains accepted read/write counts, completed phases and passes, the partial
+phase and uncredited terminal work. A separate mismatch object makes offset-zero
+failures explicit. Shared validation requires a feasible ordered phase prefix
+and checked arithmetic. Copied summaries distinguish attempted reads, observed
+matching bytes and accepted work; a mismatching read is never a verified byte.
+
+Historical memory definition 1 and v2 keep their exact field order, omission
+rules and nested safety encoding, including strict v4/v5 typed hashes. Current
+memory evidence supports strict direct capture and standalone finalization;
+session reports require v5. Definition/schema mismatches, hidden claims and
+impossible counters are rejected even without bundle views. The full plan keeps
+21 test rows plus run integrity, eleven workers and the existing seven-row
+direct-capture subset. Full host and native Linux validation passed, including
+signed direct-capture, standalone-finalization and v5 session cases. Rebuilt-image
+and physical gates remain open for this increment.
+
 New v4 claims use shared structural and binding validation in finalization,
 verification, comparison and HTML/PDF rendering, including bundles without
 views. Historical journals without new thermal claims remain opaque to these

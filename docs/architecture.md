@@ -366,6 +366,23 @@ CPU definition 2 uses the existing v5 journal; no catalog row or worker is added
 Host and native Linux validation passed, including race tests and signed CLI
 paths. Rebuilt-image and physical checks for this increment remain open.
 
+The RAM increment keeps the three existing fill/verify patterns, then writes
+`0xaa`, verifies upward while writing `0x55`, verifies downward while writing
+`0xaa`, and verifies upward again. Each completed pass has ten phases, six read
+sweeps and six write sweeps. These are logical buffer operations, not bandwidth
+or physical DRAM measurements.
+
+Chunks of at most 256 KiB are admitted against the earliest parent or monitor
+deadline, including checks before allocation and final success. Correct work
+observed after a stop remains uncredited; an observed mismatch remains a failure
+through cancellation, heat and cleanup. Checked counter overflow makes the
+evidence structurally unsignable. The separate non-inlined kernel has no per-byte
+callbacks. Inspection of amd64, x86 SSE2 and legacy x86 application builds
+confirmed loads, comparisons, stores and descending indexing, without a claim
+of cache bypass or physical-memory coverage. Full host checks, native Linux
+suites, race tests and signed CLI workflows passed. Rebuilt-image and physical
+qualification remain pending.
+
 ## Privilege and process model
 
 The target privilege separation remains unimplemented. Run the UI as a

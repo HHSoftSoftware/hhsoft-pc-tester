@@ -196,6 +196,22 @@ the alpha still requires the separate documented release gates.
 - [ ] Qualify the strengthened local CPU/RAM thermal guard in rebuilt bootable
   images and on representative physical sensors.
 - [x] Run bounded RAM quick patterns over a safely selected working set.
+- [x] Extend bounded RAM patterns with moving inversions and final verification.
+  Memory v3 and definition 2 retain partial work and explicit mismatches through
+  capture, v5 sessions and signed consumers; historical v2 hashes remain valid.
+- [x] Validate the RAM increment with the full Windows suite: 2,755 test/subtest
+  passes across 25 packages, 17 platform test skips and three packages without
+  host test files. Vet, 28 Linux test-binary builds and five application builds
+  passed. Compiled x86 inspection confirmed buffer loads, stores and reverse
+  indexing; it does not establish physical DRAM traffic or cache bypass.
+- [x] Qualify the RAM increment with native Linux suites, race tests and signed
+  direct-capture, standalone-finalization and session workflows: 5,000 native
+  test/subtest passes across 28 suites, 1,894 race-test passes across six suites
+  and 39 CLI cases, including nine RAM cases. These VM checks do not establish
+  physical-memory or temperature-sensor coverage.
+- [ ] Qualify the RAM increment in rebuilt beta images and on representative
+  physical memory systems. Broader working-set and hardware-fault coverage remain
+  open.
 - [x] Discover DRM cards, bound drivers, render nodes, connectors, and modes.
 - [x] Detect Mesa hardware acceleration versus software-rendering fallback.
 - [x] Run a bounded KMS display pattern on a connected display.
@@ -283,7 +299,7 @@ the alpha still requires the separate documented release gates.
   hybrid graphics, and video-codec engines.
 - [ ] Test CPU correctness, instruction coverage, performance, stability, power,
   and thermal behavior.
-- [ ] Test available RAM from Linux with a bounded quick/extended worker.
+- [ ] Extend the RAM quick worker to broader working-set coverage and extended testing.
 - [ ] Cross-check memory capacity, topology, speed, and exposed SPD data against
   firmware and OS observations; monitor corrected and uncorrected ECC deltas.
 - [ ] Add the separate Memtest86+ boot entry for complete memory coverage.

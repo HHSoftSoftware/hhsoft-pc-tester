@@ -38,7 +38,7 @@ func TestQuickCleanupUncertaintyOverridesDiagnosticOutputFailure(t *testing.T) {
 						result := completeMemoryEvidence()
 						result.Status, result.Safety.MonitorStatus, result.Safety.MonitorFailure, result.Safety.CleanupConfirmed = status, "cleanup_unconfirmed", "cleanup_unconfirmed", false
 						if status == quick.StatusFail {
-							result.ActualByte = 1
+							setMemoryFixtureFailure(&result, 0)
 						}
 						code = runMemoryWith(t.Context(), arguments, destination, &stderr, func(context.Context, quick.MemoryOptions) quick.MemoryResult { return result })
 					}
@@ -59,14 +59,14 @@ func TestQuickCleanupUncertaintyOverridesDiagnosticOutputFailure(t *testing.T) {
 						return
 					}
 					var retained struct {
-						Status     quick.Status         `json:"status"`
-						Safety     quick.SafetyEvidence `json:"safety"`
-						ActualByte int                  `json:"actual_byte"`
+						Status   quick.Status          `json:"status"`
+						Safety   quick.SafetyEvidence  `json:"safety"`
+						Mismatch *quick.MemoryMismatch `json:"mismatch"`
 					}
 					if json.Unmarshal(encoded, &retained) != nil || retained.Status != status || retained.Safety.CleanupConfirmed || retained.Safety.MonitorStatus != "cleanup_unconfirmed" || retained.Safety.MonitorFailure != "cleanup_unconfirmed" {
 						t.Fatal("serialized diagnostic status or cleanup evidence changed")
 					}
-					if command == "memory" && status == quick.StatusFail && retained.ActualByte != 1 {
+					if command == "memory" && status == quick.StatusFail && (retained.Mismatch == nil || retained.Mismatch.ActualByte != 1) {
 						t.Fatal("memory mismatch evidence lost")
 					}
 				})

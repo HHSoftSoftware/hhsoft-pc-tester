@@ -35,8 +35,12 @@ func quickSafetyFixture(id string, status quick.Status, safety quick.SafetyEvide
 	}
 	result := completeMemoryEvidence()
 	result.Status, result.Safety = status, safety
+	if status == quick.StatusFail {
+		setMemoryFixtureFailure(&result, 0)
+	}
 	if safety.ThermalObservations == 0 {
-		result.ExaminedBytes, result.DurationMilliseconds = 0, 0
+		result.AllocatedBytes, result.ExaminedBytes, result.DurationMilliseconds = 0, 0, 0
+		result.Coverage = quick.MemoryCoverage{Suite: quick.MemorySuite}
 	}
 	return result
 }
@@ -356,7 +360,7 @@ func TestQuickSafetyRejectsWorkBeforeAnyThermalObservation(t *testing.T) {
 						case "elapsed":
 							result.DurationMilliseconds = 1
 						default:
-							result.FailureOffset = 1
+							result.Coverage.WrittenBytes = 1
 						}
 						evidence = result
 					}

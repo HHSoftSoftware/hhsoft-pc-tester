@@ -217,7 +217,9 @@ A shared decoder validates exact v1/v2 wire shapes and binds retained passes to
 final inventory and the frozen plan. Standalone pointer finalization remains
 available without a session-safety claim; v2 evidence in a v5 session also
 requires the worker interval. Historical v4/v5 reports with pointer v1 retain
-movement/button scope. Full wheel software qualification is in progress.
+movement/button scope. Windows and native Linux amd64/386 suites, race checks,
+and standalone and signed-session CLI checks passed for the wheel increment.
+Rebuilt-image and physical-device qualification remain open.
 
 The guided keyboard increment activates definition version 2 of the existing
 `input.keyboard.quick` row and requires fresh plans. Journal v5 inserts its

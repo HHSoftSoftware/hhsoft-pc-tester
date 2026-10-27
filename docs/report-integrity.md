@@ -162,7 +162,10 @@ session or execution note. V5 sessions bind its status and duration to the
 worker; standalone pointer reports retain their existing frozen-plan workflow
 without claiming session monitoring. Exact v1 decoding and historical rendering
 remain separate. Consumers validate current claims even without optional views.
-Full software qualification of the wheel increment is in progress.
+Windows and native Linux amd64/386 suites, race checks, and standalone and
+signed-session CLI workflows passed for the wheel increment. VM observations
+without supplied actions remained inconclusive or deadline-limited; rebuilt
+images and physical wheel qualification remain open.
 
 The mount/network monitor summary records bounded aggregate coverage,
 with a one-second interval, a one-second observation deadline, a

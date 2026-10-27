@@ -208,8 +208,9 @@ credit. Retained device passes remain bound to final identity/capabilities.
 Existing malformed current evidence cannot become an error note. Standalone
 pointer finalization remains available without session monitoring; v5 sessions
 also bind its worker interval. Historical pointer v1 retains its original scope.
-Full wheel software qualification is in progress; image and physical gates stay
-open.
+Windows and native Linux amd64/386 suites, race checks and CLI workflows passed
+for this increment. Unsupplied VM actions remained incomplete; image and physical
+gates stay open.
 
 Privilege separation below is a target architecture, not an implemented
 containment boundary for the current in-process CPU/RAM workers.

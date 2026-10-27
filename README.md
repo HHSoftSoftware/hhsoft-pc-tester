@@ -171,8 +171,10 @@ direct `capture` retains its existing subset and does not run this guided check.
 The selection menu offers eleven modern or nine legacy quick tests. Pointer
 definition 2 and evidence v2 add advertised wheel directions and require a fresh
 plan. Session v5 keeps eleven workers. Historical pointer v1 retains its original
-movement/button scope and rendering. Full software qualification of the wheel
-increment is in progress; rebuilt images and physical qualification remain open.
+movement/button scope and rendering. Windows tests, native Linux amd64/386
+suites, race checks, and standalone and signed-session CLI checks passed for the
+wheel increment. VM observations remained incomplete without supplied actions;
+rebuilt images and physical qualification remain open.
 See [requirements validation](docs/requirements-validation.md).
 
 The guided `hhpt keyboard` check asks for a press and release of left Shift,

@@ -196,7 +196,9 @@ Lost events, disconnected devices, or cancellation also prevent a complete pass.
 Keep the original report and use a fresh plan for a later session. Direct
 capture's aggregate input-readiness option does not run the guided pointer test.
 Pointer definition 2 requires a new plan; v1 reports retain their earlier scope.
-Full wheel software qualification, rebuilt images and physical tests remain open.
+Windows and native Linux amd64/386 suites, race checks and CLI workflows passed
+for the wheel increment. VM observations without supplied actions remained
+incomplete. Rebuilt images and physical tests remain open.
 
 ## Empty inventory or safety stop
 

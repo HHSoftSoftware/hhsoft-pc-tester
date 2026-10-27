@@ -407,8 +407,8 @@ open. They do not replace or expand the frozen initial alpha candidate's
 separate source, image and release gates. Full layouts, rollover, ghosting and
 other keyboard functions remain planned.
 
-The pointer wheel-direction extension is integrated in source and undergoing
-full software qualification. Definition 2 and functional evidence v2 require
+The pointer wheel-direction extension passed Windows and native Linux amd64/386
+software qualification on 2026-10-26. Definition 2 and functional evidence v2 require
 both directions of every advertised vertical/horizontal axis on each supported
 relative pointer. High-resolution streams are preferred; their coarse companions
 are accepted when advertised but are not counted again. Net-zero packets do not
@@ -427,9 +427,28 @@ Independent review reproduced and verified the correction of an interrupted-read
 bug: an interrupted syscall now retries without establishing queue idle, so stale
 baseline input and queued event loss cannot earn a pass through that boundary.
 
-Native/race/CLI qualification, rebuilt images and physical wheel checks remain
-open. Cross-built binaries are not native execution evidence. The frozen alpha
-candidate and its release gates are unchanged.
+Native Linux amd64/386 passed 4,114 test/subtest events across 28 suite runs.
+The input, periodic, safemode, thermal and command race suites passed 1,508
+events. Native and race runs had no skips. All 24 CLI cases passed: twelve
+session lifecycle cases, six keyboard cases, and six pointer cases. The pointer
+cases covered three standalone reports and three pointer-only signed v5 sessions
+across modern x64/x86 and legacy x86 applications. Nine compiler ownership,
+nine runtime ownership, 32 archive and 13 supervisor checks passed with confirmed
+cleanup. Returned verbose logs, source bindings and all six final environment
+checks were reconciled independently.
+
+The pointer CLI cases observed two virtual interfaces, one supported for relative
+actions, without supplied movement, button or wheel actions. The interfaces
+advertised two wheel axes in total and selected no high-resolution stream.
+Standalone results remained inconclusive; pointer-only sessions retained
+deadline errors and clean teardown. These are successful workflow checks, not
+successful physical actions or high-resolution hardware qualification.
+Session thermal evidence honestly retained unavailable telemetry. AArch64 was
+cross-built only for this increment, not executed natively.
+
+All four fresh beta images, physical wheel and sensor checks, and the pilot on
+at least ten varied PCs remain open. The frozen initial alpha candidate and its
+separate source, image and release-approval gates are unchanged.
 
 Regression coverage for these cases belongs with the corresponding feature,
 not with a blanket claim of complete product coverage. Linux mount/device

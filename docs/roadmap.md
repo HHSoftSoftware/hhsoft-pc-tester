@@ -113,9 +113,10 @@ not qualify the new worker.
 
 Pointer definition 2 now adds both directions of each advertised wheel axis.
 It preserves standalone finalization and historical pointer-v1 report scope;
-current sessions keep the eleven-worker v5 journal. Full software qualification
-of this extension is in progress. Fresh images and physical wheel devices remain
-separate gates; wheel precision, extra buttons and touch gestures remain planned.
+current sessions keep the eleven-worker v5 journal. Windows and native Linux
+amd64/386 suites, race checks, and standalone and signed-session CLI checks passed
+for this extension. Fresh images and physical wheel devices remain separate
+gates; wheel precision, extra buttons and touch gestures remain planned.
 
 The periodic safety increment implements read-only mount/network checks
 through quick execution and the final safety observation. One owned observer

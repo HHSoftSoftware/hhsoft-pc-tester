@@ -226,9 +226,11 @@ again. Extra buttons, tracking accuracy, wheel precision and touch gestures
 remain untested.
 Only bounded action summaries and counts enter evidence, not raw events or
 typed text. Missing actions, lost records, and disconnects leave the inspection
-incomplete. Pointer definition 2 requires a fresh plan. Its full software
-qualification is in progress; rebuilt images and physical qualification remain
-open. Historical pointer v1 reports retain their movement/button scope.
+incomplete. Pointer definition 2 requires a fresh plan. Windows and native Linux
+amd64/386 suites, race checks and CLI workflows passed for this increment.
+VM observations without supplied actions remained incomplete; rebuilt images
+and physical qualification remain open. Historical pointer v1 reports retain
+their movement/button scope.
 
 Press Ctrl-C to request a stop. One owned console reader handles cancellation
 and display findings, so those inputs do not compete. Linux SIGINT and SIGTERM

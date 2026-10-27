@@ -154,13 +154,17 @@ interfaces cannot pass this check. Wheel precision, extra buttons, accuracy,
 touch geometry and gestures remain outside its scope.
 Evidence contains bounded per-interface counters and action summaries, not raw
 events or typed text. Lost records, incomplete actions, or device changes must
-not produce a pass. The original movement/button worker passed automated and
-native Linux validation. Full qualification of wheel evidence v2 is in progress.
-Its acceptance includes absent/single/multiple axes, high-resolution-only
+not produce a pass. Windows and native Linux amd64/386 suites, race checks and
+CLI workflows passed for the movement/button worker and wheel evidence v2.
+Fixtures cover absent/single/multiple axes, high-resolution-only
 capabilities, opposed or delayed coarse companions, net-zero packets, counter
 bounds, whole-packet rejection and no post-stop credit. Strict version, final
-inventory, standalone and session bindings require independent negative cases.
-The broader input matrix below remains a target.
+inventory, standalone and session bindings have independent negative cases.
+Interrupted reads retry without establishing queue idle; stale baseline input,
+queued event loss and partial tails cannot earn a pass through that boundary.
+The native CLI cases retained incomplete observations without supplied actions.
+Rebuilt images, physical devices and the broader input matrix below remain open;
+see [requirements validation](requirements-validation.md) for the exact counts.
 
 The current storage readiness adapter rejects writable block mounts and checks
 that each supported media-bearing kernel block interface remains a direct block

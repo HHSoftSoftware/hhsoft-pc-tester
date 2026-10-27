@@ -4,10 +4,10 @@ This run sheet supports the ten-PC pilot in the [roadmap](roadmap.md).
 It records physical evidence; VM checks do not fill these rows. Pilot results
 do not replace the [release gates](release-process.md) or the open functional
 requirements in the [master checklist](../PROJECT_CHECKLIST.md).
-The ten-PC gate remains open. Guided keyboard software qualification passed,
-including native Linux amd64/386, race and CLI checks. These results do not fill
-physical pilot rows. Use newly rebuilt and qualified beta images; the initial
-alpha candidate retains its separate release gates.
+The ten-PC gate remains open. Guided keyboard and pointer wheel software
+qualification passed, including native Linux amd64/386, race and CLI checks.
+These results do not fill physical pilot rows. Use newly rebuilt and qualified
+beta images; the initial alpha candidate retains its separate release gates.
 
 ## Candidate and fleet
 
@@ -64,9 +64,9 @@ that reaches 15 minutes for review; retain slow and failed runs in the evidence
 set. A readiness check does not establish functional transfer, audio playback,
 camera capture, RF performance, or sustained-load coverage. Use the exact
 coverage reported by the candidate, and track missing beta functionality openly.
-For pointer definition 2, use a newly rebuilt and qualified candidate; full
-software qualification of the wheel increment is still in progress. Include
-multiple pointers, withheld wheel directions and other actions,
+For pointer definition 2, use a newly rebuilt and qualified candidate. Its
+Windows and native Linux software checks passed; image and physical gates
+remain open. Include multiple pointers, withheld wheel directions and other actions,
 lost/disconnected-device handling, and cancellation with a supported removable
 fixture. Record unsupported absolute/mixed interfaces separately. VM and
 synthetic event checks do not complete these physical rows.

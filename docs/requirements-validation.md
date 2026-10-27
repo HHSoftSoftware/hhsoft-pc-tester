@@ -249,6 +249,20 @@ general hang supervision, or introduce privilege isolation. Fresh images,
 physical sensor validation, the beta pilot, all four alpha ISOs, source/image
 privacy review, and publication approval remain separate open gates.
 
+The subsequent shared periodic-engine extraction preserves the safemode API,
+duration constants and v1 evidence. Six exact JSON cases were executed against
+the preceding implementation before extraction; their literal bytes remain
+unchanged. Focused engine, safemode and command integration checks passed 217
+test/subtest events with no failures or skips. These include deadline and
+concurrent-Stop behavior, independent immutable snapshots, raw-result policy
+classification, assessment-panic cleanup, and completion timestamps captured
+before policy evaluation. The full Windows suite then passed 1,549 test/subtest
+events across 18 packages, with 21 Windows-specific skips and no failures. Vet
+passed; 16 Linux test binaries across eight packages on amd64/386 and all five
+application targets compiled successfully. Native execution and race validation
+of this extraction remain pending. It adds no run-wide thermal coverage or new
+catalog/report rows.
+
 Regression coverage for these cases belongs with the corresponding feature,
 not with a blanket claim of complete product coverage. Linux mount/device
 fixtures and real APK selection require the appropriate Linux environment;

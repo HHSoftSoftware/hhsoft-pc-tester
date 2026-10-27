@@ -135,6 +135,14 @@ thermal monitoring across the whole session. Run-wide thermal coverage,
 heartbeat/hang supervision, privilege
 separation, and the physical pilot remain subsequent work.
 
+The shared periodic observer engine is now extracted in source, with the
+existing safemode API and v1 evidence preserved. Focused checks passed 217 test
+events, including compatibility with six wire cases executed before extraction.
+Full Windows tests, vet and cross-builds passed; native and race qualification
+of this change remain pending. Immediate thermal sampling, final thermal
+observations, and run-wide thermal reporting remain subsequent implementation
+work.
+
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.
 - Add CPU, partial memory, SMART/NVMe health, read-only storage, complete

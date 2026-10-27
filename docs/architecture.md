@@ -254,6 +254,14 @@ The outer guard allows the five-minute run plus worker cleanup (two seconds),
 input cleanup (two), final safety (five), monitor join (two), finalization (30),
 and nine seconds of margin.
 
+The `internal/periodic` engine now owns the observer lifecycle, scheduling,
+deadlines, coverage gaps and immutable Stop result. Safemode supplies its
+observation policy and unchanged v1 serialization. Focused tests preserve six
+pre-extraction wire cases and the existing timing/cleanup rules. Full Windows
+tests, vet and cross-builds passed; native and race qualification of this
+extraction remain pending. Run-wide thermal sampling and its finalization
+integration remain planned.
+
 The local CPU/RAM monitor supervises an initial Linux thermal-zone/hwmon
 observation before starting load. Each observation has a one-second deadline;
 after a completed sample, the monitor waits 250 milliseconds before the next.

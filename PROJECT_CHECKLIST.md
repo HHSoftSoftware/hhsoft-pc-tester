@@ -315,6 +315,12 @@ the alpha still requires the separate documented release gates.
 - [ ] Qualify periodic mount/network monitoring in rebuilt bootable images and
   on physical hardware. Application and isolated VM tests do not close these
   gates or establish continuous safety, thermal, or heartbeat coverage.
+- [x] Extract the shared periodic observer engine in source, preserving the
+  safemode API and v1 evidence. Focused checks passed 217 test events with no
+  failures or skips; six exact wire cases were executed before extraction and
+  remain unchanged. Full Windows tests, vet and cross-builds passed; native and
+  race qualification of this extraction remain pending. Run-wide thermal
+  monitoring is still open.
 - [ ] Separate the unprivileged UI, privileged daemon, and sandboxed workers.
 - [ ] Complete run-wide thermal, heartbeat, hang, and deadline watchdogs beyond
   the quick-session coordinator, CPU/RAM thermal checks, terminal outer guard,

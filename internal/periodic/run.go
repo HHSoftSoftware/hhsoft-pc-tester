@@ -1,13 +1,13 @@
-package safemode
+package periodic
 
 import (
 	"context"
 	"time"
 )
 
-func (monitor *Monitor) run(observe func(context.Context) Result) {
+func (monitor *Monitor[T]) run(observe func(context.Context) T) {
 	jobs := make(chan monitorJob, 1)
-	completions := make(chan monitorCompletion, 1)
+	completions := make(chan monitorCompletion[T], 1)
 	observerDone := make(chan struct{})
 	go monitor.observe(jobs, completions, observerDone, observe)
 	defer func() {
@@ -18,11 +18,11 @@ func (monitor *Monitor) run(observe func(context.Context) Result) {
 		close(monitor.done)
 		monitor.mutex.Unlock()
 	}()
-	nextStart := monitor.options.Started.Add(MonitorInterval)
+	nextStart := monitor.options.Started.Add(monitor.options.Interval)
 	stopSignal, failureSignal := monitor.stop, monitor.failure
 	stopping := false
 	var active *monitorJob
-	var pending *monitorCompletion
+	var pending *monitorCompletion[T]
 	for {
 		// Account for completed coverage before checking current sample age.
 		if pending == nil && active != nil {
@@ -59,7 +59,7 @@ func (monitor *Monitor) run(observe func(context.Context) Result) {
 		}
 		if !stopping && active == nil && !now.Before(nextStart) {
 			base, cancel := context.WithCancelCause(context.Background())
-			job := monitorJob{cancel: cancel, started: now, deadline: now.Add(MonitorObservationTimeout)}
+			job := monitorJob{cancel: cancel, started: now, deadline: now.Add(monitor.options.ObservationTimeout)}
 			job.ctx = observationContext{Context: base, deadline: job.deadline}
 			monitor.mutex.Lock()
 			if monitor.stopRequested || monitor.result.FirstFailure != nil {
@@ -71,14 +71,14 @@ func (monitor *Monitor) run(observe func(context.Context) Result) {
 			monitor.result.AttemptedObservations++
 			monitor.mutex.Unlock()
 			active = &job
-			nextStart = now.Add(MonitorInterval)
+			nextStart = now.Add(monitor.options.Interval)
 			jobs <- job
 		}
 		var timer monitorTimer
 		var timerSignal <-chan time.Time
 		if !failed {
 			monitor.mutex.Lock()
-			wake := monitor.lastCompleted.Add(MonitorMaximumGap).Add(time.Nanosecond)
+			wake := monitor.lastCompleted.Add(monitor.options.MaximumGap).Add(time.Nanosecond)
 			monitor.mutex.Unlock()
 			if active != nil && active.deadline.Before(wake) {
 				wake = active.deadline

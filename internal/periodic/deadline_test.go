@@ -1,4 +1,4 @@
-package safemode
+package periodic
 
 import (
 	"context"
@@ -8,14 +8,14 @@ import (
 	"time"
 )
 
-func monitorBlockedObserver(t *testing.T) (func(context.Context) Result, <-chan context.Context, func()) {
+func monitorBlockedObserver(t *testing.T) (func(context.Context) testObservation, <-chan context.Context, func()) {
 	t.Helper()
 	started := make(chan context.Context, 1)
 	release := make(chan struct{})
 	var once sync.Once
 	unblock := func() { once.Do(func() { close(release) }) }
 	t.Cleanup(unblock)
-	return func(ctx context.Context) Result { started <- ctx; <-release; return monitorSafeResult() }, started, unblock
+	return func(ctx context.Context) testObservation { started <- ctx; <-release; return monitorSafeResult() }, started, unblock
 }
 
 func awaitObserver(t *testing.T, started <-chan context.Context) context.Context {
@@ -29,7 +29,7 @@ func awaitObserver(t *testing.T, started <-chan context.Context) context.Context
 	}
 }
 
-func awaitMonitorDone(t *testing.T, monitor *Monitor) {
+func awaitMonitorDone(t *testing.T, monitor *Monitor[testObservation]) {
 	t.Helper()
 	select {
 	case <-monitor.done:
@@ -60,7 +60,7 @@ func TestMonitorLateCleanResultCannotClearDeadline(t *testing.T) {
 			release()
 			awaitMonitorDone(t, monitor)
 			result := monitor.Stop(context.Background())
-			if result.Status != "error" || !result.CleanupConfirmed || result.FirstFailure == nil || result.FirstFailure.Reason != "observation_timeout" ||
+			if testStatus(result) != "error" || !result.CleanupConfirmed || result.FirstFailure == nil || result.FirstFailure.Reason != "observation_timeout" ||
 				result.AttemptedObservations != 1 || result.CompletedObservations != 1 || result.LastCompletedMilliseconds != 2000 ||
 				result.LastObservation == nil || !strictMonitorSafety(*result.LastObservation) {
 				t.Fatalf("late clean result: %+v", result)
@@ -75,7 +75,7 @@ func TestMonitorStopLetsValidObservationFinish(t *testing.T) {
 	monitor := startTestMonitor(t, clock, observe, nil)
 	clock.advance(time.Second, true)
 	ctx := awaitObserver(t, started)
-	stopped := make(chan MonitorResult, 1)
+	stopped := make(chan Summary[testObservation], 1)
 	go func() { stopped <- monitor.Stop(context.Background()) }()
 	awaitMonitor(t, "stop request", func() bool { monitor.mutex.Lock(); defer monitor.mutex.Unlock(); return monitor.stopRequested })
 	if ctx.Err() != nil {
@@ -85,7 +85,7 @@ func TestMonitorStopLetsValidObservationFinish(t *testing.T) {
 	release()
 	select {
 	case result := <-stopped:
-		if result.Status != "pass" || !result.CleanupConfirmed || result.FirstFailure != nil || result.CompletedObservations != 1 ||
+		if testStatus(result) != "pass" || !result.CleanupConfirmed || result.FirstFailure != nil || result.CompletedObservations != 1 ||
 			result.ElapsedMilliseconds != 1250 || result.FirstCompletedMilliseconds != 1250 || result.MaximumGapMilliseconds != 1250 {
 			t.Fatalf("valid stop result: %+v", result)
 		}
@@ -108,11 +108,11 @@ func TestMonitorIgnoringContextMakesCleanupUncertainAndImmutable(t *testing.T) {
 	stopContext, cancel := context.WithTimeout(context.Background(), 20*time.Millisecond)
 	defer cancel()
 	result := monitor.Stop(stopContext)
-	if result.Status != "error" || result.CleanupConfirmed || result.FirstFailure == nil || result.FirstFailure.Reason != "observation_timeout" ||
+	if testStatus(result) != "error" || result.CleanupConfirmed || result.FirstFailure == nil || result.FirstFailure.Reason != "observation_timeout" ||
 		result.AttemptedObservations != 1 || result.CompletedObservations != 0 {
 		t.Fatalf("unconfirmed cleanup: %+v", result)
 	}
-	baseline := cloneMonitorResult(result)
+	baseline := cloneSummary(result)
 	result.FirstFailure.Reason = "caller mutation"
 	release()
 	awaitMonitorDone(t, monitor)
@@ -128,7 +128,7 @@ func TestMonitorStopDeadlineCannotBeWonByLateJoin(t *testing.T) {
 	monitor := startTestMonitor(t, clock, observe, nil)
 	clock.advance(time.Second, true)
 	awaitObserver(t, started)
-	stopped := make(chan MonitorResult, 1)
+	stopped := make(chan Summary[testObservation], 1)
 	go func() { stopped <- monitor.Stop(context.Background()) }()
 	awaitMonitor(t, "stop timer", func() bool {
 		clock.mutex.Lock()
@@ -146,7 +146,7 @@ func TestMonitorStopDeadlineCannotBeWonByLateJoin(t *testing.T) {
 	release()
 	select {
 	case result := <-stopped:
-		if result.CleanupConfirmed || result.Status == "pass" || result.FirstFailure == nil {
+		if result.CleanupConfirmed || testStatus(result) == "pass" || result.FirstFailure == nil {
 			t.Fatalf("late join claimed cleanup: %+v", result)
 		}
 	case <-time.After(5 * time.Second):

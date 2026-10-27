@@ -1,4 +1,4 @@
-package safemode
+package periodic
 
 import (
 	"context"
@@ -13,9 +13,9 @@ type monitorJob struct {
 	started, deadline time.Time
 }
 
-type monitorCompletion struct {
+type monitorCompletion[T any] struct {
 	job               monitorJob
-	observation       Result
+	observation       T
 	finished          time.Time
 	invoked, panicked bool
 }
@@ -35,7 +35,7 @@ func (ctx observationContext) Err() error {
 	return ctx.Context.Err()
 }
 
-func callMonitorObserver(observe func(context.Context) Result, ctx context.Context) (result Result, panicked bool) {
+func callMonitorObserver[T any](observe func(context.Context) T, ctx context.Context) (result T, panicked bool) {
 	panicked = true
 	defer func() { _ = recover() }()
 	result = observe(ctx)
@@ -43,10 +43,10 @@ func callMonitorObserver(observe func(context.Context) Result, ctx context.Conte
 	return
 }
 
-func (monitor *Monitor) observe(jobs <-chan monitorJob, completions chan<- monitorCompletion, done chan<- struct{}, observe func(context.Context) Result) {
+func (monitor *Monitor[T]) observe(jobs <-chan monitorJob, completions chan<- monitorCompletion[T], done chan<- struct{}, observe func(context.Context) T) {
 	defer close(done)
 	for job := range jobs {
-		completion := monitorCompletion{job: job}
+		completion := monitorCompletion[T]{job: job}
 		if monitor.clock.now().Before(job.deadline) && job.ctx.Err() == nil {
 			completion.invoked = true
 			completion.observation, completion.panicked = callMonitorObserver(observe, job.ctx)
@@ -56,7 +56,7 @@ func (monitor *Monitor) observe(jobs <-chan monitorJob, completions chan<- monit
 	}
 }
 
-func (monitor *Monitor) complete(completion monitorCompletion) {
+func (monitor *Monitor[T]) complete(completion monitorCompletion[T]) {
 	defer completion.job.cancel(context.Canceled)
 	finished := completion.finished
 	if finished.Before(completion.job.started) {
@@ -76,7 +76,12 @@ func (monitor *Monitor) complete(completion monitorCompletion) {
 		monitor.fail("observer_panic", nil, finished)
 		return
 	}
-	observation := monitorObservation(completion.observation)
+	assessment, panicked := callAssessment(monitor.assess, completion.observation)
+	if panicked {
+		monitor.fail("observer_panic", nil, finished)
+		return
+	}
+	observation := assessment.Value
 	monitor.mutex.Lock()
 	elapsed := max(0, finished.Sub(monitor.options.Started).Milliseconds())
 	gap := finished.Sub(monitor.lastCompleted)
@@ -90,15 +95,20 @@ func (monitor *Monitor) complete(completion monitorCompletion) {
 	monitor.result.LastObservation = &observation
 	monitor.lastCompleted = finished
 	monitor.mutex.Unlock()
-	if gap > MonitorMaximumGap {
+	if gap > monitor.options.MaximumGap {
 		monitor.fail("sampling_gap", nil, finished)
 	}
-	if !strictMonitorSafety(completion.observation) {
-		reason := "invalid_observation"
-		if completion.observation.Schema == Schema && completion.observation.Status == "fail" &&
-			(completion.observation.WritableBlockMounts > 0 || completion.observation.ActiveNonLoopInterfaces > 0) {
-			reason = "unsafe_observation"
-		}
-		monitor.fail(reason, &completion.observation, finished)
+	if assessment.FailureReason != "" {
+		monitor.fail(assessment.FailureReason, &observation, finished)
 	}
+}
+
+// Policy is trusted pure code, but a programming panic must still leave the
+// owned observer joined and the monitor failed. Never retain the panic value.
+func callAssessment[T any](assess func(T) Assessment[T], value T) (result Assessment[T], panicked bool) {
+	panicked = true
+	defer func() { _ = recover() }()
+	result = assess(value)
+	panicked = false
+	return
 }

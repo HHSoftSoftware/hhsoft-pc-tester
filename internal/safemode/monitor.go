@@ -3,8 +3,9 @@ package safemode
 import (
 	"context"
 	"errors"
-	"sync"
 	"time"
+
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/periodic"
 )
 
 const MonitorSchema = "hhsoft.pc-tester.periodic-safety/v1"
@@ -47,67 +48,39 @@ type MonitorResult struct {
 	LastObservation                *Result         `json:"last_observation,omitempty"`
 }
 
-type monitorTimer interface {
-	channel() <-chan time.Time
-	stop() bool
-}
-
-type monitorClock interface {
-	now() time.Time
-	timer(time.Duration) monitorTimer
-}
-
-type realMonitorClock struct{}
-type realMonitorTimer struct{ value *time.Timer }
-
-func (realMonitorClock) now() time.Time { return time.Now() }
-func (realMonitorClock) timer(duration time.Duration) monitorTimer {
-	return realMonitorTimer{time.NewTimer(duration)}
-}
-func (timer realMonitorTimer) channel() <-chan time.Time { return timer.value.C }
-func (timer realMonitorTimer) stop() bool                { return timer.value.Stop() }
-
-type Monitor struct {
-	mutex               sync.Mutex
-	freezeMutex         sync.Mutex
-	clock               monitorClock
-	options             MonitorOptions
-	result              MonitorResult
-	final               *MonitorResult
-	lastCompleted       time.Time
-	lastClock           time.Time
-	joinedAt            time.Time
-	failure, stop, done chan struct{}
-	stopOnce            sync.Once
-	stopRequested       bool
-	stopDeadline        time.Time
-	stopContext         context.Context
-}
+// Monitor retains the public safety contract over one owned periodic observer.
+type Monitor struct{ owner *periodic.Monitor[Result] }
 
 func StartMonitor(observe func(context.Context) Result, options MonitorOptions) (*Monitor, error) {
-	return startMonitor(observe, options, realMonitorClock{})
-}
-
-func startMonitor(observe func(context.Context) Result, options MonitorOptions, clock monitorClock) (*Monitor, error) {
-	if observe == nil || clock == nil || options.Started.IsZero() {
+	if observe == nil || options.Started.IsZero() {
 		return nil, errors.New("periodic safety monitor requires an observer and start time")
 	}
-	now := clock.now()
-	if now.Before(options.Started) {
+	owner, err := periodic.Start(observe, assessMonitorObservation, periodic.Options{
+		Started: options.Started, Cancel: options.Cancel,
+		Interval: MonitorInterval, ObservationTimeout: MonitorObservationTimeout,
+		MaximumGap: MonitorMaximumGap, StopTimeout: MonitorStopTimeout,
+	})
+	if errors.Is(err, periodic.ErrStartInFuture) {
 		return nil, errors.New("periodic safety monitor start is in the future")
 	}
-	monitor := &Monitor{clock: clock, options: options, lastCompleted: options.Started, lastClock: options.Started,
-		failure: make(chan struct{}), stop: make(chan struct{}), done: make(chan struct{}),
-		result: MonitorResult{Schema: MonitorSchema, Status: "pass", IntervalMilliseconds: MonitorInterval.Milliseconds(),
-			ObservationTimeoutMilliseconds: MonitorObservationTimeout.Milliseconds(), MaximumAllowedGapMilliseconds: MonitorMaximumGap.Milliseconds()}}
-	go monitor.run(observe)
-	return monitor, nil
+	if err != nil {
+		return nil, err
+	}
+	return &Monitor{owner: owner}, nil
 }
 
-func (monitor *Monitor) Failure() <-chan struct{} { return monitor.failure }
-
+func (monitor *Monitor) Failure() <-chan struct{} {
+	if monitor.owner == nil {
+		return nil
+	}
+	return monitor.owner.Failure()
+}
 func (monitor *Monitor) Failed() bool {
-	monitor.mutex.Lock()
-	defer monitor.mutex.Unlock()
-	return monitor.result.FirstFailure != nil || monitor.final != nil && monitor.final.FirstFailure != nil
+	if monitor.owner == nil {
+		return false
+	}
+	return monitor.owner.Failed()
+}
+func (monitor *Monitor) Stop(ctx context.Context) MonitorResult {
+	return monitorResult(monitor.owner.Stop(ctx))
 }

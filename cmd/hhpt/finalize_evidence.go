@@ -1,33 +1,31 @@
 package main
 
 import (
-	"bytes"
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"io"
 	"math"
 	"reflect"
 	"strings"
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/app"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/audio"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/evidencejson"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/graphics"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inputtest"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/networktest"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quick"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quickevidence"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/storage"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/usbtest"
 )
 
 var errUnsupportedEvidence = errors.New("worker evidence is incomplete or contradicts its claimed result")
 var errDisplayFailureDowngrade = errors.New("display evidence would downgrade an explicit failure")
-var errMemoryFailureDowngrade = errors.New("memory evidence would downgrade an explicit failure")
+var errMemoryFailureDowngrade = quickevidence.ErrFailureDowngrade
 var errGraphicsFailureDowngrade = errors.New("graphics evidence would downgrade an explicit failure")
-var errQuickCleanupUnconfirmed = errors.New("CPU or memory thermal observer cleanup was not confirmed")
-var errInvalidQuickSafety = errors.New("CPU or memory execution evidence does not establish valid safety and cleanup")
+var errQuickCleanupUnconfirmed = quickevidence.ErrCleanupUnconfirmed
+var errInvalidQuickSafety = quickevidence.ErrInvalid
 
 // Worker schemas describe observations, not an authority to declare success.
 // Acceptance checks the documented quick-test guarantees independently of the
@@ -55,28 +53,16 @@ func testEvidenceStatus(encoded []byte, expectedSchema string) (string, error) {
 	}
 	var err error
 	switch expectedSchema {
-	case quick.CPUSchema:
-		uncertain := false
-		err = acceptEvidence(encoded, func(result quick.CPUResult) bool {
-			uncertain = quickCleanupUnconfirmed(result.Safety)
-			return validateCPUEvidence(result)
-		})
-		if uncertain {
-			return "", errQuickCleanupUnconfirmed
+	case quick.CPUSchema, quick.MemorySchema:
+		id := "cpu.quick"
+		if expectedSchema == quick.MemorySchema {
+			id = "memory.quick"
 		}
-	case quick.MemorySchema:
-		failureDowngrade, uncertain := false, false
-		err = acceptEvidence(encoded, func(result quick.MemoryResult) bool {
-			uncertain = quickCleanupUnconfirmed(result.Safety)
-			failureDowngrade = result.Status != quick.StatusFail && result.ExpectedByte != result.ActualByte
-			return validateMemoryEvidence(result)
-		})
-		if uncertain {
-			return "", errQuickCleanupUnconfirmed
+		value, localErr := quickevidence.DecodeLocal(id, encoded)
+		if localErr != nil {
+			return "", localErr
 		}
-		if failureDowngrade {
-			return "", errMemoryFailureDowngrade
-		}
+		return string(value.Status), nil
 	case storage.Schema:
 		err = acceptEvidence(encoded, validateStorageEvidence)
 	case networktest.Schema:
@@ -139,197 +125,13 @@ func newValidatedQuickTestResult(id string, version int, status app.TestStatus, 
 
 func acceptEvidence[T any](encoded []byte, validate func(T) bool) error {
 	var evidence T
-	if err := evidenceShape(encoded, reflect.TypeOf(evidence), 0); err != nil {
-		return err
+	if err := evidencejson.ValidateShape(encoded, reflect.TypeOf(evidence)); err != nil {
+		return errUnsupportedEvidence
 	}
 	if err := json.Unmarshal(encoded, &evidence); err != nil || !validate(evidence) {
 		return errUnsupportedEvidence
 	}
 	return nil
-}
-
-// The existing worker structs define field names/types. Non-optional fields
-// must be present even when their value is false or zero. Exact spelling,
-// duplicate rejection, and null rejection prevent permissive JSON decoding
-// from turning a missing safety observation into a successful zero value.
-func evidenceShape(encoded []byte, kind reflect.Type, depth int) error {
-	if depth > 32 {
-		return errUnsupportedEvidence
-	}
-	if bytes.Equal(bytes.TrimSpace(encoded), []byte("null")) {
-		if kind.Kind() == reflect.Slice {
-			return nil
-		}
-		return errUnsupportedEvidence
-	}
-	switch kind.Kind() {
-	case reflect.Pointer:
-		return evidenceShape(encoded, kind.Elem(), depth+1)
-	case reflect.Struct, reflect.Map:
-		decoder := json.NewDecoder(bytes.NewReader(encoded))
-		first, err := decoder.Token()
-		if err != nil || first != json.Delim('{') {
-			return errUnsupportedEvidence
-		}
-		fields, required := map[string]reflect.Type{}, map[string]bool{}
-		if kind.Kind() == reflect.Struct {
-			for index := 0; index < kind.NumField(); index++ {
-				field := kind.Field(index)
-				if field.Tag.Get("json") == "-" {
-					continue
-				}
-				parts := strings.Split(field.Tag.Get("json"), ",")
-				fields[parts[0]] = field.Type
-				required[parts[0]] = len(parts) == 1
-			}
-		}
-		seen := map[string]bool{}
-		for decoder.More() {
-			token, err := decoder.Token()
-			name, ok := token.(string)
-			if err != nil || !ok || seen[name] {
-				return errUnsupportedEvidence
-			}
-			seen[name] = true
-			fieldType := fields[name]
-			if kind.Kind() == reflect.Map {
-				fieldType = kind.Elem()
-			}
-			if fieldType == nil {
-				return errUnsupportedEvidence
-			}
-			var value json.RawMessage
-			if decoder.Decode(&value) != nil || evidenceShape(value, fieldType, depth+1) != nil {
-				return errUnsupportedEvidence
-			}
-		}
-		if last, err := decoder.Token(); err != nil || last != json.Delim('}') {
-			return errUnsupportedEvidence
-		}
-		if _, err := decoder.Token(); err != io.EOF {
-			return errUnsupportedEvidence
-		}
-		for name, mandatory := range required {
-			if mandatory && !seen[name] {
-				return errUnsupportedEvidence
-			}
-		}
-	case reflect.Slice:
-		var values []json.RawMessage
-		if json.Unmarshal(encoded, &values) != nil {
-			return errUnsupportedEvidence
-		}
-		for _, value := range values {
-			if err := evidenceShape(value, kind.Elem(), depth+1); err != nil {
-				return err
-			}
-		}
-	}
-	return nil
-}
-
-func validQuickSafety(safety quick.SafetyEvidence, status quick.Status, duration, minimumTimeout int64) bool {
-	if duration < 0 || quickCleanupUnconfirmed(safety) || safety.ThermalObservations < 0 || safety.ThermalSensors < 0 ||
-		safety.ThermalSamples < safety.ThermalSensors || safety.PeakMilliCelsius < 0 || safety.PeakMilliCelsius > 250000 ||
-		safety.ThermalRejectedReadings < 0 || safety.ThermalUnavailableReadings < 0 || safety.ThermalEnumerationErrors < 0 {
-		return false
-	}
-	observations, sensors, samples := int64(safety.ThermalObservations), int64(safety.ThermalSensors), int64(safety.ThermalSamples)
-	if sensors == 0 && (samples != 0 || safety.PeakMilliCelsius != 0) || sensors > 0 && observations == 0 {
-		return false
-	}
-	if sensors > 0 {
-		// ceil(samples/sensors) avoids overflowing sensors*observations on
-		// either supported word size while checking the same necessary bound.
-		minimumObservations := samples / sensors
-		if samples%sensors != 0 {
-			minimumObservations++
-		}
-		if minimumObservations > observations {
-			return false
-		}
-	}
-	if observations == 0 && (sensors != 0 || samples != 0 || safety.PeakMilliCelsius != 0 ||
-		safety.ThermalRejectedReadings != 0 || safety.ThermalUnavailableReadings != 0 || safety.ThermalEnumerationErrors != 0 ||
-		safety.ThermalCoverage != "unavailable") {
-		return false
-	}
-	switch safety.ThermalCoverage {
-	case "available":
-		if sensors == 0 || safety.ThermalRejectedReadings != 0 || safety.ThermalUnavailableReadings != 0 || safety.ThermalEnumerationErrors != 0 || samples-sensors < observations-1 {
-			return false
-		}
-	case "unavailable":
-		if sensors != 0 || safety.ThermalRejectedReadings != 0 || safety.ThermalEnumerationErrors != 0 {
-			return false
-		}
-	case "partial":
-		if safety.ThermalRejectedReadings == 0 && safety.ThermalUnavailableReadings == 0 && safety.ThermalEnumerationErrors == 0 {
-			// Mixed available/empty observations can be partial without a read
-			// error, but require a valid reading and at least one empty scan.
-			if sensors == 0 || observations < 2 || samples/sensors > observations-1 || samples/sensors == observations-1 && samples%sensors != 0 {
-				return false
-			}
-		} else if sensors == 0 && safety.ThermalRejectedReadings == 0 && safety.ThermalEnumerationErrors == 0 {
-			return false
-		}
-	default:
-		return false
-	}
-	limitsValid := safety.GlobalTimeoutMilliseconds >= minimumTimeout && safety.GlobalTimeoutMilliseconds <= 600000 &&
-		safety.ThermalLimitMilliCelsius >= 50000 && safety.ThermalLimitMilliCelsius <= 125000
-	if !limitsValid && !(safety.MonitorStatus == "not_started" && status == quick.StatusError &&
-		safety.GlobalTimeoutMilliseconds == 0 && safety.ThermalLimitMilliCelsius == 0) {
-		return false
-	}
-	switch safety.MonitorStatus {
-	case "not_started":
-		return observations == 0 && safety.MonitorFailure == "" && duration == 0 && status != quick.StatusPass && status != quick.StatusFail
-	case "completed":
-		if observations == 0 || safety.MonitorFailure != "" || safety.PeakMilliCelsius >= safety.ThermalLimitMilliCelsius {
-			return false
-		}
-	case "failed":
-		switch safety.MonitorFailure {
-		case "thermal_limit":
-			return observations > 0 && sensors > 0 && safety.PeakMilliCelsius >= safety.ThermalLimitMilliCelsius && (status == quick.StatusAborted || status == quick.StatusFail)
-		case "observation_timeout", "observer_panic", "invalid_observation":
-			return status == quick.StatusError || status == quick.StatusFail
-		default:
-			return false
-		}
-	default:
-		return false
-	}
-	return status != quick.StatusPass || duration <= safety.GlobalTimeoutMilliseconds
-}
-
-func validateCPUEvidence(result quick.CPUResult) bool {
-	if !validQuickSafety(result.Safety, result.Status, result.DurationMilliseconds, 10) ||
-		result.Safety.ThermalObservations == 0 && (result.Iterations != 0 || result.StateAggregate != 0 || result.DurationMilliseconds != 0) {
-		return false
-	}
-	if result.Status != quick.StatusPass {
-		return true
-	}
-	known := sha256.Sum256([]byte("abc"))
-	return result.Workers > 0 && result.Workers <= 64 && result.Iterations > 0 && result.KnownAnswerSHA256 == hex.EncodeToString(known[:])
-}
-
-func validateMemoryEvidence(result quick.MemoryResult) bool {
-	if result.ExpectedByte != result.ActualByte && result.Status != quick.StatusFail {
-		return false
-	}
-	if !validQuickSafety(result.Safety, result.Status, result.DurationMilliseconds, 1000) ||
-		result.Safety.ThermalObservations == 0 && (result.ExaminedBytes != 0 || result.FailureOffset != 0 || result.ExpectedByte != 0 || result.ActualByte != 0 || result.DurationMilliseconds != 0) {
-		return false
-	}
-	if result.Status != quick.StatusPass {
-		return true
-	}
-	return result.AllocatedBytes >= 4<<20 && result.AllocatedBytes <= 512<<20 && result.Passes > 0 && result.Passes <= 8 && result.PatternsPerPass == 3 &&
-		result.ExaminedBytes == result.AllocatedBytes*int64(result.Passes)*int64(result.PatternsPerPass) &&
-		result.FailureOffset == 0 && result.ExpectedByte == 0 && result.ActualByte == 0
 }
 
 func validateStorageEvidence(result storage.Result) bool {

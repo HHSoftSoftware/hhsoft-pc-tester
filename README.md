@@ -127,7 +127,16 @@ cleanup; unconfirmed cleanup stops later work and signing. Partial or unavailabl
 telemetry remains explicit and does not establish safe temperatures. This local
 guard passed Windows tests, vet, cross-builds, native Linux suites, race checks,
 and command-line workflows. Rebuilt-image and physical-sensor qualification
-remain open, as does run-wide thermal coverage. See
+remain open.
+
+Development source now also monitors temperatures throughout the quick session,
+including excluded-test runs, cleanup and final inventory. Journal v4 records
+initial, periodic and final observations and requires both session monitors to
+join before signing. Heat stops work without erasing earlier failures; missing
+telemetry remains a coverage limitation. Windows tests, vet, cross-builds,
+native Linux amd64/386 suites, race checks and all 15 CLI scenarios passed.
+The VM session scenarios reported unavailable temperature telemetry honestly;
+rebuilt-image and physical-sensor qualification remain open. See
 [requirements validation](docs/requirements-validation.md).
 
 ```sh
@@ -164,8 +173,9 @@ journal; historical signed reports remain independently verifiable. Automated
 and native Linux pointer validation passed; rebuilt-image and physical qualification remain open.
 See [requirements validation](docs/requirements-validation.md).
 
-The quick session includes periodic read-only mount/network safety sampling
+The periodic-monitor milestone introduced read-only mount/network sampling
 and a v3 session journal, without changing the catalog or ten worker outcomes.
+The current v4 workflow retains that monitor summary and adds thermal evidence.
 Its first unsafe or uncertain observation stops active work and blocks signing.
 This is bounded periodic coverage, not continuous safety monitoring or kernel
 preemption. Automated tests, native Linux suites, race checks, and signed CLI

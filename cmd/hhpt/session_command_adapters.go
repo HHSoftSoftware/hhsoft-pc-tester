@@ -2,8 +2,11 @@ package main
 
 import (
 	"context"
+	cryptorand "crypto/rand"
 	"fmt"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
 	"io"
+	"time"
 )
 
 // No executable name or argument list is taken from plan JSON or console input.
@@ -41,15 +44,15 @@ func runSessionWorker(ctx context.Context, worker sessionWorker, input io.Reader
 	}
 }
 
-func finalizeSession(ctx context.Context, request sessionFinalization, stdout, stderr io.Writer) int {
+func finalizeSession(ctx context.Context, request sessionFinalization, stdout, stderr io.Writer) sessionFinalizationResult {
 	arguments := []string{"-plan", request.PlanPath, "-fingerprint-key", request.FingerprintKeyPath,
-		"-key-epoch", request.KeyEpoch, "-evidence-dir", request.EvidenceDirectory, "-output", request.OutputPath,
-		"-session-journal", request.SafetyJournalPath, "-run-stop", request.StopReason}
+		"-key-epoch", request.KeyEpoch, "-evidence-dir", request.EvidenceDirectory, "-output", request.OutputPath}
 	if request.FixtureComponents != "" {
 		arguments = append(arguments, "-fixture-components", request.FixtureComponents)
 	}
 	for _, outcome := range request.Outcomes {
 		arguments = append(arguments, "-outcome", outcome)
 	}
-	return runFinalize(ctx, arguments, stdout, stderr)
+	collector := inventory.NewLinuxCollector("/")
+	return runFinalizeOwned(ctx, arguments, stdout, stderr, collector.Collect, cryptorand.Reader, time.Now, request.Gate)
 }

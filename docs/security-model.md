@@ -143,7 +143,28 @@ telemetry is disclosed and cannot establish safe temperatures. Known calculation
 and RAM failures remain failures during cleanup. The strengthened v2 evidence
 path passed Windows tests, vet, cross-builds, native Linux suites, race checks,
 and command-line workflows. Rebuilt-image and physical-sensor qualification
-remain open, along with run-wide thermal coverage and heartbeat supervision.
+remain open.
+
+Development source also applies a separate run-wide observer to the safe quick
+session. It observes immediately, samples at one-second intervals and requires
+a final observation after inventory preparation, including with every test
+excluded. Heat cancels work while monitoring continues; monitoring failure
+cancels preparation and blocks signing. A one-use in-process gate must join
+both session monitors before report-key generation. Their common cleanup
+allowance retains the preparation deadline while remaining independent of a
+monitor's failure cancellation. A journal file cannot supply that authority.
+
+The v4 journal uses immutable typed summaries and binds local CPU/RAM heat to
+worker intervals, original file bytes and canonical full worker evidence.
+Retained heat cannot be erased by a cooler replacement or unavailable global
+telemetry. Partial/unavailable coverage never establishes safe temperatures.
+The monitoring boundary ends after cleanup, final inventory and the final gate;
+report encoding, output and saving follow it. Windows tests, vet, cross-builds,
+native Linux amd64/386 suites, race checks and all 15 CLI scenarios passed with
+confirmed cleanup. The session scenarios correctly reported unavailable
+temperature telemetry. Rebuilt images, physical sensors and the beta pilot
+remain open. Heartbeat/hang supervision and continuous coverage remain
+unimplemented.
 
 Privilege separation below is a target architecture, not an implemented
 containment boundary for the current in-process CPU/RAM workers.

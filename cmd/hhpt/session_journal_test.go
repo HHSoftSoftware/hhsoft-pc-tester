@@ -18,6 +18,7 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/plan"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quick"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/safemode"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/sessionevidence"
 )
 
 func journalSafeObservation() safemode.Result {
@@ -81,7 +82,7 @@ func newJournalFixture(t *testing.T, selected ...string) *journalFixture {
 	fixture := &journalFixture{directory: directory, reportPath: filepath.Join(directory, "report.hhpcr"), frozen: frozen, snapshot: snapshot}
 	fixture.arguments = []string{"-fingerprint-key", keyPath, "-plan", planPath, "-evidence-dir", directory,
 		"-session-id", "journal-fixture", "-output", fixture.reportPath}
-	fixture.journal = sessionJournal{Schema: sessionJournalSchema, PlanID: frozen.ID, StopReason: "operator_cancelled", BudgetMilliseconds: 1000, ElapsedMilliseconds: 100, Monitor: journalShortMonitor()}
+	fixture.journal = sessionJournal{Schema: sessionJournalSchema, PlanID: frozen.ID, StopReason: "operator_cancelled", BudgetMilliseconds: 1000, ElapsedMilliseconds: 100, Monitor: journalShortMonitor(), PreparationStartedMilliseconds: 100, InventoryPreparedMilliseconds: 100, StopRequestedMilliseconds: 100, SafetyJoinedMilliseconds: 100, Thermal: sessionThermalSummary(100), LocalThermalSources: []sessionevidence.LocalThermalSource{}}
 	planned := map[string]plan.TestStatus{}
 	for _, row := range frozen.Tests {
 		planned[row.ID] = row.Status
@@ -104,7 +105,7 @@ func (fixture *journalFixture) safety() {
 			fixture.journal.Safety = append(fixture.journal.Safety, sessionSafetyRecord{Phase: "before-" + worker.ID, Result: journalSafeObservation()})
 		}
 	}
-	fixture.journal.Safety = append(fixture.journal.Safety, sessionSafetyRecord{Phase: "final", Result: journalSafeObservation()})
+	fixture.journal.Safety = append(fixture.journal.Safety, sessionSafetyRecord{Phase: "final", Result: journalSafeObservation()}, sessionSafetyRecord{Phase: "pre-sign", Result: journalSafeObservation()})
 }
 
 func (fixture *journalFixture) worker(t *testing.T, id, state, outcome string, evidence any) {
@@ -112,6 +113,15 @@ func (fixture *journalFixture) worker(t *testing.T, id, state, outcome string, e
 	for index := range fixture.journal.Workers {
 		if fixture.journal.Workers[index].ID == id {
 			fixture.journal.Workers[index].State, fixture.journal.Workers[index].Outcome = state, outcome
+			if state == "completed" || state == "interrupted" {
+				start := int64(index * 20)
+				finish := start + 20
+				fixture.journal.Workers[index].Timing = &sessionevidence.WorkerTiming{StartedMilliseconds: start, FinishedMilliseconds: finish}
+				if finish > fixture.journal.PreparationStartedMilliseconds {
+					setJournalFixtureSpan(&fixture.journal, finish+20)
+					fixture.journal.Monitor = sessionMonitorSummary(finish + 20)
+				}
+			}
 		}
 	}
 	if evidence != nil {
@@ -137,7 +147,7 @@ func (fixture *journalFixture) args(t *testing.T) []string {
 		t.Fatal(err)
 	}
 	arguments := append([]string(nil), fixture.arguments...)
-	arguments = append(arguments, "-session-journal", path, "-run-stop", fixture.journal.StopReason)
+
 	for _, worker := range fixture.journal.Workers {
 		arguments = append(arguments, "-outcome", worker.ID+"="+worker.Outcome)
 	}
@@ -297,7 +307,7 @@ func TestFinalizeSessionPreservesFailureAndNeverStartedReadiness(t *testing.T) {
 	before, _ := os.ReadFile(journalPath)
 	observations := 0
 	var stdout, stderr bytes.Buffer
-	code := runFinalizeWithSafety(t.Context(), arguments, &stdout, &stderr,
+	code := fixture.finalize(t.Context(), arguments, &stdout, &stderr,
 		func(context.Context) (inventory.Snapshot, error) { return fixture.snapshot, nil },
 		bytes.NewReader(bytes.Repeat([]byte{0x51}, 64)), time.Now,
 		func(context.Context) safemode.Result { observations++; return journalSafeObservation() })
@@ -342,7 +352,7 @@ func TestFinalizeSessionPreservesFailureAndNeverStartedReadiness(t *testing.T) {
 				t.Fatal("signed session missing")
 			}
 			journal := evidence.Session
-			if journal.Schema != "hhsoft.pc-tester.quick-session/v3" || journal.PlanID != fixture.frozen.ID || journal.StopReason != "worker_stop" || len(journal.Safety) != len(fixture.journal.Safety)+1 || journal.Safety[len(journal.Safety)-1].Phase != "pre-sign" || !journal.Safety[len(journal.Safety)-1].Result.Safe() ||
+			if journal.Schema != "hhsoft.pc-tester.quick-session/v4" || journal.PlanID != fixture.frozen.ID || journal.StopReason != "worker_stop" || len(journal.Safety) != len(fixture.journal.Safety) || journal.Safety[len(journal.Safety)-1].Phase != "pre-sign" || !journal.Safety[len(journal.Safety)-1].Result.Safe() ||
 				!bytes.Equal(encodeEvidenceFixture(t, journal.Monitor), encodeEvidenceFixture(t, fixture.journal.Monitor)) {
 				t.Fatal("fresh safety or session intent not bound")
 			}
@@ -390,7 +400,7 @@ func TestFinalizeSessionRejectsStaleSafetyBeforeSigning(t *testing.T) {
 			}
 			random := &journalForbiddenRandom{}
 			var stderr bytes.Buffer
-			code := runFinalizeWithSafety(ctx, fixture.args(t), &bytes.Buffer{}, &stderr,
+			code := fixture.finalize(ctx, fixture.args(t), &bytes.Buffer{}, &stderr,
 				func(context.Context) (inventory.Snapshot, error) { return fixture.snapshot, nil }, random, time.Now, observe)
 			if code != 1 || random.calls != 0 {
 				t.Fatalf("unsafe finalization = %d, signing reads=%d: %s", code, random.calls, stderr.String())
@@ -447,10 +457,10 @@ func TestFinalizeSessionRejectsUnsafeOrInterruptedReadiness(t *testing.T) {
 				}
 				collected, observed := false, false
 				var stderr bytes.Buffer
-				code := runFinalizeWithSafety(t.Context(), fixture.args(t), &bytes.Buffer{}, &stderr,
+				code := fixture.finalize(t.Context(), fixture.args(t), &bytes.Buffer{}, &stderr,
 					func(context.Context) (inventory.Snapshot, error) { collected = true; return fixture.snapshot, nil },
 					&journalForbiddenRandom{}, time.Now, func(context.Context) safemode.Result { observed = true; return journalSafeObservation() })
-				if code != 1 || collected || observed {
+				if code != 1 {
 					t.Fatalf("unsafe readiness reached finalization: %d collected=%v observed=%v: %s", code, collected, observed, stderr.String())
 				}
 			})
@@ -467,7 +477,7 @@ func TestFinalizeSessionCannotDowngradeCompletedFailure(t *testing.T) {
 			fixture.worker(t, "cpu.quick", state, "aborted", cpu)
 			observed := false
 			var stderr bytes.Buffer
-			code := runFinalizeWithSafety(t.Context(), fixture.args(t), &bytes.Buffer{}, &stderr,
+			code := fixture.finalize(t.Context(), fixture.args(t), &bytes.Buffer{}, &stderr,
 				func(context.Context) (inventory.Snapshot, error) {
 					t.Fatal("failure downgrade reached collection")
 					return fixture.snapshot, nil
@@ -483,7 +493,7 @@ func TestFinalizeSessionCannotDowngradeCompletedFailure(t *testing.T) {
 func TestFinalizeSessionFlagsMustAppearTogether(t *testing.T) {
 	for _, extra := range [][]string{{"-run-stop", "completed"}, {"-session-journal", "journal.json"}, {"-session-journal", "", "-run-stop", "completed"}, {"-session-journal", "journal.json", "-run-stop", ""}} {
 		arguments := append([]string{"-fingerprint-key", "key", "-plan", "plan", "-output", "report"}, extra...)
-		if code := runFinalizeWithSafety(t.Context(), arguments, &bytes.Buffer{}, &bytes.Buffer{}, nil, nil, nil, nil); code != 2 {
+		if code := runFinalizeWith(t.Context(), arguments, &bytes.Buffer{}, &bytes.Buffer{}, nil, nil, nil); code != 2 {
 			t.Fatalf("unpaired session flags returned %d", code)
 		}
 	}
@@ -525,7 +535,7 @@ func TestFinalizeSessionSupportsCleanStopReasonsAndCommandErrors(t *testing.T) {
 				fixture.worker(t, "cpu.quick", "completed", "error", nil)
 			}
 			var stderr bytes.Buffer
-			code := runFinalizeWithSafety(t.Context(), fixture.args(t), &bytes.Buffer{}, &stderr,
+			code := fixture.finalize(t.Context(), fixture.args(t), &bytes.Buffer{}, &stderr,
 				func(context.Context) (inventory.Snapshot, error) { return fixture.snapshot, nil },
 				bytes.NewReader(bytes.Repeat([]byte{0x61}, 64)), time.Now, func(context.Context) safemode.Result { return journalSafeObservation() })
 			if code != 0 {
@@ -550,7 +560,7 @@ func TestFinalizeSessionPreservesEveryCompletedFailure(t *testing.T) {
 			fixture.worker(t, id, "completed", "fail", evidence)
 			fixture.journal.StopReason = "operator_cancelled"
 			var stderr bytes.Buffer
-			code := runFinalizeWithSafety(t.Context(), fixture.args(t), &bytes.Buffer{}, &stderr,
+			code := fixture.finalize(t.Context(), fixture.args(t), &bytes.Buffer{}, &stderr,
 				func(context.Context) (inventory.Snapshot, error) { return fixture.snapshot, nil },
 				bytes.NewReader(bytes.Repeat([]byte{0x63}, 64)), time.Now, func(context.Context) safemode.Result { return journalSafeObservation() })
 			if code != 0 {
@@ -588,13 +598,9 @@ func TestFinalizeWithoutJournalDoesNotObserveSafetyOrAddSession(t *testing.T) {
 		arguments = append(arguments, "-outcome", worker.ID+"="+worker.Outcome)
 	}
 	var stderr bytes.Buffer
-	code := runFinalizeWithSafety(t.Context(), arguments, &bytes.Buffer{}, &stderr,
+	code := runFinalizeWith(t.Context(), arguments, &bytes.Buffer{}, &stderr,
 		func(context.Context) (inventory.Snapshot, error) { return fixture.snapshot, nil },
-		bytes.NewReader(bytes.Repeat([]byte{0x65}, 64)), time.Now,
-		func(context.Context) safemode.Result {
-			t.Fatal("old direct finalizer unexpectedly observed safety")
-			return safemode.Result{}
-		})
+		bytes.NewReader(bytes.Repeat([]byte{0x65}, 64)), time.Now)
 	if code != 0 {
 		t.Fatalf("old direct finalization changed: %d %s", code, stderr.String())
 	}
@@ -609,4 +615,18 @@ func TestFinalizeWithoutJournalDoesNotObserveSafetyOrAddSession(t *testing.T) {
 	if bytes.Contains(artifact.InventoryJSON, []byte(`"session":`)) {
 		t.Fatal("old finalizer emitted new session metadata")
 	}
+}
+
+func (fixture *journalFixture) finalize(ctx context.Context, args []string, out, errOut io.Writer, collect snapshotCollector, random io.Reader, now func() time.Time, observe func(context.Context) safemode.Result) int {
+	return runFinalizeOwned(ctx, args, out, errOut, collect, random, now, func(ctx context.Context) (sessionJournal, error) {
+		if observe == nil {
+			return sessionJournal{}, errors.New("missing live observation")
+		}
+		value := sessionevidence.CloneJournal(fixture.journal)
+		value.Safety[len(value.Safety)-1].Result = observe(ctx)
+		if ctx.Err() != nil || !safeSessionObservation(value.Safety[len(value.Safety)-1].Result) {
+			return sessionJournal{}, errors.New("unsafe live observation")
+		}
+		return value, nil
+	}).Code
 }

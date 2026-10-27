@@ -22,9 +22,10 @@ type sessionMonitorFixture struct {
 }
 
 func (monitor *sessionMonitorFixture) Failed() bool { return monitor.failed }
-func (monitor *sessionMonitorFixture) Stop(ctx context.Context) safemode.MonitorResult {
+func (monitor *sessionMonitorFixture) StopWithJoin(ctx context.Context) safemode.StopReceipt {
 	monitor.stops++
-	return monitor.result()
+	r := monitor.result()
+	return safemode.StopReceipt{Result: r, Joined: r.CleanupConfirmed, JoinedMilliseconds: r.ElapsedMilliseconds}
 }
 
 func sessionMonitorSummary(elapsed int64) safemode.MonitorResult {
@@ -146,8 +147,9 @@ func TestSessionMonitorJoinsOnEveryExitAndBlocksUncertainOrMalformedSummary(t *t
 
 func TestSessionMonitorWindowIncludesInputCleanupAndFinalSafety(t *testing.T) {
 	h := newSessionHarness(t, "x86_64", nil)
+	h.dependencies.FinishInput = func() error { h.inputFinished = true; h.clock = h.clock.Add(2500 * time.Millisecond); return nil }
 	monitor := &sessionMonitorFixture{result: func() safemode.MonitorResult {
-		if !h.inputFinished || h.safetyCalls != 12 {
+		if !h.inputFinished || h.safetyCalls != 13 {
 			t.Fatal("monitor stopped before cleanup and final safety")
 		}
 		return sessionMonitorSummary(2500)

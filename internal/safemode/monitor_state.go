@@ -40,7 +40,7 @@ func assessMonitorObservation(raw Result) periodic.Assessment[Result] {
 	return assessment
 }
 
-func monitorResult(summary periodic.Summary[Result]) MonitorResult {
+func monitorResult(summary periodic.Summary[Result, struct{}]) MonitorResult {
 	result := MonitorResult{
 		Schema: MonitorSchema, Status: "pass",
 		IntervalMilliseconds:           summary.IntervalMilliseconds,

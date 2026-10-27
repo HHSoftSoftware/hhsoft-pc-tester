@@ -185,19 +185,24 @@ coverage fields preserve historical report rendering; new reports require a
 matching rebuilt companion verifier.
 The quick-session coordinator adds a signed session journal inside run-integrity
 evidence: stop reason, budget and elapsed time, each worker's execution state,
-independent mount/network safety observations, and a bounded periodic-monitor
-summary. Finalization validates these against the frozen plan and evidence,
-then adds a fresh pre-sign observation.
+independent mount/network safety observations, and bounded monitor summaries.
+The current development implementation uses a one-use in-process final gate
+after inventory and result preparation. It collects pre-sign safety and final
+thermal observations, joins both session monitors, and returns an immutable
+journal. Finalization validates that journal against the frozen plan and retained
+evidence before generating a report key or signing.
 
 Guided pointer execution uses the existing `input.pointer.quick` row, so reports
 still contain 21 catalog results plus run integrity. Enabling that row changes
 the catalog digest and requires fresh plans. That increment introduced
 `hhsoft.pc-tester.quick-session/v2` with ten worker records. The subsequent
-periodic-monitor increment uses `hhsoft.pc-tester.quick-session/v3` and preserves
-the catalog, plan digest, and ten records; it requires a fresh execution journal.
-An older journal is not an execution substitute. Historical signed-report
-verification and rendering remain unchanged. Each increment's validation is
-tracked separately from the earlier session milestone.
+periodic-monitor increment introduced `hhsoft.pc-tester.quick-session/v3`.
+Run-wide thermal monitoring now uses `hhsoft.pc-tester.quick-session/v4`, keeping
+the catalog, plan digest, and ten records. It adds execution intervals, final
+preparation/join boundaries, thermal coverage and local heat-source bindings.
+A serialized journal cannot substitute for the live final gate. Historical
+signed-report verification and rendering remain unchanged. Each increment's
+validation is tracked separately from the earlier session milestone.
 Direct capture and finalization without a session journal do not claim that
 session safety history.
 
@@ -228,13 +233,18 @@ One console reader owns cancellation and requested finding lines. Ctrl-C,
 SIGINT, or SIGTERM stops new work, preserves completed failures, and leaves
 non-scheduled dispositions unchanged. Before a clean stop is finalized, the
 reader is joined and terminal mode restored. Final safety has a fresh five-second
-context; the periodic safety monitor then joins within two seconds before
-finalization receives a fresh 30-second context. Unsafe observations,
-interrupted safety readiness, or unconfirmed cleanup prevent signing. Ordinary
-clean stops retain explicit incomplete results and a signed stop reason.
+context. Final inventory, pre-sign safety, final thermal observation and both
+monitor joins fit within a separate 30-second preparation/finalization context.
+The two Stop calls share one deadline of at most two seconds, bounded by the
+remaining preparation time. A monitoring failure cannot cancel its own cleanup
+reserve, but it still prevents signing. An earlier preparation error has one
+shared two-second cleanup allowance. Unsafe observations, interrupted safety
+readiness, or unconfirmed cleanup prevent signing. Ordinary clean stops retain
+explicit incomplete results and a signed stop reason.
 
-The periodic monitor starts with the coordinator and remains active through
-workers, console cleanup, and final safety. It owns one serialized read-only
+The periodic mount/network monitor starts with the coordinator and remains
+active through workers, console cleanup, final inventory and the final gate.
+It owns one serialized read-only
 mount/network observation at a time, using a one-second interval, a one-second
 observation deadline, and a 2,500-millisecond maximum observation gap. Its first
 unsafe, unknown, timed-out, or excessively delayed sample is retained and
@@ -243,24 +253,50 @@ does not invalidate an otherwise clean in-flight sample: the monitor must
 finish and join before signing can proceed. A blocked observation or uncertain
 join prevents signing, even if the final snapshot is safe.
 
-Journal v3 records bounded aggregate timing and coverage through final safety,
+The v3 milestone recorded bounded aggregate timing and coverage through final safety,
 including leading and trailing gaps. A session shorter than the first
 one-second tick can record zero periodic samples; its independent preflight
 and final snapshots remain required. This is periodic sampling, not continuous
 coverage or preemptive kernel containment. Automated and native validation of
 this increment passed, including race checks and signed CLI workflows.
 Rebuilt-image and physical qualification remain open.
-The outer guard allows the five-minute run plus worker cleanup (two seconds),
-input cleanup (two), final safety (five), monitor join (two), finalization (30),
-and nine seconds of margin.
+The 350-second outer guard allows the five-minute run, worker cleanup (two
+seconds), input cleanup (two), final safety (five), finalization (30), one common
+error-cleanup allowance (two), and nine seconds of margin. Normal monitor joins
+are inside the finalization bound, not separate serial allowances per monitor.
 
 The `internal/periodic` engine now owns the observer lifecycle, scheduling,
 deadlines, coverage gaps and immutable Stop result. Safemode supplies its
 observation policy and unchanged v1 serialization. Focused tests preserve six
 pre-extraction wire cases and the existing timing/cleanup rules. Full Windows
 tests, vet, cross-builds, native Linux suites, race checks and CLI scenarios
-passed with confirmed cleanup. Run-wide thermal sampling and its finalization
-integration remain planned; rebuilt-image and physical qualification are open.
+passed with confirmed cleanup. These results qualify the extraction; the
+subsequent run-wide implementation has separate qualification gates.
+
+The run-wide thermal adapter uses the shared engine with an immediate initial
+observation, a one-second interval and per-observation deadline, a
+2,500-millisecond maximum gap, and a final request bounded to two seconds.
+Initial completion precedes worker dispatch and report preparation, including
+when every test is excluded. The final request follows inventory preparation.
+Policy assessment and aggregation use immutable typed values; timed-out or
+otherwise ineligible returns cannot increase accepted coverage, and a frozen
+result cannot change after return.
+
+Heat at or above 90 C cancels active and later work while monitoring continues.
+The finding is independent of monitor failure and hardware-graph integrity.
+Both monitors must join before signing; their final evidence determines the
+signed stop reason and readiness marker. A local CPU/RAM heat observation also
+latches the session finding, bound to the worker interval, exact source-file
+digest and canonical full-evidence digest. Unavailable or partial telemetry
+stays explicit and cannot establish safe temperatures. The monitoring boundary
+includes execution, cleanup, final inventory and the final gate; report encoding,
+output and saving are outside it.
+
+Full Windows tests, vet and cross-builds passed for this increment. The 24 native
+Linux amd64/386 suite runs passed 3,032 test/subtest events and four race suites
+passed 1,203, with no skips. All 15 CLI scenarios passed with confirmed cleanup;
+the twelve session scenarios retained explicit unavailable temperature coverage.
+Rebuilt images, physical sensor validation and the beta pilot remain open.
 
 The local CPU/RAM monitor supervises an initial Linux thermal-zone/hwmon
 observation before starting load. Each observation has a one-second deadline;
@@ -283,9 +319,9 @@ historical signed-report verification remains unchanged.
 
 This prerequisite passed Windows tests, vet, cross-builds, native Linux suites,
 race checks, and command-line workflows. Rebuilt-image qualification remains open.
-Fan, power, throttling, session-wide thermal monitoring, and representative
-physical sensor validation remain open. Local CPU/RAM monitoring does not span
-other workers or runs where both tests are excluded.
+Fan, power, throttling and representative physical sensor validation remain
+open. The local CPU/RAM guard retains its 250-millisecond sampling wait; the
+separate run-wide adapter covers the other session phases and all-off runs.
 
 ## Privilege and process model
 
@@ -307,8 +343,9 @@ Unconfirmed cleanup returns a distinct error; graphics, display, and direct
 capture stop later work and return exit code 12. The modern supervisor preserves
 available diagnostics in RAM and stops before finalization or report saving.
 This covers members of the owned process group, not processes that escape it,
-arbitrary kernel stalls, or a killed supervisor. Continuous run-wide thermal,
-heartbeat, and hang monitoring remain incomplete.
+arbitrary kernel stalls, or a killed supervisor. Sampled thermal observations
+do not establish continuous coverage; heartbeat and hang supervision remain
+incomplete.
 
 Bind the API to a Unix socket. If a browser UI is used, place a random session
 capability in the launch URL, bind only to loopback, reject cross-origin calls,

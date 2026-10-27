@@ -17,7 +17,7 @@ import (
 // and signed product/version. No HTML/PDF parser or active-content denylist is
 // used. Absent optional views retain the inventory-only bundle profile.
 func validateViews(encoded, html, pdf []byte, productName, version string) error {
-	if html == nil && pdf == nil && !hasCoverageMetadata(encoded) {
+	if html == nil && pdf == nil && !hasCoverageMetadata(encoded) && !app.HasSessionThermalClaim(encoded) {
 		return nil
 	}
 	if productName != product.Name || len(encoded) == 0 || len(encoded) > maxInventoryBytes ||

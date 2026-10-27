@@ -15,7 +15,7 @@ func TestMonitorStopBoundReturnsWithoutAbandoningOwnership(t *testing.T) {
 	monitor := startTestMonitor(t, clock, observe, nil)
 	clock.advance(time.Second, true)
 	awaitObserver(t, started)
-	stopped := make(chan Summary[testObservation], 1)
+	stopped := make(chan Summary[testObservation, struct{}], 1)
 	go func() { stopped <- monitor.Stop(context.Background()) }()
 	awaitMonitor(t, "fixed stop bound", func() bool {
 		clock.mutex.Lock()
@@ -28,7 +28,7 @@ func TestMonitorStopBoundReturnsWithoutAbandoningOwnership(t *testing.T) {
 		return false
 	})
 	clock.advance(MonitorStopTimeout, true)
-	var result Summary[testObservation]
+	var result Summary[testObservation, struct{}]
 	select {
 	case result = <-stopped:
 		if testStatus(result) == "pass" || result.CleanupConfirmed || result.FirstFailure == nil {
@@ -60,7 +60,7 @@ func TestMonitorStaggeredStopsCannotRenewFirstCleanupDeadline(t *testing.T) {
 	// complete public Stop path and can therefore reach freeze first.
 	firstDeadline := monitor.requestStop(context.Background())
 	clock.advance(500*time.Millisecond, false)
-	stopped := make(chan Summary[testObservation], 1)
+	stopped := make(chan Summary[testObservation, struct{}], 1)
 	go func() { stopped <- monitor.Stop(context.Background()) }()
 	awaitMonitor(t, "second stop wait", func() bool {
 		clock.mutex.Lock()
@@ -97,7 +97,7 @@ func TestMonitorConcurrentStopsReturnIndependentImmutableSnapshots(t *testing.T)
 	awaitMonitorCount(t, monitor, 1)
 	clock.advance(250*time.Millisecond, true)
 	const callers = 32
-	results := make(chan Summary[testObservation], callers)
+	results := make(chan Summary[testObservation, struct{}], callers)
 	var wait sync.WaitGroup
 	for index := 0; index < callers; index++ {
 		wait.Add(1)
@@ -136,7 +136,7 @@ func TestMonitorInvalidArgumentsAndClockRollback(t *testing.T) {
 	}{
 		{nil, clock.now(), clock}, {observe, time.Time{}, clock}, {observe, clock.now(), nil}, {observe, clock.now().Add(time.Second), clock},
 	} {
-		if _, err := startMonitor(test.observe, testAssessment, testOptions(test.started, nil), test.clock); err == nil {
+		if _, err := startEmptyMonitor(test.observe, testAssessment, testOptions(test.started, nil), test.clock); err == nil {
 			t.Fatal("invalid monitor arguments accepted")
 		}
 	}

@@ -33,7 +33,7 @@ func journalSampledMonitor() safemode.MonitorResult {
 func TestSessionJournalRejectsMissingOrAmbiguousMonitorShape(t *testing.T) {
 	fixture := newJournalFixture(t)
 	fixture.journal.Monitor = journalSampledMonitor()
-	fixture.journal.ElapsedMilliseconds = 5000
+	setJournalFixtureSpan(&fixture.journal, 5000)
 	encoded := encodeEvidenceFixture(t, fixture.journal)
 	for name, change := range map[string]func([]byte) []byte{
 		"missing summary": func(b []byte) []byte {
@@ -180,7 +180,7 @@ func TestFinalizeSessionRejectsUntrustworthyMonitorBeforeSigning(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			fixture := newJournalFixture(t)
 			fixture.journal.BudgetMilliseconds = 10000
-			fixture.journal.ElapsedMilliseconds = 5000
+			setJournalFixtureSpan(&fixture.journal, 5000)
 			fixture.journal.Monitor = journalSampledMonitor()
 			change(&fixture.journal.Monitor)
 			rejectedJournal := filepath.Join(fixture.directory, "rejected-monitor-journal.json")
@@ -193,10 +193,10 @@ func TestFinalizeSessionRejectsUntrustworthyMonitorBeforeSigning(t *testing.T) {
 			collected, observed := false, false
 			random := &journalForbiddenRandom{}
 			var stdout, stderr bytes.Buffer
-			code := runFinalizeWithSafety(t.Context(), fixture.args(t), &stdout, &stderr,
+			code := fixture.finalize(t.Context(), fixture.args(t), &stdout, &stderr,
 				func(context.Context) (inventory.Snapshot, error) { collected = true; return fixture.snapshot, nil },
 				random, time.Now, func(context.Context) safemode.Result { observed = true; return journalSafeObservation() })
-			if code != 1 || collected || observed || random.calls != 0 || stdout.Len() != 0 {
+			if code != 1 || !collected || !observed || random.calls != 0 || stdout.Len() != 0 {
 				t.Fatalf("untrusted monitor reached signing: code=%d collected=%v observed=%v entropy=%d stdout=%d", code, collected, observed, random.calls, stdout.Len())
 			}
 			if _, err := os.Stat(fixture.reportPath); !errors.Is(err, os.ErrNotExist) {
@@ -253,7 +253,7 @@ func TestFinalizeSessionSignsHonestMonitorCoverageAndFreshSafety(t *testing.T) {
 		t.Run(item.name, func(t *testing.T) {
 			fixture := newJournalFixture(t)
 			fixture.journal.BudgetMilliseconds = 10000
-			fixture.journal.ElapsedMilliseconds = item.elapsed
+			setJournalFixtureSpan(&fixture.journal, item.elapsed)
 			monitor := &fixture.journal.Monitor
 			monitor.ElapsedMilliseconds, monitor.FirstCompletedMilliseconds, monitor.LastCompletedMilliseconds = item.elapsed, item.first, item.last
 			monitor.MaximumGapMilliseconds = item.gap
@@ -264,7 +264,7 @@ func TestFinalizeSessionSignsHonestMonitorCoverageAndFreshSafety(t *testing.T) {
 			}
 			observed := 0
 			var stdout, stderr bytes.Buffer
-			code := runFinalizeWithSafety(t.Context(), fixture.args(t), &stdout, &stderr,
+			code := fixture.finalize(t.Context(), fixture.args(t), &stdout, &stderr,
 				func(context.Context) (inventory.Snapshot, error) { return fixture.snapshot, nil },
 				bytes.NewReader(bytes.Repeat([]byte{0x71}, 64)), time.Now,
 				func(context.Context) safemode.Result { observed++; return journalSafeObservation() })
@@ -291,7 +291,7 @@ func TestFinalizeSessionSignsHonestMonitorCoverageAndFreshSafety(t *testing.T) {
 					Session *sessionJournal `json:"session"`
 				}
 				if json.Unmarshal(result.Evidence, &evidence) != nil || evidence.Session == nil ||
-					evidence.Session.Schema != "hhsoft.pc-tester.quick-session/v3" || evidence.Session.StopReason != "operator_cancelled" ||
+					evidence.Session.Schema != "hhsoft.pc-tester.quick-session/v4" || evidence.Session.StopReason != "operator_cancelled" ||
 					!bytes.Equal(encodeEvidenceFixture(t, evidence.Session.Monitor), encodeEvidenceFixture(t, *monitor)) ||
 					evidence.Session.Safety[len(evidence.Session.Safety)-1].Phase != "pre-sign" {
 					t.Fatal("signed monitor or fresh safety binding changed")
@@ -301,4 +301,13 @@ func TestFinalizeSessionSignsHonestMonitorCoverageAndFreshSafety(t *testing.T) {
 			t.Fatal("signed session integrity result missing")
 		})
 	}
+}
+
+func setJournalFixtureSpan(j *sessionJournal, elapsed int64) {
+	j.ElapsedMilliseconds = elapsed
+	j.PreparationStartedMilliseconds = elapsed
+	j.InventoryPreparedMilliseconds = elapsed
+	j.StopRequestedMilliseconds = elapsed
+	j.SafetyJoinedMilliseconds = elapsed
+	j.Thermal = sessionThermalSummary(elapsed)
 }

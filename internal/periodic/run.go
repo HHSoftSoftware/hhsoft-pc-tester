@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func (monitor *Monitor[T]) run(observe func(context.Context) T) {
+func (monitor *Monitor[T, A]) run(observe func(context.Context) T) {
 	jobs := make(chan monitorJob, 1)
 	completions := make(chan monitorCompletion[T], 1)
 	observerDone := make(chan struct{})
@@ -19,6 +19,7 @@ func (monitor *Monitor[T]) run(observe func(context.Context) T) {
 		monitor.mutex.Unlock()
 	}()
 	nextStart := monitor.options.Started.Add(monitor.options.Interval)
+	initialPending := monitor.options.Mode == InitialPeriodicFinal
 	stopSignal, failureSignal := monitor.stop, monitor.failure
 	stopping := false
 	var active *monitorJob
@@ -42,9 +43,10 @@ func (monitor *Monitor[T]) run(observe func(context.Context) T) {
 		default:
 		}
 		now := monitor.clock.now()
+		monitor.checkFinalRequest(now, false)
 		if active != nil && !now.Before(active.deadline) {
 			active.cancel(context.DeadlineExceeded)
-			monitor.fail("observation_timeout", nil, now)
+			monitor.failPhase("observation_timeout", active.phase, nil, now)
 		}
 		monitor.recordGap(now)
 		failed := monitor.Failed()
@@ -57,10 +59,12 @@ func (monitor *Monitor[T]) run(observe func(context.Context) T) {
 		if stopping && active == nil {
 			return
 		}
-		if !stopping && active == nil && !now.Before(nextStart) {
+		monitor.mutex.Lock()
+		finalPending := monitor.finalRequested && !monitor.result.Final.Attempted
+		monitor.mutex.Unlock()
+		if !stopping && active == nil && (initialPending || finalPending || !now.Before(nextStart)) {
 			base, cancel := context.WithCancelCause(context.Background())
-			job := monitorJob{cancel: cancel, started: now, deadline: now.Add(monitor.options.ObservationTimeout)}
-			job.ctx = observationContext{Context: base, deadline: job.deadline}
+			job := monitorJob{cancel: cancel, started: now, deadline: now.Add(monitor.options.ObservationTimeout), phase: PeriodicPhase}
 			monitor.mutex.Lock()
 			if monitor.stopRequested || monitor.result.FirstFailure != nil {
 				monitor.mutex.Unlock()
@@ -68,10 +72,47 @@ func (monitor *Monitor[T]) run(observe func(context.Context) T) {
 				stopping = true
 				continue
 			}
+			if monitor.options.Mode == InitialPeriodicFinal {
+				// Admission may have happened since the loop's earlier clock read.
+				// Capture actual dispatch under the admission lock; never backdate a
+				// newly admitted final read to a pending periodic tick.
+				now = monitor.clock.now()
+				job.started, job.deadline = now, now.Add(monitor.options.ObservationTimeout)
+				requested := monitor.initialRequestedAt
+				if !initialPending && monitor.finalRequested && !monitor.result.Final.Attempted {
+					requested = monitor.finalRequestedAt
+				}
+				if now.Before(requested) {
+					monitor.mutex.Unlock()
+					cancel(context.Canceled)
+					monitor.fail("clock_error", nil, now)
+					continue
+				}
+			}
+			if initialPending {
+				job.phase = InitialPhase
+				initialPending = false
+				monitor.result.Initial.Attempted = true
+				monitor.result.Initial.StartedMilliseconds = max(0, now.Sub(monitor.options.Started).Milliseconds())
+			} else if monitor.finalRequested && !monitor.result.Final.Attempted {
+				if monitor.finalContext.Err() != nil || !now.Before(monitor.finalDeadline) {
+					monitor.mutex.Unlock()
+					cancel(context.Canceled)
+					monitor.checkFinalRequest(now, false)
+					continue
+				}
+				job.phase = FinalPhase
+				job.deadline = minTime(job.deadline, monitor.finalDeadline)
+				monitor.result.Final.Attempted = true
+				monitor.result.Final.StartedMilliseconds = max(0, now.Sub(monitor.options.Started).Milliseconds())
+			}
 			monitor.result.AttemptedObservations++
 			monitor.mutex.Unlock()
+			job.ctx = observationContext{Context: base, deadline: job.deadline}
 			active = &job
-			nextStart = now.Add(monitor.options.Interval)
+			if job.phase != FinalPhase {
+				nextStart = now.Add(monitor.options.Interval)
+			}
 			jobs <- job
 		}
 		var timer monitorTimer
@@ -79,6 +120,9 @@ func (monitor *Monitor[T]) run(observe func(context.Context) T) {
 		if !failed {
 			monitor.mutex.Lock()
 			wake := monitor.lastCompleted.Add(monitor.options.MaximumGap).Add(time.Nanosecond)
+			if monitor.finalRequested && !monitor.result.Final.Completed && monitor.finalDeadline.Before(wake) {
+				wake = monitor.finalDeadline
+			}
 			monitor.mutex.Unlock()
 			if active != nil && active.deadline.Before(wake) {
 				wake = active.deadline
@@ -97,9 +141,17 @@ func (monitor *Monitor[T]) run(observe func(context.Context) T) {
 		case <-failureSignal:
 			stopping, failureSignal = true, nil
 		case <-timerSignal:
+		case <-monitor.finalRequest:
 		}
 		if timer != nil {
 			timer.stop()
 		}
 	}
+}
+
+func minTime(a, b time.Time) time.Time {
+	if a.Before(b) {
+		return a
+	}
+	return b
 }

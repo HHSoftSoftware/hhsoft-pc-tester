@@ -92,7 +92,8 @@ func InventoryPDFForVersion(payload app.InventoryPayload, version string) ([]byt
 }
 
 func inventoryPDFLines(payload app.InventoryPayload, version string) ([]string, error) {
-	if err := app.ValidateCoverage(payload); err != nil {
+	thermal, err := sessionThermalDocument(payload)
+	if err != nil {
 		return nil, err
 	}
 	components := append([]app.ComponentRecord(nil), payload.Components...)
@@ -127,6 +128,7 @@ func inventoryPDFLines(payload app.InventoryPayload, version string) ([]string, 
 		lines.add("", "COVERAGE")
 		lines.field("Scope", description, "  ")
 	}
+	appendThermalPDF(&lines, thermal)
 	lines.add("", "FUNCTIONAL TEST EVIDENCE")
 	if len(tests) == 0 {
 		lines.add("No functional test evidence is included.")

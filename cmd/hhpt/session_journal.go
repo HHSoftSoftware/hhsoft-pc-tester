@@ -1,56 +1,31 @@
 package main
 
 import (
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
-	"strings"
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/networktest"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/plan"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/safemode"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/sessionevidence"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/storage"
 )
 
-const sessionJournalSchema = "hhsoft.pc-tester.quick-session/v3"
-const maximumSessionJournalBytes = 64 << 10
+const sessionJournalSchema = sessionevidence.Schema
+const maximumSessionJournalBytes = sessionevidence.MaximumBytes
 
-type sessionJournal struct {
-	Schema              string                 `json:"schema"`
-	PlanID              string                 `json:"plan_id"`
-	StopReason          string                 `json:"stop_reason"`
-	BudgetMilliseconds  int64                  `json:"budget_milliseconds"`
-	ElapsedMilliseconds int64                  `json:"elapsed_milliseconds"`
-	Workers             []sessionWorkerRecord  `json:"workers"`
-	Safety              []sessionSafetyRecord  `json:"safety"`
-	Monitor             safemode.MonitorResult `json:"monitor"`
-}
-
-type sessionWorkerRecord struct {
-	ID      string `json:"id"`
-	State   string `json:"state"`
-	Outcome string `json:"outcome"`
-}
-
-type sessionSafetyRecord struct {
-	Phase  string          `json:"phase"`
-	Result safemode.Result `json:"result"`
-}
+type sessionJournal = sessionevidence.Journal
+type sessionWorkerRecord = sessionevidence.WorkerRecord
+type sessionSafetyRecord = sessionevidence.SafetyRecord
 
 func safeSessionObservation(result safemode.Result) bool {
 	return result.Safe() && result.StorageDetail == "" && result.NetworkDetail == ""
 }
 
-var sessionWorkerIDs = [...]string{
-	"cpu.quick", "memory.quick", "audio.readiness.quick", "input.readiness.quick",
-	"input.pointer.quick",
-	"network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick",
-	"graphics.quick", "display.operator.quick",
-}
+var sessionWorkerIDs = sessionevidence.WorkerIDs()
 
 // The coordinator creates this file once, after workers and console readers
 // have stopped. The finalizer independently validates its claims and observes
@@ -68,7 +43,20 @@ func writeSessionJournal(path string, journal sessionJournal) error {
 		return err
 	}
 	writeErr := writeAll(file, append(encoded, '\n'))
-	return errors.Join(writeErr, file.Close())
+	if writeErr == nil {
+		writeErr = file.Sync()
+	}
+	if err := errors.Join(writeErr, file.Close()); err != nil {
+		return err
+	}
+	retained, err := readSessionJournal(path)
+	if err != nil {
+		return err
+	}
+	if !sameSessionJournal(*retained, journal) {
+		return errors.New("retained session journal changed")
+	}
+	return nil
 }
 
 func readSessionJournal(path string) (*sessionJournal, error) {
@@ -76,131 +64,18 @@ func readSessionJournal(path string) (*sessionJournal, error) {
 	if err != nil {
 		return nil, err
 	}
-	var journal sessionJournal
-	if err := evidenceShape(encoded, reflect.TypeOf(journal), 0); err != nil {
-		return nil, errors.New("session journal has an invalid JSON shape")
-	}
-	if err := json.Unmarshal(encoded, &journal); err != nil {
-		return nil, errors.New("session journal has invalid field values")
-	}
-	if err := validateSessionJournalStructure(journal); err != nil {
+	journal, err := sessionevidence.Decode(encoded)
+	if err != nil {
 		return nil, err
 	}
 	return &journal, nil
 }
 
 func validateSessionJournalStructure(journal sessionJournal) error {
-	if journal.Schema != sessionJournalSchema || journal.BudgetMilliseconds < 10 || journal.BudgetMilliseconds > 15*60*1000 ||
-		journal.ElapsedMilliseconds < 0 || journal.ElapsedMilliseconds > 60*60*1000 ||
-		len(journal.PlanID) != 71 || !strings.HasPrefix(journal.PlanID, "sha256:") || strings.ToLower(journal.PlanID) != journal.PlanID {
-		return errors.New("invalid session journal header")
-	}
-	if _, err := hex.DecodeString(journal.PlanID[7:]); err != nil {
-		return errors.New("invalid session journal plan binding")
-	}
-	if err := validateSessionMonitor(journal.Monitor, journal.ElapsedMilliseconds); err != nil {
-		return err
-	}
-	switch journal.StopReason {
-	case "completed", "operator_cancelled", "run_deadline", "test_deadline", "worker_stop":
-	default:
-		return errors.New("invalid session stop reason")
-	}
-	if len(journal.Workers) != len(sessionWorkerIDs) {
-		return errors.New("session journal must contain every quick worker")
-	}
-	phases := []string{"preflight"}
-	stopped := false
-	for index, worker := range journal.Workers {
-		if worker.ID != sessionWorkerIDs[index] {
-			return errors.New("session workers are missing, duplicated, or out of order")
-		}
-		switch worker.State {
-		case "not_scheduled":
-			switch worker.Outcome {
-			case "excluded", "not_present", "unsupported", "missing_driver":
-			default:
-				return errors.New("invalid non-scheduled session outcome")
-			}
-		case "not_started":
-			if worker.Outcome != "aborted" || journal.StopReason == "completed" {
-				return errors.New("invalid unfinished session outcome")
-			}
-			stopped = true
-		case "completed", "interrupted":
-			if stopped {
-				return errors.New("session workers started after the session stopped")
-			}
-			if worker.State == "interrupted" {
-				if journal.StopReason == "completed" || worker.Outcome != "aborted" && worker.Outcome != "error" {
-					return errors.New("invalid interrupted session outcome")
-				}
-				stopped = true
-			} else {
-				switch worker.Outcome {
-				case "pass", "fail", "skip", "inconclusive", "error", "aborted":
-				default:
-					return errors.New("invalid completed session outcome")
-				}
-			}
-			phases = append(phases, "before-"+worker.ID)
-		default:
-			return errors.New("invalid session worker state")
-		}
-	}
-	phases = append(phases, "final")
-	if len(journal.Safety) != len(phases) {
-		return errors.New("session safety observations are incomplete")
-	}
-	for index, observation := range journal.Safety {
-		if observation.Phase != phases[index] || !safeSessionObservation(observation.Result) {
-			return errors.New("session safety observations are unsafe, incomplete, or out of order")
-		}
-	}
-	return nil
+	return sessionevidence.ValidateStructure(journal)
 }
-
-// The bounded summary covers both edges of the monitored span, not only gaps
-// between samples. Final snapshots cannot erase an earlier failure or an
-// unjoined observer, and a short session cannot invent an observation.
 func validateSessionMonitor(result safemode.MonitorResult, elapsed int64) error {
-	interval := safemode.MonitorInterval.Milliseconds()
-	if result.Schema != safemode.MonitorSchema || result.Status != "pass" ||
-		result.IntervalMilliseconds != interval || result.ObservationTimeoutMilliseconds != safemode.MonitorObservationTimeout.Milliseconds() ||
-		result.MaximumAllowedGapMilliseconds != safemode.MonitorMaximumGap.Milliseconds() ||
-		elapsed < 0 || elapsed > 60*60*1000 || result.ElapsedMilliseconds != elapsed ||
-		!result.CleanupConfirmed || result.FirstFailure != nil || result.AttemptedObservations != result.CompletedObservations ||
-		result.CompletedObservations > uint64(elapsed/interval) || result.MaximumGapMilliseconds < 0 ||
-		result.MaximumGapMilliseconds > result.MaximumAllowedGapMilliseconds || result.MaximumGapMilliseconds > elapsed {
-		return errors.New("session monitoring was unsafe, incomplete, or inconsistent")
-	}
-	count := result.CompletedObservations
-	first, last, gap := result.FirstCompletedMilliseconds, result.LastCompletedMilliseconds, result.MaximumGapMilliseconds
-	if count == 0 {
-		if elapsed >= interval || first != 0 || last != 0 || gap != elapsed || result.LastObservation != nil {
-			return errors.New("session monitoring omitted required observations")
-		}
-		return nil
-	}
-	if first < interval || last < first || last > elapsed || result.LastObservation == nil || !safeSessionObservation(*result.LastObservation) {
-		return errors.New("session monitoring has invalid observation coverage")
-	}
-	leadingAndTrailing := max(first, elapsed-last)
-	if count == 1 {
-		if first != last || gap != leadingAndTrailing {
-			return errors.New("session monitoring has inconsistent single-sample coverage")
-		}
-		return nil
-	}
-	// Counts were bounded above before conversion or arithmetic. Completion
-	// timestamps may share a millisecond when a queued tick finishes quickly.
-	span, intervals := last-first, int64(count-1)
-	minimumGap := max(leadingAndTrailing, (span+intervals-1)/intervals)
-	maximumGap := max(leadingAndTrailing, span)
-	if last < int64(count)*interval || gap < minimumGap || gap > maximumGap {
-		return errors.New("session monitoring count and coverage cannot agree")
-	}
-	return nil
+	return sessionevidence.ValidateMonitor(result, elapsed)
 }
 
 func validateSessionJournal(journal sessionJournal, frozen plan.Plan, outcomes map[string]string, stopReason, evidenceDirectory string) error {

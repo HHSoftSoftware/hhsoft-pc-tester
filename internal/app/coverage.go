@@ -23,6 +23,14 @@ const (
 // historical report against today's test catalog. Reports predating these
 // fields retain their existing representation and verification behavior.
 func ValidateCoverage(payload InventoryPayload) error {
+	if err := validateCoverage(payload); err != nil {
+		return err
+	}
+	_, err := validatedSessionThermal(payload)
+	return err
+}
+
+func validateCoverage(payload InventoryPayload) error {
 	switch payload.CoverageScope {
 	case "", CoverageDirectCapture, CoverageFrozenPlan:
 	default:

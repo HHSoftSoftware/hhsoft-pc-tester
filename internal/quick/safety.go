@@ -192,7 +192,7 @@ func (monitor *safetyMonitor) complete(completion thermalCompletion, deadline ti
 		return
 	}
 	sample := completion.snapshot
-	if !validThermalSnapshot(sample) {
+	if !ValidThermalSnapshot(sample) {
 		monitor.fail(errThermalInvalid)
 		return
 	}
@@ -220,7 +220,10 @@ func (monitor *safetyMonitor) complete(completion thermalCompletion, deadline ti
 		monitor.fail(ErrThermalLimit)
 	}
 }
-func validThermalSnapshot(sample ThermalSnapshot) bool {
+
+// ValidThermalSnapshot checks the sampler's count and coverage invariants. It
+// does not establish safe temperature or physical sensor coverage.
+func ValidThermalSnapshot(sample ThermalSnapshot) bool {
 	if sample.Sensors < 0 || sample.PeakMilliCelsius < 0 || sample.PeakMilliCelsius > 250000 ||
 		sample.RejectedReadings < 0 || sample.UnavailableReadings < 0 || sample.EnumerationErrors < 0 ||
 		sample.Sensors == 0 && sample.PeakMilliCelsius != 0 {

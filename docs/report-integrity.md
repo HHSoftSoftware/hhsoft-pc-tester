@@ -133,20 +133,20 @@ New reports require the matching companion utility.
 
 Quick-session reports additionally bind a `session` object inside the existing
 run-integrity evidence. It records the stop reason, session budget, elapsed time,
-all ten worker states/outcomes, independent safety observations, and a bounded
-periodic-monitor summary. The safety history includes a fresh pre-sign
+all ten worker states/outcomes, independent safety observations, and bounded
+monitor summaries. The safety history includes a fresh pre-sign
 observation. This adds no catalog row and does not turn graph integrity into
 an overall hardware pass. Unstarted tests stay incomplete;
 completed failures survive a stop. Unsafe or interrupted network/storage
 readiness cannot authorize signing. These checks occur during session
 finalization; the offline verifier authenticates the recorded claims without
-rerunning them. The periodic-monitor increment requires
-`hhsoft.pc-tester.quick-session/v3`, including the same `input.pointer.quick`
-outcome introduced in v2. The enabled pointer definition changes the catalog
-digest and requires a fresh frozen plan; periodic monitoring leaves that digest
-unchanged but requires a fresh v3 execution journal. Old execution journals
-cannot be reused. The catalog still has 21 rows, plus
-run integrity. Historical signed reports, including earlier session evidence,
+rerunning them. The periodic-monitor increment introduced
+`hhsoft.pc-tester.quick-session/v3`; the current run-wide thermal implementation
+uses v4 with the same ten worker outcomes. The enabled pointer definition
+changed the catalog digest and required a fresh frozen plan. The monitoring
+increments leave that digest unchanged. A journal file cannot authorize new
+execution or signing in place of the one-use live final gate. The catalog still
+has 21 rows, plus run integrity. Historical signed reports, including earlier session evidence,
 retain their existing verification and rendering behavior. Direct capture's
 limited subset does not include guided pointer evidence. Each retained pointer
 pass, including a completed device inside a partial result, must match the
@@ -155,7 +155,7 @@ word width is independently observed and bound in the component fingerprint;
 worker evidence cannot choose a weaker button interpretation. Automated and
 native validation passed; physical pointer qualification remains separate.
 
-The monitor summary records bounded aggregate coverage through final safety,
+The mount/network monitor summary records bounded aggregate coverage,
 with a one-second interval, a one-second observation deadline, a
 2,500-millisecond maximum gap, and a two-second join allowance. The observer
 runs one sample at a time. Signing requires a clean join, consistent timing and
@@ -172,7 +172,8 @@ monitor diagnostic. Rebuilt-image and physical gates remain open.
 
 The subsequent local CPU/RAM guard uses v2 worker evidence with explicit
 thermal coverage, completed-observation counts, peak, monitor state/failure,
-and confirmed cleanup. It leaves journal v3 and the 22-result report unchanged.
+and confirmed cleanup. That local-guard increment left journal v3 and the
+22-result report unchanged.
 Finalization rejects old v1 execution evidence and malformed or contradictory
 v2 records, including existing unreadable files. An error/aborted execution note
 may represent a missing file but cannot replace invalid existing CPU/RAM data.
@@ -183,6 +184,46 @@ explicit and does not establish thermal health. These checks do not change
 verification or rendering of historical signed reports. Windows tests, vet,
 cross-builds, native Linux suites, race checks, and command-line workflows passed.
 Rebuilt-image and physical-sensor qualification remain open.
+
+The subsequent v4 session journal embeds `hhsoft.pc-tester.run-thermal/v1`.
+It records initial and final observations, bounded aggregate coverage, the first
+heat finding, worker execution intervals, preparation boundaries and both
+monitor joins. Immediate and all-off sessions still require initial and final
+thermal observations. Heat makes the session stop reason `thermal_limit`; it
+does not make the separate hardware-graph integrity result fail. Available,
+partial and unavailable sensor coverage remain distinct from observed heat.
+The signed monitoring window ends after execution, cleanup, final inventory and
+the final gate, before report encoding, output and saving.
+
+Each retained local CPU/RAM heat source binds the full validated worker evidence
+and its execution interval. Its `evidence_file_sha256` hashes the original file
+bytes, including whitespace. The live finalizer compares that digest with its
+retained byte copy. `evidence_typed_sha256` hashes this canonical input:
+
+```text
+"hhsoft.pc-tester.local-thermal-evidence/v1" || NUL || evidence_schema || NUL ||
+json.Marshal(strictly validated CPUResult or MemoryResult)
+```
+
+Both digests use `sha256:` followed by lowercase hexadecimal SHA-256. The typed
+encoding uses the full v2 result, its declared field order and normal Go JSON
+escaping, without indentation or a trailing newline. Report-only verification
+recomputes the typed digest from embedded evidence; it checks the file digest's
+format but cannot reconstruct original file whitespace. Duplicate, unknown,
+case-aliased, missing or contradictory claims are rejected before interpretation.
+The nested journal retains its 64 KiB limit even inside run-integrity evidence.
+Local duration must fit its recorded worker interval, and heat cannot be replaced
+by a missing-file execution note or a later cooler source.
+
+New v4 claims use shared structural and binding validation in finalization,
+verification, comparison and HTML/PDF rendering, including bundles without
+views. Historical journals without new thermal claims remain opaque to these
+new rules. Full Windows tests, vet and cross-builds passed. Native Linux
+amd64/386 suites passed 3,032 test/subtest events and four race suites passed
+1,203, with no skips; all 15 CLI scenarios passed. All twelve session scenarios
+reported unavailable temperature telemetry and retained matching diagnostic,
+journal and signed summaries. Rebuilt-image and physical-sensor qualification
+remain open.
 
 ## Privacy-Preserving Fingerprints
 

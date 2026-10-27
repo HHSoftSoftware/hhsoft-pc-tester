@@ -191,18 +191,36 @@ func decodeComparisonInventory(encoded []byte) (app.InventoryPayload, error) {
 }
 
 func canonicalJSONFields(encoded []byte, allowedNames, requiredNames []string) (map[string]json.RawMessage, error) {
-	var fields map[string]json.RawMessage
-	if err := json.Unmarshal(encoded, &fields); err != nil {
-		return nil, err
+	decoder := json.NewDecoder(bytes.NewReader(encoded))
+	first, err := decoder.Token()
+	if err != nil || first != json.Delim('{') {
+		return nil, fmt.Errorf("expected inventory object")
 	}
+	fields := make(map[string]json.RawMessage)
 	allowed := make(map[string]bool, len(allowedNames))
 	for _, name := range allowedNames {
 		allowed[name] = true
 	}
-	for name := range fields {
-		if !allowed[name] {
-			return nil, fmt.Errorf("noncanonical or unknown object member %q", name)
+	for decoder.More() {
+		token, err := decoder.Token()
+		name, ok := token.(string)
+		if err != nil || !ok || !allowed[name] {
+			return nil, fmt.Errorf("noncanonical or unknown inventory member")
 		}
+		if _, duplicate := fields[name]; duplicate {
+			return nil, fmt.Errorf("duplicate inventory member")
+		}
+		var raw json.RawMessage
+		if err := decoder.Decode(&raw); err != nil {
+			return nil, err
+		}
+		fields[name] = raw
+	}
+	if last, err := decoder.Token(); err != nil || last != json.Delim('}') {
+		return nil, fmt.Errorf("invalid inventory object")
+	}
+	if _, err := decoder.Token(); err != io.EOF {
+		return nil, fmt.Errorf("trailing inventory JSON")
 	}
 	for _, name := range requiredNames {
 		if _, ok := fields[name]; !ok {

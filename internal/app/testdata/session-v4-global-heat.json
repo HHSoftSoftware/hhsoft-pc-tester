@@ -1,0 +1,533 @@
+{
+  "schema_version": 1,
+  "components": [],
+  "system_fingerprint": {
+    "algorithm": "hmac-sha256",
+    "key_epoch": "fixture",
+    "key_id": "hmac-sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "identified_parts": 0,
+    "unidentified_parts": 0
+  },
+  "test_results": [
+    {
+      "id": "audio.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "unsupported",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "unsupported"
+    },
+    {
+      "id": "audio.readiness.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "excluded",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "excluded"
+    },
+    {
+      "id": "camera.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "unsupported",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "unsupported"
+    },
+    {
+      "id": "cpu.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "excluded",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "excluded"
+    },
+    {
+      "id": "cpu.stress",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "unsupported",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "unsupported"
+    },
+    {
+      "id": "display.operator.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "excluded",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "excluded"
+    },
+    {
+      "id": "graphics.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "excluded",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "excluded"
+    },
+    {
+      "id": "input.keyboard.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "unsupported",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "unsupported"
+    },
+    {
+      "id": "input.pointer.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "excluded",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "excluded"
+    },
+    {
+      "id": "input.readiness.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "excluded",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "excluded"
+    },
+    {
+      "id": "input.touchpad.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "unsupported",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "unsupported"
+    },
+    {
+      "id": "input.touchscreen.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "unsupported",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "unsupported"
+    },
+    {
+      "id": "memory.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "excluded",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "excluded"
+    },
+    {
+      "id": "memory.stress",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "unsupported",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "unsupported"
+    },
+    {
+      "id": "network.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "unsupported",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "unsupported"
+    },
+    {
+      "id": "network.readiness.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "excluded",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "excluded"
+    },
+    {
+      "id": "storage.destructive",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "unsupported",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "unsupported"
+    },
+    {
+      "id": "storage.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "unsupported",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "unsupported"
+    },
+    {
+      "id": "storage.readiness.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "excluded",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "excluded"
+    },
+    {
+      "id": "usb.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "unsupported",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "unsupported"
+    },
+    {
+      "id": "usb.readiness.quick",
+      "version": 1,
+      "status": "skip",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.execution-note/v1",
+        "status": "skip",
+        "source_status": "excluded",
+        "detail": "test was not scheduled"
+      },
+      "planned_status": "excluded"
+    },
+    {
+      "id": "run.integrity.quick",
+      "version": 1,
+      "status": "pass",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.run-integrity/v1",
+        "status": "pass",
+        "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "planned_hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "final_hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "planned_component_count": 0,
+        "final_component_count": 0,
+        "excluded_tests": [
+          "audio.readiness.quick",
+          "cpu.quick",
+          "display.operator.quick",
+          "graphics.quick",
+          "input.pointer.quick",
+          "input.readiness.quick",
+          "memory.quick",
+          "network.readiness.quick",
+          "storage.readiness.quick",
+          "usb.readiness.quick"
+        ],
+        "session": {
+          "schema": "hhsoft.pc-tester.quick-session/v4",
+          "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+          "stop_reason": "thermal_limit",
+          "workers": [
+            {
+              "id": "cpu.quick",
+              "state": "not_scheduled",
+              "outcome": "excluded"
+            },
+            {
+              "id": "memory.quick",
+              "state": "not_scheduled",
+              "outcome": "excluded"
+            },
+            {
+              "id": "audio.readiness.quick",
+              "state": "not_scheduled",
+              "outcome": "excluded"
+            },
+            {
+              "id": "input.readiness.quick",
+              "state": "not_scheduled",
+              "outcome": "excluded"
+            },
+            {
+              "id": "input.pointer.quick",
+              "state": "not_scheduled",
+              "outcome": "excluded"
+            },
+            {
+              "id": "network.readiness.quick",
+              "state": "not_scheduled",
+              "outcome": "excluded"
+            },
+            {
+              "id": "storage.readiness.quick",
+              "state": "not_scheduled",
+              "outcome": "excluded"
+            },
+            {
+              "id": "usb.readiness.quick",
+              "state": "not_scheduled",
+              "outcome": "excluded"
+            },
+            {
+              "id": "graphics.quick",
+              "state": "not_scheduled",
+              "outcome": "excluded"
+            },
+            {
+              "id": "display.operator.quick",
+              "state": "not_scheduled",
+              "outcome": "excluded"
+            }
+          ],
+          "safety": [
+            {
+              "phase": "preflight",
+              "result": {
+                "schema": "hhsoft.pc-tester.runtime-safety/v1",
+                "status": "pass",
+                "storage_observed": true,
+                "network_observed": true,
+                "writable_block_mounts": 0,
+                "active_non_loop_interfaces": 0
+              }
+            },
+            {
+              "phase": "final",
+              "result": {
+                "schema": "hhsoft.pc-tester.runtime-safety/v1",
+                "status": "pass",
+                "storage_observed": true,
+                "network_observed": true,
+                "writable_block_mounts": 0,
+                "active_non_loop_interfaces": 0
+              }
+            },
+            {
+              "phase": "pre-sign",
+              "result": {
+                "schema": "hhsoft.pc-tester.runtime-safety/v1",
+                "status": "pass",
+                "storage_observed": true,
+                "network_observed": true,
+                "writable_block_mounts": 0,
+                "active_non_loop_interfaces": 0
+              }
+            }
+          ],
+          "monitor": {
+            "schema": "hhsoft.pc-tester.periodic-safety/v1",
+            "status": "pass",
+            "interval_ms": 1000,
+            "observation_timeout_ms": 1000,
+            "maximum_allowed_gap_ms": 2500,
+            "attempted_observations": 0,
+            "completed_observations": 0,
+            "elapsed_ms": 36,
+            "first_completed_ms": 0,
+            "last_completed_ms": 0,
+            "maximum_gap_ms": 36,
+            "cleanup_confirmed": true
+          },
+          "preparation_started_ms": 10,
+          "inventory_prepared_ms": 20,
+          "stop_requested_ms": 30,
+          "safety_joined_ms": 35,
+          "local_thermal_sources": [],
+          "thermal": {
+            "schema": "hhsoft.pc-tester.run-thermal/v1",
+            "status": "completed",
+            "limit_millicelsius": 90000,
+            "interval_ms": 1000,
+            "observation_timeout_ms": 1000,
+            "maximum_allowed_gap_ms": 2500,
+            "stop_timeout_ms": 2000,
+            "attempted_observations": 2,
+            "completed_observations": 2,
+            "periodic_attempts": 0,
+            "periodic_completions": 0,
+            "elapsed_ms": 38,
+            "first_completed_ms": 1,
+            "last_completed_ms": 22,
+            "maximum_gap_ms": 21,
+            "initial": {
+              "requested_ms": 0,
+              "attempted": true,
+              "completed": true,
+              "started_ms": 0,
+              "completed_ms": 1,
+              "observation": {
+                "coverage": "available",
+                "sensors": 1,
+                "peak_millicelsius": 95000,
+                "rejected_readings": 0,
+                "unavailable_readings": 0,
+                "enumeration_errors": 0
+              }
+            },
+            "final": {
+              "requested_ms": 21,
+              "attempted": true,
+              "completed": true,
+              "started_ms": 21,
+              "completed_ms": 22,
+              "observation": {
+                "coverage": "available",
+                "sensors": 1,
+                "peak_millicelsius": 42000,
+                "rejected_readings": 0,
+                "unavailable_readings": 0,
+                "enumeration_errors": 0
+              }
+            },
+            "aggregate": {
+              "coverage": "available",
+              "accepted_observations": 2,
+              "available_observations": 2,
+              "partial_observations": 0,
+              "unavailable_observations": 0,
+              "maximum_sensors": 1,
+              "valid_readings": 2,
+              "peak_millicelsius": 95000,
+              "rejected_readings": 0,
+              "unavailable_readings": 0,
+              "enumeration_errors": 0
+            },
+            "cleanup_confirmed": true,
+            "joined": true,
+            "joined_ms": 37,
+            "last_observation": {
+              "coverage": "available",
+              "sensors": 1,
+              "peak_millicelsius": 42000,
+              "rejected_readings": 0,
+              "unavailable_readings": 0,
+              "enumeration_errors": 0
+            },
+            "first_finding": {
+              "reason": "thermal_limit",
+              "phase": "initial",
+              "elapsed_ms": 1,
+              "observation": {
+                "coverage": "available",
+                "sensors": 1,
+                "peak_millicelsius": 95000,
+                "rejected_readings": 0,
+                "unavailable_readings": 0,
+                "enumeration_errors": 0
+              }
+            }
+          },
+          "budget_milliseconds": 300000,
+          "elapsed_milliseconds": 40
+        }
+      }
+    }
+  ],
+  "coverage_scope": "frozen_plan"
+}

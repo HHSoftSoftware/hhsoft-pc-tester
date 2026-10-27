@@ -294,8 +294,9 @@ containing the frozen plan binding, stop reason, budget and elapsed time, every
 quick worker's state and outcome, and ordered mount/network safety snapshots.
 The coordinator takes snapshots at
 session preflight, before each started worker, and after execution stops. The
-finalizer validates that history against the plan, outcomes, and worker evidence
-and adds its own fresh pre-sign observation. Missing, contradictory, unsafe, or
+finalizer validates that history against the plan, outcomes, and worker evidence.
+The current live final gate supplies the fresh pre-sign observation before the
+completed v4 journal is written. Missing, contradictory, unsafe, or
 incomplete observations block signing. A clean cancellation/deadline can use a
 fresh finalization context after confirmed cleanup, but cannot turn an aborted
 safety-readiness check or an earlier unsafe observation into permission to sign.
@@ -333,8 +334,8 @@ explicitly leaves cleanup unconfirmed.
 Synchronous collectors use cooperative cancellation; a context deadline cannot
 preempt a blocked kernel call. The terminal shell guard is a failure path, not a
 claim of safe recovery or hardware qualification. Periodic observations are not
-continuous coverage. Run-wide thermal monitoring, heartbeat supervision, hang
-detection, and other profile execution remain open.
+continuous coverage. Heartbeat supervision, hang detection, and other profile
+execution remain open; the run-wide thermal increment is described below.
 Direct capture and finalization without a session journal keep their older
 limited evidence scope; they do not acquire session stop/safety claims.
 
@@ -356,7 +357,8 @@ seconds to join. Normal completion waits for the active bounded reading before
 freezing evidence. CPU/memory v2 records coverage and cleanup explicitly.
 Missing or partial telemetry remains a coverage limitation, even when the
 computation passes. This does not provide thermal coverage across other workers
-or an all-off selection.
+or an all-off selection; a separate session observer now supplies that scope in
+development source.
 
 Independent acceptance cases for this prerequisite include:
 
@@ -375,6 +377,46 @@ Independent acceptance cases for this prerequisite include:
 - Cleanly joined thermal stops retain their observations in verified reports;
   historical signed reports remain verifiable. Native filesystem fixtures
   passed; representative physical sensor validation remains open.
+
+The run-wide increment adds initial, one-second periodic and final thermal
+observations across the quick session. Its v4 journal binds worker intervals,
+preparation and join boundaries, available/partial/unavailable coverage, and
+the exact-file and canonical full-evidence digests for local CPU/RAM heat.
+The one-use final gate completes after final inventory and before key generation
+or signing. Both session monitors must join under one common bounded deadline.
+Heat stops work without stopping monitoring; infrastructure failure or uncertain
+cleanup blocks signing. Encoding, output and saving occur after this monitored
+boundary.
+
+Full Windows qualification passed 1,754 test/subtest events across 22 packages,
+with 21 platform skips and no failures; vet, 24 Linux test-binary builds and all
+five application targets passed. Independent acceptance cases cover:
+
+- Immediate/all-off initial and final coverage, and initial heat preventing
+  worker dispatch without invalidating the independent safety preflight.
+- Actual coordinator/monitor/finalizer integration with heat during each of the
+  ten workers, input cleanup, final inventory and pre-sign safety; later cooling
+  cannot erase a finding, and late heat controls signed and displayed outcomes.
+- Local heat surviving unavailable global telemetry, with changed, cooler,
+  disappeared, reformatted or rehashed contradictory source evidence rejected.
+- Missing/duplicate live gates, false worker timelines, unsafe executed
+  readiness, mismatched typed readiness, and malformed or oversized nested
+  journal claims rejected by shared validation.
+- Both Stop calls receiving one cleanup deadline; terminal failure cannot
+  cancel its own cleanup reserve or generate a key before confirmed joins.
+
+Native Linux amd64/386 qualification passed 3,032 test/subtest events across
+24 suite runs; four race suites passed 1,203 events, with no native or race skips.
+All 15 CLI cases passed, comprising twelve session and three guided-pointer
+scenarios. Nine compiler and nine runtime ownership cases, 32 archive cases and
+13 shell-supervisor cases passed with confirmed cleanup. The session scenarios
+all reported unavailable temperature telemetry. All-off runs retained initial
+and final observations; deadline runs retained four observations including two
+periodic samples. Rebuilt images, physical sensor behavior, the beta pilot and
+release gates remain open. Synthetic heat exercises software responses; it does
+not establish a physical cooling or thermal-stress result. See
+[requirements validation](requirements-validation.md) for the qualification scope
+and resolved test-harness failure.
 
 Regression acceptance for this implementation requires:
 

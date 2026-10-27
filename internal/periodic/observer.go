@@ -11,6 +11,7 @@ type monitorJob struct {
 	ctx               context.Context
 	cancel            context.CancelCauseFunc
 	started, deadline time.Time
+	phase             Phase
 }
 
 type monitorCompletion[T any] struct {
@@ -43,7 +44,7 @@ func callMonitorObserver[T any](observe func(context.Context) T, ctx context.Con
 	return
 }
 
-func (monitor *Monitor[T]) observe(jobs <-chan monitorJob, completions chan<- monitorCompletion[T], done chan<- struct{}, observe func(context.Context) T) {
+func (monitor *Monitor[T, A]) observe(jobs <-chan monitorJob, completions chan<- monitorCompletion[T], done chan<- struct{}, observe func(context.Context) T) {
 	defer close(done)
 	for job := range jobs {
 		completion := monitorCompletion[T]{job: job}
@@ -56,35 +57,81 @@ func (monitor *Monitor[T]) observe(jobs <-chan monitorJob, completions chan<- mo
 	}
 }
 
-func (monitor *Monitor[T]) complete(completion monitorCompletion[T]) {
+func (monitor *Monitor[T, A]) complete(completion monitorCompletion[T]) {
 	defer completion.job.cancel(context.Canceled)
-	finished := completion.finished
-	if finished.Before(completion.job.started) {
-		monitor.fail("clock_error", nil, finished)
+	monitor.freezeMutex.Lock()
+	defer monitor.freezeMutex.Unlock()
+	monitor.mutex.Lock()
+	frozen := monitor.final != nil
+	monitor.mutex.Unlock()
+	if frozen {
 		return
+	}
+	finished := completion.finished
+	phase := completion.job.phase
+	if finished.Before(completion.job.started) {
+		monitor.failPhase("clock_error", phase, nil, finished)
+		return
+	}
+	if phase == FinalPhase {
+		monitor.checkFinalRequest(finished, false)
 	}
 	// A ready result cannot win a select race against its expired deadline.
 	if !finished.Before(completion.job.deadline) {
 		completion.job.cancel(context.DeadlineExceeded)
-		monitor.fail("observation_timeout", nil, finished)
+		monitor.failPhase("observation_timeout", phase, nil, finished)
 	}
 	if !completion.invoked {
-		monitor.fail("observation_timeout", nil, finished)
+		monitor.failPhase("observation_timeout", phase, nil, finished)
 		return
 	}
 	if completion.panicked {
-		monitor.fail("observer_panic", nil, finished)
+		monitor.failPhase("observer_panic", phase, nil, finished)
 		return
 	}
 	assessment, panicked := callAssessment(monitor.assess, completion.observation)
 	if panicked {
-		monitor.fail("observer_panic", nil, finished)
+		monitor.failPhase("observer_panic", phase, nil, finished)
 		return
 	}
 	observation := assessment.Value
 	monitor.mutex.Lock()
 	elapsed := max(0, finished.Sub(monitor.options.Started).Milliseconds())
 	gap := finished.Sub(monitor.lastCompleted)
+	prior := monitor.result.Aggregate
+	monitor.mutex.Unlock()
+	if gap > monitor.options.MaximumGap {
+		monitor.failPhase("sampling_gap", phase, nil, finished)
+	}
+	if assessment.FailureReason != "" {
+		monitor.failPhase(assessment.FailureReason, phase, &observation, finished)
+	}
+	if assessment.FailureReason == "" && assessment.FindingReason != "" {
+		monitor.find(assessment.FindingReason, phase, observation, finished)
+	}
+	monitor.mutex.Lock()
+	eligible := monitor.result.FirstFailure == nil && monitor.final == nil
+	monitor.mutex.Unlock()
+	reduction := Reduction[A]{Value: prior}
+	if monitor.reduce != nil {
+		var panicked bool
+		reduction, panicked = callReduction(monitor.reduce, prior, Observation[T]{Phase: phase,
+			StartedMilliseconds:   max(0, completion.job.started.Sub(monitor.options.Started).Milliseconds()),
+			CompletedMilliseconds: elapsed, EligibleForAggregation: eligible, Assessment: assessment})
+		if panicked {
+			monitor.failPhase("observer_panic", phase, nil, finished)
+			return
+		}
+		if reduction.FailureReason != "" {
+			monitor.failPhase(reduction.FailureReason, phase, &observation, finished)
+		}
+	}
+	monitor.mutex.Lock()
+	// The owner enforces eligibility itself, even if a faulty reducer changes
+	// its returned aggregate after an ineligible observation.
+	if eligible && reduction.FailureReason == "" && monitor.result.FirstFailure == nil && monitor.final == nil {
+		monitor.result.Aggregate = reduction.Value
+	}
 	monitor.result.MaximumGapMilliseconds = max(monitor.result.MaximumGapMilliseconds,
 		elapsed-monitor.result.LastCompletedMilliseconds)
 	monitor.result.CompletedObservations++
@@ -94,13 +141,32 @@ func (monitor *Monitor[T]) complete(completion monitorCompletion[T]) {
 	monitor.result.LastCompletedMilliseconds = elapsed
 	monitor.result.LastObservation = &observation
 	monitor.lastCompleted = finished
+	var record *PhaseSummary[T]
+	if phase == InitialPhase {
+		record = &monitor.result.Initial
+	}
+	if phase == FinalPhase {
+		record = &monitor.result.Final
+	}
+	if record != nil {
+		value := observation
+		record.Completed, record.CompletedMilliseconds, record.Observation = true, elapsed, &value
+	}
 	monitor.mutex.Unlock()
-	if gap > monitor.options.MaximumGap {
-		monitor.fail("sampling_gap", nil, finished)
+	if phase == InitialPhase {
+		monitor.initialOnce.Do(func() { close(monitor.initialDone) })
 	}
-	if assessment.FailureReason != "" {
-		monitor.fail(assessment.FailureReason, &observation, finished)
+	if phase == FinalPhase {
+		monitor.finalOnce.Do(func() { close(monitor.finalDone) })
 	}
+}
+
+func callReduction[T, A any](reduce Reducer[T, A], prior A, observation Observation[T]) (result Reduction[A], panicked bool) {
+	panicked = true
+	defer func() { _ = recover() }()
+	result = reduce(prior, observation)
+	panicked = false
+	return
 }
 
 // Policy is trusted pure code, but a programming panic must still leave the

@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/plan"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/sessionevidence"
 )
 
 type sessionFinalOutput struct {
@@ -32,7 +33,7 @@ func (output *sessionFinalOutput) Write(data []byte) (int, error) {
 	return n, err
 }
 
-func writeSessionReady(path, reportPath, keyEpoch string, frozen plan.Plan, journal sessionJournal, output *sessionFinalOutput) error {
+func writeSessionReady(path, reportPath, keyEpoch string, frozen plan.Plan, journal sessionJournal, finalized sessionIntegrity, output *sessionFinalOutput) error {
 	if output.truncated || output.writeErr != nil {
 		return errors.New("finalizer output was incomplete")
 	}
@@ -61,6 +62,14 @@ func writeSessionReady(path, reportPath, keyEpoch string, frozen plan.Plan, jour
 		}
 		counts[index] = count
 	}
+	if finalized.PlanID != frozen.ID || finalized.Status != status {
+		return errors.New("finalizer integrity disagrees with its typed result")
+	}
+	for index, count := range []uint64{finalized.PlannedComponents, finalized.FinalComponents, finalized.Added, finalized.Removed, finalized.Changed} {
+		if count != counts[index] {
+			return errors.New("finalizer component counts disagree with their typed result")
+		}
+	}
 	if counts[0] != uint64(len(frozen.HardwareGraph.Components)) ||
 		status == "pass" && (counts[0] != counts[1] || counts[2] != 0 || counts[3] != 0 || counts[4] != 0) ||
 		status == "fail" && counts[2] == 0 && counts[3] == 0 && counts[4] == 0 {
@@ -79,7 +88,8 @@ func writeSessionReady(path, reportPath, keyEpoch string, frozen plan.Plan, jour
 	if frozen.Architecture == "legacy-x86" {
 		marker += " assurance=legacy"
 	}
-	marker += " session_stop=" + journal.StopReason + " signature=self-issued\n"
+	view := sessionevidence.ThermalViewOf(journal)
+	marker += " session_stop=" + journal.StopReason + " thermal_finding=" + view.Finding + " thermal_coverage=" + view.Coverage + " signature=self-issued\n"
 	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
 	if err != nil {
 		return err

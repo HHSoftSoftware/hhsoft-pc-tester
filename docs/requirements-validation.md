@@ -204,8 +204,8 @@ replace rebuilt-image or physical qualification. Historical milestone counts
 above remain separate evidence.
 
 Rebuilt bootable images, the physical pilot, remaining functional adapters,
-broader beta qualification, and release gates remain open. Periodic sampling
-does not provide continuous coverage, run-wide thermal or heartbeat monitoring,
+broader beta qualification, and release gates remain open. Those mount/network
+observations do not provide continuous coverage, thermal or heartbeat monitoring,
 stress qualification, privilege isolation, or preemptive containment of a
 blocked kernel operation. These results do not establish publication readiness.
 
@@ -243,7 +243,7 @@ against the test logs. Historical signed-report verification and journal v3 are
 unchanged. The catalog still has ten implemented workers and 21 rows, plus run
 integrity in the report.
 
-This local guard is a prerequisite for future run-wide thermal coverage. It
+This local guard is a prerequisite for the separate run-wide increment. It
 does not monitor other workers or an all-off selection, implement heartbeat or
 general hang supervision, or introduce privilege isolation. Fresh images,
 physical sensor validation, the beta pilot, all four alpha ISOs, source/image
@@ -265,9 +265,72 @@ Periodic, safemode and command race checks passed 1,105 events with no skips;
 all 15 CLI scenarios passed. Nine compiler and nine runtime ownership cases
 confirmed fixture cleanup without signaling foreign process groups. Root checks
 reconciled the actual logs and archive against the frozen inputs, confirmed
-cleanup, and passed all six postchecks. The extracted engine adds no run-wide
+cleanup, and passed all six postchecks. The extraction itself added no run-wide
 thermal coverage or new catalog/report rows. Rebuilt-image and physical
 qualification remain open.
+
+The run-wide increment implements sampled thermal supervision in the safe
+quick session and introduces `hhsoft.pc-tester.quick-session/v4` with embedded
+`hhsoft.pc-tester.run-thermal/v1`. It keeps ten worker outcomes and the existing
+catalog. Initial thermal completion precedes execution and preparation, even
+with all tests excluded. Serialized one-second sampling continues through all
+workers, input cleanup and final inventory, with a one-second reading deadline
+and a 2,500-millisecond maximum gap. A final observation is required after
+inventory preparation. The local CPU/RAM guard retains its separate
+250-millisecond wait between readings.
+
+A one-use in-process final gate obtains pre-sign safety, requests the final
+thermal observation, and synchronously joins both session monitors under one
+common allowance of at most two seconds. Normal final observation and joins
+fit within the 30-second preparation/finalization bound. An earlier error has
+one common two-second cleanup allowance. Monitoring failure blocks signing;
+heat cancels work while monitoring continues and remains reportable after clean
+joins. Late heat determines the final signed stop reason and readiness marker,
+without changing a valid worker failure or conflating heat with graph integrity.
+The monitored boundary excludes subsequent report encoding, output and saving.
+
+Journal v4 discloses available, partial or unavailable telemetry without
+promoting absent readings to a thermal pass. Local CPU/RAM heat is retained even
+when the global sampler has no sensors. Each local source binds its execution
+interval, original file bytes and canonical full typed worker evidence. The live
+finalizer rechecks both digests; the offline verifier recomputes the typed digest
+and checks the original-file digest's format. Shared validators reject false
+timelines, missing joins, oversized nested journals and inconsistent source
+bindings. Historical signed evidence retains its previous interpretation.
+
+Shared-evidence and command acceptance tests exercise the real
+coordinator, thermal and safemode adapters, finalizer, signed-bundle verifier
+and shared report consumer with synthetic observations. Cases include initial
+heat and all-off runs; heat during every worker, input cleanup, final inventory
+and pre-sign safety; cooling after a latched finding; retained local failures;
+changed, cooler, disappeared or reformatted evidence; common monitor deadlines;
+failure during cleanup; duplicate/missing gates; and typed readiness mismatches.
+
+Full Windows qualification passed 1,754 test/subtest events across 22 packages,
+with 21 platform skips and no failures. Vet, cross-builds of 24 Linux test binaries
+and all five application targets passed. Native Linux amd64/386 qualification
+then passed 3,032 events across 24 suite runs. The periodic, safemode, thermal and
+command race suites passed 1,203 events. Native and race runs had no skips.
+All 15 CLI cases passed: twelve session scenarios and three guided-pointer
+scenarios across the modern and legacy x86 applications. Nine compiler ownership
+and nine runtime ownership cases, 32 archive cases and 13 shell-supervisor cases
+passed with confirmed cleanup. All six postchecks passed and all 301 input pins
+remained unchanged. Verbose log counts and retained receipts were independently
+reconciled.
+
+The first native attempt failed because the harness launched a test binary
+outside its package directory, so relative fixture paths did not resolve. That
+failure evidence was preserved. A fresh attempt using the correct package
+working directories passed without changes to product source.
+
+All twelve CLI session cases reported `thermal_coverage=unavailable`, matching
+the VM's lack of temperature telemetry. All-off sessions retained their required
+initial and final observations; each deadline session retained four observations,
+including two periodic samples. Injected heat exercises the real software
+coordinator and finalizer, but does not establish physical cooling performance.
+These native runs cover Linux amd64 and 386; AArch64 was cross-built only. Rebuilt
+images, representative physical sensors, the beta pilot and release gates remain
+open.
 
 Regression coverage for these cases belongs with the corresponding feature,
 not with a blanket claim of complete product coverage. Linux mount/device
@@ -300,14 +363,17 @@ aborted by either direct capture or finalization. Explicit renderer or pattern
 failures also require an overall graphics failure. Matching failure and partial
 results retain their original evidence in the signed report. These checks do
 not upgrade readiness into physical qualification.
-The standalone report verifier checks bundle integrity and signatures; it does
-not rerun the worker semantic checks or establish physical truth.
+The standalone report verifier checks bundle integrity and signatures. New v4
+claims additionally require the shared journal and local-thermal evidence
+checks described above. Verification does not rerun hardware tests or establish
+physical truth.
 
 Both appliance startup scripts check mount/network safety before handing the
 frozen plan to the quick-session coordinator and again before announcing a ready
 report. The coordinator independently observes safety before work, before every
-started worker, and after cleanup. Finalization adds a fresh pre-sign observation
-and binds the journal in signed run-integrity evidence. Writable block mounts,
+started worker, and after cleanup. The live final gate adds a fresh pre-sign
+observation and binds the completed journal in signed run-integrity evidence.
+Writable block mounts,
 active non-loopback interfaces, contradictory details, or incomplete observations
 block signing and the normal ready/save path while retaining RAM diagnostics.
 Device numbers identify mapped and aliased mounts even without a storage test;

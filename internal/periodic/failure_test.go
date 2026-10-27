@@ -13,7 +13,7 @@ func TestMonitorUnsafeSnapshotLatchesBeforeCancellation(t *testing.T) {
 	clock := newMonitorClock()
 	var calls, cancellations atomic.Int32
 	var recovered atomic.Bool
-	var monitor *Monitor[testObservation]
+	var monitor *Monitor[testObservation, struct{}]
 	monitor = startTestMonitor(t, clock, func(context.Context) testObservation {
 		result := monitorSafeResult()
 		if calls.Add(1) == 2 && !recovered.Load() {

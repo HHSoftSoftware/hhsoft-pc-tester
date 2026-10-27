@@ -29,7 +29,7 @@ func checkMonitorWire(t *testing.T, name string, result MonitorResult) {
 func TestMonitorOriginalWireCompatibility(t *testing.T) {
 	for _, name := range []string{"short", "sampled", "unsafe", "invalid", "late", "unjoined"} {
 		t.Run(name, func(t *testing.T) {
-			summary := periodic.Summary[Result]{IntervalMilliseconds: 1000, ObservationTimeoutMilliseconds: 1000,
+			summary := periodic.Summary[Result, struct{}]{IntervalMilliseconds: 1000, ObservationTimeoutMilliseconds: 1000,
 				MaximumAllowedGapMilliseconds: 2500, AttemptedObservations: 1, CompletedObservations: 1,
 				ElapsedMilliseconds: 1000, FirstCompletedMilliseconds: 1000, LastCompletedMilliseconds: 1000,
 				MaximumGapMilliseconds: 1000, CleanupConfirmed: true}

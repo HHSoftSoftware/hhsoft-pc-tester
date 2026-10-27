@@ -25,7 +25,9 @@ Retry a hang only once. Record the image filename, checksum, firmware mode, and
 the last marker when reporting a reproducible failure.
 
 `HHPT_SESSION_FAILED ... reason=cleanup_unconfirmed` means an owned worker or
-CPU/RAM thermal observer could not be confirmed stopped. The run stops before later tests,
+CPU/RAM thermal observer could not be confirmed stopped. The v4 development
+workflow uses `reason=monitor_cleanup_unconfirmed` for an unjoined session
+safety or thermal monitor. The run stops before later tests,
 signing, or saving; available diagnostic evidence remains in RAM. Record the marker and image
 version, then reboot into a verified image. Do not manually resume the stopped
 workflow. Direct CPU, memory, graphics, display, and capture commands use exit code 12 for
@@ -40,6 +42,23 @@ error only after cleanup is confirmed; an unconfirmed join remains terminal.
 The v2 guard in development source passed Windows tests, vet, cross-builds,
 native Linux suites, race checks, and command-line workflows. Rebuilt-image and
 physical-sensor qualification remain open.
+
+The separate run-wide thermal observer in development source stays active
+through all workers, cleanup, final inventory and the final safety gate. A
+`thermal_limit` stop may retain a signed report after both session monitors
+join; check the recorded finding and coverage rather than treating the report
+as a hardware pass. `no_limit_observed` with unavailable telemetry does not
+establish safe temperatures. Heat remains recorded after cooling or when the
+global sampler has no readings but a local CPU/RAM guard observed the limit.
+Report encoding, output and saving follow the monitored window. Windows tests,
+vet, cross-builds, native Linux amd64/386 suites, race checks and all 15 CLI
+scenarios passed. The VM session scenarios reported unavailable temperature
+telemetry; rebuilt-image and physical-sensor qualification remain open.
+
+Preserve `session-thermal-monitor.json` with the safety diagnostic and journal
+when investigating a v4 stop. Monitoring failures block signing, and a file
+cannot replace the one-use live final gate. Do not edit or replay the journal
+to force finalization or saving.
 
 ## Cancellation or deadline stop
 
@@ -67,7 +86,7 @@ exit produces `HHPT_FAILED quick-session ... cleanup=unconfirmed` and blocks
 not confirm child cleanup. Preserve sanitized diagnostics and reboot from
 verified media; do not manually resume or force save after this stop.
 
-Continuous thermal monitoring, heartbeat/hang supervision, other profiles,
+Continuous coverage, heartbeat/hang supervision, other profiles,
 and physical-hardware qualification remain incomplete. Direct capture and
 direct finalization without a session journal do not claim the quick session's
 stop or safety history.
@@ -75,7 +94,8 @@ stop or safety history.
 ## Periodic mount or network safety stop
 
 The periodic-monitor increment samples read-only mount and network metadata
-once per second through final safety. A sample has a one-second deadline; an
+once per second. The v4 development workflow retains it through final inventory
+and the final gate. A sample has a one-second deadline; an
 observation gap beyond 2,500 milliseconds also stops the run. The first unsafe,
 unknown, timed-out, or excessively delayed observation cancels active work and
 blocks signing even if a later observation is safe. Failure to join the monitor
@@ -88,8 +108,9 @@ counts, and whether cleanup was confirmed. Preserve that file and the other
 sanitized session diagnostics; do not edit them to force a report. Restart from
 verified media after resolving the cause.
 
-A sub-second session may have zero periodic samples, recorded honestly
-in journal v3 alongside its required independent safety snapshots. Sampling
+A sub-second session may have zero periodic mount/network samples, recorded
+honestly alongside its required independent safety snapshots. V4 still requires
+initial and final thermal observations. Sampling
 does not establish continuous safety or preempt blocked kernel calls. Automated
 and native Linux tests, race checks, and signed CLI workflows passed;
 rebuilt-image and physical qualification remain open.

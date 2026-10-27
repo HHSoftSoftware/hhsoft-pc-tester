@@ -49,13 +49,15 @@ type MonitorResult struct {
 }
 
 // Monitor retains the public safety contract over one owned periodic observer.
-type Monitor struct{ owner *periodic.Monitor[Result] }
+type Monitor struct {
+	owner *periodic.Monitor[Result, struct{}]
+}
 
 func StartMonitor(observe func(context.Context) Result, options MonitorOptions) (*Monitor, error) {
 	if observe == nil || options.Started.IsZero() {
 		return nil, errors.New("periodic safety monitor requires an observer and start time")
 	}
-	owner, err := periodic.Start(observe, assessMonitorObservation, periodic.Options{
+	owner, err := periodic.Start[Result, struct{}](observe, assessMonitorObservation, nil, periodic.Options{
 		Started: options.Started, Cancel: options.Cancel,
 		Interval: MonitorInterval, ObservationTimeout: MonitorObservationTimeout,
 		MaximumGap: MonitorMaximumGap, StopTimeout: MonitorStopTimeout,
@@ -82,5 +84,16 @@ func (monitor *Monitor) Failed() bool {
 	return monitor.owner.Failed()
 }
 func (monitor *Monitor) Stop(ctx context.Context) MonitorResult {
-	return monitorResult(monitor.owner.Stop(ctx))
+	return monitor.StopWithJoin(ctx).Result
+}
+
+type StopReceipt struct {
+	Result             MonitorResult
+	Joined             bool
+	JoinedMilliseconds int64
+}
+
+func (monitor *Monitor) StopWithJoin(ctx context.Context) StopReceipt {
+	summary := monitor.owner.Stop(ctx)
+	return StopReceipt{Result: monitorResult(summary), Joined: summary.Joined, JoinedMilliseconds: summary.JoinedMilliseconds}
 }

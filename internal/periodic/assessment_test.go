@@ -14,7 +14,7 @@ func TestAssessmentPanicJoinsOwnerAndPreservesDeadlinePrecedence(t *testing.T) {
 		t.Run(map[bool]string{false: "on time", true: "late"}[late], func(t *testing.T) {
 			clock := newMonitorClock()
 			var cancellations atomic.Int32
-			monitor, err := startMonitor(func(context.Context) testObservation {
+			monitor, err := startEmptyMonitor(func(context.Context) testObservation {
 				if late {
 					clock.advance(time.Second, false)
 				}
@@ -46,7 +46,7 @@ func TestAssessmentPanicJoinsOwnerAndPreservesDeadlinePrecedence(t *testing.T) {
 func TestAssessmentCopiesNormalizedValuesIntoIndependentSnapshots(t *testing.T) {
 	type observation struct{ Note string }
 	clock := newMonitorClock()
-	monitor, err := startMonitor(func(context.Context) observation {
+	monitor, err := startEmptyMonitor(func(context.Context) observation {
 		return observation{Note: "untrusted location"}
 	}, func(observation) Assessment[observation] {
 		return Assessment[observation]{Value: observation{Note: "fixed diagnostic"}, FailureReason: "policy_failure"}
@@ -82,7 +82,7 @@ func TestInvalidAssessmentAndTimingNeverStartObserver(t *testing.T) {
 	var calls atomic.Int32
 	observe := func(context.Context) testObservation { calls.Add(1); return monitorSafeResult() }
 	valid := testOptions(clock.now(), nil)
-	if _, err := startMonitor(observe, nil, valid, clock); err == nil {
+	if _, err := startEmptyMonitor(observe, nil, valid, clock); err == nil {
 		t.Fatal("nil assessment accepted")
 	}
 	for _, change := range []func(*Options){
@@ -93,7 +93,7 @@ func TestInvalidAssessmentAndTimingNeverStartObserver(t *testing.T) {
 	} {
 		options := valid
 		change(&options)
-		if _, err := startMonitor(observe, testAssessment, options, clock); err == nil {
+		if _, err := startEmptyMonitor(observe, testAssessment, options, clock); err == nil {
 			t.Fatal("invalid timing accepted")
 		}
 	}
@@ -104,7 +104,7 @@ func TestInvalidAssessmentAndTimingNeverStartObserver(t *testing.T) {
 
 func TestAssessmentTimeDoesNotMoveObserverCompletion(t *testing.T) {
 	clock := newMonitorClock()
-	monitor, err := startMonitor(func(context.Context) testObservation {
+	monitor, err := startEmptyMonitor(func(context.Context) testObservation {
 		return monitorSafeResult()
 	}, func(value testObservation) Assessment[testObservation] {
 		// The observer already completed at 1000 ms. Policy evaluation reaches

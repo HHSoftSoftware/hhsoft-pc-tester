@@ -5,7 +5,7 @@ import (
 	"time"
 )
 
-func cloneSummary[T any](result Summary[T]) Summary[T] {
+func cloneSummary[T, A any](result Summary[T, A]) Summary[T, A] {
 	if result.FirstFailure != nil {
 		failure := *result.FirstFailure
 		if failure.Observation != nil {
@@ -18,29 +18,59 @@ func cloneSummary[T any](result Summary[T]) Summary[T] {
 		value := *result.LastObservation
 		result.LastObservation = &value
 	}
+	for _, phase := range []*PhaseSummary[T]{&result.Initial, &result.Final} {
+		if phase.Observation != nil {
+			value := *phase.Observation
+			phase.Observation = &value
+		}
+	}
+	if result.FirstFinding != nil {
+		value := *result.FirstFinding
+		result.FirstFinding = &value
+	}
 	return result
 }
 
-func (monitor *Monitor[T]) fail(reason string, observation *T, now time.Time) {
+func (monitor *Monitor[T, A]) fail(reason string, observation *T, now time.Time) {
+	monitor.failPhase(reason, NoPhase, observation, now)
+}
+
+func (monitor *Monitor[T, A]) failPhase(reason string, phase Phase, observation *T, now time.Time) {
 	monitor.mutex.Lock()
-	if monitor.result.FirstFailure != nil {
+	if monitor.result.FirstFailure != nil || monitor.final != nil {
 		monitor.mutex.Unlock()
 		return
 	}
-	failure := &Failure[T]{Reason: reason, ElapsedMilliseconds: max(0, now.Sub(monitor.options.Started).Milliseconds())}
+	failure := &Failure[T]{Reason: reason, Phase: phase, ElapsedMilliseconds: max(0, now.Sub(monitor.options.Started).Milliseconds())}
 	if observation != nil {
 		value := *observation
 		failure.Observation = &value
 	}
 	monitor.result.FirstFailure = failure
-	monitor.mutex.Unlock()
 	close(monitor.failure)
+	monitor.initialOnce.Do(func() { close(monitor.initialDone) })
+	monitor.mutex.Unlock()
 	if monitor.options.Cancel != nil {
 		monitor.options.Cancel()
 	}
 }
 
-func (monitor *Monitor[T]) recordGap(now time.Time) bool {
+func (monitor *Monitor[T, A]) find(reason string, phase Phase, observation T, now time.Time) {
+	monitor.mutex.Lock()
+	if monitor.final != nil || monitor.result.FirstFinding != nil {
+		monitor.mutex.Unlock()
+		return
+	}
+	monitor.result.FirstFinding = &Finding[T]{Reason: reason, Phase: phase,
+		ElapsedMilliseconds: max(0, now.Sub(monitor.options.Started).Milliseconds()), Observation: observation}
+	close(monitor.finding)
+	monitor.mutex.Unlock()
+	if monitor.options.OnFinding != nil {
+		monitor.options.OnFinding()
+	}
+}
+
+func (monitor *Monitor[T, A]) recordGap(now time.Time) bool {
 	monitor.mutex.Lock()
 	backwards := now.Before(monitor.lastClock)
 	if !backwards {
@@ -59,7 +89,7 @@ func (monitor *Monitor[T]) recordGap(now time.Time) bool {
 	return true
 }
 
-func (monitor *Monitor[T]) freeze(clean bool, now time.Time) Summary[T] {
+func (monitor *Monitor[T, A]) freeze(clean bool, now time.Time) Summary[T, A] {
 	monitor.freezeMutex.Lock()
 	defer monitor.freezeMutex.Unlock()
 	monitor.mutex.Lock()
@@ -75,10 +105,14 @@ func (monitor *Monitor[T]) freeze(clean bool, now time.Time) Summary[T] {
 	}
 	monitor.recordGap(now)
 	monitor.mutex.Lock()
-	zeroLong := monitor.result.CompletedObservations == 0 && now.Sub(monitor.options.Started) >= monitor.options.Interval
+	zeroLong := monitor.options.Mode == DelayedPeriodic && monitor.result.CompletedObservations == 0 && now.Sub(monitor.options.Started) >= monitor.options.Interval
+	missingPhase := monitor.options.Mode == InitialPeriodicFinal && (!monitor.result.Initial.Completed || !monitor.result.Final.Completed)
 	monitor.mutex.Unlock()
 	if zeroLong {
 		monitor.fail("sampling_gap", nil, now)
+	}
+	if missingPhase {
+		monitor.fail("required_phase_missing", nil, now)
 	}
 	monitor.mutex.Lock()
 	defer monitor.mutex.Unlock()
@@ -89,13 +123,17 @@ func (monitor *Monitor[T]) freeze(clean bool, now time.Time) Summary[T] {
 		monitor.result.MaximumGapMilliseconds = max(monitor.result.MaximumGapMilliseconds,
 			monitor.result.ElapsedMilliseconds-monitor.result.LastCompletedMilliseconds)
 		monitor.result.CleanupConfirmed = clean
+		monitor.result.Joined = !monitor.joinedAt.IsZero()
+		if monitor.result.Joined {
+			monitor.result.JoinedMilliseconds = max(0, monitor.joinedAt.Sub(monitor.options.Started).Milliseconds())
+		}
 		value := cloneSummary(monitor.result)
 		monitor.final = &value
 	}
 	return cloneSummary(*monitor.final)
 }
 
-func (monitor *Monitor[T]) requestStop(ctx context.Context) time.Time {
+func (monitor *Monitor[T, A]) requestStop(ctx context.Context) time.Time {
 	monitor.freezeMutex.Lock()
 	defer monitor.freezeMutex.Unlock()
 	monitor.stopOnce.Do(func() {
@@ -125,7 +163,7 @@ func (monitor *Monitor[T]) requestStop(ctx context.Context) time.Time {
 // Stop prevents new observations and waits for the owned observer to return.
 // It does not cancel a valid in-flight observation. An uncertain first result
 // remains uncertain on every later call, even if the observer eventually exits.
-func (monitor *Monitor[T]) Stop(ctx context.Context) Summary[T] {
+func (monitor *Monitor[T, A]) Stop(ctx context.Context) Summary[T, A] {
 	if ctx == nil {
 		ctx = context.Background()
 	}

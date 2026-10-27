@@ -86,20 +86,24 @@ func awaitMonitor(t *testing.T, description string, ready func() bool) {
 	}
 }
 
-func monitorSnapshot(monitor *Monitor[testObservation]) Summary[testObservation] {
+func startEmptyMonitor[T any](observe func(context.Context) T, assess func(T) Assessment[T], options Options, clock monitorClock) (*Monitor[T, struct{}], error) {
+	return startMonitor[T, struct{}](observe, assess, nil, options, clock)
+}
+
+func monitorSnapshot(monitor *Monitor[testObservation, struct{}]) Summary[testObservation, struct{}] {
 	monitor.mutex.Lock()
 	defer monitor.mutex.Unlock()
 	return cloneSummary(monitor.result)
 }
 
-func awaitMonitorCount(t *testing.T, monitor *Monitor[testObservation], count uint64) {
+func awaitMonitorCount(t *testing.T, monitor *Monitor[testObservation, struct{}], count uint64) {
 	t.Helper()
 	awaitMonitor(t, "completed observation", func() bool { return monitorSnapshot(monitor).CompletedObservations >= count })
 }
 
-func startTestMonitor(t *testing.T, clock *testMonitorClock, observe func(context.Context) testObservation, cancel context.CancelFunc) *Monitor[testObservation] {
+func startTestMonitor(t *testing.T, clock *testMonitorClock, observe func(context.Context) testObservation, cancel context.CancelFunc) *Monitor[testObservation, struct{}] {
 	t.Helper()
-	monitor, err := startMonitor(observe, testAssessment, testOptions(clock.now(), cancel), clock)
+	monitor, err := startEmptyMonitor(observe, testAssessment, testOptions(clock.now(), cancel), clock)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -221,7 +225,7 @@ func testAssessment(value testObservation) Assessment[testObservation] {
 	}
 	return result
 }
-func testStatus(result Summary[testObservation]) string {
+func testStatus(result Summary[testObservation, struct{}]) string {
 	if result.FirstFailure == nil {
 		return "pass"
 	}

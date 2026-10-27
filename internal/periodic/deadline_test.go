@@ -29,7 +29,7 @@ func awaitObserver(t *testing.T, started <-chan context.Context) context.Context
 	}
 }
 
-func awaitMonitorDone(t *testing.T, monitor *Monitor[testObservation]) {
+func awaitMonitorDone(t *testing.T, monitor *Monitor[testObservation, struct{}]) {
 	t.Helper()
 	select {
 	case <-monitor.done:
@@ -75,7 +75,7 @@ func TestMonitorStopLetsValidObservationFinish(t *testing.T) {
 	monitor := startTestMonitor(t, clock, observe, nil)
 	clock.advance(time.Second, true)
 	ctx := awaitObserver(t, started)
-	stopped := make(chan Summary[testObservation], 1)
+	stopped := make(chan Summary[testObservation, struct{}], 1)
 	go func() { stopped <- monitor.Stop(context.Background()) }()
 	awaitMonitor(t, "stop request", func() bool { monitor.mutex.Lock(); defer monitor.mutex.Unlock(); return monitor.stopRequested })
 	if ctx.Err() != nil {
@@ -128,7 +128,7 @@ func TestMonitorStopDeadlineCannotBeWonByLateJoin(t *testing.T) {
 	monitor := startTestMonitor(t, clock, observe, nil)
 	clock.advance(time.Second, true)
 	awaitObserver(t, started)
-	stopped := make(chan Summary[testObservation], 1)
+	stopped := make(chan Summary[testObservation, struct{}], 1)
 	go func() { stopped <- monitor.Stop(context.Background()) }()
 	awaitMonitor(t, "stop timer", func() bool {
 		clock.mutex.Lock()

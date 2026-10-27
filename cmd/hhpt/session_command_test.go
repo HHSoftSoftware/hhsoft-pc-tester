@@ -28,6 +28,7 @@ type sessionHarness struct {
 	directory                string
 	arguments                []string
 	frozen                   plan.Plan
+	snapshot                 inventory.Snapshot
 	dependencies             sessionDependencies
 	clock                    time.Time
 	calls                    []string
@@ -45,7 +46,7 @@ func newSessionHarness(t *testing.T, architecture string, excluded []string) *se
 		inventory.NewComponent(inventory.ComponentCPU, "cpu:0", nil),
 		inventory.NewComponent(inventory.ComponentMemory, "memory:system", nil),
 		inventory.NewComponent(inventory.ComponentSound, "sound:card0", nil),
-		inventory.NewComponent(inventory.ComponentInput, "input:event0", map[string]string{"category": "pointer"}),
+		pointerInventoryFixture(true, architecture == "legacy-x86" || architecture == "x86").Components[0],
 		inventory.NewComponent(inventory.ComponentNetwork, "network:eth0", map[string]string{"name": "eth0"}),
 		inventory.NewComponent(inventory.ComponentBlock, "block:sda", map[string]string{"kind": "device"}),
 		inventory.NewComponent(inventory.ComponentUSB, "usb:1-1", nil),
@@ -53,6 +54,7 @@ func newSessionHarness(t *testing.T, architecture string, excluded []string) *se
 		inventory.NewComponent(inventory.ComponentVideo, "video:connector0", map[string]string{"category": "display_connector"}),
 	}
 	var err error
+	h.snapshot = inventory.NewSnapshot(components)
 	h.frozen, err = plan.BuildWithSelection(inventory.NewSnapshot(components), plan.ProfileQuick, architecture, bytes.Repeat([]byte{0x31}, 32), "ephemeral-session", excluded)
 	if err != nil {
 		t.Fatal(err)
@@ -72,6 +74,9 @@ func newSessionHarness(t *testing.T, architecture string, excluded []string) *se
 		return &sessionMonitorFixture{result: func() safemode.MonitorResult {
 			return sessionMonitorSummary(h.clock.Sub(started).Milliseconds())
 		}}, nil
+	}
+	h.dependencies.StartThermal = func(started time.Time, _, _ context.CancelFunc) (sessionThermalMonitor, error) {
+		return &sessionThermalFixture{clock: func() int64 { return h.clock.Sub(started).Milliseconds() }, finding: make(chan struct{})}, nil
 	}
 	h.dependencies.ObserveSafety = func(ctx context.Context) safemode.Result {
 		if ctx.Err() != nil {
@@ -93,7 +98,7 @@ func newSessionHarness(t *testing.T, architecture string, excluded []string) *se
 		writeSessionFixture(t, worker.OutputPath, sessionCompleteEvidence(worker.ID))
 		return 0
 	}
-	h.dependencies.Finalize = func(ctx context.Context, request sessionFinalization, stdout, _ io.Writer) int {
+	h.dependencies.Finalize = func(ctx context.Context, request sessionFinalization, stdout, _ io.Writer) sessionFinalizationResult {
 		if ctx.Err() != nil || !h.inputFinished {
 			t.Fatal("finalization overlapped input or inherited cancellation")
 		}
@@ -101,15 +106,16 @@ func newSessionHarness(t *testing.T, architecture string, excluded []string) *se
 		if !ok || time.Until(deadline) > 30*time.Second || time.Until(deadline) <= 0 {
 			t.Fatal("finalization lacks its bounded fresh context")
 		}
-		journal, err := readSessionJournal(request.SafetyJournalPath)
+		value, err := request.Gate(ctx)
+		journal := &value
 		if err != nil {
-			t.Fatal(err)
+			return sessionFinalizationResult{Code: 1}
 		}
 		outcomes, err := parseOutcomes(request.Outcomes)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := validateSessionJournal(*journal, h.frozen, outcomes, request.StopReason, h.directory); err != nil {
+		if err := validateSessionJournal(*journal, h.frozen, outcomes, journal.StopReason, h.directory); err != nil {
 			t.Fatal(err)
 		}
 		h.journal, h.request, h.finalized = *journal, request, true
@@ -117,7 +123,7 @@ func newSessionHarness(t *testing.T, architecture string, excluded []string) *se
 		if err := os.WriteFile(request.OutputPath, []byte("synthetic signed-report fixture"), 0600); err != nil {
 			t.Fatal("could not write synthetic finalized report")
 		}
-		return 0
+		return sessionFinalizationResult{Journal: journal, Integrity: sessionIntegrity{Status: "pass", PlanID: h.frozen.ID, PlannedComponents: uint64(len(h.frozen.HardwareGraph.Components)), FinalComponents: uint64(len(h.frozen.HardwareGraph.Components))}}
 	}
 	return h
 }
@@ -136,9 +142,13 @@ func writeSessionFixture(t *testing.T, path string, evidence any) {
 func sessionCompleteEvidence(id string) any {
 	switch id {
 	case "cpu.quick":
-		return completeCPUEvidence()
+		value := completeCPUEvidence()
+		value.DurationMilliseconds = 0
+		return value
 	case "memory.quick":
-		return completeMemoryEvidence()
+		value := completeMemoryEvidence()
+		value.DurationMilliseconds = 0
+		return value
 	case "audio.readiness.quick":
 		return completeAudioEvidence()
 	case "input.readiness.quick":
@@ -227,7 +237,7 @@ func TestSessionExecutesFrozenAllowlistAndRetainsSelection(t *testing.T) {
 			if architecture != "legacy-x86" {
 				want = append(want, "graphics.quick", "display.operator.quick")
 			}
-			if !h.finalized || !reflect.DeepEqual(h.calls, want) || h.journal.StopReason != "completed" || h.safetyCalls != len(want)+2 {
+			if !h.finalized || !reflect.DeepEqual(h.calls, want) || h.journal.StopReason != "completed" || h.safetyCalls != len(want)+3 {
 				t.Fatalf("calls=%v finalized=%v safety=%d stop=%s", h.calls, h.finalized, h.safetyCalls, h.journal.StopReason)
 			}
 			if h.journal.Workers[2].State != "not_scheduled" || h.journal.Workers[2].Outcome != "excluded" {
@@ -282,7 +292,7 @@ func TestSessionStopsAndFinalizesWithFreshContext(t *testing.T) {
 			if ending == "failure_cancel_race" {
 				wantReason = "operator_cancelled"
 			}
-			if !reflect.DeepEqual(h.calls, []string{"cpu.quick"}) || h.journal.StopReason != wantReason || h.safetyCalls != 3 {
+			if !reflect.DeepEqual(h.calls, []string{"cpu.quick"}) || h.journal.StopReason != wantReason || h.safetyCalls != 4 {
 				t.Fatalf("calls=%v reason=%s safety=%d", h.calls, h.journal.StopReason, h.safetyCalls)
 			}
 			first := h.journal.Workers[0]
@@ -407,15 +417,21 @@ func TestSessionOrdinaryGraphicsErrorRemainsReportable(t *testing.T) {
 }
 
 func TestSessionCannotClaimReadyFromMissingOrAmbiguousIntegrity(t *testing.T) {
-	for _, mode := range []string{"missing", "duplicate", "truncated", "changed-plan", "bad-count", "output-failure", "existing-ready"} {
+	for _, mode := range []string{"missing", "duplicate", "truncated", "changed-plan", "bad-count", "output-failure", "existing-ready", "typed-plan", "typed-count", "typed-status"} {
 		t.Run(mode, func(t *testing.T) {
 			h := newSessionHarness(t, "x86_64", nil)
 			finalize := h.dependencies.Finalize
-			h.dependencies.Finalize = func(ctx context.Context, request sessionFinalization, stdout, stderr io.Writer) int {
+			h.dependencies.Finalize = func(ctx context.Context, request sessionFinalization, stdout, stderr io.Writer) sessionFinalizationResult {
 				var captured bytes.Buffer
 				code := finalize(ctx, request, &captured, stderr)
 				text := captured.String()
 				switch mode {
+				case "typed-plan":
+					code.Integrity.PlanID = "sha256:" + strings.Repeat("0", 64)
+				case "typed-count":
+					code.Integrity.FinalComponents++
+				case "typed-status":
+					code.Integrity.Status = "fail"
 				case "missing":
 					text = "finalized\n"
 				case "duplicate":
@@ -566,7 +582,11 @@ func TestSessionAllExcludedStillRequiresFreshFinalSafety(t *testing.T) {
 					return result
 				}
 				code := h.run(t.Context())
-				if len(h.calls) != 0 || h.safetyCalls != 2 || !h.inputFinished {
+				wantSafety := 3
+				if unsafeFinal {
+					wantSafety = 2
+				}
+				if len(h.calls) != 0 || h.safetyCalls != wantSafety || !h.inputFinished {
 					t.Fatal("all-off session executed workers or omitted safety/input cleanup")
 				}
 				if unsafeFinal {
@@ -575,7 +595,7 @@ func TestSessionAllExcludedStillRequiresFreshFinalSafety(t *testing.T) {
 					}
 					return
 				}
-				if code != 0 || !h.finalized || len(h.journal.Safety) != 2 {
+				if code != 0 || !h.finalized || len(h.journal.Safety) != 3 {
 					t.Fatalf("all-off session failed: code=%d stderr=%s", code, &h.stderr)
 				}
 				for _, record := range h.journal.Workers {

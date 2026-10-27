@@ -245,7 +245,7 @@ func TestSessionJournalCannotAuthorizeUnjoinedQuickEvidence(t *testing.T) {
 				collections, observations := 0, 0
 				random := &journalForbiddenRandom{}
 				var stdout, stderr bytes.Buffer
-				code := runFinalizeWithSafety(t.Context(), fixture.args(t), &stdout, &stderr,
+				code := fixture.finalize(t.Context(), fixture.args(t), &stdout, &stderr,
 					func(context.Context) (inventory.Snapshot, error) { collections++; return fixture.snapshot, nil }, random, time.Now,
 					func(context.Context) safemode.Result { observations++; return journalSafeObservation() })
 				if code != 1 || collections != 0 || observations != 0 || random.calls != 0 || stdout.Len() != 0 || !strings.Contains(stderr.String(), "cleanup was not confirmed") {

@@ -79,9 +79,9 @@ func TestSessionRejectsExistingQuickSafetyBeforeLaterPhases(t *testing.T) {
 						// Evidence remains authoritative even when an adapter returns zero.
 						return 0
 					}
-					h.dependencies.Finalize = func(context.Context, sessionFinalization, io.Writer, io.Writer) int {
+					h.dependencies.Finalize = func(context.Context, sessionFinalization, io.Writer, io.Writer) sessionFinalizationResult {
 						h.finalized = true
-						return 0
+						return sessionFinalizationResult{}
 					}
 					if code := h.run(ctx); code != item.wantCode {
 						t.Fatalf("code=%d want=%d stderr=%s", code, item.wantCode, &h.stderr)
@@ -169,7 +169,8 @@ func TestSessionQuickCompletedFailuresRemainFailures(t *testing.T) {
 			if id == "memory.quick" {
 				schema = quick.MemorySchema
 			}
-			status, state, err := sessionWorkerOutcome(path, schema, 1, true)
+			encoded, readErr := readOptionalEvidence(path)
+			status, state, err := sessionWorkerOutcomeEvidence(encoded, readErr, schema, 1, true)
 			if err != nil || status != "fail" || state != "completed" {
 				t.Fatalf("completed failure changed after interruption: status=%s state=%s err=%v", status, state, err)
 			}

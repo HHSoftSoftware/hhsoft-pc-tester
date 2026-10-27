@@ -167,7 +167,8 @@ the alpha still requires the separate documented release gates.
   filtering unavailable, disabled, faulted, uncalibrated, and known threshold
   channels. The earlier hwmon milestone passed native amd64 and 386 soft-float
   fixture tests without skips;
-  representative physical sensor validation and run-wide monitoring remain open.
+  representative physical sensor validation remains open. The separate
+  run-wide implementation and its qualification gates are tracked below.
 - [x] Implement and validate the strengthened local CPU/RAM thermal guard in
   automated and native Linux fixtures. The guard bounds the initial and later
   readings, joins the observer before returning evidence, reports
@@ -178,8 +179,7 @@ the alpha still requires the separate documented release gates.
   workflows passed; counts are recorded in
   [requirements validation](docs/requirements-validation.md).
 - [ ] Qualify the strengthened local CPU/RAM thermal guard in rebuilt bootable
-  images and on representative physical sensors. Run-wide monitoring remains a
-  separate requirement.
+  images and on representative physical sensors.
 - [x] Run bounded RAM quick patterns over a safely selected working set.
 - [x] Discover DRM cards, bound drivers, render nodes, connectors, and modes.
 - [x] Detect Mesa hardware acceleration versus software-rendering fallback.
@@ -320,19 +320,35 @@ the alpha still requires the separate documented release gates.
   failures or skips; six exact wire cases were executed before extraction and
   remain unchanged. Full Windows tests, vet and cross-builds passed. Native
   Linux amd64/386 suites passed 2,724 test events; race checks passed 1,105,
-  and all 15 CLI scenarios passed with confirmed cleanup. Run-wide thermal,
-  rebuilt-image and physical-hardware qualification remain open.
+  and all 15 CLI scenarios passed with confirmed cleanup. These results qualify
+  the extraction; the subsequent run-wide increment has separate gates below.
+- [x] Implement sampled thermal monitoring throughout the safe quick session,
+  including an immediate observation with all tests excluded, every worker,
+  cleanup, final inventory, and a final observation before signing. Journal v4
+  binds both monitor joins, coverage and local CPU/RAM heat evidence through a
+  one-use in-process final gate. Heat stops new work but remains reportable after
+  confirmed cleanup; monitoring failures block signing.
+- [x] Complete full host, native Linux, race, and CLI qualification for the
+  run-wide thermal/v4 increment. Windows passed 1,754 test/subtest events across
+  22 packages with 21 platform skips and no failures; vet, 24 Linux test-binary
+  builds and all five application targets passed. The 24 native Linux amd64/386
+  suite runs passed 3,032 events and four race suites passed 1,203, with no skips.
+  All 15 CLI scenarios and ownership/cleanup checks passed. All twelve session
+  scenarios honestly reported unavailable temperature telemetry; all-off runs
+  retained initial/final observations and deadline runs retained two periodic
+  observations. These results do not establish physical sensor health.
+- [ ] Qualify run-wide thermal/v4 monitoring in rebuilt bootable images and on
+  representative physical PCs. The beta pilot and release gates remain open.
 - [ ] Separate the unprivileged UI, privileged daemon, and sandboxed workers.
-- [ ] Complete run-wide thermal, heartbeat, hang, and deadline watchdogs beyond
-  the quick-session coordinator, CPU/RAM thermal checks, terminal outer guard,
-  and worker process-group cleanup.
-  The local CPU/RAM guard does not monitor other workers or an all-off selection.
+- [ ] Complete heartbeat, hang, and deadline watchdogs beyond the quick-session
+  coordinator, terminal outer guard, and worker process-group cleanup; extend
+  thermal supervision to the remaining profiles and telemetry sources.
 - [x] Coordinate safe quick tests under one session deadline and each frozen
   test's complete budget; support Ctrl-C and Linux termination signals, retain
   completed failures, and finalize clean stops with fresh bounded contexts.
   A terminal outer guard blocks ready/save on failure. Kernel stalls, escaped
   process groups, and continuous coverage remain separate limits; periodic
-  mount/network sampling does not complete thermal or heartbeat monitoring.
+  sampling does not establish continuous safety or heartbeat monitoring.
 - [x] Implement deployment-keyed, same-boot typed authorization for separate
   removable USB report destinations with mounted boot/internal-media exclusion.
 - [ ] Implement typed authorization for destructive targets with boot-media,

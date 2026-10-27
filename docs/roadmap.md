@@ -130,18 +130,33 @@ record truthful coverage in CPU/memory v2 evidence. Unconfirmed cleanup blocks
 later work and signing; observed calculation or memory failures are preserved.
 Windows tests, vet, cross-builds, native Linux suites, race checks, and
 command-line workflows passed. Rebuilt-image and physical-sensor qualification
-remain open. This does not add a catalog row, change journal v3, or provide
-thermal monitoring across the whole session. Run-wide thermal coverage,
-heartbeat/hang supervision, privilege
-separation, and the physical pilot remain subsequent work.
+remain open. That local-guard increment did not add a catalog row or change
+journal v3. Its 250-millisecond sampling wait remains separate from the
+run-wide observer below. Heartbeat/hang supervision, privilege separation, and
+the physical pilot remain subsequent work.
 
 The shared periodic observer engine is now extracted in source, with the
 existing safemode API and v1 evidence preserved. Focused checks passed 217 test
 events, including compatibility with six wire cases executed before extraction.
 Full Windows tests, vet, cross-builds, native Linux suites, race checks and all
-15 CLI scenarios passed with confirmed cleanup. Immediate thermal sampling,
-final thermal observations, and run-wide thermal reporting remain subsequent
-implementation work. Rebuilt-image and physical qualification remain open.
+15 CLI scenarios passed with confirmed cleanup. Those results qualify the
+extraction, not subsequent changes to its lifecycle or report integration.
+
+Run-wide sampled thermal monitoring is now implemented in development source
+for the safe quick session. It observes immediately, repeats at a one-second
+interval, and requires a final observation after inventory preparation. Even an
+all-off selection gets initial and final observations. Both session monitors
+remain active through execution, cleanup, inventory and the final safety gate;
+a one-use in-process handoff requires both joins before key generation or
+signing. Journal v4 adds typed coverage, timing and local CPU/RAM source bindings
+without changing the catalog. Heat cancels work while monitoring continues;
+monitoring failure or an unconfirmed join blocks signing. Unavailable telemetry
+remains a limitation, not a thermal pass. Full Windows tests, vet and cross-builds
+passed. Native Linux amd64/386 suites passed 3,032 test/subtest events and four
+race suites passed 1,203, with no skips; all 15 CLI scenarios passed with confirmed
+cleanup. The twelve session scenarios reported unavailable temperature telemetry.
+Rebuilt images, physical sensor validation, the beta pilot and release gates
+remain open. See [requirements validation](requirements-validation.md).
 
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.
@@ -149,9 +164,9 @@ implementation work. Rebuilt-image and physical qualification remain open.
   display/GPU, network, audio, input, USB, and camera quick checks.
 - Extend operator prompts and run-wide watchdog coverage around the existing
   signed reports, explicit unsupported states, and bounded CPU/RAM safeguards.
-- Extend the bounded quick-session safeguards to broader profiles and add
-  run-wide thermal and heartbeat monitoring, preserving signed stop reasons
-  and earlier unsafe evidence.
+- Extend the bounded quick-session safeguards to broader profiles, add
+  heartbeat supervision, and expand thermal telemetry beyond exposed
+  temperature inputs, preserving signed stop reasons and earlier unsafe evidence.
 - Complete the [physical pilot](beta-pilot.md) on at least ten varied PCs
   without destructive tests.
 

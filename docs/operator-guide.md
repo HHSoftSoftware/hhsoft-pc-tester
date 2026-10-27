@@ -112,13 +112,23 @@ not enable an unsupported test or a destructive action.
 
 The strengthened CPU/RAM guard in development source reports thermal coverage
 as `available`, `partial`, or `unavailable`. A passing computation with missing
-or partial telemetry does not prove safe temperatures. The guard checks before
-load and during those two workers; it does not monitor the rest of the session
-or runs where both are excluded. Each read has a one-second limit and observer
-cleanup has a separate two-second allowance. Unconfirmed cleanup stops later
+or partial telemetry does not prove safe temperatures. This local guard checks
+before load and during those two workers, waiting 250 milliseconds after a
+completed reading before sampling again. Each read has a one-second limit and
+observer cleanup has a separate two-second allowance. Unconfirmed cleanup stops later
 work and report signing. This change passed Windows tests, vet, cross-builds,
 native Linux suites, race checks, and command-line workflows. Rebuilt-image and
 physical-sensor qualification remain open.
+
+Development source now adds separate thermal observations across the quick
+session, including when all tests are excluded. It reads initially, at one-second
+intervals, and after final inventory preparation. Observed heat stops work while
+monitoring continues through cleanup and the final safety gate. A cleanly joined
+stop can retain a signed report; it does not establish that the PC passed.
+Missing telemetry is reported as a coverage limitation. Windows tests, vet,
+cross-builds, native Linux amd64/386 suites, race checks and all 15 CLI scenarios
+passed. The VM session scenarios reported unavailable temperature telemetry;
+rebuilt-image and physical-sensor qualification remain open.
 
 The graphics pattern and CPU/RAM checks are active loads despite the read-only
 storage policy. Supervise unstable equipment. If there is smoke, sparking,
@@ -291,10 +301,11 @@ coverage. Neither scope establishes an overall hardware pass.
 Reports produced by the quick-session workflow also sign the stop reason,
 worker execution states, and mount/network safety history: session preflight,
 checks before started workers, final observations, and a fresh check before
-signing. The periodic-monitor increment adds a journal v3 summary while retaining
+signing. The periodic-monitor increment introduced a journal v3 summary while retaining
 the same ten worker outcomes. It samples read-only mount and network metadata
 once per second, allows one second per observation and at most 2,500 milliseconds
-between observations, and remains active through final safety. Its first unsafe,
+between observations. In the v4 development workflow it remains active through
+final inventory and the final gate. Its first unsafe,
 unknown, timed-out, or excessively delayed observation stops active work and
 blocks signing; a later safe result cannot erase it. The monitor must join
 within two seconds before signing. A clean operator stop can still be reported.
@@ -304,6 +315,9 @@ directory (`/run/hhpt` at boot). It records bounded timing, sample counts, clean
 confirmation, and any first failure. On a signed session, the journal's monitor
 summary matches this diagnostic file. Preserve it with the other session
 evidence when investigating a stop; it cannot authorize signing by itself.
+The sibling `session-thermal-monitor.json` contains the run-wide thermal
+observations, coverage, findings and cleanup result; its signed summary must
+also match the diagnostic file.
 
 A session shorter than the first one-second tick honestly records no periodic
 sample and still requires preflight and final snapshots. Periodic sampling
@@ -313,6 +327,23 @@ rebuilt-image and physical qualification remain open. The extra shell checks
 before session launch and after report creation remain separate operational gates. Direct
 capture and direct finalization without a session journal retain their older
 limited scope and do not claim this session history.
+
+New v4 reports also show run-wide thermal coverage and any observed limit. The
+initial and final thermal readings are required even in a sub-second or all-off
+session. `thermal_finding=limit_reached` means a valid global or local CPU/RAM
+observation reached the limit; `no_limit_observed` means no such observation was
+recorded. Read that finding together with `thermal_coverage=available`, `partial`
+or `unavailable`. No readings, or incomplete readings, do not prove safe
+temperatures. A valid local heat finding remains visible even when global
+telemetry is unavailable, and earlier computation failures remain failures.
+
+Both session monitors must stop with confirmed cleanup before signing. The final
+signed journal determines `session_stop` and the readiness thermal fields;
+hardware-graph integrity remains a separate result. The thermal monitoring
+window includes execution, cleanup, final inventory and the final safety gate.
+Report encoding, output and saving are outside it. Host and native software
+qualification passed for this increment; rebuilt images, physical sensors and
+the beta pilot remain open.
 
 | Status | Operator meaning | Required action |
 | --- | --- | --- |
@@ -441,8 +472,9 @@ controlled the corresponding key pair.
   blocks `HHPT_READY` and save, even if report files already exist, and does
   not confirm that nested workers were cleaned up. Do not manually resume that
   workflow. Periodic mount/network sampling cannot establish continuous safety
-  or stop an uninterruptible kernel call. Run-wide thermal monitoring, heartbeat
-  supervision, and hang detection remain incomplete.
+  or stop an uninterruptible kernel call. Run-wide thermal sampling passed host
+  and native software qualification; rebuilt-image and physical-sensor gates
+  remain open. Heartbeat supervision and hang detection remain incomplete.
 - Input readiness checks read-only event-device access. Guided pointer testing
   adds relative X/Y movement and primary/advertised right/middle button cycles;
   it does not prove every key, wheel, extra button, or touch/touchpad geometry.

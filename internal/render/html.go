@@ -24,6 +24,7 @@ type inventoryDocument struct {
 	Components          []app.ComponentRecord
 	TestResults         []testDocument
 	CoverageDescription string
+	Thermal             *thermalDocument
 }
 
 type testDocument struct {
@@ -91,7 +92,27 @@ table{background:var(--panel);border-collapse:collapse;border:1px solid var(--li
 </tbody>
 </table>
 </section>
-<section class="section" aria-labelledby="tests-heading">
+{{if .Thermal}}<section class="section" aria-labelledby="thermal-heading">
+<h2 id="thermal-heading">Session Temperature Observations</h2>
+<table><tbody>
+<tr><th class="label" scope="row">Scope</th><td>{{.Thermal.Scope}}</td></tr>
+<tr><th class="label" scope="row">Finding</th><td>{{.Thermal.Finding}}</td></tr>
+<tr><th class="label" scope="row">Sensor coverage</th><td>{{.Thermal.Coverage}}</td></tr>
+<tr><th class="label" scope="row">Global observed peak</th><td>{{.Thermal.Peak}}</td></tr>
+<tr><th class="label" scope="row">Stop limit</th><td>{{.Thermal.Limit}}</td></tr>
+<tr><th class="label" scope="row">Accepted global observations</th><td>{{.Thermal.Observations}}</td></tr>
+<tr><th class="label" scope="row">Maximum sampling gap</th><td>{{.Thermal.MaximumGapMilliseconds}} ms</td></tr>
+<tr><th class="label" scope="row">Monitor cleanup</th><td>{{.Thermal.Cleanup}}</td></tr>
+<tr><th class="label" scope="row">Session stop reason</th><td>{{.Thermal.StopReason}}</td></tr>
+</tbody></table>
+<p>Sampling is not continuous coverage. Sensor availability does not establish hardware health.</p>
+{{if .Thermal.LocalSources}}<h3>Local CPU/RAM Temperature Findings</h3>
+<p>Local peaks do not change global sensor coverage or observation counts.</p>
+<table><thead><tr><th>Worker</th><th>Local observed peak</th><th>Stop limit</th><th>Execution interval</th></tr></thead><tbody>
+{{range .Thermal.LocalSources}}<tr><td>{{.Worker}}</td><td>{{.Peak}}</td><td>{{.Limit}}</td><td>{{.Interval}}</td></tr>
+{{end}}</tbody></table>
+{{end}}</section>
+{{end}}<section class="section" aria-labelledby="tests-heading">
 <h2 id="tests-heading">Functional Test Evidence</h2>
 {{if .TestResults}}
 {{range .TestResults}}
@@ -164,7 +185,8 @@ func renderInventoryHTML(output io.Writer, payload app.InventoryPayload, version
 	if err := validateVersion(version); err != nil {
 		return err
 	}
-	if err := app.ValidateCoverage(payload); err != nil {
+	thermal, err := sessionThermalDocument(payload)
+	if err != nil {
 		return err
 	}
 	components := append([]app.ComponentRecord(nil), payload.Components...)
@@ -195,6 +217,7 @@ func renderInventoryHTML(output io.Writer, payload app.InventoryPayload, version
 		Components:          components,
 		TestResults:         testResults,
 		CoverageDescription: coverageDescription(payload.CoverageScope),
+		Thermal:             thermal,
 	}
 	return inventoryTemplate.Execute(&limitedWriter{destination: output}, document)
 }

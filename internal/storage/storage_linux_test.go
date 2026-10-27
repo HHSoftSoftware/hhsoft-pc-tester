@@ -10,12 +10,14 @@ import (
 	"testing"
 )
 
+const neutralMountInfo = "1 0 0:1 / /run rw,nosuid,nodev - tmpfs tmpfs rw\n"
+
 func TestParseMountsAggregatesWritableAliases(t *testing.T) {
 	mounts, err := parseMounts(strings.NewReader("1 0 8:1 / /target ro - ext4 /dev/sda1 rw\n2 0 8:1 / /other rw - ext4 /dev/sda1 rw\n"))
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !mounts["8:1"].mounted || !mounts["8:1"].writable {
+	if !mounts["8:1"].Mounted || !mounts["8:1"].Writable {
 		t.Fatalf("unexpected mount state: %#v", mounts["8:1"])
 	}
 }
@@ -72,8 +74,7 @@ func TestRunDoesNotRejectWritableVirtualFilesystems(t *testing.T) {
 	root := fixtureReadinessMedia(t)
 	mustWrite(t, filepath.Join(root, "proc/self/mountinfo"),
 		"1 0 0:1 / /run rw,nosuid,nodev - tmpfs tmpfs rw\n"+
-			"2 0 0:2 / /proc rw,nosuid,nodev,noexec - proc proc rw\n"+
-			"3 0 0:3 / / rw - overlay overlay rw,lowerdir=/media/ro,upperdir=/run/upper\n")
+			"2 0 0:2 / /proc rw,nosuid,nodev,noexec - proc proc rw\n")
 	result := runPlatform(t.Context(), Options{Root: root})
 	if result.Status != StatusInconclusive || result.WritableMounts != 0 || len(result.Devices) != 1 || !result.Devices[0].NodePresent {
 		t.Fatalf("virtual filesystem mount incorrectly stopped readiness inspection: %#v", result)

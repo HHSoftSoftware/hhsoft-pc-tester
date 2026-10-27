@@ -481,6 +481,37 @@ metadata and descriptors without accessing physical disks or reading media
 contents. AArch64 was cross-built only; these results establish no physical
 storage qualification.
 
+A subsequent mount-policy increment shares one bounded parser between runtime
+safety and storage readiness. Empty observations and malformed mount records
+are errors. Every mounted nonzero device number must exist in the complete
+registry before any node open. Unsupported major-zero filesystems, including
+Btrfs and FUSE, fail closed; writable overlays are rejected while the existing
+read-only overlay policy remains unchanged. Already parsed writable counts
+survive later malformed input, missing or incomplete registries and cancellation.
+
+This increment passed 109 focused Windows test/subtest events and 139 simulated
+Linux-function events. Independent review added 25 events, passing all 164
+simulated events without failures. The added cases cover record-order and map
+iteration independence, unknown anonymous disk-backed filesystems, retained
+unsafe counts after malformed tails or missing registries, cancellation, and
+valid versus empty diskless observations. The original identity, no-follow,
+close and caller-cancellation logic remains unchanged. Linux vet and four
+amd64/386 package test-binary cross-builds passed. These checks use inert metadata
+and descriptors, not native kernel device operations. Full Windows qualification
+passed 2,406 test/subtest events across 25 packages, with 17 platform test skips,
+three packages without host test files and no failures. Vet, 28 Linux test-binary
+builds and five application builds passed against the same source.
+
+Fresh native Linux amd64/386 qualification of this increment passed 4,364
+test/subtest events across 28 suite runs, including 102 storage events per
+architecture. Five existing race suites passed 1,545 events; storage is not a
+separate race suite in this cohort. Neither group had skips. All 24 CLI cases,
+nine compiler ownership, nine runtime ownership, 32 archive and 13 supervisor
+checks passed, with confirmed cleanup and all six final environment checks
+reconciled. Storage fixtures still use simulated metadata and descriptors:
+native execution does not establish physical-disk or media-read behavior.
+AArch64 was cross-built only. Rebuilt-image and physical checks remain open.
+
 The storage-readiness v1 schema, catalog and session journal are unchanged, and
 the adapter performs no media-content reads or writes. Agreement between these
 metadata observations does not establish persistent physical identity or detect

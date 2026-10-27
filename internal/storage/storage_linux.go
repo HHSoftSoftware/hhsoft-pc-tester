@@ -3,7 +3,6 @@
 package storage
 
 import (
-	"bufio"
 	"context"
 	"errors"
 	"io"
@@ -15,16 +14,15 @@ import (
 	"strconv"
 	"strings"
 	"syscall"
+
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/safemode"
 )
 
 const maximumBlockDevices = 256
 
 var blockInterfacePattern = regexp.MustCompile(`^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|sr[0-9]+|fd[0-9]+|mmcblk[0-9]+|nvme[0-9]+(c[0-9]+)?n[0-9]+)$`)
 
-type mountState struct {
-	mounted  bool
-	writable bool
-}
+type mountState = safemode.MountState
 
 func runPlatform(ctx context.Context, options Options) Result {
 	return runPlatformWith(ctx, options, realBlockNodeOperations())
@@ -67,6 +65,11 @@ func runPlatformWith(ctx context.Context, options Options, operations blockNodeO
 	}
 	root := filepath.Clean(options.Root)
 	mounts, err := readMounts(filepath.Join(root, "proc/self/mountinfo"))
+	for _, state := range mounts {
+		if state.Writable {
+			result.WritableMounts++
+		}
+	}
 	if err != nil {
 		result.Detail = "cannot verify block mount safety"
 		return result
@@ -80,8 +83,8 @@ func runPlatformWith(ctx context.Context, options Options, operations blockNodeO
 		result.Detail = "block device registry exceeds the supported limit"
 		return result
 	}
-	writableDevices := make(map[string]struct{})
 	registeredDevices := make(map[deviceNumber]struct{})
+	registeredMountNumbers := make(map[string]bool)
 	expectedDevices := make(map[string]deviceNumber)
 	for _, entry := range entries {
 		if ctx.Err() != nil {
@@ -100,18 +103,12 @@ func runPlatformWith(ctx context.Context, options Options, operations blockNodeO
 			return result
 		}
 		state := mounts[number.String()]
-		// Mount safety applies to every registered block device, including
-		// mappings and loop devices excluded from hardware readiness evidence.
-		if state.writable {
-			writableDevices[number.String()] = struct{}{}
-			// Keep an unsafe observation if later enumeration fails or stops.
-			result.WritableMounts = len(writableDevices)
-		}
 		if _, duplicate := registeredDevices[number]; duplicate {
 			result.Detail = "block device registry repeats a device number"
 			return result
 		}
 		registeredDevices[number] = struct{}{}
+		registeredMountNumbers[number.String()] = true
 		expectedDevices[name] = number
 		if ctx.Err() != nil {
 			result.Status = StatusAborted
@@ -139,6 +136,12 @@ func runPlatformWith(ctx context.Context, options Options, operations blockNodeO
 		}
 	}
 	sort.Slice(result.Devices, func(i, j int) bool { return result.Devices[i].Interface < result.Devices[j].Interface })
+	for number := range mounts {
+		if !registeredMountNumbers[number] {
+			result.Detail = "mounted block device is absent from the registry"
+			return result
+		}
+	}
 	if result.WritableMounts > 0 {
 		result.Detail = "one or more block devices have a writable mount"
 		return result
@@ -201,7 +204,7 @@ func inspectRegistryDevice(root, name string, state mountState) (DeviceResult, b
 	if !physical && !partition {
 		return DeviceResult{}, false, nil
 	}
-	device := DeviceResult{Interface: name, Kind: "partition", Mounted: state.mounted, WritableMount: state.writable}
+	device := DeviceResult{Interface: name, Kind: "partition", Mounted: state.Mounted, WritableMount: state.Writable}
 	if !partition {
 		device.Kind = "media"
 	}
@@ -337,34 +340,14 @@ func readMounts(path string) (map[string]mountState, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
-	return parseMounts(file)
+	mounts, parseErr := parseMounts(file)
+	return mounts, errors.Join(parseErr, file.Close())
 }
 
 func parseMounts(source io.Reader) (map[string]mountState, error) {
-	result := make(map[string]mountState)
-	scanner := bufio.NewScanner(source)
-	scanner.Buffer(make([]byte, 1024), 1<<20)
-	lines := 0
-	for scanner.Scan() {
-		lines++
-		if lines > 4096 {
-			return nil, errors.New("mount registry exceeds the supported limit")
-		}
-		fields := strings.Fields(scanner.Text())
-		if len(fields) < 7 || fields[5] == "" {
-			return nil, errors.New("malformed mount registry")
-		}
-		number, ok := parseDeviceNumber(fields[2])
-		if !ok {
-			return nil, errors.New("mount registry lacks a canonical device number")
-		}
-		state := result[number.String()]
-		state.mounted = true
-		state.writable = state.writable || listContains(fields[5], "rw")
-		result[number.String()] = state
-	}
-	return result, scanner.Err()
+	data, readErr := io.ReadAll(io.LimitReader(source, (4<<20)+1))
+	mounts, parseErr := safemode.ParseMounts(data)
+	return mounts, errors.Join(readErr, parseErr)
 }
 
 func validInterfaceName(name string) bool {
@@ -378,15 +361,6 @@ func badDeviceState(state string) bool {
 	default:
 		return false
 	}
-}
-
-func listContains(value, wanted string) bool {
-	for _, item := range strings.Split(value, ",") {
-		if item == wanted {
-			return true
-		}
-	}
-	return false
 }
 
 func fileExists(path string) bool {

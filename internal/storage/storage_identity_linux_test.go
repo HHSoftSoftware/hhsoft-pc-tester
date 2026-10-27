@@ -275,7 +275,7 @@ func TestRunRejectsDuplicateRegistryIdentitiesBeforeAnyNodeOpen(t *testing.T) {
 		for _, mounted := range []bool{false, true} {
 			t.Run(name+"/"+map[bool]string{false: "unmounted", true: "writable"}[mounted], func(t *testing.T) {
 				root := fixtureReadinessMedia(t)
-				mustWrite(t, filepath.Join(root, "proc/self/mountinfo"), "")
+				mustWrite(t, filepath.Join(root, "proc/self/mountinfo"), neutralMountInfo)
 				mustWrite(t, filepath.Join(root, "sys/class/block", name, "dev"), "8:0\n")
 				if mounted {
 					mustWrite(t, filepath.Join(root, "proc/self/mountinfo"), "1 0 8:0 / /target rw - ext4 /dev/sda rw\n")
@@ -299,7 +299,7 @@ func TestRunKeepsIdentityAndCleanupFailuresOutOfPass(t *testing.T) {
 	for _, state := range []string{"correct", "wrong node", "close failure", "cancel after open", "final registry changed"} {
 		t.Run(state, func(t *testing.T) {
 			root := fixtureReadinessMedia(t)
-			mustWrite(t, filepath.Join(root, "proc/self/mountinfo"), "")
+			mustWrite(t, filepath.Join(root, "proc/self/mountinfo"), neutralMountInfo)
 			ctx, cancel := context.WithCancel(t.Context())
 			defer cancel()
 			fixture := validNodeOperations()
@@ -371,7 +371,7 @@ func TestRunRevokesCurrentReadabilityAtCallerCancellationBoundary(t *testing.T) 
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			root := fixtureReadinessMedia(t)
-			mustWrite(t, filepath.Join(root, "proc/self/mountinfo"), "")
+			mustWrite(t, filepath.Join(root, "proc/self/mountinfo"), neutralMountInfo)
 			parent, cancel := context.WithCancel(t.Context())
 			defer cancel()
 			ctx := &cancelAfterCloseContext{Context: parent, cancel: cancel, cancelAtCall: test.cancelAt}

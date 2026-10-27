@@ -235,6 +235,24 @@ the alpha still requires the separate documented release gates.
   The 28 suite runs passed 4,220 test/subtest events, and five existing race
   suites passed 1,508, with no skips. All 24 CLI cases and cleanup checks passed;
   this does not establish physical-disk behavior or media-read correctness.
+- [x] Harden storage-readiness mount admission with the shared bounded safety
+  parser. Empty or malformed observations, unknown mounted block devices,
+  unsupported anonymous filesystems and writable overlays stop before node
+  opens. Previously observed writable counts survive later parse, registry or
+  cancellation failures; the existing read-only overlay policy is unchanged.
+- [x] Check the mount-policy increment with 109 focused Windows test/subtest
+  passes and 139 simulated Linux-function events. Independent review added
+  25 events, for 164 simulated events with no failures; these are not native
+  kernel or physical-device tests.
+- [x] Validate the mount-policy increment with the full host suite: 2,406
+  test/subtest passes across 25 packages, 17 platform test skips and three
+  packages without host test files. Vet, 28 Linux test-binary builds and five
+  application builds passed against the same source.
+- [x] Validate the mount-policy increment on native Linux amd64/386: 28 suite
+  runs passed 4,364 test/subtest events and five existing race suites passed
+  1,545, with no skips. All 24 CLI cases and cleanup checks passed. Storage
+  fixtures use simulated metadata and descriptors; storage has no separate
+  race suite in this cohort.
 - [ ] Qualify storage readiness, replacement and cancellation in rebuilt images
   and on physical devices. Matching kernel numbers do not prove persistent
   physical identity or detect every same-number replacement.

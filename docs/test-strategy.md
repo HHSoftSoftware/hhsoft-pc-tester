@@ -175,19 +175,45 @@ identity at both pathname inspection and descriptor inspection after a read-only
 required for credit. Cancellation cannot credit the current observation, and a
 close failure remains an error; previously observed unsafe mounts are retained.
 
+Mount admission now shares the bounded runtime-safety parser. Empty or malformed
+mount observations fail, and every mounted nonzero device number must occur in
+the complete registry before any block-node open. Unsupported anonymous
+filesystems, including major-zero Btrfs and FUSE mounts, fail closed. Writable
+overlays are rejected; the existing permission for read-only overlays is
+unchanged. Parsed writable counts remain visible after later syntax, registry
+or cancellation failures, independent of map iteration order.
+
 The readiness v1 evidence schema is unchanged. These metadata observations do
 not establish persistent physical identity or detect every replacement that
 reuses the same kernel device number. No sector data is read or written, so the
 adapter cannot claim health, read correctness, throughput, or surface coverage.
 
-Focused Windows checks and independent simulated metadata/descriptor cases pass,
-as do Linux vet and amd64/386 test-binary cross-builds. The full Windows suite,
+For the preceding identity-hardening increment, focused Windows checks and
+independent simulated metadata/descriptor cases passed,
+as did Linux vet and amd64/386 test-binary cross-builds. The full Windows suite,
 vet, 28 Linux test-binary builds and five application builds also passed against
 the same source. Native Linux amd64/386 suites, existing race suites and CLI
 workflows also passed. Storage fixtures use simulated metadata and descriptors;
 these results do not qualify physical disks or media reads. Rebuilt-image and
 physical checks remain open; see
 [requirements validation](requirements-validation.md).
+
+The mount-policy increment has 109 focused Windows test/subtest passes and
+139 simulated Linux-function events. Independent review added 25 events and
+passed all 164 simulated events, including missing registries, malformed tails,
+record-order permutations and valid diskless controls. Linux vet and four
+amd64/386 package test-binary cross-builds also passed. Full Windows qualification
+passed 2,406 test/subtest events across 25 packages, with 17 platform test skips
+and three packages without host test files. Vet, 28 Linux test-binary builds and
+five application builds passed against the same source. Native Linux amd64/386
+qualification passed 4,364 test/subtest events across 28 suite runs, including
+102 storage events per architecture. Five existing race suites passed 1,545
+events; these do not include a storage race suite. Both groups had no skips.
+All 24 CLI cases and cleanup checks passed. Storage fixtures continue to use
+simulated metadata and descriptors, without physical-device or media-read
+qualification. AArch64 was cross-built only. Rebuilt-image and physical checks
+remain open; sampled-media reads and their stricter backing-device exclusions
+remain unimplemented.
 
 The current network readiness adapter checks driver attachment and link state
 without configuring an address, associating Wi-Fi, or generating traffic. The

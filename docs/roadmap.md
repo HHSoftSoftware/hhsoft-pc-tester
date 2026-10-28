@@ -424,6 +424,17 @@ The linked-profile increment passed its isolated Windows suite and selected
 native Linux amd64/386 fixtures; the [validation record](requirements-validation.md#linked-retest-contract)
 keeps their measured scope distinct from these remaining gates.
 
+The comparison input increment now uses checked owned artifact/public-key
+acquisition, propagates cancellation and contains input diagnostics while
+preserving trust defaults, HMAC policy and output behavior. Its isolated host
+suite passed 4,875 test/subtest outcomes; the selected Linux amd64/386 cohort
+passed 938 across eight suites and 120 required root executions. The
+[validation record](requirements-validation.md#comparison-input-ownership)
+separates these software fixtures from installed-CLI and physical evidence.
+Capture and persistence input ownership remain separate work. This increment
+does not activate sampled storage reads or change the existing image,
+physical-PC or release gates.
+
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.
 - Add CPU, partial memory, SMART/NVMe health, read-only storage, complete

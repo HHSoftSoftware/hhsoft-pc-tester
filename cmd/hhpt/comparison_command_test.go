@@ -35,7 +35,7 @@ func TestCompareVerifiesAndClassifiesSignedReports(t *testing.T) {
 
 	var stdout, stderr bytes.Buffer
 	arguments := []string{"-public-key", beforePublicKeyPath, "-key-id", "before-key", "-after-public-key", afterPublicKeyPath, "-after-key-id", "after-key", filepath.Join(directory, "before.hhpcr"), filepath.Join(directory, "after.hhpcr")}
-	if code := runCompare(arguments, &stdout, &stderr); code != 0 {
+	if code := runCompare(t.Context(), arguments, &stdout, &stderr); code != 0 {
 		t.Fatalf("compare returned %d: %s", code, stderr.String())
 	}
 	var result comparison.Result
@@ -59,7 +59,7 @@ func TestCompareRejectsUntrustedAfterReportBeforeOutput(t *testing.T) {
 	writeSignedComparisonFixture(t, reportPath, snapshot, fingerprintKey, privateKey, "test", "session")
 
 	arguments := []string{"-public-key", publicKeyPath, "-key-id", "test", "-after-public-key", wrongPublicKeyPath, "-after-key-id", "test", "-output", outputPath, reportPath, reportPath}
-	if code := runCompare(arguments, bytes.NewBuffer(nil), bytes.NewBuffer(nil)); code != 1 {
+	if code := runCompare(t.Context(), arguments, bytes.NewBuffer(nil), bytes.NewBuffer(nil)); code != 1 {
 		t.Fatalf("compare returned %d", code)
 	}
 	if _, err := os.Stat(outputPath); !os.IsNotExist(err) {

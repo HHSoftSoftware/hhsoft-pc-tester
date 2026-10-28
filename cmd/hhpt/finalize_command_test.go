@@ -77,7 +77,7 @@ func TestFinalizeBuildsSelfIssuedReportFromExistingEvidence(t *testing.T) {
 	}
 	stdout.Reset()
 	stderr.Reset()
-	if result := runCompare([]string{"-self-issued", reportPath, reportPath}, &stdout, &stderr); result != 0 || !bytes.Contains(stdout.Bytes(), []byte(`"status": "unchanged"`)) {
+	if result := runCompare(t.Context(), []string{"-self-issued", reportPath, reportPath}, &stdout, &stderr); result != 0 || !bytes.Contains(stdout.Bytes(), []byte(`"status": "unchanged"`)) {
 		t.Fatalf("self-issued comparison failed: result=%d stdout=%q stderr=%q", result, stdout.String(), stderr.String())
 	}
 }

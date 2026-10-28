@@ -59,6 +59,43 @@ remain separate; the reference does not close them. This cohort did not qualify
 an installed CLI, real report media, kernel-close faults, blocked-kernel
 deadlines or fsync durability.
 
+## Comparison Input Ownership
+
+Comparison routes both report artifacts and applicable public keys through the
+checked acquisition body. Regular-file metadata establishes eligibility before
+readable acquisition; the readable descriptor must match that object. Each
+input's metadata/readable owners close before verification of its captured
+bytes. Input failures and cancellation observed before output dispatch suppress
+comparison output. Input and untrusted-payload diagnostics are fixed; output
+errors and destination ownership retain their existing behavior.
+
+The global self-issued flag retains Boolean-value semantics, including explicit
+false in trusted mode. After-key trust defaults to the before key/ID, with a
+fresh acquisition even when the pathname repeats; complete overrides use their
+separately supplied key. Generic v1 and linked v2, HMAC key/epoch incompatibility
+and identity-ambiguity policy remain unchanged. A signed retest link does not
+establish hardware continuity.
+
+The 2026-10-28 isolated Windows run passed 4,875 test/subtest outcomes and 29
+packages, including all 36 selected roots; 17 tests and one package were
+skipped. Formatting, vet and Linux amd64/386/arm64 cross-builds passed, with all
+eight commands and eight postchecks successful. Selected Linux amd64/386
+execution of the comparison and retained command, bundle, render and report
+cohort passed 938 test/subtest outcomes across eight suites and all 120 required
+root executions (60 per architecture), with no failures or skips and confirmed
+cleanup. Each architecture passed 469 required named outcomes: 408 command,
+54 bundle, six render and one report. Nine owned-resource cases, 32 archive
+cases and six root postchecks also passed. These measurements used the isolated
+492-file source projection; the 491-file committed baseline remained distinct.
+
+A cancellation observed in an already-entered destination callback can leave
+an empty exclusively created file; failed output is not rolled back. This
+increment does not establish deadlines for blocked OS calls, kernel-close fault
+behavior, fsync durability, installed-CLI execution or physical-media outcomes.
+Capture/private signing keys and persistence's live source handle remain
+separate input-ownership work. Existing image, physical-PC and release gates
+remain open; prior cohort counts are not new comparison evidence.
+
 ## Current review boundaries
 
 The initial requirements review found no implementation TODO/FIXME placeholders

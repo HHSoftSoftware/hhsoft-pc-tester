@@ -1249,6 +1249,49 @@ not rebuilt from the linked-retest source. Cleanup, nine owned-resource
 cases, 32 archive cases and six root postchecks also passed. These are
 software fixture results, not installed-CLI or physical-media outcomes.
 
+## Comparison Input Ownership Validation
+
+Establish trust, profile and identity preconditions with independently verified
+signed fixtures before injecting input faults. The comparison integration
+exercises both report roles and both public-key roles through the actual checked
+acquisition body. Readable and metadata Close faults, including concurrent
+cancellation, require exact acquired/closed owner counts and close order, fixed
+diagnostics, no later input acquisition and no comparison output. The default
+after-key path is acquired again. Literal matched rows and full signed reference
+fields guard the valid comparison oracle; shared loader tests alone do not
+establish command integration.
+
+Malformed providers, rejected metadata, changed readable identity, short/invalid
+read progress and the exact-completion probe are exercised through the shared
+core. Context cases cover real dispatch pre-cancellation, every closed-capture
+role, acquisition/read/final-metadata/Close cancellation and hard-error priority.
+The entered-writer case cancels before its exclusive-output adapter opens, then
+checks cancellation at callback entry: zero payload, one checked Close and an
+allowed empty destination. It does not claim rollback or an interruptible
+arbitrary blocking writer. Retained output-error diagnostics and caller-owned
+stdout remain part of the contract.
+
+Trusted and self-issued viewless v1/v2 fixtures cover after-key defaults and
+overrides, explicit false Boolean semantics, strict result/reference decoding,
+HMAC key/epoch incompatibility and unresolved identity. Wrong keys, hostile
+signed product/payload/policy fields and noncanonical archives must fail with
+fixed input diagnostics in either report slot. Real Linux/Windows regular-file
+command paths preserve all source bytes, reject an existing output and do not
+close caller-owned stdout. Unsupported platforms fail without an unchecked
+reader fallback. Existing loader/platform and typed-evidence tests are retained
+coverage, distinct from the new comparison integration cases.
+
+The final isolated Windows run passed 4,875 test/subtest outcomes and 29 packages,
+including all 36 selected roots, with 17 test skips and one skipped package.
+All eight commands and eight postchecks passed. The selected Linux amd64/386
+comparison and retained report cohort passed 938 outcomes across eight suites,
+all 120 required root executions and 469 required named outcomes per architecture,
+with zero failures/skips and confirmed cleanup. Nine owned-resource cases,
+32 archive cases and six root postchecks also passed. These are software fixture
+results, not installed-CLI, physical-media, blocked-kernel deadline, kernel-close
+fault or fsync/durability qualification. Existing image/physical/release gates
+and capture/persistence input-ownership work remain separate.
+
 ## Evidence contract
 
 Each case emits a structured result containing:

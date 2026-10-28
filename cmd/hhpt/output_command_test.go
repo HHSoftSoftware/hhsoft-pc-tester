@@ -57,7 +57,7 @@ func outputCommandCases(t *testing.T) []outputCommandCase {
 			return runInventoryWithDestination(t.Context(), []string{"-fingerprint-key", keyPath, "-output", "owned-output"}, stdout, stderr, collect, write)
 		}},
 		{"comparison", func(write destinationWriter, stdout, stderr io.Writer) int {
-			return runCompareDestination([]string{"-public-key", publicPath, "-key-id", "fixture-signer", "-output", "owned-output", reportPath, reportPath}, stdout, stderr, write)
+			return runCompareDestination(t.Context(), []string{"-public-key", publicPath, "-key-id", "fixture-signer", "-output", "owned-output", reportPath, reportPath}, stdout, stderr, write, readRetestInput)
 		}},
 		{"display", func(write destinationWriter, stdout, stderr io.Writer) int {
 			return runDisplayWithDestination(t.Context(), []string{"-output", "owned-output"}, strings.NewReader(""), stdout, stderr,

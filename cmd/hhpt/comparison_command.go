@@ -2,12 +2,12 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"crypto/ed25519"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/app"
@@ -17,11 +17,11 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/report"
 )
 
-func runCompare(arguments []string, stdout, stderr io.Writer) int {
-	return runCompareDestination(arguments, stdout, stderr, writeDestination)
+func runCompare(ctx context.Context, arguments []string, stdout, stderr io.Writer) int {
+	return runCompareDestination(ctx, arguments, stdout, stderr, writeDestination, readRetestInput)
 }
 
-func runCompareDestination(arguments []string, stdout, stderr io.Writer, writeOutput destinationWriter) int {
+func runCompareDestination(ctx context.Context, arguments []string, stdout, stderr io.Writer, writeOutput destinationWriter, readInput retestInputReader) int {
 	flags := flag.NewFlagSet("compare", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	publicKeyPath := flags.String("public-key", "", "public key used for the before report and, by default, the after report")
@@ -46,22 +46,41 @@ func runCompareDestination(arguments []string, stdout, stderr io.Writer, writeOu
 		resolvedAfterPath, resolvedAfterID = *publicKeyPath, strings.TrimSpace(*keyID)
 	}
 
-	before, err := loadVerifiedComparisonReport(flags.Arg(0), *publicKeyPath, strings.TrimSpace(*keyID), *selfIssued)
-	if err != nil {
-		fmt.Fprintf(stderr, "verify before report: %v\n", err)
+	if nilRetestInputValue(ctx) || readInput == nil || writeOutput == nil {
+		fmt.Fprintln(stderr, "compare input or output handler is unavailable")
 		return 1
 	}
-	after, err := loadVerifiedComparisonReport(flags.Arg(1), resolvedAfterPath, resolvedAfterID, *selfIssued)
+	if ctx.Err() != nil {
+		fmt.Fprintln(stderr, "compare cancelled")
+		return 1
+	}
+	before, err := loadVerifiedComparisonReport(ctx, flags.Arg(0), *publicKeyPath, strings.TrimSpace(*keyID), *selfIssued, readInput)
 	if err != nil {
-		fmt.Fprintf(stderr, "verify after report: %v\n", err)
+		fmt.Fprintln(stderr, "verify before report failed")
+		return 1
+	}
+	after, err := loadVerifiedComparisonReport(ctx, flags.Arg(1), resolvedAfterPath, resolvedAfterID, *selfIssued, readInput)
+	if err != nil {
+		fmt.Fprintln(stderr, "verify after report failed")
+		return 1
+	}
+	if ctx.Err() != nil {
+		fmt.Fprintln(stderr, "compare cancelled")
 		return 1
 	}
 	result, err := comparison.Compare(before, after)
 	if err != nil {
-		fmt.Fprintf(stderr, "compare reports: %v\n", err)
+		fmt.Fprintln(stderr, "compare reports failed")
+		return 1
+	}
+	if ctx.Err() != nil {
+		fmt.Fprintln(stderr, "compare cancelled")
 		return 1
 	}
 	if err := writeOutput(*outputPath, stdout, func(destination io.Writer) error {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		encoder := json.NewEncoder(destination)
 		encoder.SetIndent("", "  ")
 		return encoder.Encode(result)
@@ -72,38 +91,42 @@ func runCompareDestination(arguments []string, stdout, stderr io.Writer, writeOu
 	return 0
 }
 
-func loadVerifiedComparisonReport(reportPath, publicKeyPath, keyID string, selfIssued bool) (comparison.Report, error) {
-	source, err := os.Open(reportPath)
-	if err != nil {
-		return comparison.Report{}, fmt.Errorf("open report: %w", err)
+func loadVerifiedComparisonReport(ctx context.Context, reportPath, publicKeyPath, keyID string, selfIssued bool, readInput retestInputReader) (comparison.Report, error) {
+	if nilRetestInputValue(ctx) || readInput == nil {
+		return comparison.Report{}, errRetestInput
 	}
-	defer source.Close()
-	metadata, err := source.Stat()
-	if err != nil {
-		return comparison.Report{}, fmt.Errorf("inspect report: %w", err)
+	if err := ctx.Err(); err != nil {
+		return comparison.Report{}, safeRetestInputError(ctx, err)
 	}
-	if !metadata.Mode().IsRegular() {
-		return comparison.Report{}, fmt.Errorf("inspect report: input is not a regular file")
+	encoded, err := readInput(ctx, reportPath, retestArtifactInput)
+	if err != nil {
+		return comparison.Report{}, safeRetestInputError(ctx, err)
+	}
+	if err := ctx.Err(); err != nil {
+		return comparison.Report{}, safeRetestInputError(ctx, err)
 	}
 	var artifact bundle.Artifact
 	if selfIssued {
-		artifact, err = bundle.VerifySelfIssued(source, metadata.Size())
+		artifact, err = bundle.VerifySelfIssued(bytes.NewReader(encoded), int64(len(encoded)))
 	} else {
-		publicKey, keyErr := readRawKey(publicKeyPath, ed25519.PublicKeySize)
+		publicKey, keyErr := readInput(ctx, publicKeyPath, retestPublicKeyInput)
 		if keyErr != nil {
-			return comparison.Report{}, fmt.Errorf("read public key: %w", keyErr)
+			return comparison.Report{}, safeRetestInputError(ctx, keyErr)
 		}
-		artifact, err = bundle.Verify(source, metadata.Size(), report.Keyring{keyID: ed25519.PublicKey(publicKey)})
+		if err := ctx.Err(); err != nil {
+			return comparison.Report{}, safeRetestInputError(ctx, err)
+		}
+		artifact, err = bundle.Verify(bytes.NewReader(encoded), int64(len(encoded)), report.Keyring{keyID: ed25519.PublicKey(publicKey)})
 	}
 	if err != nil {
-		return comparison.Report{}, err
+		return comparison.Report{}, fmt.Errorf("comparison report verification failed")
 	}
 	if artifact.Envelope.Product != product.Name {
-		return comparison.Report{}, fmt.Errorf("unexpected product %q", artifact.Envelope.Product)
+		return comparison.Report{}, fmt.Errorf("comparison report product is invalid")
 	}
 	payload, err := decodeComparisonInventory(artifact.InventoryJSON)
 	if err != nil {
-		return comparison.Report{}, err
+		return comparison.Report{}, fmt.Errorf("comparison inventory is invalid")
 	}
 	return comparison.Report{
 		Reference: comparison.ReportReference{

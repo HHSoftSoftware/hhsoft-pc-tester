@@ -495,6 +495,26 @@ parts, unavailable serials, different keys/epochs, and ambiguous topology
 remain unresolved rather than becoming false matches. The JSON comparison is
 not itself a trusted authorization decision.
 
+Comparison captures each report and applicable public key through checked
+regular-file acquisition on Linux and Windows. Metadata establishes eligibility
+before a readable handle is opened; that handle must match the admitted object.
+Both owners must close successfully before the captured bytes are verified.
+Input or verification failures produce fixed diagnostics without provider or
+payload details and prevent comparison output.
+
+Global `-self-issued` verifies both embedded signers. In trusted mode, the
+before key and key ID also apply to the after report unless both after-key
+options are supplied; the default key path is acquired again for the after
+report. `-self-issued=false` retains trusted-mode behavior. HMAC comparison
+policy and existing output-error diagnostics are unchanged.
+
+Cancellation is checked before input work and output dispatch, and again in
+the destination callback. A callback that observes cancellation after the
+output file has been opened returns failure without a comparison payload;
+an empty new file may remain. This is not rollback or a deadline for a blocked
+OS call. Host and selected native fixture evidence is recorded in the
+[validation record](requirements-validation.md#comparison-input-ownership).
+
 Inventory, plan, comparison, report capture/finalization and quick-test
 evidence outputs refuse to overwrite an existing destination. A write,
 short write or file-close failure makes output unsuccessful; a partial
@@ -585,9 +605,8 @@ Malformed or incomplete inputs, substituted readable objects and uncertain
 closure do not authorize verification success. The readable object must remain
 the exact acquired object; a Windows pathname rename alone does not invalidate
 that proof. Other OS input adapters fail explicitly. These checks
-do not establish deadlines for blocked filesystem calls. Existing unrelated
-capture, comparison and persistence input paths have not all acquired this
-same checked-close contract; their existing authorization and output rules
+do not establish deadlines for blocked filesystem calls. Existing unrelated capture and persistence input paths have not all acquired
+this same checked-close contract; their existing authorization and output rules
 remain in force.
 
 ## Update and Recovery

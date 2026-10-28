@@ -33,7 +33,7 @@ func run(ctx context.Context, arguments []string, stdin io.Reader, stdout, stder
 	case "capture":
 		return runCapture(ctx, arguments[1:], stdout, stderr)
 	case "compare":
-		return runCompare(arguments[1:], stdout, stderr)
+		return runCompare(ctx, arguments[1:], stdout, stderr)
 	case "cpu":
 		return runCPU(ctx, arguments[1:], stdout, stderr)
 	case "deployment-key":

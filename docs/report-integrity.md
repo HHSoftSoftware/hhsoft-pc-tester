@@ -100,7 +100,7 @@ captured bytes released only after every acquired metadata/readable owner
 closes successfully. Linux and Windows provide the supported adapters; other
 OSes fail explicitly. Reports are bounded to 64 MiB and external public keys
 to exactly 32 bytes. Provider errors are reduced to fixed diagnostics.
-Unrelated legacy capture/comparison/persistence input loaders are outside this
+Unrelated legacy capture/persistence input loaders are outside this
 increment; neither blocked-kernel deadlines nor filesystem durability follow
 from checked input closure.
 
@@ -483,6 +483,19 @@ confidence when classifying a replacement, and keeps identity-less or
 ambiguous duplicate records unresolved.
 Signing policy decisions and append-only comparison receipts remain service
 work; local JSON is an explanation of signed inputs, not an authorization.
+
+Comparison verifies captured report and applicable public-key bytes only after
+checked metadata/readable-handle closure. Input failure, unconfirmed closure
+or cancellation observed before output dispatch prevents a comparison result;
+input and untrusted-payload diagnostics do not echo provider details. The
+actual command context also reaches the destination callback. Cancellation
+there may leave an empty new file, without adding rollback or durability.
+
+Canonical v1/v2 verification, global self-issued Boolean behavior, default or
+separate after-key trust, comparison schema and HMAC identity policy remain
+unchanged. Host and selected Linux amd64/386 software fixtures qualified this
+bounded command path. Capture, persistence and other shared input loaders
+remain outside this increment.
 
 CLI output completion is separate from signature verification and durable
 persistence. The shared inventory, plan, comparison, report and quick-test

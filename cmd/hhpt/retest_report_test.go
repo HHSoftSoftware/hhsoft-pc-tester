@@ -918,7 +918,7 @@ func TestRetestComparisonAndPersistenceConsumeVerifiedCurrentBundle(t *testing.T
 	}
 	out.Reset()
 	errOut.Reset()
-	if code := runCompare([]string{"-self-issued", output, output}, &out, &errOut); code != 0 || errOut.Len() != 0 {
+	if code := runCompare(t.Context(), []string{"-self-issued", output, output}, &out, &errOut); code != 0 || errOut.Len() != 0 {
 		t.Fatalf("verified v2 comparison failed: code=%d stderr=%q", code, errOut.String())
 	}
 	var compared comparison.Result

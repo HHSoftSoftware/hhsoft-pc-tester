@@ -158,6 +158,11 @@ the alpha still requires the separate documented release gates.
   components.
 - [x] Build an offline Windows x86_64 utility for report verification and
   comparison.
+- [x] Route both comparison reports and applicable public keys through bounded
+  regular-file acquisition with checked handle closure, propagate cancellation
+  before output and use fixed input/verification diagnostics. Preserve trust
+  defaults, HMAC identity policy and output ownership; host and selected Linux
+  amd64/386 fixtures passed (see the [validation record](docs/requirements-validation.md#comparison-input-ownership)).
 - [ ] Implement privacy-preserving enrollment and key-rotation service flows.
 
 ## Functional tests

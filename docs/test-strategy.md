@@ -255,10 +255,34 @@ Focused and full Windows suites, formatting, vet and cross-builds passed for
 this increment. Native Linux amd64/386 suites, six race suites and all 39 CLI
 cases passed with confirmed cleanup; see
 [requirements validation](requirements-validation.md). Block metadata and
-descriptors remain simulated, and no media-content I/O is claimed. Mandatory
-capacity admission, bounded scalar reads, cancellation after metadata inspection
-and broader inventory completeness remain separate follow-ups. Sampled-media
-reads, fresh images and physical qualification remain open.
+descriptors remain simulated, and no media-content I/O is claimed.
+
+Storage scalar admission adds these acceptance cases:
+
+- Distinguish 255/256 raw bytes plus EOF from 257 bytes, including trailing
+  whitespace. Require complete EOF after fragmented reads; reject partial
+  errors, no progress and impossible read counts without trusting Stat.Size.
+- Check descriptor type before Read, close every acquired handle once and
+  preserve cleanup failures over cancellation or earlier observation failures.
+  Exercise owned regular files and normal sysfs-style links.
+- Place missing, malformed, oversized and overflowing required capacity beside
+  a distinct passing media device in either lexical position. Preserve observed
+  zero capacity, optional partition capacity, excluded interfaces, optional
+  flags/state and successfully read unusable kernel states.
+- Preserve required-size and known-overflow failures during cancellation;
+  optional observation failures may remain unknown, while any failed scalar
+  close is hard. Recheck cancellation before current metadata credit and the
+  no-media conclusion, including final zero, partition and excluded entries.
+- Compare literal readiness-v1 JSON and retained writable counts/unsafe prefixes;
+  separate scalar handle ownership from block-node access and readiness credit.
+
+Focused and full Windows suites, formatting, vet and cross-builds passed for
+this increment. Native Linux amd64/386 suites, six race suites and all 39 CLI
+cases passed with confirmed cleanup; see
+[requirements validation](requirements-validation.md). Scalar file operations
+use controlled temporary fixtures; block metadata and descriptors remain
+simulated. Broader inventory completeness/error reporting and acquisition bounds,
+sampled-media reads, fresh images and physical qualification remain open.
 
 The current network readiness adapter checks driver attachment and link state
 without configuring an address, associating Wi-Fi, or generating traffic. The

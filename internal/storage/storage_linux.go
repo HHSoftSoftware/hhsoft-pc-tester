@@ -36,6 +36,7 @@ type blockNodeOperations struct {
 	open         func(string, int, os.FileMode) (blockNodeFile, error)
 	deviceNumber func(string) (deviceNumber, bool)
 	openRegistry func(string) (blockRegistryDirectory, error)
+	openScalar   func(string) (blockScalarFile, error)
 }
 
 func realBlockNodeOperations() blockNodeOperations {
@@ -46,6 +47,7 @@ func realBlockNodeOperations() blockNodeOperations {
 		},
 		deviceNumber: readDeviceNumber,
 		openRegistry: openBlockRegistry,
+		openScalar:   openBlockScalar,
 	}
 }
 
@@ -57,9 +59,17 @@ func openBlockRegistry(path string) (blockRegistryDirectory, error) {
 	return directory, nil
 }
 
+func openBlockScalar(path string) (blockScalarFile, error) {
+	file, err := os.OpenFile(path, os.O_RDONLY|syscall.O_NONBLOCK|syscall.O_CLOEXEC, 0)
+	if err != nil {
+		return nil, err
+	}
+	return file, nil
+}
+
 func runPlatformWith(ctx context.Context, options Options, operations blockNodeOperations) Result {
 	result := Result{Schema: Schema, Status: StatusError}
-	if ctx == nil || operations.lstat == nil || operations.open == nil || operations.deviceNumber == nil || operations.openRegistry == nil {
+	if ctx == nil || operations.lstat == nil || operations.open == nil || operations.deviceNumber == nil || operations.openRegistry == nil || operations.openScalar == nil {
 		result.Detail = "storage readiness dependencies are incomplete"
 		return result
 	}
@@ -132,9 +142,17 @@ func runPlatformWith(ctx context.Context, options Options, operations blockNodeO
 			result.Detail = "cancelled"
 			return result
 		}
-		device, include, deviceErr := inspectRegistryDevice(root, name, state)
+		device, include, deviceErr := inspectRegistryDevice(ctx, root, name, state, operations.openScalar)
 		if deviceErr != nil {
+			if deviceErr == errBlockScalarCancelled {
+				result.Status = StatusAborted
+			}
 			result.Detail = deviceErr.Error()
+			return result
+		}
+		if ctx.Err() != nil {
+			result.Status = StatusAborted
+			result.Detail = "cancelled"
 			return result
 		}
 		if !include {
@@ -161,6 +179,11 @@ func runPlatformWith(ctx context.Context, options Options, operations blockNodeO
 	}
 	if result.WritableMounts > 0 {
 		result.Detail = "one or more block devices have a writable mount"
+		return result
+	}
+	if ctx.Err() != nil {
+		result.Status = StatusAborted
+		result.Detail = "cancelled"
 		return result
 	}
 	if result.EligibleDevices == 0 {
@@ -214,7 +237,7 @@ func runPlatformWith(ctx context.Context, options Options, operations blockNodeO
 	return result
 }
 
-func inspectRegistryDevice(root, name string, state mountState) (DeviceResult, bool, error) {
+func inspectRegistryDevice(ctx context.Context, root, name string, state mountState, open func(string) (blockScalarFile, error)) (DeviceResult, bool, error) {
 	base := filepath.Join(root, "sys/class/block", name)
 	partition := fileExists(filepath.Join(base, "partition"))
 	physical := blockInterfacePattern.MatchString(name)
@@ -225,16 +248,38 @@ func inspectRegistryDevice(root, name string, state mountState) (DeviceResult, b
 	if !partition {
 		device.Kind = "media"
 	}
-	sizeSectors, sizeKnown := readUnsigned(filepath.Join(base, "size"))
-	if sizeKnown {
+	sizeData, sizeErr := readBlockScalar(ctx, filepath.Join(base, "size"), open)
+	if sizeErr == errBlockScalarClose || sizeErr == errBlockScalarCancelled {
+		return DeviceResult{}, false, sizeErr
+	}
+	sizeSectors, parseErr := strconv.ParseUint(strings.TrimSpace(string(sizeData)), 10, 64)
+	if sizeErr != nil || parseErr != nil {
+		if !partition {
+			return DeviceResult{}, false, errors.New("cannot read block device size")
+		}
+	} else {
 		if sizeSectors > math.MaxUint64/512 {
 			return DeviceResult{}, false, errors.New("block device size exceeds the supported limit")
 		}
 		device.SizeBytes = sizeSectors * 512
 	}
-	device.ReadOnly = readBoolean(filepath.Join(base, "ro"))
-	device.Removable = readBoolean(filepath.Join(base, "removable"))
-	device.State, _ = readSmallValue(filepath.Join(base, "device/state"))
+	if ctx.Err() != nil {
+		return DeviceResult{}, false, errBlockScalarCancelled
+	}
+	readOnly, err := readOptionalBlockScalar(ctx, filepath.Join(base, "ro"), open)
+	if err != nil {
+		return DeviceResult{}, false, err
+	}
+	device.ReadOnly = readOnly == "1"
+	removable, err := readOptionalBlockScalar(ctx, filepath.Join(base, "removable"), open)
+	if err != nil {
+		return DeviceResult{}, false, err
+	}
+	device.Removable = removable == "1"
+	device.State, err = readOptionalBlockScalar(ctx, filepath.Join(base, "device/state"), open)
+	if err != nil {
+		return DeviceResult{}, false, err
+	}
 	if device.Kind == "media" && device.SizeBytes == 0 {
 		device.Kind = "empty"
 	}
@@ -385,25 +430,16 @@ func fileExists(path string) bool {
 	return err == nil
 }
 
-func readBoolean(path string) bool {
-	value, ok := readSmallValue(path)
-	return ok && value == "1"
-}
-
-func readUnsigned(path string) (uint64, bool) {
-	value, ok := readSmallValue(path)
-	if !ok {
-		return 0, false
+func readOptionalBlockScalar(ctx context.Context, path string, open func(string) (blockScalarFile, error)) (string, error) {
+	data, err := readBlockScalar(ctx, path, open)
+	if err == errBlockScalarClose || err == errBlockScalarCancelled {
+		return "", err
 	}
-	parsed, err := strconv.ParseUint(value, 10, 64)
-	return parsed, err == nil
-}
-
-func readSmallValue(path string) (string, bool) {
-	data, err := os.ReadFile(path)
-	if err != nil || len(data) > 256 {
-		return "", false
+	if ctx.Err() != nil {
+		return "", errBlockScalarCancelled
 	}
-	value := strings.TrimSpace(string(data))
-	return value, value != ""
+	if err != nil {
+		return "", nil
+	}
+	return strings.TrimSpace(string(data)), nil
 }

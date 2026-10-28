@@ -307,9 +307,20 @@ the alpha still requires the separate documented release gates.
   passes across 28 suites, 1,930 race-test passes across six suites and all 39 CLI
   cases, with no native/race skips or failures and confirmed cleanup. Directory
   fixtures use temporary files; block metadata and descriptors remain simulated.
-- [ ] Require valid capacity metadata for supported media, bound scalar metadata
-  reads and recheck cancellation after metadata inspection. Bound broader
-  inventory enumeration with explicit completeness and error reporting.
+- [x] Require valid capacity metadata for supported non-partition media. Bound
+  size, flag and state reads to 256 raw bytes after EOF and confirmed closure;
+  retain valid zero-capacity media and optional unknown values. Recheck
+  cancellation before metadata credit and the no-media conclusion.
+- [x] Validate scalar admission with focused regressions and the full Windows
+  suite: 2,910 test/subtest passes across 25 packages, 17 platform test skips and
+  three packages without host test files. Formatting, vet, 28 Linux test-binary
+  builds and five application builds passed.
+- [x] Validate scalar admission on native Linux amd64/386: 5,538 test/subtest
+  passes across 28 suites, 1,930 race-test passes across six suites and all 39 CLI
+  cases, with no native/race skips or failures and confirmed cleanup. Scalar
+  fixtures use temporary files; block metadata and descriptors remain simulated.
+- [ ] Complete broader inventory enumeration, cancellation and error reporting;
+  define file and aggregate acquisition bounds.
 - [ ] Qualify storage readiness, replacement and cancellation in rebuilt images
   and on physical devices. Matching kernel numbers do not prove persistent
   physical identity or detect every same-number replacement.

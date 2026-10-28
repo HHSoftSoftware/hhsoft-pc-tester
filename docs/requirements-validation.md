@@ -566,11 +566,39 @@ checks reconciled. Real directory operations use controlled temporary fixtures;
 block metadata and descriptors remain simulated. These results establish no
 physical-device or media-read qualification. AArch64 was cross-built only.
 
-Source review identified a remaining path that classifies unavailable or invalid
-capacity metadata as empty media. Mandatory capacity admission, bounded scalar
-metadata reads and cancellation after metadata inspection remain open, along
-with broader inventory completeness/error reporting, sampled-media reads,
-rebuilt images, physical-device checks, the pilot and release gates.
+The scalar-admission increment rejects unavailable or invalid size metadata for
+supported non-partition media instead of classifying it as empty. Size, read-only,
+removable and state reads use a fixed 257-byte buffer and admit at most 256 raw
+bytes after exact EOF and confirmed closure. The opened descriptor must be a
+regular metadata file before reading; normal sysfs links remain supported.
+Required capacity must parse as decimal uint64 and satisfy the existing byte
+capacity limits. An observed numeric zero retains the empty classification.
+
+Optional partition capacity, flags and state retain their existing unknown-value
+behavior on observation failure. Successfully read state text and unusable-state
+handling remain intact. Required-capacity errors, known size overflow and every
+scalar close failure survive simultaneous cancellation. Cancellation alone aborts
+before the current row or eligibility counters are credited, before continuing
+past an excluded interface and before the no-media conclusion. Earlier writable
+counts and unsafe metadata prefixes remain visible. Mount, registry and node
+identity checks, readiness-v1 JSON, catalog/session versions and the boundary
+against media-content I/O are unchanged.
+
+Focused Windows regressions passed 1,852 test/subtest events across eight
+packages, with five platform test skips and no failures. The full Windows suite
+passed 2,910 events across 25 packages, with 17 platform test skips, three
+packages without host test files and no failures. Formatting, vet, 28 Linux
+test-binary builds and five application builds passed against the same source.
+
+Native Linux amd64/386 validation passed 5,538 test/subtest events across 28
+suites. Six race suites passed 1,930 events; both groups had no skips or failures.
+All 39 CLI cases passed, with confirmed cleanup and all six final environment
+checks reconciled. Scalar file operations use controlled temporary fixtures;
+block metadata and descriptors remain simulated. These results establish no
+physical-device or media-read qualification. AArch64 was cross-built only.
+Broader inventory completeness/error reporting and acquisition bounds,
+sampled-media reads, rebuilt images, physical-device checks, the pilot and
+release gates remain open.
 
 The next CPU increment implements twelve fixed binary64 addition, subtraction,
 multiplication and division vectors in the bounded worker. CPU v3 evidence adds

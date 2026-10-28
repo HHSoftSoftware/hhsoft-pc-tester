@@ -144,10 +144,17 @@ through actual EOF and closes the directory before processing identities. The
 existing 256-entry limit still counts excluded interfaces and partitions;
 overflow fails without truncation. Lexical error order, diskless views and normal
 sysfs links are preserved. Host and native fixture validation passed; see
-[requirements validation](requirements-validation.md). Mandatory capacity
-admission, bounded scalar metadata reads, cancellation after metadata inspection
-and broader inventory completeness remain follow-ups. Sampled-media reads,
-fresh images and physical-device qualification remain open.
+[requirements validation](requirements-validation.md).
+
+Storage scalar admission now requires valid size metadata for supported
+non-partition media and bounds size, flag and state reads to 256 raw bytes after
+EOF and successful closure. Valid zero capacity and optional unknown values
+retain their existing meanings. Cancellation is rechecked before metadata
+credit and the no-media conclusion; required-capacity and cleanup failures
+retain precedence. Focused/full host checks and native Linux amd64/386 fixture
+qualification passed. Broader inventory completeness, error reporting and
+acquisition bounds remain open, along with sampled-media reads, fresh images
+and physical-device qualification.
 
 The next thermal prerequisite is implemented in source: local CPU/RAM guards
 bound the initial and periodic observations, join before returning results, and

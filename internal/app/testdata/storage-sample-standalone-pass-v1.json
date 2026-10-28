@@ -1,0 +1,170 @@
+{
+  "schema_version": 1,
+  "components": [
+    {
+      "type": "block",
+      "id": "block:sda",
+      "attributes": [
+        {
+          "name": "device_number",
+          "value": "8:0"
+        },
+        {
+          "name": "kind",
+          "value": "device"
+        },
+        {
+          "name": "logical_block_size",
+          "value": "512"
+        },
+        {
+          "name": "name",
+          "value": "sda"
+        },
+        {
+          "name": "size_sectors",
+          "value": "128"
+        }
+      ],
+      "identity": {
+        "algorithm": "hmac-sha256",
+        "key_epoch": "synthetic",
+        "confidence": "unavailable"
+      }
+    }
+  ],
+  "system_fingerprint": {
+    "algorithm": "hmac-sha256",
+    "key_epoch": "synthetic",
+    "key_id": "hmac-sha256:3333333333333333333333333333333333333333333333333333333333333333",
+    "identified_parts": 0,
+    "unidentified_parts": 1
+  },
+  "test_results": [
+    {
+      "id": "storage.quick",
+      "version": 2,
+      "status": "pass",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.storage-sample/v1",
+        "policy": "fixed-buffered-three-window-repeat/v1",
+        "scope": "standalone",
+        "plan_id": "",
+        "status": "pass",
+        "stop_reason": "completed",
+        "error": "none",
+        "limit_ms": 100,
+        "budget_ms": 100,
+        "duration_ms": 5,
+        "cache_bypass": false,
+        "media_writes": false,
+        "cleanup_confirmed": true,
+        "failure_observed": false,
+        "diagnostic_failure": false,
+        "discovery_accepted": true,
+        "component_ids": [],
+        "fixture_ids": [],
+        "missing_components": [],
+        "snapshot": {
+          "discovery": {
+            "complete": true,
+            "backing_complete": true,
+            "swap_state": "none",
+            "nodes": [
+              {
+                "id": "block:sda",
+                "number": "8:0",
+                "kind": "physical",
+                "parent": "",
+                "transport": "ata",
+                "geometry": {
+                  "capacity_bytes": 65536,
+                  "logical_block_bytes": 512
+                },
+                "read_only": false,
+                "removable": false,
+                "usb_ancestors": [],
+                "physical_children": [],
+                "holders": [],
+                "slaves": [],
+                "loop_state": "",
+                "loop_backing": null
+              }
+            ],
+            "mounted_numbers": [],
+            "memory_mounts": [],
+            "boot_backing_numbers": []
+          },
+          "fixture_observations": [],
+          "resolved_fixture_mask": 0,
+          "node_fixture_masks": [
+            0
+          ]
+        },
+        "snapshot_sha256": "95a934d65b0b7b90f433df639038dad2b6572a224a5f3382ac68b16f34f92d69",
+        "devices": [
+          {
+            "interface": "sda",
+            "requested": true,
+            "eligibility": "eligible",
+            "exclusion": "none",
+            "status": "pass",
+            "error": "none",
+            "accepted": true,
+            "started_ms": 1,
+            "finished_ms": 4,
+            "close_confirmed": true,
+            "final_binding_confirmed": true,
+            "observation": {
+              "interface": "sda",
+              "identity": {
+                "major": 8,
+                "minor": 0,
+                "capacity_bytes": 65536,
+                "logical_block_bytes": 512
+              },
+              "status": "pass",
+              "error": "none",
+              "ranges": [
+                {
+                  "offset": 0,
+                  "length": 65536,
+                  "read_count": 2,
+                  "first_bytes": 65536,
+                  "second_bytes": 65536,
+                  "outcome": "matched"
+                }
+              ],
+              "read_bytes": 131072,
+              "compared_bytes": 65536,
+              "matched_ranges": 1
+            }
+          }
+        ],
+        "accepted_read_bytes": 131072,
+        "accepted_compared_bytes": 65536,
+        "accepted_matched_ranges": 1
+      },
+      "planned_status": "scheduled"
+    },
+    {
+      "id": "run.integrity.quick",
+      "version": 1,
+      "status": "pass",
+      "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+      "hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+      "evidence": {
+        "schema": "hhsoft.pc-tester.run-integrity/v1",
+        "status": "pass",
+        "plan_id": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+        "planned_hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "final_hardware_graph": "hmac-sha256:2222222222222222222222222222222222222222222222222222222222222222",
+        "planned_component_count": 1,
+        "final_component_count": 1
+      }
+    }
+  ],
+  "coverage_scope": "frozen_plan"
+}

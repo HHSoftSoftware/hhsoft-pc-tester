@@ -29,6 +29,7 @@ type inventoryDocument struct {
 	CPUScalar           *cpuScalarDocument
 	Memory              *memoryDocument
 	Pointer             *pointerDocument
+	Storage             *storageDocument
 }
 
 type testDocument struct {
@@ -96,7 +97,25 @@ table{background:var(--panel);border-collapse:collapse;border:1px solid var(--li
 </tbody>
 </table>
 </section>
-{{if .CPUScalar}}<section class="section" aria-labelledby="cpu-scalar-heading">
+{{if .Storage}}<section class="section" aria-labelledby="storage-sample-heading">
+<h2 id="storage-sample-heading">Storage Sample Observations</h2>
+<p>{{.Storage.ScopeNote}}</p>
+<p>{{.Storage.Finding}}</p>
+<table><tbody>
+<tr><th scope="row">Selection scope</th><td>{{.Storage.View.Scope}}</td></tr>
+<tr><th scope="row">Status / stop</th><td>{{.Storage.View.Status}} / {{.Storage.View.StopReason}}</td></tr>
+<tr><th scope="row">Accepted read bytes</th><td>{{.Storage.View.AcceptedReadBytes}}</td></tr>
+<tr><th scope="row">Accepted compared bytes</th><td>{{.Storage.View.AcceptedComparedBytes}}</td></tr>
+<tr><th scope="row">Accepted matched ranges</th><td>{{.Storage.View.AcceptedMatchedRanges}}</td></tr>
+<tr><th scope="row">Diagnostic read bytes</th><td>{{.Storage.View.DiagnosticReadBytes}}</td></tr>
+<tr><th scope="row">Diagnostic compared bytes</th><td>{{.Storage.View.DiagnosticComparedBytes}}</td></tr>
+<tr><th scope="row">Cleanup confirmed</th><td>{{.Storage.View.CleanupConfirmed}}</td></tr>
+</tbody></table>
+<table><thead><tr><th>Device</th><th>Status</th><th>Exclusion</th><th>Accepted</th><th>Observed read bytes</th><th>Observed compared bytes</th><th>Observed matched ranges</th></tr></thead><tbody>
+{{range .Storage.View.Devices}}<tr><td>{{.Interface}}</td><td>{{.Status}}</td><td>{{.Exclusion}}</td><td>{{.Accepted}}</td><td>{{.ReadBytes}}</td><td>{{.ComparedBytes}}</td><td>{{.MatchedRanges}}</td></tr>
+{{end}}</tbody></table>
+</section>
+{{end}}{{if .CPUScalar}}<section class="section" aria-labelledby="cpu-scalar-heading">
 <h2 id="cpu-scalar-heading">CPU Scalar Calculation Observations</h2>
 <p>{{.CPUScalar.Scope}}</p><p>{{.CPUScalar.Finding}}</p>
 <table><tbody>
@@ -264,6 +283,10 @@ func renderInventoryHTML(output io.Writer, payload app.InventoryPayload, version
 	if err != nil {
 		return err
 	}
+	storage, err := storageReportDocument(payload)
+	if err != nil {
+		return err
+	}
 	components := append([]app.ComponentRecord(nil), payload.Components...)
 	sort.SliceStable(components, func(left, right int) bool {
 		if components[left].Type != components[right].Type {
@@ -297,6 +320,7 @@ func renderInventoryHTML(output io.Writer, payload app.InventoryPayload, version
 		Pointer:             pointer,
 		CPUScalar:           cpuScalar,
 		Memory:              memory,
+		Storage:             storage,
 	}
 	return inventoryTemplate.Execute(&limitedWriter{destination: output}, document)
 }

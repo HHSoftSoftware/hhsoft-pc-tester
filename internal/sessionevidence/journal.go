@@ -2,12 +2,9 @@ package sessionevidence
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"errors"
-	"reflect"
 	"strings"
 
-	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/evidencejson"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quick"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/safemode"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/thermal"
@@ -16,9 +13,9 @@ import (
 var ErrInvalid = errors.New("session evidence is incomplete or contradictory")
 
 func Decode(raw []byte) (Journal, error) {
-	var value Journal
-	if len(raw) > MaximumBytes || evidencejson.ValidateShape(raw, reflect.TypeOf(value)) != nil || json.Unmarshal(raw, &value) != nil {
-		return Journal{}, ErrInvalid
+	value, err := decodeJournalWire(raw)
+	if err != nil {
+		return Journal{}, err
 	}
 	if err := ValidateStructure(value); err != nil {
 		return Journal{}, err
@@ -134,19 +131,22 @@ func ValidateStructure(j Journal) error {
 			return ErrInvalid
 		}
 	}
+	if !validStorageSourceStructure(j) {
+		return ErrInvalid
+	}
 	previousSource := -1
 	for _, source := range j.LocalThermalSources {
 		index := 0
 		schema := quick.CPUSchemaV2
 		switch source.WorkerID {
 		case "cpu.quick":
-			if j.Schema == Schema && source.EvidenceSchema == quick.CPUSchema {
+			if supportsCurrentWorkerEvidence(j.Schema) && source.EvidenceSchema == quick.CPUSchema {
 				schema = quick.CPUSchema
 			}
 		case "memory.quick":
 			index = 1
 			schema = quick.MemorySchemaV2
-			if j.Schema == Schema && source.EvidenceSchema == quick.MemorySchema {
+			if supportsCurrentWorkerEvidence(j.Schema) && source.EvidenceSchema == quick.MemorySchema {
 				schema = quick.MemorySchema
 			}
 		default:
@@ -162,6 +162,10 @@ func ValidateStructure(j Journal) error {
 }
 
 func CloneJournal(j Journal) Journal {
+	if j.StorageSource != nil {
+		value := *j.StorageSource
+		j.StorageSource = &value
+	}
 	j.Workers = append([]WorkerRecord(nil), j.Workers...)
 	for index := range j.Workers {
 		if j.Workers[index].Timing != nil {

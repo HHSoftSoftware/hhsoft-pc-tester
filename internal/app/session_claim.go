@@ -160,6 +160,6 @@ func findReportClaim(decoder *json.Decoder, depth int, kind reportClaim) (bool, 
 			return ok && versioned && strings.EqualFold(name, "hhsoft.pc-tester.quick-session"), token, nil
 		}
 		return ok && (sessionevidence.IsStrictSchema(value) || strings.EqualFold(value, sessionevidence.SchemaV4) ||
-			strings.EqualFold(value, sessionevidence.Schema) || strings.EqualFold(value, "hhsoft.pc-tester.run-thermal/v1")), token, nil
+			strings.EqualFold(value, sessionevidence.SchemaV5) || strings.EqualFold(value, sessionevidence.SchemaV6) || strings.EqualFold(value, "hhsoft.pc-tester.run-thermal/v1")), token, nil
 	}
 }

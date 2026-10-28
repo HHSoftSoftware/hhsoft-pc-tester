@@ -35,6 +35,9 @@ func ValidateCoverage(payload InventoryPayload) error {
 	if err := validatePointerReport(payload); err != nil {
 		return err
 	}
+	if err := validateStorageReport(payload); err != nil {
+		return err
+	}
 	_, err := validatedSessionThermal(payload)
 	return err
 }

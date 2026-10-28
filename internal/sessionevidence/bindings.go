@@ -61,7 +61,11 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 		if _, exists := byID[binding.ID]; exists {
 			return ErrInvalid
 		}
-		if hasKeyboardSchema(binding.Evidence) && (j.Schema != Schema || binding.ID != "input.keyboard.quick") ||
+		if HasStorageClaim(binding.Evidence) && (j.Schema != SchemaV6 || binding.ID != "storage.quick" || binding.Version != 2) ||
+			strings.EqualFold(binding.ID, "storage.quick") && (binding.ID != "storage.quick" || binding.Version != 1 && (binding.Version != 2 || j.Schema != SchemaV6)) {
+			return ErrInvalid
+		}
+		if hasKeyboardSchema(binding.Evidence) && (!supportsCurrentWorkerEvidence(j.Schema) || binding.ID != "input.keyboard.quick") ||
 			j.Schema == SchemaV4 && binding.ID == "input.keyboard.quick" && binding.Version >= 2 {
 			return ErrInvalid
 		}
@@ -70,11 +74,11 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 			j.Schema == SchemaV4 && binding.ID == "input.pointer.quick" && binding.Version != 1 {
 			return ErrInvalid
 		}
-		if hasNewCPUClaim(binding.Evidence) && (binding.ID != "cpu.quick" || binding.Version != 2 || j.Schema != Schema) ||
+		if hasNewCPUClaim(binding.Evidence) && (binding.ID != "cpu.quick" || binding.Version != 2 || !supportsCurrentWorkerEvidence(j.Schema)) ||
 			binding.ID == "cpu.quick" && (binding.Version < 0 || binding.Version > 2 || j.Schema == SchemaV4 && binding.Version == 2) {
 			return ErrInvalid
 		}
-		if hasNewMemoryClaim(binding.Evidence) && (binding.ID != "memory.quick" || binding.Version != 2 || j.Schema != Schema) ||
+		if hasNewMemoryClaim(binding.Evidence) && (binding.ID != "memory.quick" || binding.Version != 2 || !supportsCurrentWorkerEvidence(j.Schema)) ||
 			binding.ID == "memory.quick" && (binding.Version < 0 || binding.Version > 2 || j.Schema == SchemaV4 && binding.Version == 2) {
 			return ErrInvalid
 		}
@@ -92,6 +96,12 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 		}
 		if len(binding.Evidence) == 0 || len(binding.Evidence) > 1<<20 || !json.Valid(binding.Evidence) {
 			return ErrInvalid
+		}
+		if worker.ID == "storage.quick" {
+			if err := validateStorageBinding(j, worker, binding); err != nil {
+				return err
+			}
+			continue
 		}
 		if worker.ID == "input.keyboard.quick" {
 			if binding.Version != 2 || validateKeyboardBinding(worker, binding) != nil {
@@ -212,23 +222,15 @@ func ValidateUnexecutedKeyboard(binding ResultBinding) error {
 }
 
 func DecodeIntegrity(raw []byte) (IntegrityEvidence, error) {
+	shapeBytes, journal, err := integrityWireBytes(raw)
 	var value IntegrityEvidence
-	if evidencejson.ValidateShape(raw, reflect.TypeOf(value)) != nil || json.Unmarshal(raw, &value) != nil || value.Schema != IntegritySchema || value.Session == nil || ValidateStructure(*value.Session) != nil || value.PlanID != value.Session.PlanID || !validDigest(value.PlanID) || !validPrefixedDigest(value.PlannedHardwareGraph, "hmac-sha256:") || !validPrefixedDigest(value.FinalHardwareGraph, "hmac-sha256:") || value.PlannedComponentCount < 0 || value.FinalComponentCount < 0 {
-		return IntegrityEvidence{}, ErrInvalid
-	}
-	// Apply the journal's bound to its original nested JSON bytes, including
-	// whitespace, rather than to a smaller re-encoding of the typed value.
-	var nested struct {
-		Session json.RawMessage `json:"session"`
-	}
-	if json.Unmarshal(raw, &nested) != nil {
-		return IntegrityEvidence{}, ErrInvalid
-	}
-	journal, err := Decode(nested.Session)
-	if err != nil {
+	if err != nil || evidencejson.ValidateShape(shapeBytes, reflect.TypeOf(value)) != nil || json.Unmarshal(shapeBytes, &value) != nil {
 		return IntegrityEvidence{}, ErrInvalid
 	}
 	value.Session = &journal
+	if value.Schema != IntegritySchema || value.Session == nil || ValidateStructure(*value.Session) != nil || value.PlanID != value.Session.PlanID || !validDigest(value.PlanID) || !validPrefixedDigest(value.PlannedHardwareGraph, "hmac-sha256:") || !validPrefixedDigest(value.FinalHardwareGraph, "hmac-sha256:") || value.PlannedComponentCount < 0 || value.FinalComponentCount < 0 {
+		return IntegrityEvidence{}, ErrInvalid
+	}
 	if len(value.RemovedComponents) > value.PlannedComponentCount || len(value.AddedComponents) > value.FinalComponentCount || value.PlannedComponentCount-len(value.RemovedComponents)+len(value.AddedComponents) != value.FinalComponentCount || len(value.ChangedComponents) > min(value.PlannedComponentCount-len(value.RemovedComponents), value.FinalComponentCount-len(value.AddedComponents)) {
 		return IntegrityEvidence{}, ErrInvalid
 	}

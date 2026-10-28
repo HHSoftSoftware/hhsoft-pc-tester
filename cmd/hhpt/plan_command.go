@@ -20,6 +20,10 @@ func runPlan(ctx context.Context, arguments []string, stdout, stderr io.Writer) 
 }
 
 func runPlanWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector) int {
+	return runPlanWithDestination(ctx, arguments, stdout, stderr, collect, writeDestination)
+}
+
+func runPlanWithDestination(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, writeOutput destinationWriter) int {
 	flags := flag.NewFlagSet("plan", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	profile := flags.String("profile", string(plan.ProfileQuick), "quick, standard, extended, or destructive")
@@ -80,13 +84,10 @@ func runPlanWith(ctx context.Context, arguments []string, stdout, stderr io.Writ
 		fmt.Fprintf(stderr, "encode test plan: %v\n", err)
 		return 1
 	}
-	destination, closeDestination, err := openDestination(*outputPath, stdout)
-	if err != nil {
-		fmt.Fprintf(stderr, "open output: %v\n", err)
-		return 1
-	}
-	defer closeDestination()
-	if _, err := destination.Write(append(encoded, '\n')); err != nil {
+	if err := writeOutput(*outputPath, stdout, func(destination io.Writer) error {
+		_, err := destination.Write(append(encoded, '\n'))
+		return err
+	}); err != nil {
 		fmt.Fprintf(stderr, "write test plan: %v\n", err)
 		return 1
 	}

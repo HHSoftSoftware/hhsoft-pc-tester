@@ -50,6 +50,10 @@ func runCapture(ctx context.Context, arguments []string, stdout, stderr io.Write
 }
 
 func runCaptureWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, probeGraphics graphicsCollector, probeCPU cpuCollector, probeMemory memoryCollector, probeInput inputCollector, probeNetwork networkCollector, probeStorage storageCollector, probeUSB usbCollector, random io.Reader, now func() time.Time) int {
+	return runCaptureWithDestination(ctx, arguments, stdout, stderr, collect, probeGraphics, probeCPU, probeMemory, probeInput, probeNetwork, probeStorage, probeUSB, random, now, writeDestination)
+}
+
+func runCaptureWithDestination(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, probeGraphics graphicsCollector, probeCPU cpuCollector, probeMemory memoryCollector, probeInput inputCollector, probeNetwork networkCollector, probeStorage storageCollector, probeUSB usbCollector, random io.Reader, now func() time.Time, writeOutput destinationWriter) int {
 	flags := flag.NewFlagSet("capture", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	fingerprintKeyPath := flags.String("fingerprint-key", "", "file containing exactly 32 raw random bytes")
@@ -188,13 +192,9 @@ func runCaptureWith(ctx context.Context, arguments []string, stdout, stderr io.W
 		fmt.Fprintf(stderr, "build report: %v\n", err)
 		return 1
 	}
-	destination, closeDestination, err := openDestination(*outputPath, stdout)
-	if err != nil {
-		fmt.Fprintf(stderr, "open output: %v\n", err)
-		return 1
-	}
-	defer closeDestination()
-	if err := writeAll(destination, encoded); err != nil {
+	if err := writeOutput(*outputPath, stdout, func(destination io.Writer) error {
+		return writeAll(destination, encoded)
+	}); err != nil {
 		fmt.Fprintf(stderr, "write report: %v\n", err)
 		return 1
 	}

@@ -91,6 +91,10 @@ func runInventory(ctx context.Context, arguments []string, stdout, stderr io.Wri
 }
 
 func runInventoryWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector) int {
+	return runInventoryWithDestination(ctx, arguments, stdout, stderr, collect, writeDestination)
+}
+
+func runInventoryWithDestination(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, writeOutput destinationWriter) int {
 	flags := flag.NewFlagSet("inventory", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	outputPath := flags.String("output", "-", "new JSON output file, or - for stdout")
@@ -126,30 +130,15 @@ func runInventoryWith(ctx context.Context, arguments []string, stdout, stderr io
 		fmt.Fprintf(stderr, "build inventory payload: %v\n", err)
 		return 1
 	}
-	destination, closeDestination, err := openDestination(*outputPath, stdout)
-	if err != nil {
-		fmt.Fprintf(stderr, "open output: %v\n", err)
-		return 1
-	}
-	defer closeDestination()
-	encoder := json.NewEncoder(destination)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(payload); err != nil {
+	if err := writeOutput(*outputPath, stdout, func(destination io.Writer) error {
+		encoder := json.NewEncoder(destination)
+		encoder.SetIndent("", "  ")
+		return encoder.Encode(payload)
+	}); err != nil {
 		fmt.Fprintf(stderr, "write inventory: %v\n", err)
 		return 1
 	}
 	return 0
-}
-
-func openDestination(path string, stdout io.Writer) (io.Writer, func(), error) {
-	if path == "-" {
-		return stdout, func() {}, nil
-	}
-	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0600)
-	if err != nil {
-		return nil, func() {}, err
-	}
-	return file, func() { _ = file.Close() }, nil
 }
 
 func usage(destination io.Writer) {

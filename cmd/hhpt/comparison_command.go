@@ -18,6 +18,10 @@ import (
 )
 
 func runCompare(arguments []string, stdout, stderr io.Writer) int {
+	return runCompareDestination(arguments, stdout, stderr, writeDestination)
+}
+
+func runCompareDestination(arguments []string, stdout, stderr io.Writer, writeOutput destinationWriter) int {
 	flags := flag.NewFlagSet("compare", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	publicKeyPath := flags.String("public-key", "", "public key used for the before report and, by default, the after report")
@@ -57,15 +61,11 @@ func runCompare(arguments []string, stdout, stderr io.Writer) int {
 		fmt.Fprintf(stderr, "compare reports: %v\n", err)
 		return 1
 	}
-	destination, closeDestination, err := openDestination(*outputPath, stdout)
-	if err != nil {
-		fmt.Fprintf(stderr, "open output: %v\n", err)
-		return 1
-	}
-	defer closeDestination()
-	encoder := json.NewEncoder(destination)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(result); err != nil {
+	if err := writeOutput(*outputPath, stdout, func(destination io.Writer) error {
+		encoder := json.NewEncoder(destination)
+		encoder.SetIndent("", "  ")
+		return encoder.Encode(result)
+	}); err != nil {
 		fmt.Fprintf(stderr, "write comparison: %v\n", err)
 		return 1
 	}

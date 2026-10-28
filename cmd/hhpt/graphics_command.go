@@ -23,6 +23,10 @@ func runGraphics(ctx context.Context, arguments []string, stdout, stderr io.Writ
 }
 
 func runGraphicsWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, probe func(context.Context, string, int, graphics.Runner) graphics.Result) (code int) {
+	return runGraphicsWithDestination(ctx, arguments, stdout, stderr, probe, writeDestination)
+}
+
+func runGraphicsWithDestination(ctx context.Context, arguments []string, stdout, stderr io.Writer, probe func(context.Context, string, int, graphics.Runner) graphics.Result, writeOutput destinationWriter) (code int) {
 	flags := flag.NewFlagSet("graphics", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	outputPath := flags.String("output", "-", "new JSON output file, or - for stdout")
@@ -48,15 +52,11 @@ func runGraphicsWith(ctx context.Context, arguments []string, stdout, stderr io.
 			code = workerCleanupUncertainExitCode
 		}()
 	}
-	destination, closeDestination, err := openDestination(*outputPath, stdout)
-	if err != nil {
-		fmt.Fprintf(stderr, "open output: %v\n", err)
-		return 1
-	}
-	defer closeDestination()
-	encoder := json.NewEncoder(destination)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(result); err != nil {
+	if err := writeOutput(*outputPath, stdout, func(destination io.Writer) error {
+		encoder := json.NewEncoder(destination)
+		encoder.SetIndent("", "  ")
+		return encoder.Encode(result)
+	}); err != nil {
 		fmt.Fprintf(stderr, "write graphics result: %v\n", err)
 		return 1
 	}

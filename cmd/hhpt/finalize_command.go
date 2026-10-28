@@ -62,6 +62,10 @@ func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.
 }
 
 func runFinalizeOwned(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, random io.Reader, now func() time.Time, gate sessionFinalGate) (result sessionFinalizationResult) {
+	return runFinalizeOwnedDestination(ctx, arguments, stdout, stderr, collect, random, now, gate, writeDestination)
+}
+
+func runFinalizeOwnedDestination(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, random io.Reader, now func() time.Time, gate sessionFinalGate, writeOutput destinationWriter) (result sessionFinalizationResult) {
 	result.Code = func() int {
 
 		flags := flag.NewFlagSet("finalize", flag.ContinueOnError)
@@ -393,13 +397,9 @@ func runFinalizeOwned(ctx context.Context, arguments []string, stdout, stderr io
 			fmt.Fprintln(stderr, "session finalization cancelled before report output")
 			return 1
 		}
-		destination, closeDestination, err := openDestination(*outputPath, stdout)
-		if err != nil {
-			fmt.Fprintf(stderr, "open output: %v\n", err)
-			return 1
-		}
-		defer closeDestination()
-		if err := writeAll(destination, encoded); err != nil {
+		if err := writeOutput(*outputPath, stdout, func(destination io.Writer) error {
+			return writeAll(destination, encoded)
+		}); err != nil {
 			fmt.Fprintf(stderr, "write report: %v\n", err)
 			return 1
 		}

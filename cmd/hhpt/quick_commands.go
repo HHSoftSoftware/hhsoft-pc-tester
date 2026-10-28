@@ -16,6 +16,10 @@ func runCPU(ctx context.Context, arguments []string, stdout, stderr io.Writer) i
 }
 
 func runCPUWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, probe func(context.Context, quick.CPUOptions) quick.CPUResult) int {
+	return runCPUWithDestination(ctx, arguments, stdout, stderr, probe, writeDestination)
+}
+
+func runCPUWithDestination(ctx context.Context, arguments []string, stdout, stderr io.Writer, probe func(context.Context, quick.CPUOptions) quick.CPUResult, writeOutput destinationWriter) int {
 	flags := flag.NewFlagSet("cpu", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	outputPath := flags.String("output", "-", "new JSON output file, or - for stdout")
@@ -34,7 +38,7 @@ func runCPUWith(ctx context.Context, arguments []string, stdout, stderr io.Write
 		Duration: *duration, GlobalTimeout: *globalTimeout, Workers: *workers,
 		Root: "/", ThermalLimit: *thermalLimit * 1000,
 	})
-	code := writeQuickResult(result, *outputPath, stdout, stderr, "CPU")
+	code := writeQuickResultDestination(result, *outputPath, stdout, stderr, "CPU", writeOutput)
 	if quickCleanupUnconfirmed(result.Safety) {
 		fmt.Fprintln(stderr, "CPU thermal observer cleanup could not be confirmed; stop the session. Diagnostic evidence remains in RAM when available.")
 		return workerCleanupUncertainExitCode
@@ -47,6 +51,10 @@ func runMemory(ctx context.Context, arguments []string, stdout, stderr io.Writer
 }
 
 func runMemoryWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, probe func(context.Context, quick.MemoryOptions) quick.MemoryResult) int {
+	return runMemoryWithDestination(ctx, arguments, stdout, stderr, probe, writeDestination)
+}
+
+func runMemoryWithDestination(ctx context.Context, arguments []string, stdout, stderr io.Writer, probe func(context.Context, quick.MemoryOptions) quick.MemoryResult, writeOutput destinationWriter) int {
 	flags := flag.NewFlagSet("memory", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	outputPath := flags.String("output", "-", "new JSON output file, or - for stdout")
@@ -65,7 +73,7 @@ func runMemoryWith(ctx context.Context, arguments []string, stdout, stderr io.Wr
 		Bytes: *bytes, Passes: *passes, GlobalTimeout: *globalTimeout,
 		Root: "/", ThermalLimit: *thermalLimit * 1000,
 	})
-	code := writeQuickResult(result, *outputPath, stdout, stderr, "memory")
+	code := writeQuickResultDestination(result, *outputPath, stdout, stderr, "memory", writeOutput)
 	if quickCleanupUnconfirmed(result.Safety) {
 		fmt.Fprintln(stderr, "Memory thermal observer cleanup could not be confirmed; stop the session. Diagnostic evidence remains in RAM when available.")
 		return workerCleanupUncertainExitCode
@@ -78,18 +86,19 @@ func quickCleanupUnconfirmed(safety quick.SafetyEvidence) bool {
 }
 
 func writeQuickResult(result any, outputPath string, stdout, stderr io.Writer, name string) int {
+	return writeQuickResultDestination(result, outputPath, stdout, stderr, name, writeDestination)
+}
+
+func writeQuickResultDestination(result any, outputPath string, stdout, stderr io.Writer, name string, writeOutput destinationWriter) int {
 	encoded, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
 		fmt.Fprintf(stderr, "encode %s result: %v\n", name, err)
 		return 1
 	}
-	destination, closeDestination, err := openDestination(outputPath, stdout)
-	if err != nil {
-		fmt.Fprintf(stderr, "open output: %v\n", err)
-		return 1
-	}
-	defer closeDestination()
-	if _, err := destination.Write(append(encoded, '\n')); err != nil {
+	if err := writeOutput(outputPath, stdout, func(destination io.Writer) error {
+		_, err := destination.Write(append(encoded, '\n'))
+		return err
+	}); err != nil {
 		fmt.Fprintf(stderr, "write %s result: %v\n", name, err)
 		return 1
 	}

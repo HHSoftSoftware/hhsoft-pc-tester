@@ -21,6 +21,10 @@ func runDisplay(ctx context.Context, arguments []string, input io.Reader, stdout
 }
 
 func runDisplayWith(ctx context.Context, arguments []string, input io.Reader, stdout, stderr io.Writer, probe visualCollector) (code int) {
+	return runDisplayWithDestination(ctx, arguments, input, stdout, stderr, probe, writeDestination)
+}
+
+func runDisplayWithDestination(ctx context.Context, arguments []string, input io.Reader, stdout, stderr io.Writer, probe visualCollector, writeOutput destinationWriter) (code int) {
 	flags := flag.NewFlagSet("display", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	displayTime := flags.Duration("pattern-duration", 5*time.Second, "preferred-mode pattern display time")
@@ -86,15 +90,11 @@ func runDisplayWith(ctx context.Context, arguments []string, input io.Reader, st
 		}
 	}
 	result.MarkInterrupted(commandStopReason(runContext))
-	destination, closeDestination, err := openDestination(*outputPath, stdout)
-	if err != nil {
-		fmt.Fprintf(stderr, "open output: %v\n", err)
-		return 1
-	}
-	defer closeDestination()
-	encoder := json.NewEncoder(destination)
-	encoder.SetIndent("", "  ")
-	if err := encoder.Encode(result); err != nil {
+	if err := writeOutput(*outputPath, stdout, func(destination io.Writer) error {
+		encoder := json.NewEncoder(destination)
+		encoder.SetIndent("", "  ")
+		return encoder.Encode(result)
+	}); err != nil {
 		fmt.Fprintf(stderr, "write display result: %v\n", err)
 		return 1
 	}

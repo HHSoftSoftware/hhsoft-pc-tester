@@ -10,6 +10,10 @@ import (
 )
 
 func runUSB(ctx context.Context, arguments []string, stdout, stderr io.Writer) int {
+	return runUSBWith(ctx, arguments, stdout, stderr, usbtest.Run)
+}
+
+func runUSBWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, probe func(context.Context, usbtest.Options) usbtest.Result) int {
 	flags := flag.NewFlagSet("usb", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	outputPath := flags.String("output", "-", "new JSON output file, or - for stdout")
@@ -20,5 +24,5 @@ func runUSB(ctx context.Context, arguments []string, stdout, stderr io.Writer) i
 		fmt.Fprintln(stderr, "usb accepts no positional arguments")
 		return 2
 	}
-	return writeQuickResult(usbtest.Run(ctx, usbtest.Options{Root: "/"}), *outputPath, stdout, stderr, "USB")
+	return writeQuickResult(probe(ctx, usbtest.Options{Root: "/"}), *outputPath, stdout, stderr, "USB")
 }

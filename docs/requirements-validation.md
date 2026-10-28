@@ -18,6 +18,47 @@ At each feature milestone and before publication:
 5. Record what ran, what was skipped, and what still needs VM or physical
    evidence. Check off the item only after its applicable validation passes.
 
+## Linked Retest Contract
+
+The linked retest implementation is an opt-in report relationship, not a
+hardware-history verdict. It signs both the independently verified parent's
+manifest digest and exact canonical bundle SHA-256 in a v2 manifest, while
+preserving envelope-v1 signatures and generic v1 compatibility. A new linked
+child has a distinct canonical UUIDv4. Product, ID and strict reference checks
+apply even without rendered views.
+
+Review and validation cover correctly re-signed malformed metadata, two valid
+parents with equal manifests but different signed envelopes, separate child
+and parent trust, child-only unchecked references, one-hop behavior and
+current-evidence isolation. The actual CLI verifier consumes checked owned
+inputs for all four possible artifact/key roles. Real finalizer/session
+composition must retain the consumed live gate, current failures, cleanup
+exit12 and the clean-stop integrity context. Independent legacy archive and
+render fixtures guard compatibility.
+
+The 2026-10-28 isolated Windows run passed 4,804 test/subtest outcomes
+across 29 packages, including all 56 selected roots; 17 tests were skipped
+and one package contained no tests. Formatting, vet and Linux amd64/386/arm64
+cross-builds passed, with all eight command and postcheck results successful.
+A separate build produced eight test binaries for cmd, bundle, render and
+report on Linux amd64/386; its 18 commands and nine postchecks passed.
+
+Selected native execution of those eight binaries passed 698 test/subtest
+outcomes and all 110 required root executions (55 per architecture), with
+zero failures or skips and confirmed cleanup. Each architecture contributed
+288 cmd, 54 bundle, six render and one report outcome. The cohort also passed
+nine owned-resource cases, 32 archive cases and all six root postchecks.
+These measurements used the isolated 491-file candidate; the prior committed
+473-file baseline remained separate from the compiled source.
+
+Implementation review, host tests, selected native software tests, installed
+images and physical-PC evidence are separate. Earlier qualification counts do
+not transfer to this report profile. Correction history, supersession,
+revocation, custody, durable storage and existing image/physical/release work
+remain separate; the reference does not close them. This cohort did not qualify
+an installed CLI, real report media, kernel-close faults, blocked-kernel
+deadlines or fsync durability.
+
 ## Current review boundaries
 
 The initial requirements review found no implementation TODO/FIXME placeholders

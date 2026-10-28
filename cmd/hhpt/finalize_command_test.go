@@ -72,7 +72,7 @@ func TestFinalizeBuildsSelfIssuedReportFromExistingEvidence(t *testing.T) {
 	}
 	stdout.Reset()
 	stderr.Reset()
-	if result := runVerify([]string{"-self-issued", reportPath}, &stdout, &stderr); result != 0 || !strings.Contains(stdout.String(), "does not prove operator identity") {
+	if result := runVerify(context.Background(), []string{"-self-issued", reportPath}, &stdout, &stderr); result != 0 || !strings.Contains(stdout.String(), "does not prove operator identity") {
 		t.Fatalf("self-issued verification failed: result=%d stdout=%q stderr=%q", result, stdout.String(), stderr.String())
 	}
 	stdout.Reset()

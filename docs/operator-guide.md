@@ -515,6 +515,81 @@ The current boot workflow does not enroll such an operator signer, so do not
 use this mode unless your deployment has independently provisioned and
 controlled the corresponding key pair.
 
+## Create and Verify a Linked Retest
+
+Linked retesting is opt-in. It creates a new report from the current run and
+leaves the earlier bundle unchanged. The command-line options do not add a
+new automatic boot-menu workflow. Linked bundles require a verifier that
+supports manifest v2; no previously released version is implied. Legacy v1
+archive bytes and signatures retain their existing behavior. Image and
+physical-PC qualification remain separate.
+
+Add `-previous-report PRIOR.hhpcr` to an otherwise valid `session` or
+`finalize` command, together with exactly one independent parent trust mode:
+
+- `-previous-self-issued` explicitly accepts the parent's embedded signer
+  at reduced identity assurance.
+- `-previous-public-key PRIOR.pub -previous-key-id PRIOR_KEY_ID` uses a
+  separately provisioned raw 32-byte Ed25519 public key and expected key ID.
+
+Current session/finalize commands still create self-issued children. Accepting
+a provisioned parent key does not provision the child signer or increase the
+child's identity assurance.
+
+Parent trust options require a parent path. Partial or conflicting trust
+options, including an explicitly false self-issued option, are rejected.
+The parent is fully verified and its input handles are closed before linked
+session work begins. Its outcomes, raw inventory and keys are not copied
+into the new report. The current run still needs its own plan, worker
+results, safety observations and successful cleanup before signing.
+
+For standalone `finalize`, keep all required current `-outcome` arguments.
+Omitting `-session-id` generates a new canonical UUIDv4. If supplied in linked
+mode, the ID must be a nonempty lowercase UUIDv4 different from the verified
+parent's ID. Session finalization generates that new ID automatically.
+An explicit empty or invalid ID is not an instruction to reuse the parent.
+
+Verify a self-issued child against one explicitly accepted self-issued parent:
+
+```powershell
+hhpt.exe verify -self-issued -previous-report .\prior.hhpcr `
+  -previous-self-issued .\retest.hhpcr
+```
+
+The child and parent may instead use separate provisioned public keys. The
+ordinary `-public-key` and `-key-id` options apply only to the child; the
+`-previous-*` equivalents apply only to the parent. One report's trust does
+not upgrade the other. A supplied parent is accepted only when both its
+verified manifest digest and canonical bundle SHA-256 match the child's
+signed reference, and the two report IDs differ.
+
+The existing child-only command remains useful:
+
+```powershell
+hhpt.exe verify -self-issued .\retest.hhpcr
+```
+
+For a linked child, this authenticates the child and displays the signed
+reference while reporting `predecessor relation: unchecked; no parent was
+supplied`. It does not search for the parent. Supplying one parent checks
+exactly that hop; even if the parent is also linked, no grandparent is
+opened automatically. A matched reference proves neither the same asset,
+chronology, supersession, a complete history nor inherited test results.
+Comparison still needs the existing independently verified identity and
+HMAC-key/epoch rules.
+
+Report and public-key acquisition for `verify` and linked parent selection
+is supported on Linux and Windows. Each report must be a regular file within
+22 bytes to 64 MiB; each external public key must contain exactly 32 bytes.
+Malformed or incomplete inputs, substituted readable objects and uncertain
+closure do not authorize verification success. The readable object must remain
+the exact acquired object; a Windows pathname rename alone does not invalidate
+that proof. Other OS input adapters fail explicitly. These checks
+do not establish deadlines for blocked filesystem calls. Existing unrelated
+capture, comparison and persistence input paths have not all acquired this
+same checked-close contract; their existing authorization and output rules
+remain in force.
+
 ## Update and Recovery
 
 - **Update:** HHSoft does not download drivers, packages, profiles, or updates

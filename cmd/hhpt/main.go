@@ -75,7 +75,7 @@ func run(ctx context.Context, arguments []string, stdin io.Reader, stdout, stder
 	case "ui":
 		return runUI(ctx, arguments[1:], stdin, stdout, stderr)
 	case "verify":
-		return runVerify(arguments[1:], stdout, stderr)
+		return runVerify(ctx, arguments[1:], stdout, stderr)
 	case "version":
 		fmt.Fprintln(stdout, product.Name, product.Version)
 		return 0
@@ -168,5 +168,6 @@ func usage(destination io.Writer) {
 	fmt.Fprintln(destination, "       hhpt save -fingerprint-key FILE REPORT.hhpcr")
 	fmt.Fprintln(destination, "       hhpt verify (-self-issued | -public-key FILE -key-id ID) REPORT.hhpcr")
 	fmt.Fprintln(destination, "       hhpt ui [-auto-start 15s] [-legacy] [-deployment-key-media] [-selection-output FILE]")
+	fmt.Fprintln(destination, "       session/finalize/verify: optional -previous-report FILE with either -previous-self-issued or both -previous-public-key FILE -previous-key-id ID")
 	fmt.Fprintln(destination, "       hhpt version")
 }

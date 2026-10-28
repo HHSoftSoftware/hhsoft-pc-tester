@@ -1208,6 +1208,47 @@ The broader target policy remains:
   condition stops affected tests. Resume requires an explicit safe state;
   continuous monitoring and general recovery remain future work.
 
+## Linked Retest Validation
+
+Use independently encoded canonical archives and envelope signing inputs to
+preserve v1 trusted/self-issued profiles with absent, HTML, PDF and both views.
+For v2, re-sign malformed fixtures so rejection reaches the intended semantic
+boundary: exact profile fields, both digest grammars, product identity and
+canonical UUIDv4 even without views. Check complete regenerated views and
+static reference wording separately from local trust output.
+
+Construct two independently valid parents whose manifest digests match but
+whose signed IDs/times or trusted signing keys differ. Assert that precondition
+before checking rejection of the substituted full-bundle hash. Exercise each
+child/parent trust combination, wrong keys, equal child/parent IDs, foreign
+legacy-product parents, child-only unchecked references and an already-linked
+parent without fetching its grandparent.
+
+Route each artifact/key role through the real bounded acquisition body with
+independently injected metadata/readable Close faults and exact ownership
+ledgers, including cancellation. Linux/Windows fixtures also exercise the
+actual platform adapters; unsupported OSes must reject. These tests use owned
+regular fixtures, not private inputs or physical devices.
+
+Exercise the real session adapter, consumed live gate, finalizer, signer and
+bundle verifier together. Preserve known current failures and plan bindings;
+reject parent failure before workers, invalid child IDs, reused gates, unsafe
+pre-sign observations and uncertain cleanup. A clean operator stop can use the
+existing fresh integrity context. Standalone cancellation suppresses output.
+Check exclusive outputs, caller-owned stdout, comparison policy and verified
+bytes passed to a fake persister. Injected output completion is not a claim of
+kernel-close faults, fsync durability or installed-media qualification.
+
+The closed 2026-10-28 host run recorded 4,804 passing test/subtest outcomes
+in 29 packages, 17 skipped tests and one empty package. The selected native
+cmd, bundle, render and report suites ran on both Linux amd64 and 386:
+698 outcomes, all 110 required root executions and 349 required named
+outcomes per architecture passed with no failures or skips. Native event
+conversion reused two previously qualified test2json tools; those tools were
+not rebuilt from the linked-retest source. Cleanup, nine owned-resource
+cases, 32 archive cases and six root postchecks also passed. These are
+software fixture results, not installed-CLI or physical-media outcomes.
+
 ## Evidence contract
 
 Each case emits a structured result containing:
@@ -1224,8 +1265,9 @@ Each case emits a structured result containing:
 - authorization plus before/after target identity for `E/W` and `D/W` cases.
 
 Finalization hashes the report, test-plan manifest, and evidence inventory.
-Corrections create a new signed revision linked to the prior hash; finalized
-results are not overwritten. Serial numbers, credentials, camera/audio content,
+Opt-in retests create a new signed report linked by the verified parent's
+manifest and canonical bundle digests; finalized results are not overwritten.
+Explicit signed correction history remains planned work. Serial numbers, credentials, camera/audio content,
 and network identifiers are excluded or redacted unless the operator enables a
 documented private-report mode.
 

@@ -47,6 +47,11 @@ func runSessionWorker(ctx context.Context, worker sessionWorker, input io.Reader
 }
 
 func finalizeSession(ctx context.Context, request sessionFinalization, stdout, stderr io.Writer) sessionFinalizationResult {
+	collector := inventory.NewLinuxCollector("/")
+	return finalizeSessionWith(ctx, request, stdout, stderr, collector.Collect, cryptorand.Reader, time.Now)
+}
+
+func finalizeSessionWith(ctx context.Context, request sessionFinalization, stdout, stderr io.Writer, collect snapshotCollector, random io.Reader, now func() time.Time) sessionFinalizationResult {
 	arguments := []string{"-plan", request.PlanPath, "-fingerprint-key", request.FingerprintKeyPath,
 		"-key-epoch", request.KeyEpoch, "-evidence-dir", request.EvidenceDirectory, "-output", request.OutputPath}
 	if request.FixtureComponents != "" {
@@ -55,6 +60,5 @@ func finalizeSession(ctx context.Context, request sessionFinalization, stdout, s
 	for _, outcome := range request.Outcomes {
 		arguments = append(arguments, "-outcome", outcome)
 	}
-	collector := inventory.NewLinuxCollector("/")
-	return runFinalizeOwned(ctx, arguments, stdout, stderr, collector.Collect, cryptorand.Reader, time.Now, request.Gate)
+	return runFinalizeOwnedDestinationWithPrevious(ctx, arguments, stdout, stderr, collect, random, now, request.Gate, writeDestination, request.Previous, readRetestInput)
 }

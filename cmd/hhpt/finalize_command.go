@@ -21,6 +21,7 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/plan"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/pointerevidence"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quick"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/report"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/sessionevidence"
 )
 
@@ -66,10 +67,18 @@ func runFinalizeOwned(ctx context.Context, arguments []string, stdout, stderr io
 }
 
 func runFinalizeOwnedDestination(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, random io.Reader, now func() time.Time, gate sessionFinalGate, writeOutput destinationWriter) (result sessionFinalizationResult) {
+	return runFinalizeOwnedDestinationWithPrevious(ctx, arguments, stdout, stderr, collect, random, now, gate, writeOutput, nil, readRetestInput)
+}
+
+func runFinalizeOwnedDestinationWithPrevious(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, random io.Reader, now func() time.Time, gate sessionFinalGate, writeOutput destinationWriter, previous *verifiedPreviousReport, readInput retestInputReader) (result sessionFinalizationResult) {
+	if previous != nil {
+		copy := *previous
+		previous = &copy
+	}
 	result.Code = func() int {
 
 		flags := flag.NewFlagSet("finalize", flag.ContinueOnError)
-		flags.SetOutput(stderr)
+		flags.SetOutput(io.Discard)
 		fingerprintKeyPath := flags.String("fingerprint-key", "", "file containing exactly 32 raw fingerprint-key bytes")
 		keyEpoch := flags.String("key-epoch", "ephemeral-session", "non-secret fingerprint-key epoch")
 		evidenceDirectory := flags.String("evidence-dir", "/run/hhpt", "direct directory containing bounded test evidence")
@@ -79,22 +88,47 @@ func runFinalizeOwnedDestination(ctx context.Context, arguments []string, stdout
 		fixtureComponents := flags.String("fixture-components", "", "internal file binding selected test-fixture component IDs")
 		journalPath := flags.String("session-journal", "", "bounded session execution and safety journal")
 		runStop := flags.String("run-stop", "", "session stop reason bound to the journal")
+		var parentOptions previousReportFlags
+		parentOptions.register(flags)
 		var outcomes repeatedString
 		flags.Var(&outcomes, "outcome", "required TEST_ID=SOURCE_STATUS execution outcome; repeat for every implemented quick test")
 		if err := flags.Parse(arguments); err != nil {
+			fmt.Fprintln(stderr, "finalize: invalid arguments")
 			return 2
+		}
+		parentOptions.recordPresence(flags)
+		if !parentOptions.valid() || previous != nil && parentOptions.present() {
+			fmt.Fprintln(stderr, "finalize: invalid or conflicting predecessor options")
+			return 2
+		}
+		if previous != nil && !previous.valid() {
+			fmt.Fprintln(stderr, "finalize: invalid verified predecessor")
+			return 1
 		}
 		if flags.NArg() != 0 || *fingerprintKeyPath == "" || *planPath == "" || *outputPath == "" {
 			fmt.Fprintln(stderr, "finalize requires -fingerprint-key, -plan, -output, and no positional arguments")
 			return 2
 		}
-		journalFlag := false
+		journalFlag, sessionIDSet := false, false
 		flags.Visit(func(value *flag.Flag) {
 			journalFlag = journalFlag || value.Name == "session-journal" || value.Name == "run-stop"
+			sessionIDSet = sessionIDSet || value.Name == "session-id"
 		})
 		if journalFlag || *journalPath != "" || *runStop != "" {
 			fmt.Fprintln(stderr, "session finalization requires the live coordinator gate; a journal file cannot authorize signing")
 			return 2
+		}
+		if parentOptions.present() {
+			var parentErr error
+			previous, parentErr = parentOptions.load(ctx, readInput)
+			if parentErr != nil {
+				fmt.Fprintln(stderr, "finalize: predecessor input or verification failed")
+				return 1
+			}
+		}
+		if previous != nil && (ctx == nil || ctx.Err() != nil) {
+			fmt.Fprintln(stderr, "finalize: linked retest cancelled")
+			return 1
 		}
 		outcomeValues, err := parseOutcomes(outcomes)
 		if err != nil {
@@ -134,14 +168,31 @@ func runFinalizeOwnedDestination(ctx context.Context, arguments []string, stdout
 			plannedTests[test.ID] = test
 		}
 		resolvedSessionID := strings.TrimSpace(*sessionID)
+		if previous != nil && sessionIDSet && (!report.ValidRetestID(*sessionID) || *sessionID == previous.sessionID) {
+			fmt.Fprintln(stderr, "finalize: linked retest requires a distinct canonical UUIDv4 session ID")
+			return 2
+		}
 		if resolvedSessionID == "" {
-			resolvedSessionID, err = randomSessionID(random)
+			if previous == nil {
+				resolvedSessionID, err = randomSessionID(random)
+			} else {
+				resolvedSessionID, err = randomRetestSessionID(random)
+			}
 			if err != nil {
 				fmt.Fprintf(stderr, "generate session ID: %v\n", err)
 				return 1
 			}
 		}
 
+		var relation *report.PreviousReport
+		if previous != nil {
+			if *sessionID != strings.TrimSpace(*sessionID) || !report.ValidRetestID(resolvedSessionID) || resolvedSessionID == previous.sessionID {
+				fmt.Fprintln(stderr, "finalize: linked retest requires a distinct UUIDv4")
+				return 2
+			}
+			copy := previous.reference
+			relation = &copy
+		}
 		testResults := make([]app.TestResult, 0, len(frozenPlan.Tests)+1)
 		covered := make(map[string]bool, len(quickResultDefinitions))
 		retainedEvidence := make(map[string][]byte, len(quickResultDefinitions))
@@ -379,21 +430,30 @@ func runFinalizeOwnedDestination(ctx context.Context, arguments []string, stdout
 		}
 		testResults = append(testResults, integrityResult)
 		fmt.Fprintf(stdout, "HHPT_RUN_INTEGRITY status=%s plan=%s planned_components=%d final_components=%d added=%d removed=%d changed=%d\n", integrityStatus, frozenPlan.ID, len(frozenPlan.HardwareGraph.Components), len(finalPlan.HardwareGraph.Components), len(delta.Added), len(delta.Removed), len(delta.Changed))
+		if previous != nil && ctx.Err() != nil {
+			fmt.Fprintln(stderr, "finalize: linked retest cancelled before signing")
+			return 1
+		}
 		publicKey, privateKey, err := ed25519.GenerateKey(random)
 		if err != nil {
 			fmt.Fprintf(stderr, "generate self-issued report key: %v\n", err)
 			return 1
 		}
-		if journal != nil && ctx.Err() != nil {
+		if (journal != nil || previous != nil) && ctx.Err() != nil {
 			fmt.Fprintln(stderr, "session finalization cancelled before signing")
 			return 1
 		}
-		encoded, err := captureSelfIssuedBundle(snapshot, testResults, fingerprintKey, *keyEpoch, privateKey, publicKey, resolvedSessionID, now(), app.CoverageFrozenPlan)
+		var encoded []byte
+		if relation == nil {
+			encoded, err = captureSelfIssuedBundle(snapshot, testResults, fingerprintKey, *keyEpoch, privateKey, publicKey, resolvedSessionID, now(), app.CoverageFrozenPlan)
+		} else {
+			encoded, err = captureSelfIssuedBundleWithPrevious(snapshot, testResults, fingerprintKey, *keyEpoch, privateKey, publicKey, resolvedSessionID, now(), app.CoverageFrozenPlan, relation)
+		}
 		if err != nil {
 			fmt.Fprintf(stderr, "build self-issued report: %v\n", err)
 			return 1
 		}
-		if journal != nil && ctx.Err() != nil {
+		if (journal != nil || previous != nil) && ctx.Err() != nil {
 			fmt.Fprintln(stderr, "session finalization cancelled before report output")
 			return 1
 		}

@@ -26,6 +26,7 @@ type sessionWorker struct {
 }
 
 type sessionFinalization struct {
+	Previous                                                  *verifiedPreviousReport
 	PlanPath, EvidenceDirectory, FingerprintKeyPath, KeyEpoch string
 	FixtureComponents, OutputPath                             string
 	Gate                                                      sessionFinalGate
@@ -33,13 +34,14 @@ type sessionFinalization struct {
 }
 
 type sessionDependencies struct {
-	RunWorker     func(context.Context, sessionWorker, io.Reader, io.Writer, io.Writer) int
-	ObserveSafety func(context.Context) safemode.Result
-	StartMonitor  func(time.Time, context.CancelFunc) (sessionSafetyMonitor, error)
-	StartThermal  func(time.Time, context.CancelFunc, context.CancelFunc) (sessionThermalMonitor, error)
-	Finalize      func(context.Context, sessionFinalization, io.Writer, io.Writer) sessionFinalizationResult
-	FinishInput   func() error
-	Now           func() time.Time
+	ReadRetestInput retestInputReader
+	RunWorker       func(context.Context, sessionWorker, io.Reader, io.Writer, io.Writer) int
+	ObserveSafety   func(context.Context) safemode.Result
+	StartMonitor    func(time.Time, context.CancelFunc) (sessionSafetyMonitor, error)
+	StartThermal    func(time.Time, context.CancelFunc, context.CancelFunc) (sessionThermalMonitor, error)
+	Finalize        func(context.Context, sessionFinalization, io.Writer, io.Writer) sessionFinalizationResult
+	FinishInput     func() error
+	Now             func() time.Time
 }
 
 type sessionSafetyMonitor interface {
@@ -91,7 +93,7 @@ func runSessionWithInput(ctx context.Context, arguments []string, input io.Reade
 // workerexec's separate ownership and confirmed-cleanup requirement.
 func runSessionWith(ctx context.Context, arguments []string, input io.Reader, stdout, stderr io.Writer, dependencies sessionDependencies) (exitCode int) {
 	flags := flag.NewFlagSet("session", flag.ContinueOnError)
-	flags.SetOutput(stderr)
+	flags.SetOutput(io.Discard)
 	planPath := flags.String("plan", "", "frozen quick-test plan")
 	keyPath := flags.String("fingerprint-key", "", "session fingerprint key")
 	keyEpoch := flags.String("key-epoch", "ephemeral-session", "fingerprint-key epoch")
@@ -99,7 +101,15 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 	directory := flags.String("evidence-dir", "/run/hhpt", "direct directory for fresh worker evidence")
 	output := flags.String("output", "", "new signed report file")
 	budget := flags.Duration("timeout", 5*time.Minute, "immutable cooperative quick-session budget")
+	var parentOptions previousReportFlags
+	parentOptions.register(flags)
 	if flags.Parse(arguments) != nil {
+		fmt.Fprintln(stderr, "session: invalid arguments")
+		return 2
+	}
+	parentOptions.recordPresence(flags)
+	if !parentOptions.valid() {
+		fmt.Fprintln(stderr, "session: invalid predecessor options")
 		return 2
 	}
 	if flags.NArg() != 0 || *planPath == "" || *keyPath == "" || *output == "" || *output == "-" || *budget < 10*time.Millisecond || *budget > 15*time.Minute {
@@ -108,6 +118,15 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 	}
 	if ctx == nil || dependencies.RunWorker == nil || dependencies.ObserveSafety == nil || dependencies.StartMonitor == nil || dependencies.StartThermal == nil || dependencies.Finalize == nil || dependencies.FinishInput == nil || dependencies.Now == nil {
 		fmt.Fprintln(stderr, "session dependencies are incomplete")
+		return 1
+	}
+	readInput := dependencies.ReadRetestInput
+	if readInput == nil {
+		readInput = readRetestInput
+	}
+	previous, parentErr := parentOptions.load(ctx, readInput)
+	if parentErr != nil {
+		fmt.Fprintln(stderr, "session: predecessor input or verification failed")
 		return 1
 	}
 	if err := validateEvidenceDirectory(*directory); err != nil {
@@ -416,7 +435,7 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 	}
 	journal.PreparationStartedMilliseconds = dependencies.Now().Sub(started).Milliseconds()
 	gateCalled, gatePassed := false, false
-	request := sessionFinalization{PlanPath: *planPath, EvidenceDirectory: *directory, FingerprintKeyPath: *keyPath, KeyEpoch: *keyEpoch, FixtureComponents: *fixture, OutputPath: *output}
+	request := sessionFinalization{Previous: previous, PlanPath: *planPath, EvidenceDirectory: *directory, FingerprintKeyPath: *keyPath, KeyEpoch: *keyEpoch, FixtureComponents: *fixture, OutputPath: *output}
 	request.Gate = func(gateContext context.Context) (sessionJournal, error) {
 		if gateCalled {
 			gatePassed = false

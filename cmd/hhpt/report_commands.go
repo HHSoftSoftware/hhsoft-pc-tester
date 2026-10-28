@@ -201,53 +201,8 @@ func runCaptureWithDestination(ctx context.Context, arguments []string, stdout, 
 	return 0
 }
 
-func runVerify(arguments []string, stdout, stderr io.Writer) int {
-	flags := flag.NewFlagSet("verify", flag.ContinueOnError)
-	flags.SetOutput(stderr)
-	publicKeyPath := flags.String("public-key", "", "file containing exactly 32 raw Ed25519 public-key bytes")
-	keyID := flags.String("key-id", "", "expected non-secret signing-key identifier")
-	selfIssued := flags.Bool("self-issued", false, "verify an embedded ephemeral signer without claiming external identity trust")
-	if err := flags.Parse(arguments); err != nil {
-		return 2
-	}
-	if flags.NArg() != 1 || (*selfIssued && (*publicKeyPath != "" || strings.TrimSpace(*keyID) != "")) || (!*selfIssued && (*publicKeyPath == "" || strings.TrimSpace(*keyID) == "")) {
-		fmt.Fprintln(stderr, "verify requires either -self-issued or both -public-key and -key-id, plus one .hhpcr file")
-		return 2
-	}
-	source, err := os.Open(flags.Arg(0))
-	if err != nil {
-		fmt.Fprintf(stderr, "open report: %v\n", err)
-		return 1
-	}
-	defer source.Close()
-	metadata, err := source.Stat()
-	if err != nil {
-		fmt.Fprintf(stderr, "inspect report: %v\n", err)
-		return 1
-	}
-	if !metadata.Mode().IsRegular() {
-		fmt.Fprintln(stderr, "inspect report: input is not a regular file")
-		return 1
-	}
-	if *selfIssued {
-		_, err = bundle.VerifySelfIssued(source, metadata.Size())
-	} else {
-		var publicKey []byte
-		publicKey, err = readRawKey(*publicKeyPath, ed25519.PublicKeySize)
-		if err == nil {
-			_, err = bundle.Verify(source, metadata.Size(), report.Keyring{strings.TrimSpace(*keyID): ed25519.PublicKey(publicKey)})
-		}
-	}
-	if err != nil {
-		fmt.Fprintf(stderr, "verify report: %v\n", err)
-		return 1
-	}
-	if *selfIssued {
-		fmt.Fprintln(stdout, "verified: contents/signature valid; signer is self-issued and does not prove operator identity")
-		return 0
-	}
-	fmt.Fprintln(stdout, "verified: report signature and contents are valid")
-	return 0
+func runVerify(ctx context.Context, arguments []string, stdout, stderr io.Writer) int {
+	return runVerifyWithInput(ctx, arguments, stdout, stderr, readRetestInput)
 }
 
 func captureBundle(snapshot inventory.Snapshot, testResults []app.TestResult, fingerprintKey []byte, keyEpoch string, privateKey ed25519.PrivateKey, keyID, sessionID string, generated time.Time, coverageScope app.CoverageScope) ([]byte, error) {
@@ -288,6 +243,10 @@ func captureBundle(snapshot inventory.Snapshot, testResults []app.TestResult, fi
 }
 
 func captureSelfIssuedBundle(snapshot inventory.Snapshot, testResults []app.TestResult, fingerprintKey []byte, keyEpoch string, privateKey ed25519.PrivateKey, publicKey ed25519.PublicKey, sessionID string, generated time.Time, coverageScope app.CoverageScope) ([]byte, error) {
+	return captureSelfIssuedBundleWithPrevious(snapshot, testResults, fingerprintKey, keyEpoch, privateKey, publicKey, sessionID, generated, coverageScope, nil)
+}
+
+func captureSelfIssuedBundleWithPrevious(snapshot inventory.Snapshot, testResults []app.TestResult, fingerprintKey []byte, keyEpoch string, privateKey ed25519.PrivateKey, publicKey ed25519.PublicKey, sessionID string, generated time.Time, coverageScope app.CoverageScope, previous *report.PreviousReport) ([]byte, error) {
 	if len(privateKey) != ed25519.PrivateKeySize || len(publicKey) != ed25519.PublicKeySize || !bytes.Equal(privateKey.Public().(ed25519.PublicKey), publicKey) {
 		return nil, errors.New("self-issued signing key is invalid or inconsistent")
 	}
@@ -296,11 +255,16 @@ func captureSelfIssuedBundle(snapshot inventory.Snapshot, testResults []app.Test
 		return nil, err
 	}
 	payload.CoverageScope = coverageScope
-	inventoryJSON, html, pdf, err := renderSerializedInventory(payload)
+	inventoryJSON, html, pdf, err := renderSerializedInventoryWithPrevious(payload, previous)
 	if err != nil {
 		return nil, err
 	}
-	manifestDigest, err := bundle.SelfIssuedManifestDigestWithPDF(inventoryJSON, html, pdf, publicKey)
+	var manifestDigest string
+	if previous == nil {
+		manifestDigest, err = bundle.SelfIssuedManifestDigestWithPDF(inventoryJSON, html, pdf, publicKey)
+	} else {
+		manifestDigest, err = bundle.RetestManifestDigestWithPDF(inventoryJSON, html, pdf, *previous, publicKey)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -317,7 +281,12 @@ func captureSelfIssuedBundle(snapshot inventory.Snapshot, testResults []app.Test
 		return nil, err
 	}
 	var encoded bytes.Buffer
-	if err := bundle.WriteSelfIssuedWithPDF(&encoded, inventoryJSON, envelope, html, pdf, publicKey); err != nil {
+	if previous == nil {
+		err = bundle.WriteSelfIssuedWithPDF(&encoded, inventoryJSON, envelope, html, pdf, publicKey)
+	} else {
+		err = bundle.WriteRetestWithPDF(&encoded, inventoryJSON, envelope, html, pdf, *previous, publicKey)
+	}
+	if err != nil {
 		return nil, err
 	}
 	return encoded.Bytes(), nil
@@ -329,6 +298,10 @@ func captureSelfIssuedBundle(snapshot inventory.Snapshot, testResults []app.Test
 // differ from the verifier's reconstruction. The typed round trip retains
 // evidence as RawMessage, preserving numeric precision and spelling.
 func renderSerializedInventory(payload app.InventoryPayload) (inventoryJSON, html, pdf []byte, err error) {
+	return renderSerializedInventoryWithPrevious(payload, nil)
+}
+
+func renderSerializedInventoryWithPrevious(payload app.InventoryPayload, previous *report.PreviousReport) (inventoryJSON, html, pdf []byte, err error) {
 	inventoryJSON, err = json.Marshal(payload)
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("encode inventory: %w", err)
@@ -341,11 +314,19 @@ func renderSerializedInventory(payload app.InventoryPayload) (inventoryJSON, htm
 	if err := json.Unmarshal(inventoryJSON, &serialized); err != nil {
 		return nil, nil, nil, fmt.Errorf("decode serialized inventory: %w", err)
 	}
-	html, err = render.InventoryHTML(serialized)
+	if previous == nil {
+		html, err = render.InventoryHTML(serialized)
+	} else {
+		html, err = render.InventoryRetestHTMLForVersion(serialized, product.Version, *previous)
+	}
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("render report: %w", err)
 	}
-	pdf, err = render.InventoryPDF(serialized)
+	if previous == nil {
+		pdf, err = render.InventoryPDF(serialized)
+	} else {
+		pdf, err = render.InventoryRetestPDFForVersion(serialized, product.Version, *previous)
+	}
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("render PDF: %w", err)
 	}

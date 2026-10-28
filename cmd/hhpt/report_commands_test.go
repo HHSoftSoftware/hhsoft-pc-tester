@@ -141,7 +141,7 @@ func TestCaptureAndVerifyRoundTrip(t *testing.T) {
 
 	stdout.Reset()
 	stderr.Reset()
-	if result := runVerify([]string{"-public-key", publicKeyPath, "-key-id", "signer-7", reportPath}, &stdout, &stderr); result != 0 {
+	if result := runVerify(context.Background(), []string{"-public-key", publicKeyPath, "-key-id", "signer-7", reportPath}, &stdout, &stderr); result != 0 {
 		t.Fatalf("verify returned %d: %s", result, stderr.String())
 	}
 	if stdout.String() != "verified: report signature and contents are valid\n" {
@@ -292,10 +292,10 @@ func TestVerifyRejectsWrongPublicKey(t *testing.T) {
 	wrongPublicKey := ed25519.NewKeyFromSeed(bytes.Repeat([]byte{5}, ed25519.SeedSize)).Public().(ed25519.PublicKey)
 	publicKeyPath := writeTestKey(t, directory, "wrong.pub", wrongPublicKey)
 	var stderr bytes.Buffer
-	if result := runVerify([]string{"-public-key", publicKeyPath, "-key-id", "signer", reportPath}, bytes.NewBuffer(nil), &stderr); result != 1 {
+	if result := runVerify(context.Background(), []string{"-public-key", publicKeyPath, "-key-id", "signer", reportPath}, bytes.NewBuffer(nil), &stderr); result != 1 {
 		t.Fatalf("verify returned %d", result)
 	}
-	if !strings.Contains(stderr.String(), "invalid signature") {
+	if !strings.Contains(stderr.String(), "verify: child input or verification failed") {
 		t.Fatalf("unexpected error %q", stderr.String())
 	}
 }

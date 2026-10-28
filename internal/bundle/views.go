@@ -10,6 +10,7 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/product"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/render"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/report"
 )
 
 // A valid signature authenticates bytes, not the safety or accuracy of a view.
@@ -17,6 +18,10 @@ import (
 // and signed product/version. No HTML/PDF parser or active-content denylist is
 // used. Absent optional views retain the inventory-only bundle profile.
 func validateViews(encoded, html, pdf []byte, productName, version string) error {
+	return validateViewsWithPrevious(encoded, html, pdf, productName, version, nil)
+}
+
+func validateViewsWithPrevious(encoded, html, pdf []byte, productName, version string, previous *report.PreviousReport) error {
 	if html == nil && pdf == nil && !hasCoverageMetadata(encoded) && !app.HasSessionThermalClaim(encoded) && !app.HasKeyboardClaim(encoded) && !app.HasPointerClaim(encoded) && !app.HasCPUScalarClaim(encoded) && !app.HasMemoryClaim(encoded) && !app.HasStorageClaim(encoded) {
 		return nil
 	}
@@ -39,13 +44,25 @@ func validateViews(encoded, html, pdf []byte, productName, version string) error
 		return fmt.Errorf("%w: noncanonical report view inventory", ErrInvalidBundle)
 	}
 	if html != nil {
-		expected, err := render.InventoryHTMLForVersion(payload, version)
+		var expected []byte
+		var err error
+		if previous == nil {
+			expected, err = render.InventoryHTMLForVersion(payload, version)
+		} else {
+			expected, err = render.InventoryRetestHTMLForVersion(payload, version, *previous)
+		}
 		if err != nil || !bytes.Equal(expected, html) {
 			return fmt.Errorf("%w: HTML is not the canonical inventory view", ErrInvalidBundle)
 		}
 	}
 	if pdf != nil {
-		expected, err := render.InventoryPDFForVersion(payload, version)
+		var expected []byte
+		var err error
+		if previous == nil {
+			expected, err = render.InventoryPDFForVersion(payload, version)
+		} else {
+			expected, err = render.InventoryRetestPDFForVersion(payload, version, *previous)
+		}
 		if err != nil || !bytes.Equal(expected, pdf) {
 			return fmt.Errorf("%w: PDF is not the canonical inventory view", ErrInvalidBundle)
 		}

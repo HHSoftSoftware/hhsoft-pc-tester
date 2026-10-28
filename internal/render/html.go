@@ -11,9 +11,11 @@ import (
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/app"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/product"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/report"
 )
 
 type inventoryDocument struct {
+	PreviousReport      *report.PreviousReport
 	ProductName         string
 	ProductVersion      string
 	SchemaVersion       int
@@ -74,7 +76,13 @@ table{background:var(--panel);border-collapse:collapse;border:1px solid var(--li
 <h1>{{.ProductName}} Inventory Report</h1>
 <p class="subtitle">Version {{.ProductVersion}} · Inventory schema {{.SchemaVersion}}</p>
 </header>
-<section class="section" aria-labelledby="summary-heading">
+{{if .PreviousReport}}<section class="section" aria-labelledby="retest-heading">
+<h2 id="retest-heading">Linked retest reference</h2>
+<p>A signed reference, not proof of shared hardware, chronology, supersession or inherited results. Verify the predecessor separately.</p>
+<p>Previous manifest: {{.PreviousReport.ManifestDigest}}</p>
+<p>Previous canonical bundle: {{.PreviousReport.BundleSHA256}}</p>
+</section>
+{{end}}<section class="section" aria-labelledby="summary-heading">
 <h2 id="summary-heading">Summary</h2>
 <table>
 <tbody>
@@ -260,6 +268,13 @@ func RenderInventoryHTML(output io.Writer, payload app.InventoryPayload) error {
 }
 
 func renderInventoryHTML(output io.Writer, payload app.InventoryPayload, version string) error {
+	return renderInventoryHTMLWithPrevious(output, payload, version, nil)
+}
+
+func renderInventoryHTMLWithPrevious(output io.Writer, payload app.InventoryPayload, version string, previous *report.PreviousReport) error {
+	if previous != nil && previous.Validate() != nil {
+		return errors.New("invalid previous-report view reference")
+	}
 	if err := validateVersion(version); err != nil {
 		return err
 	}
@@ -305,6 +320,7 @@ func renderInventoryHTML(output io.Writer, payload app.InventoryPayload, version
 	}
 	sort.SliceStable(testResults, func(left, right int) bool { return testResults[left].ID < testResults[right].ID })
 	document := inventoryDocument{
+		PreviousReport:      previous,
 		ProductName:         product.Name,
 		ProductVersion:      version,
 		SchemaVersion:       payload.SchemaVersion,

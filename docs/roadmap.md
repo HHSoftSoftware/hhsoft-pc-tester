@@ -410,6 +410,20 @@ executions, without failures or skips. These results do not complete guided
 keyboard or pointer coverage, physical input qualification, safe display-mode
 selection, blocked-kernel deadlines, rebuilt images or release gates.
 
+Opt-in linked retests create a new signed report with a distinct UUIDv4 and
+an exact reference to one independently verified predecessor: both its
+manifest digest and canonical bundle SHA-256. Session/finalize preserve
+current evidence and the existing live safety gates. Verify can check the
+child alone, with the predecessor relationship explicitly unchecked, or
+match one supplied parent under separate trust choices. This does not
+establish hardware continuity, chronology, a complete chain or inherited
+outcomes. Historical v1 reports remain readable; correction history,
+revocation and custody remain future work. Image, physical-PC and release
+qualification remain separate from implementation and software tests.
+The linked-profile increment passed its isolated Windows suite and selected
+native Linux amd64/386 fixtures; the [validation record](requirements-validation.md#linked-retest-contract)
+keeps their measured scope distinct from these remaining gates.
+
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.
 - Add CPU, partial memory, SMART/NVMe health, read-only storage, complete
@@ -436,8 +450,10 @@ Exit: `0.2.0-beta.1` gives useful resale acceptance results in under 15 minutes.
   image for wipe and full write qualification.
 - Implement the adapter package/protocol/runtime contract, including burn-in
   support, and validate third-party adapter conformance.
-- Add linked signed report revisions and separately consented encrypted
-  restricted-evidence export with the required privacy controls.
+- Add signed correction/supersession history beyond the implemented one-hop
+  retest reference, preserving immutable originals and independent trust.
+- Add separately consented encrypted restricted-evidence export with the
+  required privacy controls.
 - Expand BIOS and EFI device matrices in CI.
 
 Exit: release candidate has documented criteria and no open critical safety or

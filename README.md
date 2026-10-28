@@ -295,9 +295,12 @@ On another PC, a self-issued session remains verifiable without a sidecar key:
 hhpt verify -self-issued hhpt-SESSION.hhpcr
 ```
 
-Every verified `.hhpcr` is a canonical ZIP bundle containing standalone
-`views/report.html` and script-free `views/report.pdf` files. Neither view is
-opened automatically, and the signed `.hhpcr` remains the authoritative copy.
+Reports produced by `hhpt session` and `hhpt finalize` are canonical ZIP
+bundles containing standalone `views/report.html` and script-free
+`views/report.pdf` files. Neither view is opened automatically, and the signed
+`.hhpcr` remains the authoritative copy. Accepted historical and linked bundles
+can omit rendered views. See the [linked retest operator guidance](docs/operator-guide.md#create-and-verify-a-linked-retest)
+for the opt-in flags, independent trust choices and verifier compatibility.
 
 This checks canonical bundle bytes, all manifest digests, and the signature,
 while reporting that signer identity is untrusted. Deployment-provisioned

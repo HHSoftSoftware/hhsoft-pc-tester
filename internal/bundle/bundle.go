@@ -22,14 +22,15 @@ import (
 )
 
 const (
-	ManifestName        = "report-manifest.json"
-	InventoryName       = "inventory.json"
-	EnvelopeName        = "signatures/report-envelope.json"
-	RenderedReportName  = "views/report.html"
-	RenderedPDFName     = "views/report.pdf"
-	SelfIssuedKeyName   = "trust/self-issued-ed25519.pub"
-	ManifestSchema      = "hhsoft.pc-tester.bundle-manifest/v1"
-	SelfIssuedMediaType = "application/vnd.hhsoft.ed25519-public-key"
+	ManifestName         = "report-manifest.json"
+	InventoryName        = "inventory.json"
+	EnvelopeName         = "signatures/report-envelope.json"
+	RenderedReportName   = "views/report.html"
+	RenderedPDFName      = "views/report.pdf"
+	SelfIssuedKeyName    = "trust/self-issued-ed25519.pub"
+	ManifestSchema       = "hhsoft.pc-tester.bundle-manifest/v1"
+	RetestManifestSchema = "hhsoft.pc-tester.bundle-manifest/v2"
+	SelfIssuedMediaType  = "application/vnd.hhsoft.ed25519-public-key"
 
 	maxManifestBytes  = 64 << 10
 	maxInventoryBytes = 16 << 20
@@ -51,8 +52,10 @@ var (
 )
 
 type Manifest struct {
-	Schema string         `json:"schema"`
-	Files  []ManifestFile `json:"files"`
+	Schema         string                 `json:"schema"`
+	Files          []ManifestFile         `json:"files"`
+	PreviousReport *report.PreviousReport `json:"previous_report,omitempty"`
+	RevisionKind   string                 `json:"revision_kind,omitempty"`
 }
 
 type ManifestFile struct {
@@ -139,10 +142,17 @@ func WriteSelfIssuedWithPDF(destination io.Writer, inventoryJSON []byte, envelop
 }
 
 func writeArchive(destination io.Writer, inventoryJSON []byte, envelope report.Envelope, renderedReport, renderedPDF, selfIssuedKey []byte) error {
-	if err := validateViews(inventoryJSON, renderedReport, renderedPDF, envelope.Product, envelope.Version); err != nil {
+	return writeArchiveWithPrevious(destination, inventoryJSON, envelope, renderedReport, renderedPDF, selfIssuedKey, nil)
+}
+
+func writeArchiveWithPrevious(destination io.Writer, inventoryJSON []byte, envelope report.Envelope, renderedReport, renderedPDF, selfIssuedKey []byte, previous *report.PreviousReport) error {
+	if previous != nil && (previous.Validate() != nil || envelope.Product != product.Name || !report.ValidRetestID(envelope.SessionID)) {
+		return fmt.Errorf("%w: invalid linked report identity or reference", ErrInvalidBundle)
+	}
+	if err := validateViewsWithPrevious(inventoryJSON, renderedReport, renderedPDF, envelope.Product, envelope.Version, previous); err != nil {
 		return err
 	}
-	_, manifestJSON, err := buildManifest(inventoryJSON, renderedReport, renderedPDF, selfIssuedKey)
+	_, manifestJSON, err := buildManifestWithPrevious(inventoryJSON, renderedReport, renderedPDF, selfIssuedKey, previous)
 	if err != nil {
 		return err
 	}
@@ -251,6 +261,9 @@ func verify(source io.ReaderAt, size int64, keys report.Keyring, trustSelfIssued
 	if envelope.ManifestDigest != digest(members[ManifestName]) {
 		return Artifact{}, fmt.Errorf("%w: report manifest", ErrDigestMismatch)
 	}
+	if err := validateRetestProfile(manifest, envelope); err != nil {
+		return Artifact{}, err
+	}
 	selfIssuedKey := members[SelfIssuedKeyName]
 	if selfIssuedKey != nil {
 		expectedKeyID, keyErr := SelfIssuedKeyID(selfIssuedKey)
@@ -283,7 +296,7 @@ func verify(source io.ReaderAt, size int64, keys report.Keyring, trustSelfIssued
 		SelfIssuedKey:  append([]byte(nil), selfIssuedKey...),
 	}
 	comparison := &canonicalComparisonWriter{source: source, size: size, digest: sha256.New()}
-	if err := writeArchive(comparison, artifact.InventoryJSON, artifact.Envelope, artifact.RenderedReport, artifact.RenderedPDF, artifact.SelfIssuedKey); err != nil || comparison.offset != size {
+	if err := writeArchiveWithPrevious(comparison, artifact.InventoryJSON, artifact.Envelope, artifact.RenderedReport, artifact.RenderedPDF, artifact.SelfIssuedKey, artifact.Manifest.PreviousReport); err != nil || comparison.offset != size {
 		return Artifact{}, fmt.Errorf("%w: noncanonical archive encoding", ErrInvalidBundle)
 	}
 	copy(artifact.BundleSHA256[:], comparison.digest.Sum(nil))
@@ -344,6 +357,13 @@ func (writer *canonicalComparisonWriter) Write(expected []byte) (int, error) {
 }
 
 func buildManifest(inventoryJSON, renderedReport, renderedPDF, selfIssuedKey []byte) (Manifest, []byte, error) {
+	return buildManifestWithPrevious(inventoryJSON, renderedReport, renderedPDF, selfIssuedKey, nil)
+}
+
+func buildManifestWithPrevious(inventoryJSON, renderedReport, renderedPDF, selfIssuedKey []byte, previous *report.PreviousReport) (Manifest, []byte, error) {
+	if previous != nil && previous.Validate() != nil {
+		return Manifest{}, nil, fmt.Errorf("%w: invalid previous-report reference", ErrInvalidBundle)
+	}
 	if !json.Valid(inventoryJSON) || !utf8.Valid(inventoryJSON) || len(inventoryJSON) > maxInventoryBytes {
 		return Manifest{}, nil, fmt.Errorf("%w: inventory JSON", ErrInvalidBundle)
 	}
@@ -370,6 +390,10 @@ func buildManifest(inventoryJSON, renderedReport, renderedPDF, selfIssuedKey []b
 		files = append(files, sourceFile{name: SelfIssuedKeyName, mediaType: SelfIssuedMediaType, data: selfIssuedKey})
 	}
 	manifest := Manifest{Schema: ManifestSchema, Files: make([]ManifestFile, 0, len(files))}
+	if previous != nil {
+		copy := *previous
+		manifest.Schema, manifest.PreviousReport, manifest.RevisionKind = RetestManifestSchema, &copy, "retest"
+	}
 	for _, file := range files {
 		manifest.Files = append(manifest.Files, ManifestFile{
 			Name:      file.name,
@@ -386,9 +410,26 @@ func buildManifest(inventoryJSON, renderedReport, renderedPDF, selfIssuedKey []b
 }
 
 func decodeManifest(encoded []byte) (Manifest, error) {
-	fields, err := exactObjectFields(encoded, []string{"schema", "files"}, []string{"schema", "files"})
+	var probe struct {
+		Schema string `json:"schema"`
+	}
+	if json.Unmarshal(encoded, &probe) != nil {
+		return Manifest{}, fmt.Errorf("%w: manifest schema", ErrInvalidBundle)
+	}
+	names := []string{"schema", "files"}
+	if probe.Schema == RetestManifestSchema {
+		names = append(names, "previous_report", "revision_kind")
+	} else if probe.Schema != ManifestSchema {
+		return Manifest{}, fmt.Errorf("%w: manifest schema", ErrInvalidBundle)
+	}
+	fields, err := exactObjectFields(encoded, names, names)
 	if err != nil {
 		return Manifest{}, fmt.Errorf("%w: manifest schema: %v", ErrInvalidBundle, err)
+	}
+	if probe.Schema == RetestManifestSchema {
+		if _, err := exactObjectFields(fields["previous_report"], []string{"manifest_digest", "bundle_sha256"}, []string{"manifest_digest", "bundle_sha256"}); err != nil {
+			return Manifest{}, fmt.Errorf("%w: previous-report schema", ErrInvalidBundle)
+		}
 	}
 	var files []json.RawMessage
 	if err := json.Unmarshal(fields["files"], &files); err != nil {
@@ -400,8 +441,11 @@ func decodeManifest(encoded []byte) (Manifest, error) {
 		}
 	}
 	var manifest Manifest
-	if err := decodeStrict(encoded, &manifest); err != nil || manifest.Schema != ManifestSchema {
+	if err := decodeStrict(encoded, &manifest); err != nil || manifest.Schema != probe.Schema {
 		return Manifest{}, fmt.Errorf("%w: manifest schema", ErrInvalidBundle)
+	}
+	if manifest.Schema == RetestManifestSchema && (manifest.PreviousReport == nil || manifest.PreviousReport.Validate() != nil || manifest.RevisionKind != "retest") {
+		return Manifest{}, fmt.Errorf("%w: invalid linked manifest", ErrInvalidBundle)
 	}
 	return manifest, nil
 }

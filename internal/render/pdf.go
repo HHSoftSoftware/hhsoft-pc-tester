@@ -10,6 +10,7 @@ import (
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/app"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/product"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/report"
 )
 
 const (
@@ -30,10 +31,23 @@ func InventoryPDF(payload app.InventoryPayload) ([]byte, error) {
 // InventoryPDFForVersion reproduces the fixed text-only view for the signed
 // software version. It does not accept external PDF objects or attachments.
 func InventoryPDFForVersion(payload app.InventoryPayload, version string) ([]byte, error) {
+	return inventoryPDFWithPrevious(payload, version, nil)
+}
+
+func inventoryPDFWithPrevious(payload app.InventoryPayload, version string, previous *report.PreviousReport) ([]byte, error) {
+	if previous != nil && previous.Validate() != nil {
+		return nil, errors.New("invalid previous-report view reference")
+	}
 	if err := validateVersion(version); err != nil {
 		return nil, err
 	}
-	lines, err := inventoryPDFLines(payload, version)
+	var lines []string
+	var err error
+	if previous == nil {
+		lines, err = inventoryPDFLines(payload, version)
+	} else {
+		lines, err = inventoryPDFLinesWithPrevious(payload, version, previous)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -92,6 +106,10 @@ func InventoryPDFForVersion(payload app.InventoryPayload, version string) ([]byt
 }
 
 func inventoryPDFLines(payload app.InventoryPayload, version string) ([]string, error) {
+	return inventoryPDFLinesWithPrevious(payload, version, nil)
+}
+
+func inventoryPDFLinesWithPrevious(payload app.InventoryPayload, version string, previous *report.PreviousReport) ([]string, error) {
 	thermal, err := sessionThermalDocument(payload)
 	if err != nil {
 		return nil, err
@@ -147,6 +165,11 @@ func inventoryPDFLines(payload app.InventoryPayload, version string) ([]string, 
 	if description := coverageDescription(payload.CoverageScope); description != "" {
 		lines.add("", "COVERAGE")
 		lines.field("Scope", description, "  ")
+	}
+	if previous != nil {
+		lines.add("", "LINKED RETEST REFERENCE", "Signed reference only; verify the predecessor separately.", "No hardware, chronology, supersession or inherited-result claim.")
+		lines.field("Previous manifest", previous.ManifestDigest, "  ")
+		lines.field("Previous canonical bundle", previous.BundleSHA256, "  ")
 	}
 	appendCPUScalarPDF(&lines, cpuScalar)
 	appendMemoryPDF(&lines, memory)

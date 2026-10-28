@@ -580,8 +580,19 @@ the alpha still requires the separate documented release gates.
 - [x] Include the quick session's independent mount/network safety observations,
   execution states, and stop reason in the signed report, with a fresh safety
   observation before signing. Unsafe or interrupted readiness blocks signing.
-- [ ] Preserve corrections and retests as new signed report revisions linked
-  to the prior report digest.
+- [x] Add opt-in linked retests to session/finalize and one-hop verification.
+  A new signed report uses a distinct canonical UUIDv4 and references both
+  the verified parent's manifest digest and canonical bundle SHA-256.
+  Preserve the parent, independent trust choices, current evidence and the
+  existing live safety/cleanup gates. Child-only verification leaves the
+  predecessor relationship unchecked; no asset or history claim is implied.
+  Validation recorded 4,804 passing host test/subtest outcomes across 29
+  packages and 698 selected native outcomes across eight suites, including
+  all 110 required root executions on Linux amd64/386. Native runs had no
+  failures or skips and confirmed cleanup. Image and physical-PC gates stay open.
+- [ ] Add explicit signed correction history, separate from retesting;
+  preserve finalized originals and distinguish correction, supersession,
+  revocation and custody semantics.
 - [ ] Add explicitly consented encrypted restricted-evidence export while
   keeping raw identifiers out of normal reports, views, filenames, and logs.
 - [ ] Submit reports to an authenticated web service and/or network share.

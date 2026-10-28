@@ -17,7 +17,12 @@ Integrity does not make measurements true. It makes the captured claims tamper-e
 
 ## Report Bundle
 
-The authoritative report is a directory tree or ZIP archive using the `.hhpcr` extension. ZIP is a transport container only: ZIP ordering, timestamps, compression, comments, and extra fields are not part of the signed content. A verifier extracts the archive safely and verifies the files rather than hashing the archive bytes.
+The broader design below describes a directory tree or ZIP archive using the
+`.hhpcr` extension. The implemented compact bundle profile has a stricter
+transport rule: verification reconstructs the deterministic ZIP and requires
+its complete bytes to match. Linked retests use that verified canonical
+bundle hash as well as the signed manifest digest. The generalized evidence
+layout below is not a claim that every planned evidence file is emitted.
 
 The version 1 layout is:
 
@@ -48,7 +53,65 @@ report.hhpcr/
 
 Every regular file outside `signatures/` must appear exactly once in `report-manifest.json`. Symlinks, junctions, alternate data streams, device files, duplicate normalized paths, path traversal, and case-colliding paths are forbidden. A strict verifier fails closed on missing, duplicate, malformed, or unlisted content. Signature files are untrusted until independently verified and may not point outside the bundle.
 
-A completed bundle is immutable. Corrections or retests create a new report UUID and may include the prior report-manifest digest in `previous_report`. Cancellation, supersession, revocation, and custody events are separate signed records rather than edits to the original bundle.
+A completed bundle is immutable. The implemented linked retest profile below
+creates a new report rather than editing the original. Explicit correction
+history, supersession, revocation and custody records remain separate planned
+work; a retest reference does not implement those policies.
+
+### Implemented Linked Retest Profile
+
+Opt-in session/finalize uses `hhsoft.pc-tester.bundle-manifest/v2`. Its exact
+root fields are `schema`, `files`, `previous_report` and `revision_kind`;
+`revision_kind` is `retest`. `previous_report` has exactly two required fields:
+
+| Field | Authenticated parent value |
+| --- | --- |
+| `manifest_digest` | The SHA-256 digest in the fully verified parent envelope |
+| `bundle_sha256` | SHA-256 of the exact canonical parent bundle accepted by verification |
+
+Both values use `sha256:` followed by 64 lowercase hexadecimal digits. They
+come from the same verified artifact. The manifest alone excludes the signed
+envelope, so a manifest digest can be shared by parents with different signed
+IDs, times or signing keys. Requiring the full canonical bundle digest also
+binds that distinction. No prior blob, raw identifier, result or key is copied
+into the child through this reference.
+
+The signature still uses the unchanged envelope-v1 signing domain. A linked
+v2 bundle requires a verifier with explicit v2 support; no released minimum
+version is claimed. Current session/finalize commands create self-issued
+children, independently of whether parent trust uses a provisioned key. V2 requires
+the HHSoft PC Tester product identity and a lowercase canonical UUIDv4 child
+session ID, including when optional HTML/PDF views are absent. The producer
+requires that ID to differ from the exact verified parent. An eligible parent
+may be v1 or v2; legacy v1 parent IDs need not be UUIDs. Existing generic v1
+verification and v1 archive/rendered bytes retain their historical rules.
+
+One-hop verification independently verifies the child and supplied parent
+under their explicit trust choices, matches both digests and rejects equal
+report IDs. A v2 child can also be verified alone: its signed reference is
+shown, but the relationship remains unchecked. There is no recursive fetch,
+automatic parent discovery or transfer of trust, outcomes, hardware identity,
+chronology or complete-history claims. Static HTML/PDF views display the
+reference and its limits, not a dynamic local verification result.
+
+The command path owns acquisition of child report, child public key, parent
+report and parent public key as applicable. Parsing and verification use
+captured bytes released only after every acquired metadata/readable owner
+closes successfully. Linux and Windows provide the supported adapters; other
+OSes fail explicitly. Reports are bounded to 64 MiB and external public keys
+to exactly 32 bytes. Provider errors are reduced to fixed diagnostics.
+Unrelated legacy capture/comparison/persistence input loaders are outside this
+increment; neither blocked-kernel deadlines nor filesystem durability follow
+from checked input closure.
+
+A linked session retains only a private verified-parent summary and passes it
+directly to the existing consumed finalization gate. A journal file cannot
+supply that authority. Current evidence, safety observations and cleanup
+remain mandatory. Linked standalone finalization also checks cancellation
+before signing and output; a cleanly stopped live session retains its separate
+bounded integrity context. Comparison, persistence and release trust domains
+remain independent.
+
 
 ## Evidence Manifest
 

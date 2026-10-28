@@ -99,14 +99,14 @@ func TestCaptureViewsUseSerializedEvidenceForBothSigningProfiles(t *testing.T) {
 					arguments = []string{"-public-key", publicPath, "-key-id", "fixture-signer", path}
 				}
 				var stdout, stderr bytes.Buffer
-				if code := runVerify(arguments, &stdout, &stderr); code != 0 {
+				if code := runVerify(context.Background(), arguments, &stdout, &stderr); code != 0 {
 					t.Fatalf("verification command returned %d: %s", code, stderr.String())
 				}
 				encoded[len(encoded)-1] ^= 1
 				if err := os.WriteFile(path, encoded, 0o600); err != nil {
 					t.Fatal(err)
 				}
-				if code := runVerify(arguments, &stdout, &stderr); code == 0 {
+				if code := runVerify(context.Background(), arguments, &stdout, &stderr); code == 0 {
 					t.Fatal("tampered report passed verification")
 				}
 			})
@@ -188,7 +188,7 @@ func TestFinalizeAcceptsActualWorkerJSONSerialization(t *testing.T) {
 			}
 			stdout.Reset()
 			stderr.Reset()
-			if code := runVerify([]string{"-self-issued", reportPath}, &stdout, &stderr); code != 0 || !strings.Contains(stdout.String(), "contents/signature valid") {
+			if code := runVerify(context.Background(), []string{"-self-issued", reportPath}, &stdout, &stderr); code != 0 || !strings.Contains(stdout.String(), "contents/signature valid") {
 				t.Fatalf("verification command rejected finalized report: code=%d stderr=%s", code, stderr.String())
 			}
 		})

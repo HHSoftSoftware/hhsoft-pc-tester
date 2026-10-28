@@ -5,25 +5,21 @@ package audio
 import (
 	"context"
 	"errors"
-	"io"
 	"os"
 	"path/filepath"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 	"syscall"
 )
 
 const (
-	maximumRegistryEntries = 4096
-	maximumPCMEndpoints    = 1024
-	maximumAttributeBytes  = 64
-	maximumCardIndex       = 255
-	maximumDeviceIndex     = 255
-	maximumMinorNumber     = 1<<20 - 1
-	alsaMajorNumber        = 116
-	openPath               = 0x200000
+	maximumPCMEndpoints = 1024
+	maximumCardIndex    = 255
+	maximumDeviceIndex  = 255
+	maximumMinorNumber  = 1<<20 - 1
+	alsaMajorNumber     = 116
+	openPath            = 0x200000
 )
 
 var (
@@ -39,7 +35,15 @@ type deviceNumber struct {
 }
 
 func runPlatform(ctx context.Context, options Options) Result {
-	result := Result{Schema: Schema, Status: StatusError, Readiness: ReadinessUnknown}
+	return runWithAudioOperations(ctx, options, systemAudioOperations())
+}
+
+func runWithAudioOperations(ctx context.Context, options Options, operations audioOperations) (result Result) {
+	result = Result{Schema: Schema, Status: StatusError, Readiness: ReadinessUnknown}
+	if nilAudioValue(ctx) || operations.openRoot == nil || operations.openReadable == nil {
+		result.Detail = "cannot access audio probe operations"
+		return result
+	}
 	if cancelled(ctx, &result) {
 		return result
 	}
@@ -50,24 +54,33 @@ func runPlatform(ctx context.Context, options Options) Result {
 		result.Detail = "audio probe root must be an absolute filesystem path"
 		return result
 	}
-	root, err := os.OpenRoot(options.Root)
+	root, err := operations.openRoot(options.Root)
+	if nilAudioValue(root) {
+		result.Detail = "cannot access audio probe root"
+		return result
+	}
+	defer func() {
+		if root.Close() != nil {
+			result.Status, result.Readiness, result.Detail = StatusError, ReadinessUnknown, errAudioClose.Error()
+		} else if result.Status != StatusError {
+			cancelled(ctx, &result)
+		}
+	}()
 	if err != nil {
 		result.Detail = "cannot access audio probe root"
 		return result
 	}
-	defer root.Close()
-	entries, err := registryEntries(root)
+	entries, err := registryEntries(ctx, root)
 	if err != nil {
-		result.Detail = err.Error()
+		recordAudioAcquisitionError(&result, err)
 		return result
 	}
 	cards := make(map[uint32]bool)
 	controls := make(map[uint32]string)
-	for _, entry := range entries {
+	for _, name := range entries {
 		if cancelled(ctx, &result) {
 			return result
 		}
-		name := entry.Name()
 		switch {
 		case strings.HasPrefix(name, "card"):
 			match := cardPattern.FindStringSubmatch(name)
@@ -77,7 +90,7 @@ func runPlatform(ctx context.Context, options Options) Result {
 			}
 			card, valid := parseIndex(match[1], maximumCardIndex)
 			metadata, statErr := root.Stat("sys/class/sound/" + name)
-			if !valid || statErr != nil || !metadata.IsDir() {
+			if !valid || statErr != nil || nilAudioValue(metadata) || !metadata.IsDir() {
 				result.Detail = "audio registry contains an invalid card"
 				return result
 			}
@@ -139,9 +152,9 @@ func runPlatform(ctx context.Context, options Options) Result {
 			missingNodes = true
 			continue
 		}
-		card.Control, err = inspectNode(root, name, seenDevices)
+		card.Control, err = inspectNode(ctx, root, operations, name, seenDevices)
 		if err != nil {
-			result.Detail = err.Error()
+			recordAudioAcquisitionError(&result, err)
 			return result
 		}
 		missingNodes = missingNodes || !card.Control.Ready
@@ -151,9 +164,9 @@ func runPlatform(ctx context.Context, options Options) Result {
 			return result
 		}
 		endpoint := &result.Endpoints[index]
-		endpoint.Node, err = inspectNode(root, endpoint.Interface, seenDevices)
+		endpoint.Node, err = inspectNode(ctx, root, operations, endpoint.Interface, seenDevices)
 		if err != nil {
-			result.Detail = err.Error()
+			recordAudioAcquisitionError(&result, err)
 			return result
 		}
 		if endpoint.Direction == "playback" {
@@ -199,30 +212,27 @@ func cancelled(ctx context.Context, result *Result) bool {
 	return true
 }
 
-func registryEntries(root *os.Root) ([]os.DirEntry, error) {
-	directory, err := root.OpenFile("sys/class/sound", os.O_RDONLY|syscall.O_DIRECTORY|syscall.O_NONBLOCK|syscall.O_CLOEXEC, 0)
-	if errors.Is(err, os.ErrNotExist) {
-		return nil, nil
+func recordAudioAcquisitionError(result *Result, err error) {
+	result.Status, result.Readiness = StatusError, ReadinessUnknown
+	result.Detail = err.Error()
+	if err == context.Canceled || err == context.DeadlineExceeded {
+		result.Status, result.Detail = StatusAborted, "cancelled"
 	}
-	if err != nil {
-		return nil, errors.New("cannot read ALSA sound registry")
-	}
-	defer directory.Close()
-	entries, err := directory.ReadDir(maximumRegistryEntries + 1)
-	if err != nil && !errors.Is(err, io.EOF) {
-		return nil, errors.New("cannot enumerate ALSA sound registry")
-	}
-	if len(entries) > maximumRegistryEntries {
-		return nil, errors.New("ALSA sound registry exceeds the supported limit")
-	}
-	sort.Slice(entries, func(first, second int) bool { return entries[first].Name() < entries[second].Name() })
-	return entries, nil
 }
 
-func inspectNode(root *os.Root, name string, seen map[deviceNumber]bool) (NodeResult, error) {
+func registryEntries(ctx context.Context, root audioRoot) ([]string, error) {
+	return acquireAudioRegistry(ctx, func() (audioDirectory, error) {
+		return root.OpenRegistry("sys/class/sound", os.O_RDONLY|syscall.O_DIRECTORY|syscall.O_NONBLOCK|syscall.O_CLOEXEC)
+	})
+}
+
+func inspectNode(ctx context.Context, root audioRoot, operations audioOperations, name string, seen map[deviceNumber]bool) (NodeResult, error) {
 	result := NodeResult{Path: "/dev/snd/" + name}
-	data, err := readAttribute(root, "sys/class/sound/"+name+"/dev")
+	data, err := readAttribute(ctx, root, operations, "sys/class/sound/"+name+"/dev")
 	if err != nil {
+		if err == errAudioClose || err == context.Canceled || err == context.DeadlineExceeded {
+			return result, err
+		}
 		return result, errors.New("cannot safely read ALSA device number")
 	}
 	match := devicePattern.FindStringSubmatch(string(data))
@@ -239,11 +249,11 @@ func inspectNode(root *os.Root, name string, seen map[deviceNumber]bool) (NodeRe
 	}
 	seen[expected] = true
 	metadata, err := root.Lstat("dev/snd/" + name)
-	if errors.Is(err, os.ErrNotExist) {
+	if nilAudioValue(metadata) && soleAudioAbsence(err, "statat") {
 		result.ReadinessIssue = "ALSA device node is absent"
 		return result, nil
 	}
-	if err != nil {
+	if err != nil || nilAudioValue(metadata) {
 		return result, errors.New("cannot inspect ALSA device node")
 	}
 	result.Present = true
@@ -256,7 +266,7 @@ func inspectNode(root *os.Root, name string, seen map[deviceNumber]bool) (NodeRe
 }
 
 func matchesDevice(metadata os.FileInfo, expected deviceNumber) bool {
-	if metadata.Mode()&os.ModeSymlink != 0 || metadata.Mode()&(os.ModeDevice|os.ModeCharDevice) != os.ModeDevice|os.ModeCharDevice {
+	if nilAudioValue(metadata) || metadata.Mode()&os.ModeSymlink != 0 || metadata.Mode()&(os.ModeDevice|os.ModeCharDevice) != os.ModeDevice|os.ModeCharDevice {
 		return false
 	}
 	stat, valid := metadata.Sys().(*syscall.Stat_t)
@@ -269,30 +279,44 @@ func matchesDevice(metadata os.FileInfo, expected deviceNumber) bool {
 	return major == expected.major && minor == expected.minor
 }
 
-func readAttribute(root *os.Root, path string) ([]byte, error) {
-	handle, err := root.OpenFile(path, openPath|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0)
-	if err != nil {
-		return nil, err
+func readAttribute(ctx context.Context, root audioRoot, operations audioOperations, path string) (data []byte, err error) {
+	if stopped := ctx.Err(); stopped != nil {
+		return nil, stopped
 	}
-	defer handle.Close()
-	metadata, err := handle.Stat()
-	if err != nil || !metadata.Mode().IsRegular() {
+	handle, openErr := root.OpenPath(path, openPath|syscall.O_NOFOLLOW|syscall.O_CLOEXEC)
+	if nilAudioValue(handle) {
+		return nil, errAudioRead
+	}
+	defer closeAudioAttribute(ctx, handle, &data, &err)
+	if openErr != nil {
+		return nil, errAudioRead
+	}
+	if stopped := ctx.Err(); stopped != nil {
+		return nil, stopped
+	}
+	metadata, statErr := handle.Stat()
+	if statErr != nil || nilAudioValue(metadata) || !metadata.Mode().IsRegular() {
 		return nil, errors.New("ALSA attribute is not a regular file")
 	}
-	file, err := os.OpenFile("/proc/self/fd/"+strconv.FormatUint(uint64(handle.Fd()), 10), os.O_RDONLY|syscall.O_NONBLOCK|syscall.O_CLOEXEC, 0)
-	if err != nil {
-		return nil, err
+	if stopped := ctx.Err(); stopped != nil {
+		return nil, stopped
 	}
-	defer file.Close()
-	opened, err := file.Stat()
-	if err != nil || !opened.Mode().IsRegular() || !os.SameFile(metadata, opened) {
+	file, openErr := operations.openReadable(handle)
+	if nilAudioValue(file) {
+		return nil, errAudioRead
+	}
+	defer closeAudioAttribute(ctx, file, &data, &err)
+	if openErr != nil {
+		return nil, errAudioRead
+	}
+	if stopped := ctx.Err(); stopped != nil {
+		return nil, stopped
+	}
+	opened, statErr := file.Stat()
+	if statErr != nil || nilAudioValue(opened) || !opened.Mode().IsRegular() || !os.SameFile(metadata, opened) {
 		return nil, errors.New("ALSA attribute identity changed")
 	}
-	data, err := io.ReadAll(io.LimitReader(file, maximumAttributeBytes+1))
-	if err != nil || len(data) > maximumAttributeBytes {
-		return nil, errors.New("ALSA attribute is unreadable or exceeds the supported limit")
-	}
-	return data, nil
+	return readAudioBytes(ctx, file)
 }
 
 func parseIndex(value string, maximum uint32) (uint32, bool) {

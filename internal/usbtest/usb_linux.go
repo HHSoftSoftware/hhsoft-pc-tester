@@ -5,15 +5,12 @@ package usbtest
 import (
 	"context"
 	"errors"
-	"os"
 	"path/filepath"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
 )
-
-const maximumUSBDevices = 512
 
 var usbPathPattern = regexp.MustCompile(`^(usb[0-9]+|[0-9]+-[0-9]+(\.[0-9]+)*)$`)
 var usbSpeedPattern = regexp.MustCompile(`^[0-9]{1,6}(\.[0-9]{1,3})?$`)
@@ -30,7 +27,7 @@ func runPlatformWith(ctx context.Context, options Options, operations usbNodeOpe
 
 func runWithNodeInspector(ctx context.Context, options Options, operations usbNodeOperations, inspectNode func(context.Context, string, DeviceResult, usbRegistryIdentity) usbNodeInspection) Result {
 	result := Result{Schema: Schema, Status: StatusError}
-	if nilUSBValue(ctx) || operations.lstat == nil || operations.open == nil || operations.openMetadata == nil || inspectNode == nil {
+	if nilUSBValue(ctx) || operations.lstat == nil || operations.open == nil || operations.openMetadata == nil || operations.openRegistry == nil || inspectNode == nil {
 		result.Detail = "USB readiness dependencies are incomplete"
 		return result
 	}
@@ -43,27 +40,29 @@ func runWithNodeInspector(ctx context.Context, options Options, operations usbNo
 		options.Root = "/"
 	}
 	root := filepath.Clean(options.Root)
-	entries, err := os.ReadDir(filepath.Join(root, "sys/bus/usb/devices"))
+	entries, err := readUSBRegistry(ctx, filepath.Join(root, "sys/bus/usb/devices"), operations.openRegistry)
 	if err != nil {
-		result.Detail = "cannot read USB device registry"
-		return result
-	}
-	if len(entries) > maximumUSBDevices*4 {
-		result.Detail = "USB registry exceeds the supported limit"
+		result.Detail = err.Error()
+		if err == context.Canceled || err == context.DeadlineExceeded {
+			result.Status = StatusAborted
+		}
 		return result
 	}
 	expected := make(map[string]usbRegistryIdentity)
 	identities := make(map[usbDeviceNumber]bool)
 	addresses := make(map[[2]uint64]bool)
-	for _, entry := range entries {
+	for _, name := range entries {
 		if ctx.Err() != nil {
 			result.Status = StatusAborted
 			result.Detail = "cancelled"
 			return result
 		}
-		device, include, inspectErr := inspectRegistryDevice(root, entry.Name())
+		device, include, inspectErr := inspectRegistryDevice(ctx, root, name, operations.openMetadata)
 		if inspectErr != nil {
 			result.Detail = inspectErr.Error()
+			if inspectErr == context.Canceled || inspectErr == context.DeadlineExceeded {
+				result.Status = StatusAborted
+			}
 			return result
 		}
 		if !include {
@@ -157,42 +156,70 @@ func runWithNodeInspector(ctx context.Context, options Options, operations usbNo
 	return result
 }
 
-func inspectRegistryDevice(root, name string) (DeviceResult, bool, error) {
+func inspectRegistryDevice(ctx context.Context, root, name string, open func(string) (usbMetadataFile, error)) (DeviceResult, bool, error) {
 	if !usbPathPattern.MatchString(name) {
 		return DeviceResult{}, false, nil
 	}
 	base := filepath.Join(root, "sys/bus/usb/devices", name)
-	vendor, vendorErr := os.Stat(filepath.Join(base, "idVendor"))
-	if vendorErr != nil || nilUSBValue(vendor) || !vendor.Mode().IsRegular() {
-		return DeviceResult{}, false, errors.New("USB device registry entry lacks its vendor observation")
+	// A matching device entry cannot disappear merely because its required
+	// vendor observation is missing or unreadable. Its value is not exported.
+	if _, err := readUSBMetadata(ctx, filepath.Join(base, "idVendor"), open); err != nil {
+		return DeviceResult{}, false, err
 	}
-	busNumber, busKnown := readUnsigned(filepath.Join(base, "busnum"), 255)
-	deviceNumber, deviceKnown := readUnsigned(filepath.Join(base, "devnum"), 255)
+	values := make(map[string]string, 2)
+	for _, field := range []string{"busnum", "devnum"} {
+		data, err := readUSBMetadata(ctx, filepath.Join(base, field), open)
+		if err != nil {
+			return DeviceResult{}, false, err
+		}
+		values[field] = strings.TrimSpace(string(data))
+	}
+	busNumber, busKnown := usbUnsignedValue(values["busnum"], 255)
+	deviceNumber, deviceKnown := usbUnsignedValue(values["devnum"], 255)
 	if !busKnown || !deviceKnown || busNumber == 0 || deviceNumber == 0 {
 		return DeviceResult{}, false, errors.New("USB registry contains an invalid bus or device number")
 	}
-	class, _ := readHexadecimal(filepath.Join(base, "bDeviceClass"), 255)
+	optional := make(map[string]string, 4)
+	for _, field := range []string{"authorized", "bDeviceClass", "speed", "maxchild"} {
+		data, err := acquireUSBMetadata(ctx, filepath.Join(base, field), open)
+		if err == errUSBMetadataAbsent {
+			continue
+		}
+		if err != nil {
+			return DeviceResult{}, false, err
+		}
+		optional[field] = strings.TrimSpace(string(data))
+	}
+	classText := strings.TrimPrefix(strings.ToLower(optional["bDeviceClass"]), "0x")
+	class, classErr := strconv.ParseUint(classText, 16, 8)
+	classKnown := classErr == nil
 	kind := "device"
 	if strings.HasPrefix(name, "usb") {
 		kind = "root_hub"
-	} else if class == 9 {
+	} else if classKnown && class == 9 {
 		kind = "hub"
 	}
-	result := DeviceResult{Path: name, Kind: kind, Class: "0x" + strings.ToLower(strings.TrimPrefix(readValue(base, "bDeviceClass"), "0x")), BusNumber: busNumber, DeviceNumber: deviceNumber}
-	if result.Class == "0x" {
-		result.Class = ""
+	result := DeviceResult{Path: name, Kind: kind, BusNumber: busNumber, DeviceNumber: deviceNumber}
+	if classKnown {
+		result.Class = "0x" + leftPad(strconv.FormatUint(class, 16), 2)
 	}
-	if authorized, authorizedKnown := readUnsigned(filepath.Join(base, "authorized"), 1); authorizedKnown {
-		result.AuthorizedKnown = true
-		result.Authorized = authorized == 1
+	if authorization, known := usbUnsignedValue(optional["authorized"], 1); known {
+		result.AuthorizedKnown, result.Authorized = true, authorization == 1
 	}
-	if speed := readValue(base, "speed"); usbSpeedPattern.MatchString(speed) {
+	if speed := optional["speed"]; usbSpeedPattern.MatchString(speed) {
 		result.LinkSpeedMbps = speed
 	}
-	if ports, portsKnown := readUnsigned(filepath.Join(base, "maxchild"), 255); portsKnown {
+	if ports, portsKnown := usbUnsignedValue(optional["maxchild"], 255); portsKnown {
 		result.DownstreamPorts = ports
 	}
 	return result, true, nil
+}
+
+// Preserve the initial observation grammar. Authorized devices still undergo
+// the separate canonical identity rechecks before and after their node opens.
+func usbUnsignedValue(value string, maximum uint64) (uint64, bool) {
+	parsed, err := strconv.ParseUint(value, 10, 64)
+	return parsed, err == nil && parsed <= maximum
 }
 
 func leftPadUSBNumber(value uint64) string {
@@ -204,37 +231,4 @@ func leftPad(value string, width int) string {
 		return value
 	}
 	return strings.Repeat("0", width-len(value)) + value
-}
-
-func readValue(base, relative string) string {
-	value, _ := readSmallValue(filepath.Join(base, relative))
-	return value
-}
-
-func readUnsigned(path string, maximum uint64) (uint64, bool) {
-	value, ok := readSmallValue(path)
-	if !ok {
-		return 0, false
-	}
-	parsed, err := strconv.ParseUint(value, 10, 64)
-	return parsed, err == nil && parsed <= maximum
-}
-
-func readHexadecimal(path string, maximum uint64) (uint64, bool) {
-	value, ok := readSmallValue(path)
-	if !ok {
-		return 0, false
-	}
-	value = strings.TrimPrefix(strings.ToLower(value), "0x")
-	parsed, err := strconv.ParseUint(value, 16, 64)
-	return parsed, err == nil && parsed <= maximum
-}
-
-func readSmallValue(path string) (string, bool) {
-	data, err := os.ReadFile(path)
-	if err != nil || len(data) > 256 {
-		return "", false
-	}
-	value := strings.TrimSpace(string(data))
-	return value, value != ""
 }

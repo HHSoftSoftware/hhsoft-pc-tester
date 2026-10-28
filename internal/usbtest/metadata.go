@@ -6,14 +6,16 @@ import (
 	"io"
 	"os"
 	"reflect"
+	"syscall"
 )
 
 const maximumUSBMetadataBytes = 256
 
 var (
-	errUSBNodeClose     = errors.New("USB device node closure could not be confirmed")
-	errUSBMetadataRead  = errors.New("cannot verify USB registry identity")
-	errUSBMetadataClose = errors.New("USB registry metadata closure could not be confirmed")
+	errUSBNodeClose      = errors.New("USB device node closure could not be confirmed")
+	errUSBMetadataRead   = errors.New("cannot verify USB registry identity")
+	errUSBMetadataClose  = errors.New("USB registry metadata closure could not be confirmed")
+	errUSBMetadataAbsent = errors.New("USB registry metadata is absent")
 )
 
 type usbMetadataFile interface {
@@ -34,9 +36,44 @@ func nilUSBValue(value any) bool {
 	}
 }
 
-// This reader bounds the new mandatory identity observations before allocation.
-// It does not change the older optional USB attribute acquisition policy.
+// Mandatory observations do not turn a missing attribute into usable evidence.
 func readUSBMetadata(ctx context.Context, path string, open func(string) (usbMetadataFile, error)) (data []byte, err error) {
+	data, err = acquireUSBMetadata(ctx, path, open)
+	if err == errUSBMetadataAbsent {
+		err = errUSBMetadataRead
+	}
+	return data, err
+}
+
+// Only a sole open-time absence is optional. Read, protocol, type and close
+// failures remain hard errors; wrapped or joined EOF is not exact completion.
+func soleUSBOpenAbsence(err error) bool {
+	for depth := 0; depth < 32 && !nilUSBValue(err); depth++ {
+		if _, multiple := err.(interface{ Unwrap() []error }); multiple {
+			return false
+		}
+		if pathError, ok := err.(*os.PathError); ok {
+			if pathError.Op != "open" {
+				return false
+			}
+			err = pathError.Err
+			continue
+		}
+		if err == os.ErrNotExist || err == syscall.ENOENT {
+			return true
+		}
+		wrapped, ok := err.(interface{ Unwrap() error })
+		if !ok {
+			return false
+		}
+		err = wrapped.Unwrap()
+	}
+	return false
+}
+
+// All USB scalar acquisition uses this fixed-size buffer, independent of Stat
+// size hints. An extra byte proves overflow without reading the rest of a file.
+func acquireUSBMetadata(ctx context.Context, path string, open func(string) (usbMetadataFile, error)) (data []byte, err error) {
 	if nilUSBValue(ctx) || open == nil {
 		return nil, errUSBMetadataRead
 	}
@@ -45,6 +82,12 @@ func readUSBMetadata(ctx context.Context, path string, open func(string) (usbMet
 	}
 	file, openErr := open(path)
 	if nilUSBValue(file) {
+		if soleUSBOpenAbsence(openErr) {
+			if stopped := ctx.Err(); stopped != nil {
+				return nil, stopped
+			}
+			return nil, errUSBMetadataAbsent
+		}
 		return nil, errUSBMetadataRead
 	}
 	defer func() {

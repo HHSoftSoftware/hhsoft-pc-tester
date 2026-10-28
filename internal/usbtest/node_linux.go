@@ -29,6 +29,7 @@ type usbNodeOperations struct {
 	lstat        func(string) (os.FileInfo, error)
 	open         func(string, int, os.FileMode) (usbNodeFile, error)
 	openMetadata func(string) (usbMetadataFile, error)
+	openRegistry func(string) (usbRegistryDirectory, error)
 }
 
 func realUSBNodeOperations() usbNodeOperations {
@@ -39,6 +40,9 @@ func realUSBNodeOperations() usbNodeOperations {
 		},
 		openMetadata: func(path string) (usbMetadataFile, error) {
 			return os.OpenFile(path, os.O_RDONLY|syscall.O_NONBLOCK|syscall.O_CLOEXEC|syscall.O_NOFOLLOW, 0)
+		},
+		openRegistry: func(path string) (usbRegistryDirectory, error) {
+			return os.OpenFile(path, os.O_RDONLY|syscall.O_DIRECTORY|syscall.O_NONBLOCK|syscall.O_CLOEXEC, 0)
 		},
 	}
 }

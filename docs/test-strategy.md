@@ -475,10 +475,20 @@ orientation or modes. Identity/closure acceptance cases require:
 - Rejection of unrelated matching character nodes, symlinks, changed
   filesystem/inode identity, changed registry metadata and final-path
   replacement. Ordinary sysfs registry-directory links remain valid.
-- Mandatory metadata boundaries at 256 bytes and the one-byte overflow
-  probe; exact EOF, partial errors, invalid counts, no progress, typed
-  nils and unprovable descriptor types. Initial and optional
-  `os.ReadFile` acquisition remains outside this bounded-reader claim.
+- Every metadata role at 256 raw bytes and a one-byte overflow probe,
+  including initial and optional attributes and vendor presence. Require
+  exact EOF and regular-descriptor proof; reject partial errors, invalid
+  counts, no progress and typed nils. A sole open-time absence may be
+  unknown for optional fields; acquired-handle, permission, read, type,
+  overflow and close faults must not become unknown.
+- Raw registry boundaries at 2,048/2,049 entries, positive requests no
+  larger than 64, separate EOF probes and the independent 512/513-device
+  boundary. Reject unsafe, duplicate or nil entries; cache names once,
+  preserve ordinary sysfs links and close before later acquisition.
+- One class observation with prior numeric spellings retained; initial,
+  optional and mandatory-tail cancellation cases must identify the actual
+  phase reached and prove no later acquisition. The mandatory-tail cases
+  arm only after the selected device-number observation has closed.
 - Exactly one close attempt for every acquired handle, including a
   handle returned with an open error. Close failure overrides concurrent
   cancellation; cancellation after successful close revokes current
@@ -490,7 +500,7 @@ orientation or modes. Identity/closure acceptance cases require:
   an operating-system Close fault inside a command. No USB global
   exit status 12 is added.
 
-The source contract contains 20 new test functions: eight portable and
+The preceding identity/closure contract contains 20 new functions: eight portable and
 12 Linux-only, plus six retained USB functions. The eight portable functions
 and all 47 of their subtests passed in the closed host run. Native
 execution then passed all 21 selected USB and five command functions on
@@ -501,6 +511,21 @@ These selected tests use injected node observations and owned temporary
 fixtures; they do not perform application USB transfers or inspect real
 USB devices. Physical devices, functional transfers, rebuilt images and
 release approval remain separate gates.
+
+The acquisition increment adds 18 functions: seven portable and eleven
+Linux-only, while separately retaining the 26 preceding functions. Its
+closed Windows run passed all seven portable roots and 60 exact named
+children. Full host-suite, formatting, vet and three Linux build evidence
+is recorded in [requirements validation](requirements-validation.md).
+The matching native run passed all 44 required functions on Linux amd64
+and 386, including all eleven new Linux functions and both explicitly
+armed mandatory-discovery tail cancellation cases on each architecture.
+The measured totals and cleanup evidence are recorded in requirements
+validation. The new Linux producer-to-finalizer fixtures use self-issued
+bundle verification;
+injected close faults and public consumer cases remain compositional,
+without provisioned-key or physical-device qualification. Total allocation
+and blocked-kernel deadlines remain open.
 
 `Q`, `S`, `E`, `B`, and `D` identify profiles selecting a case by default. Each
 row is conditional on presence and prerequisites. Times are per component;

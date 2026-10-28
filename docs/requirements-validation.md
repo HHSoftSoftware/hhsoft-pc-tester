@@ -777,15 +777,43 @@ stop and earlier diagnostics remain. Ordinary unavailable or replaced
 nodes remain inconclusive. The existing schema, current v5 emitter and
 catalog are unchanged, with no USB global cleanup exit or new transfers.
 
-Only mandatory identity observations/rechecks use the bounded reader:
-256 raw bytes plus one overflow probe, exact EOF, regular-file proof and
-exactly one close attempt per acquired handle. Initial bus/device and
-authorization reads, and optional class/speed/port reads, still use
-`os.ReadFile` with a length check afterward. Total acquisition and
-allocation, kernel-operation deadlines and enduring physical identity
-are not established by these observations.
+The acquisition increment extends the same owned reader to every USB
+readiness scalar: 256 raw bytes plus one overflow probe, exact EOF,
+regular-file proof and one close attempt per acquired handle. This includes
+vendor presence, initial bus/device/authorization and optional class,
+speed and port observations. Class is read once and retains prior numeric
+spellings. Vendor presence now requires a successful bounded read.
+Only a sole open-time absence is optional; successfully read malformed
+optional values remain unknown. Permission, read, protocol, type, overflow
+and close failures remain errors, including during cancellation.
 
-Host validation of this USB correction passed 3,933 tests across 28
+Registry enumeration requests at most 64 entries at a time, admitting at
+most 2,048 raw entries with one extra overflow witness. The separate
+512-device limit remains. Names are cached and validated without following
+entry links; complete EOF and directory closure precede attribute reads.
+Oversized or incomplete input cannot become a truncated readiness pass.
+
+The isolated Windows run of this acquisition increment passed 4,000
+test/subtest events across 28 packages, with 17 existing test skips and two
+empty packages. All seven new portable functions and their 60 named child
+cases passed. Formatting, vet, Linux amd64/386/arm64 whole-source builds
+and all eight postchecks passed. A separate pinned local Go 1.27.2 build
+produced four selected Linux test binaries and two test2json tools, with
+all 14 commands and seven postchecks passing. This checks the local SDK
+closure, not upstream or release-toolchain qualification.
+
+The matching native run passed 640 test/subtest events across four suites:
+290 USB events and 30 command events on each of Linux amd64 and 386.
+All 44 required functions passed on each architecture, including the 18
+acquisition functions and all 26 retained functions, with zero skips or
+failures. Both mandatory-discovery tail cancellation cases passed on each
+architecture. Nine owned-process cases, 32 archive cases and all six root
+postchecks passed with cleanup confirmed. These tests use injected device
+observations and owned temporary fixtures; they do not supply standalone
+CLI, race, real USB-device or functional-transfer evidence.
+
+Host validation of the preceding USB identity/closure correction passed
+3,933 tests across 28
 packages, with 17 existing test skips and two empty packages. All eight new
 portable test functions passed, together with formatting, vet and Linux
 amd64, 386 and arm64 whole-source builds. A separate pinned local Go 1.27.2
@@ -794,7 +822,7 @@ amd64 and 386; all 14 build/metadata commands and seven postchecks passed.
 This verifies the local SDK closure, not upstream or release-toolchain
 qualification.
 
-Selected native execution of this correction passed 296 test/subtest
+Selected native execution of that preceding correction passed 296 test/subtest
 events across four suites: 126 USB events and 22 command events on each
 of Linux amd64 and 386. All 26 required test functions passed on each
 architecture, with zero skips or failures. Nine owned-process cases,
@@ -802,7 +830,9 @@ architecture, with zero skips or failures. Nine owned-process cases,
 The cohort runs the selected USB and command tests with injected device
 observations and owned temporary fixtures. It supplies no standalone CLI,
 race, real USB-device or functional-transfer evidence. Rebuilt images,
-physical USB ports and release approval require separate evidence.
+physical USB ports and release approval require separate evidence. Total
+acquisition/allocation, blocked-kernel deadlines and enduring physical
+identity also remain open.
 
 The next CPU increment implements twelve fixed binary64 addition, subtraction,
 multiplication and division vectors in the bounded worker. CPU v3 evidence adds

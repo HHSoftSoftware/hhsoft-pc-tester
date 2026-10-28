@@ -425,9 +425,19 @@ the alpha still requires the separate documented release gates.
   including owned-process and archive checks with confirmed cleanup.
 - [ ] Qualify rebuilt images and physical USB ports separately from the
   bounded synthetic readiness evidence.
-- [ ] Bound the initial and optional USB attribute acquisition and total
-  allocation. The 256-byte bound applies only to mandatory identity
-  observations/rechecks; initial and optional reads still use `os.ReadFile`.
+- [x] Bound every USB readiness scalar to 256 raw bytes with one overflow
+  probe, exact EOF and owned closure. Read class once; preserve unknown
+  optional values only after clean absence or successful malformed reads.
+- [x] Bound USB registry enumeration to 2,048 raw entries before the separate
+  512-device limit. Reject overflow without truncation; retain ordinary
+  sysfs links, cached names and complete directory closure.
+- [x] Validate the acquisition increment with the full Windows suite, all
+  seven new portable functions, formatting, vet and three Linux builds.
+- [x] Execute all 44 required USB/command functions on Linux amd64 and 386:
+  18 acquisition functions and 26 retained functions, with zero skips or
+  failures and confirmed cleanup.
+- [ ] Bound total USB acquisition/allocation and establish kernel-operation
+  deadlines; retain separate image, physical-port and release gates.
 - [x] Check ALSA card and PCM/control node readiness without opening audio
   streams.
 - [ ] Select and restore native/safe display modes on every connector.

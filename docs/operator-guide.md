@@ -113,6 +113,15 @@ inconclusive; cancellation aborts the check. A simultaneous close failure
 remains an error. Earlier device diagnostics are retained, and later USB
 nodes are not opened after a close failure or cancellation.
 
+USB discovery also limits attribute reads and registry enumeration before
+using the observations. Oversized or incomplete input, invalid descriptor
+types, read failures and failed closure produce an error rather than a
+truncated readiness result. Optional values remain unknown only after a
+clean missing-file observation or a successfully read malformed value.
+Unreadable or oversized vendor metadata now fails discovery as well.
+Earlier diagnostics remain available; total allocation and blocked kernel
+calls are not qualified by these bounds.
+
 `hhpt usb` returning zero means it wrote diagnostic JSON, not that USB
 readiness passed. USB errors remain non-passing evidence through session
 reporting and finalization. They do not introduce exit status 12 or a

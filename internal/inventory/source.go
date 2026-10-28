@@ -46,3 +46,10 @@ func (source *RootPathSource) readScalar(ctx context.Context, name string) ([]by
 	}
 	return readInventoryScalar(ctx, source.resolve(name), openInventoryScalar)
 }
+
+func (source *RootPathSource) readProc(ctx context.Context, name string, role inventoryProcRole) ([]byte, bool, error) {
+	if source == nil {
+		return nil, false, ErrNoPathSource
+	}
+	return readInventoryProc(ctx, source.resolve(name), role, openInventoryScalar)
+}

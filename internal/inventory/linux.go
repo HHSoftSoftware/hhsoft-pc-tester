@@ -72,7 +72,7 @@ func (collector *LinuxCollector) Collect(ctx context.Context) (Snapshot, error) 
 }
 
 func (collector *linuxCollection) collectMemory() []Component {
-	data, ok := collector.readFile(path.Join(collector.Paths.Proc, "meminfo"))
+	data, ok := collector.readProc(path.Join(collector.Paths.Proc, "meminfo"), procMemory)
 	if !ok {
 		return nil
 	}
@@ -106,7 +106,7 @@ func (collector *linuxCollection) collectMemory() []Component {
 
 func (collector *linuxCollection) collectCPU() []Component {
 	processors := make(map[string]map[string]string)
-	if data, ok := collector.readFile(path.Join(collector.Paths.Proc, "cpuinfo")); ok {
+	if data, ok := collector.readProc(path.Join(collector.Paths.Proc, "cpuinfo"), procCPU); ok {
 		for recordIndex, record := range collector.parseRecords(string(data)) {
 			if !collector.check() {
 				return nil

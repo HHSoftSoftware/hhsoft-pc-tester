@@ -3,7 +3,6 @@ package inventory
 import (
 	"context"
 	"errors"
-	"io"
 	"io/fs"
 )
 
@@ -27,85 +26,17 @@ type inventoryScalar interface {
 // observed distinguishes a completed empty value from unavailable metadata.
 // Only exact EOF proves completion. Ordinary open/read observation errors
 // discard all bytes; malformed acquisition and cleanup abort the collection.
-func readInventoryScalar(ctx context.Context, name string, open func(string) (inventoryScalar, error)) (data []byte, observed bool, err error) {
-	if nilInventoryValue(ctx) {
-		return nil, false, ErrInvalidContext
+func readInventoryScalar(ctx context.Context, name string, open func(string) (inventoryScalar, error)) ([]byte, bool, error) {
+	data, observed, err := readInventoryBytes(ctx, name, inventoryScalarLimit, open)
+	switch err {
+	case errInventoryFileRead:
+		err = ErrScalarRead
+	case errInventoryFileLimit:
+		err = ErrScalarLimit
+	case errInventoryFileClose:
+		err = ErrScalarClose
 	}
-	if open == nil {
-		return nil, false, ErrScalarRead
-	}
-	if err := ctx.Err(); err != nil {
-		return nil, false, err
-	}
-	file, openErr := open(name)
-	if nilInventoryValue(file) {
-		if openErr == nil {
-			return nil, false, ErrScalarRead
-		}
-		if err := ctx.Err(); err != nil {
-			return nil, false, err
-		}
-		return nil, false, nil
-	}
-	defer func() {
-		// Every acquired handle is owned, including handle-plus-open-error.
-		if file.Close() != nil {
-			data, observed, err = nil, false, ErrScalarClose
-			return
-		}
-		if err != nil {
-			data, observed = nil, false
-			return
-		}
-		if stopped := ctx.Err(); stopped != nil {
-			data, observed, err = nil, false, stopped
-			return
-		}
-		if !observed {
-			data = nil
-		}
-	}()
-	if openErr != nil {
-		return nil, false, ErrScalarRead
-	}
-	if err := ctx.Err(); err != nil {
-		return nil, false, err
-	}
-	info, statErr := file.Stat()
-	if statErr != nil || nilInventoryValue(info) || !info.Mode().IsRegular() {
-		return nil, false, ErrScalarRead
-	}
-	if err := ctx.Err(); err != nil {
-		return nil, false, err
-	}
-	// Stat.Size is not a sysfs completion or allocation oracle. Retained raw
-	// bytes are bounded; the last positive request can include one probe byte.
-	data = make([]byte, 0, inventoryScalarLimit)
-	var chunk [inventoryScalarChunk]byte
-	for {
-		if err := ctx.Err(); err != nil {
-			return nil, false, err
-		}
-		remaining := inventoryScalarLimit - len(data)
-		request := min(len(chunk), remaining+1)
-		n, readErr := file.Read(chunk[:request])
-		if n < 0 || n > request || n == 0 && readErr == nil {
-			return nil, false, ErrScalarRead
-		}
-		if n > remaining {
-			return nil, false, ErrScalarLimit
-		}
-		if readErr != nil && readErr != io.EOF {
-			return nil, false, nil
-		}
-		if err := ctx.Err(); err != nil {
-			return nil, false, err
-		}
-		data = append(data, chunk[:n]...)
-		if readErr == io.EOF {
-			return data, true, nil
-		}
-	}
+	return data, observed, err
 }
 
 func (collector *linuxCollection) readScalar(name string) ([]byte, bool) {

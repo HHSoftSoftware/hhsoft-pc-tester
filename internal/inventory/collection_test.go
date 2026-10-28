@@ -542,7 +542,7 @@ func TestInventoryProcessingIteratorCancellationWithoutSourceCalls(t *testing.T)
 				if len(processed) != 1 || processed[0] != item.values[0] || collection.err != context.Canceled {
 					t.Fatal("iterator did not stop at the processing boundary")
 				}
-				collection.readFile("unused-after-cancel")
+				collection.readProc("unused-after-cancel", procCPU)
 				if sourceCalls != 0 {
 					t.Fatal("selected cancellation permitted a later source acquisition")
 				}

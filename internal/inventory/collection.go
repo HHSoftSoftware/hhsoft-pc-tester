@@ -47,18 +47,6 @@ func (collector *linuxCollection) check() bool {
 	return collector.err == nil
 }
 
-func (collector *linuxCollection) readFile(name string) ([]byte, bool) {
-	if !collector.check() {
-		return nil, false
-	}
-	data, err := collector.Source.ReadFile(name)
-	// File observation errors keep the existing optional/unknown policy.
-	if !collector.check() || err != nil {
-		return nil, false
-	}
-	return data, true
-}
-
 func (collector *linuxCollection) readDir(name string) []fs.DirEntry {
 	if !collector.check() {
 		return nil

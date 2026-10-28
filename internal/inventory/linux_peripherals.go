@@ -20,7 +20,7 @@ var (
 
 func (collector *linuxCollection) collectInputDevices() []Component {
 	inputDevices := path.Join(collector.Paths.Proc, "bus/input/devices")
-	if data, ok := collector.readFile(inputDevices); ok {
+	if data, ok := collector.readProc(inputDevices, procInput); ok {
 		if components := collector.parseInputDevices(string(data)); len(components) > 0 {
 			return components
 		}

@@ -229,6 +229,22 @@ Inactive catalog entries remain inactive. Rebuilt images, physical devices,
 sampled-media reads, the physical pilot and release approval remain separate
 gates.
 
+The inactive storage result reader now checks complete typed topology and fixture
+facts, finite read observations and accepted versus diagnostic counters. Explicit
+v6 session read support reaches signed-report verification, HTML/PDF rendering
+and comparison, including bundles without views. Historical v4/v5 handling stays
+supported. Current session emission remains v5 with eleven workers, and the
+storage sampling catalog entry remains inactive.
+
+The preceding admission and observation model passed 140 Windows test/subtest
+events across 30 test functions, with no skips; formatting and vet passed. Those
+fixture checks cover that model cohort only. The integrated reader then passed
+3,776 Windows test/subtest events across 27 packages, including all 67 candidate
+test functions. Formatting, vet and Linux amd64/386/arm64 cross-builds passed.
+The media worker, supervised acceptance and complete backing-device safeguards
+remain planned. Native reader execution, rebuilt images, physical media and
+release qualification remain separate gates; these fixtures accessed no media.
+
 The next thermal prerequisite is implemented in source: local CPU/RAM guards
 bound the initial and periodic observations, join before returning results, and
 record the coverage first introduced in CPU/memory v2 evidence. Unconfirmed cleanup blocks

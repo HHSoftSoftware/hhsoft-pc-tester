@@ -386,6 +386,24 @@ the alpha still requires the separate documented release gates.
 - [ ] Qualify storage readiness, replacement and cancellation in rebuilt images
   and on physical devices. Matching kernel numbers do not prove persistent
   physical identity or detect every same-number replacement.
+- [x] Implement the inactive storage sampling result reader with complete typed
+  topology/fixture reconstruction, bounded counters and retained failure and
+  cleanup semantics. Evidence contains no media data or content fingerprint.
+- [x] Add explicit v6 session read support through signed-report verification,
+  HTML/PDF rendering and comparison, including bundles without optional views.
+  Preserve v4/v5 wire behavior; current emission stays v5 with eleven workers
+  and the storage sampling catalog entry remains inactive.
+- [x] Validate the preceding admission and observation model with 140 Windows
+  test/subtest passes across 30 test functions, no skips, formatting and vet.
+  This fixture result does not qualify the later integrated report reader.
+- [x] Validate the integrated reader and report consumers on Windows: 3,776
+  test/subtest passes across 27 packages, including all 67 candidate test
+  functions; 17 existing test skips and three empty packages. Formatting, vet
+  and Linux amd64/386/arm64 cross-builds passed using fixtures without media I/O.
+  Native reader execution remains a separate gate.
+- [ ] Implement and qualify the media worker, backing-device and loop-lifetime
+  safeguards, supervised acceptance and catalog activation. Rebuilt images,
+  physical media and release approval remain separate gates.
 - [x] Check Ethernet/Wi-Fi driver and link readiness while failing closed on
   active non-loopback interfaces and generating no network traffic.
 - [x] Check USB root/device topology, authorization, speed, and read-only USBFS

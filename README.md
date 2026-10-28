@@ -237,6 +237,13 @@ SMART health, sampled-read correctness, throughput, or full-media coverage;
 those remain planned workers. The signed capture includes this
 readiness result.
 
+Offline report reading additionally supports the finite storage sampling evidence
+and explicit v6 session format through verification, HTML/PDF views and
+comparison. This checks signed assertions and separates accepted work from
+diagnostics; it does not perform media reads. Current commands keep the v5
+eleven-worker session and the sampling catalog entry remains inactive. See
+[report integrity](docs/report-integrity.md) for the evidence and cleanup limits.
+
 `hhpt network` inventories only hardware-backed Ethernet and Wi-Fi interfaces,
 checks driver binding, records link state without retaining MAC addresses, and
 generates no traffic. Safe mode fails closed if any non-loopback interface,

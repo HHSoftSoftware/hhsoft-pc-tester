@@ -717,6 +717,34 @@ Inactive catalog entries remain inactive. Rebuilt images, physical devices,
 sampled-media reads, the physical pilot and release approval remain separate
 gates.
 
+The inactive storage result reader validates storage-sample/v1 metadata and
+explicit v6 session claims through the existing signed-report verification,
+HTML/PDF and comparison paths. It checks full node/result correspondence,
+typed backing and fixture facts, fixed sample geometry and recomputed accepted
+counters. Required integer masks, exact fields, nullable objects and bounded
+arrays reject ambiguous or hidden claims. Historical v4/v5 wire handling remains
+supported; the current emitter stays v5 with eleven workers and storage.quick
+remains inactive.
+
+Accepted failures survive later stops. Unaccepted observations remain diagnostic
+and add no accepted work; an unfinished eligible target cannot claim clean
+completion. Every retained passed device must match final inventory identity and
+geometry, including within an overall non-pass result. A vanished nonaccepted
+device may remain diagnostic. Cleanup uncertainty blocks report acceptance.
+Snapshot and typed-result hashes bind signed values; millisecond fields establish
+feasible intervals without proving precise producer timing, kernel behavior or
+physical-device continuity.
+
+The earlier admission and observation model passed 140 focused Windows
+test/subtest events across 30 test functions, with no skips. Formatting and vet
+passed using fixtures; no media was accessed. That evidence applies only to the
+model cohort. The integrated reader passed 3,776 Windows test/subtest events
+across 27 packages, including all 67 candidate test functions, with 17 existing
+test skips and three empty packages. Formatting, vet and Linux amd64/386/arm64
+cross-builds passed. These are host fixture and build checks, without media I/O.
+Native reader execution, production sampling, loop backing/lifetime safeguards,
+all four rebuilt images, physical checks and release approval remain open.
+
 The next CPU increment implements twelve fixed binary64 addition, subtraction,
 multiplication and division vectors in the bounded worker. CPU v3 evidence adds
 ordered per-worker counts, exact mismatch bits and separate integer, SHA-256 and

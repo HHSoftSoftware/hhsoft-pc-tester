@@ -401,6 +401,34 @@ Inactive catalog entries remain inactive. Rebuilt images, physical devices,
 sampled-media reads, the physical pilot and release approval remain separate
 gates.
 
+The inactive storage reader has a separate qualification boundary from a media
+worker. Its earlier admission and observation model passed 140 focused Windows
+test/subtest events across 30 test functions, with no skips; formatting and vet
+passed. These were fixture checks without media access.
+
+The integrated reader passed 3,776 Windows test/subtest events across 27
+packages, including all 67 candidate test functions. Seventeen existing tests
+and three empty packages were skipped. Formatting, vet and Linux
+amd64/386/arm64 cross-builds passed; this does not establish native execution.
+
+The fixture tests exercise the shared finite decoder through signed-bundle
+verification with and without views, HTML/PDF rendering and comparison. Cases
+include exact v4/v5 preservation, required v6 source bindings,
+duplicate/escaped/case-aliased and misplaced claims, maximum node and byte bounds,
+integer fixture masks, whole-family exclusions, and explicit empty discovery.
+Accepted failures must survive later stops; unaccepted diagnostic counts cannot
+become accepted coverage. An unfinished eligible target needs an explicit stop.
+Retained passed devices require exact final inventory, while a vanished
+nonaccepted diagnostic does not erase an earlier valid pass. Cleanup uncertainty
+must reach every consumer as an error.
+
+Current emission remains v5 with eleven workers and the sampling catalog entry
+stays inactive. The reader validates signed assertions and feasible time fields;
+it does not reproduce precise parent timing, kernel ownership or media behavior.
+Media-worker supervision, loop lifetime, native sampling, rebuilt images and
+physical qualification require their own evidence. Earlier inventory native
+results do not qualify this new reader or a future sampler.
+
 The current network readiness adapter checks driver attachment and link state
 without configuring an address, associating Wi-Fi, or generating traffic. The
 safe profile fails closed when any non-loopback interface is administratively

@@ -373,7 +373,7 @@ before session launch and after report creation remain separate operational gate
 capture and direct finalization without a session journal retain their older
 limited scope and do not claim this session history.
 
-Reports using v4 or v5 also show run-wide thermal coverage and any observed limit.
+Reports using v4, v5 or v6 also show run-wide thermal coverage and any observed limit.
 The initial and final thermal readings are required even in a sub-second or all-off
 session. `thermal_finding=limit_reached` means a valid global or local CPU/RAM
 observation reached the limit; `no_limit_observed` means no such observation was
@@ -429,7 +429,12 @@ software version. Custom views, empty view files, active content, and views
 from a different inventory are rejected even with a valid signature. A bundle
 may omit optional views. Use the matching report utility; an incompatible
 renderer format fails verification instead of accepting an unverified view.
-It does not rerun the capture/finalization evidence checks or hardware tests.
+Supported functional claims also pass shared schema and binding checks, even
+when views are omitted. This includes explicit v6 storage evidence read support;
+accepted work stays distinct from diagnostics, and unconfirmed cleanup rejects
+the report. The utility does not rerun hardware tests or reconstruct original
+collection events. Current appliance commands still emit v5 sessions with eleven
+workers and do not perform sampled storage reads.
 
 Compare two sessions made with the same deployment-key token:
 

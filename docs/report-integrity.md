@@ -232,12 +232,13 @@ mismatch bits and separate integer/SHA-256/scalar failure flags. Its definition
 version is 2; current finalization requires that pair. Historical definition 1
 and CPU v2 keep their original field order, omission rules and typed hash through
 an immutable wire type, including in strict v4/v5 reports. New scalar evidence
-requires v5 for session reports, but remains supported in strict standalone
+requires v5 or v6 for session reports, but remains supported in strict standalone
 capture/finalization. Unknown versions, impossible counter or failure
 relationships, hidden claims and definition downgrades fail shared validation,
-including bundles without views. The eleven workers and 22 report rows are
-unchanged. Host and native Linux validation passed, including signed standalone
-and v5 session CPU cases. Rebuilt-image and physical qualification remain open.
+including bundles without views. Current emission keeps eleven workers and
+22 report rows. Host and native Linux validation passed for the v5 increment,
+including signed standalone and v5 session CPU cases. Rebuilt-image and physical
+qualification remain open.
 
 Memory definition 2 pairs with `hhsoft.pc-tester.memory/v3`. Its ten-phase pass
 retains accepted read/write counts, completed phases and passes, the partial
@@ -249,11 +250,12 @@ matching bytes and accepted work; a mismatching read is never a verified byte.
 Historical memory definition 1 and v2 keep their exact field order, omission
 rules and nested safety encoding, including strict v4/v5 typed hashes. Current
 memory evidence supports strict direct capture and standalone finalization;
-session reports require v5. Definition/schema mismatches, hidden claims and
-impossible counters are rejected even without bundle views. The full plan keeps
+session reports require v5 or v6. Definition/schema mismatches, hidden claims and
+impossible counters are rejected even without bundle views. Current emission keeps
 21 test rows plus run integrity, eleven workers and the existing seven-row
-direct-capture subset. Full host and native Linux validation passed, including
-signed direct-capture, standalone-finalization and v5 session cases. Rebuilt-image
+direct-capture subset. Full host and native Linux validation passed for the v5
+increment, including signed direct-capture, standalone-finalization and v5 session
+cases. Rebuilt-image
 and physical gates remain open for this increment.
 
 New v4 claims use shared structural and binding validation in finalization,
@@ -277,10 +279,42 @@ Complete initial/final inventory cannot be reconstructed by an offline verifier.
 Case aliases, duplicate or hidden modern claims and omitted bundle views cannot
 turn functional evidence into an opaque historical or unexecuted note. A strict
 nonexecution note can preserve standalone finalization without a session;
-functional keyboard observations require v5. Windows and native Linux
-amd64/386 qualification, including race checks and signed CLI workflows,
-passed. These checks establish software behavior, not physical input coverage;
+functional keyboard observations require v5 or v6 in session reports. Current
+emission remains v5. Windows and native Linux amd64/386 qualification, including
+race checks and signed CLI workflows, passed for the v5 increment. These checks
+establish software behavior, not physical input coverage;
 rebuilt-image and physical-keyboard validation remain open.
+
+## Inactive Storage Evidence Reader
+
+Explicit v6 read support adds a twelfth worker record, `storage.quick`, after
+storage readiness. The journal's required `storage_source` field is null for
+validated execution notes and an object for functional
+`hhsoft.pc-tester.storage-sample/v1` evidence, including non-pass results. That
+object contains exactly `worker_id`,
+`evidence_schema`, `evidence_file_sha256` and `evidence_typed_sha256`. Both digests
+use `sha256:` plus lowercase hexadecimal SHA-256. The typed digest hashes the
+validated canonical Result bytes without a newline or domain prefix. The reader
+recomputes that digest; it cannot reconstruct the original evidence file's
+whitespace or independently prove its file digest from an embedded typed value.
+
+Shared validation checks the finite result, topology/fixture reconstruction,
+accepted counters, worker/schema/PlanID binding and feasible disclosed duration.
+Retained passed devices require matching final identity and geometry even when
+the overall run is non-pass. A vanished nonaccepted device may remain diagnostic,
+with no accepted credit. Accepted failures survive later stops, and unconfirmed
+cleanup rejects report acceptance. These checks apply through verification,
+HTML/PDF rendering and comparison, including bundles without optional views.
+
+Source digests, close/final-binding flags and timing remain signed assertions;
+they do not prove kernel behavior, precise monotonic acceptance or physical
+continuity. Buffered sample consistency cannot establish drive health, uncached
+I/O or full-media coverage. Historical v4/v5 wire behavior stays supported and
+those schemas reject storage sampling claims. Current commands still emit v5
+sessions with eleven workers; this reader adds no media worker or command and
+leaves the sampling catalog entry inactive. Host fixture tests and Linux
+amd64/386/arm64 cross-builds passed. Native reader execution and subsequent
+media, image, physical and release qualification remain separate gates.
 
 ## Privacy-Preserving Fingerprints
 

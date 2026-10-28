@@ -224,17 +224,28 @@ Rebuilt-image and physical-device qualification remain open.
 The guided keyboard increment activates definition version 2 of the existing
 `input.keyboard.quick` row and requires fresh plans. Journal v5 inserts its
 eleventh worker between input readiness and pointer testing. Shared validation
-dispatches v4 to its original ten-worker rules and v5 to eleven-worker rules;
-unknown versions and relabeled journals cannot bypass those checks. A shared
+dispatches v4 to its original ten-worker rules, v5 to eleven-worker rules and
+v6 to its twelve-worker read format. Current emission remains v5; unknown
+versions and relabeled journals cannot bypass those checks. A shared
 keyboard decoder binds fixed action summaries, cleanup, worker timing and
 unchanged per-device identity/capabilities. Raw input events and typed text are
 never exported. Standalone finalization may retain strict nonexecution notes
 for excluded, absent, unsupported or missing-driver keyboards without claiming
-session coverage; functional keyboard evidence requires the live v5 workflow.
+session coverage. Keyboard execution uses the live v5 workflow; report reading
+also accepts its functional evidence in v6.
 Windows and native Linux amd64/386 qualification, including race checks and CLI
-workflows, passed for this integration. This qualifies the application source;
+workflows, passed for the v5 keyboard integration. This qualifies that application
+source;
 rebuilt images and physical keyboards remain separate gates. See
 [requirements validation](requirements-validation.md).
+
+The inactive storage evidence reader shares one finite Result validator across
+report verification, rendering and comparison. Explicit v6 read support binds a
+storage source to its typed result, reconstructs topology/fixture eligibility and
+keeps accepted work separate from diagnostics. Historical v4/v5 wire handling is
+preserved. Current emission, eleven workers and the inactive sampling catalog
+entry are unchanged. This adds no media acquisition backend; see
+[report integrity](report-integrity.md) for signed-assertion and cleanup limits.
 
 A graph change does not discard evidence. It fails run integrity and preserves
 the final report with the original/final graph HMACs and component-level delta,

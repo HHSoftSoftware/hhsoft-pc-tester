@@ -166,6 +166,45 @@ The native CLI cases retained incomplete observations without supplied actions.
 Rebuilt images, physical devices and the broader input matrix below remain open;
 see [requirements validation](requirements-validation.md) for the exact counts.
 
+The guided-pointer acquisition increment adds these failure requirements:
+
+- Exercise exact-limit and overflow registry/identity reads, exact EOF, invalid
+  counts, zero progress, ambiguous errors and close failures. Prove contained
+  relative sysfs links succeed while absolute and escaping links are rejected.
+- Verify eligible observed device numbers, metadata and descriptor identity
+  before readable access. Reject substitutions, malformed providers and typed
+  nils; track every acquired owner through one close, including handle-plus-error.
+- Keep hard faults ahead of cancellation and timeout through runner and command
+  handling. Close the readable handle before its metadata handle, then close the
+  root. Allow no later acquisition after a hard failure.
+- Use positive-count hard-error reads to distinguish complete diagnostic frames
+  from partial packets and pass credit. Compare literal earlier completed rows
+  after a later fault, including concurrent cancellation and an untouched third
+  device. Retain an independently verified earlier pass only with its own proof.
+- Require idle queue and final identity before each device pass; later positive
+  bytes revoke pass credit. Keep the existing movement, button and wheel criteria.
+- Exercise the real fixture-root producer through command/session/finalizer
+  consumers and distinguish that path from injected close-result composition.
+  Establish the scheduled definition-2 plan before checking the exact promotion
+  rejection. Compare strict decoded signed evidence and preserve the source file.
+
+The source contract adds 17 test roots: ten portable and seven Linux-only.
+The isolated Windows suite records 4,406 passing test/subtest outcomes across
+29 packages, with 17 existing test skips and one empty package. All 75 selected
+host roots and their 320 outcomes pass: 49 belong to the ten new portable roots
+and their 39 children, and 271 to retained coverage. Formatting, vet and Linux
+amd64/386/arm64 cross-builds pass separately from Linux test execution.
+
+Selected native Linux amd64/386 fixtures passed 848 test/subtest outcomes
+across four suites, with all 97 selected roots on each architecture (194 root
+executions), no failures or skips, and confirmed cleanup. This includes the
+seven new and fifteen retained Linux roots. Retained adapters cover the shared
+keyboard helper's reachable behavior after removal of
+its unused cleanup mode; new acquisition cases invoke actual pointer operations
+with injected owners. The fixtures create no evdev nodes and collect no real
+input. Physical actions, broader input coverage, blocked-kernel deadlines,
+rebuilt images and release gates remain separate.
+
 The current storage readiness adapter rejects writable block mounts and checks
 canonical unsigned 32-bit major/minor identities in both the block registry and
 mount records. Duplicate registry identities fail, including excluded mappings

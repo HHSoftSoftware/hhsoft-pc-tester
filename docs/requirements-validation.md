@@ -481,6 +481,49 @@ successful physical actions or high-resolution hardware qualification.
 Session thermal evidence honestly retained unavailable telemetry. AArch64 was
 cross-built only for this increment, not executed natively.
 
+The subsequent guided-pointer acquisition increment retains pointer evidence v2,
+historical v1 verification, definition 2 and the existing session policy. Registry
+reads admit at most 1 MiB and selected sysfs identity values at most 128 raw bytes,
+with overflow probes and exact EOF. Root containment, final-component no-follow
+and metadata identity checks establish eligibility before opening an event node
+for reading. The readable descriptor must then match that identity. Owned
+metadata, event and root handles have checked closure, including a returned
+handle accompanied by an open error.
+
+Hard acquisition, read, protocol, identity and close errors survive later
+cancellation or timeout. Complete frames from a positive-count hard-error read
+may remain diagnostic when cancellation has not already been observed; partial
+packets add no committed counters and the affected row cannot pass. An earlier,
+independently verified device pass can survive another device's later fault.
+Each retained pass requires complete criteria, an idle queue and final identity;
+later positive bytes revoke that row's pass until those checks succeed again.
+Uncertain closure prevents an overall pass. Consumers retain honest error
+results and reject caller-pass promotion without adding a global cleanup exit
+status or the separate storage/network safety-worker policy.
+
+The shared keyboard helper now has unconditional cleanup checks matching its
+previously reachable mode; the unused alternative is removed. Retained path
+adapters test that shared behavior, while new tests exercise actual pointer
+acquisition through injected owned operations. A regular-file registry failure
+also reaches the real producer and command/session/finalizer consumers. Injected
+close faults and signed-consumer checks remain compositional. No real input
+event nodes are created or collected by these fixtures.
+
+Implementation, static review and isolated host validation are complete. The
+Windows suite records 4,406 passing test/subtest outcomes across 29 packages,
+with 17 existing test skips and one empty package. All 75 selected host roots
+and their 320 outcomes pass, including ten new portable roots and 39 children.
+Formatting, vet and Linux amd64/386/arm64 cross-builds also pass. These results
+are bound to the same 468-file formatted source. Selected native Linux
+amd64/386 qualification passed 848 test/subtest outcomes across four suites:
+294 input-suite and 130 command-suite outcomes on each architecture. All 97
+required roots passed on each architecture, for 194 executions, including the
+seven new and fifteen retained Linux roots. There were no failures or skips;
+nine ownership controls, 32 archive controls, all six final checks and confirmed
+cleanup passed. These test-binary runs add no standalone CLI or race validation.
+Physical input, aggregate allocation, blocked-kernel deadlines, rebuilt-image
+and release qualification remain open.
+
 All four fresh beta images, physical wheel and sensor checks, and the pilot on
 at least ten varied PCs remain open. The frozen initial alpha candidate and its
 separate source, image and release-approval gates are unchanged.

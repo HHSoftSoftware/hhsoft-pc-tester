@@ -118,6 +118,22 @@ amd64/386 suites, race checks, and standalone and signed-session CLI checks pass
 for this extension. Fresh images and physical wheel devices remain separate
 gates; wheel precision, extra buttons and touch gestures remain planned.
 
+The guided-pointer acquisition increment bounds registry and selected identity
+reads, verifies metadata before readable event access, and checks every owned
+close. Hard acquisition, protocol, identity and cleanup errors survive later
+cancellation. Complete observations remain diagnostic; a device pass also needs
+its own idle queue and final identity proof. The unused shared cleanup option is
+removed by preserving its reachable behavior for keyboard callers. Pointer
+schema, catalog, movement/button/wheel criteria and session policy are unchanged.
+
+The full host suite, formatting, vet and Linux amd64/386/arm64 cross-builds
+passed for this increment. All 75 selected host roots and their 320 outcomes
+passed. Selected Linux amd64/386 fixtures passed 848 test/subtest outcomes
+across four suite runs and all 194 required root executions, with no failures or
+skips and confirmed cleanup. Broader pointer/keyboard functions, aggregate
+allocation and blocked-kernel deadlines, rebuilt images, physical devices and
+release gates remain open.
+
 The periodic safety increment implements read-only mount/network checks
 through quick execution and the final safety observation. One owned observer
 runs serialized samples at a one-second interval, with a one-second observation

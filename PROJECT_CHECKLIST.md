@@ -235,6 +235,16 @@ the alpha still requires the separate documented release gates.
   Unsupplied VM actions remained inconclusive or deadline-limited; standalone
   and session consumers preserve historical v1 scope. These results do not
   establish successful physical actions or qualify rebuilt images.
+- [x] Implement the guided-pointer acquisition increment with bounded registry
+  and identity reads, metadata checks before readable node access, checked owned
+  closure and hard-error precedence over cancellation. Remove the unused shared
+  cleanup mode while preserving reachable keyboard behavior.
+- [x] Validate this acquisition increment with the full host suite, formatting,
+  vet and Linux amd64/386/arm64 cross-builds. All 75 selected host roots and
+  their 320 test/subtest outcomes pass, including ten new roots and 39 children.
+- [x] Validate the selected acquisition fixtures on Linux amd64/386: 848
+  test/subtest outcomes across four suites, all 194 required root executions,
+  no failures or skips, and confirmed cleanup.
 - [ ] Qualify guided pointer actions in rebuilt images and on physical devices,
   including no-wheel, vertical/horizontal, high-resolution and multiple pointers,
   withheld directions, cancellation and disconnects.

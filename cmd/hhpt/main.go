@@ -87,6 +87,10 @@ func run(ctx context.Context, arguments []string, stdin io.Reader, stdout, stder
 }
 
 func runInventory(ctx context.Context, arguments []string, stdout, stderr io.Writer) int {
+	return runInventoryWith(ctx, arguments, stdout, stderr, inventory.NewLinuxCollector("/").Collect)
+}
+
+func runInventoryWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector) int {
 	flags := flag.NewFlagSet("inventory", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	outputPath := flags.String("output", "-", "new JSON output file, or - for stdout")
@@ -105,7 +109,7 @@ func runInventory(ctx context.Context, arguments []string, stdout, stderr io.Wri
 		fmt.Fprintf(stderr, "read fingerprint key: %v\n", err)
 		return 1
 	}
-	snapshot, err := inventory.NewLinuxCollector("/").Collect(ctx)
+	snapshot, err := collect(ctx)
 	if err != nil {
 		fmt.Fprintf(stderr, "collect inventory: %v\n", err)
 		return 1

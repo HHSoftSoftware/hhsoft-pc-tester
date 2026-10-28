@@ -284,6 +284,51 @@ use controlled temporary fixtures; block metadata and descriptors remain
 simulated. Broader inventory completeness/error reporting and acquisition bounds,
 sampled-media reads, fresh images and physical qualification remain open.
 
+Inventory directory completeness adds these acceptance cases:
+
+- Read through actual EOF after short and exact-size batches, retaining all
+  instances beyond 256. The request size is not a total device-count limit.
+  Reject partial errors, joined EOF/errors, no progress and oversized responses.
+- Close every acquired handle once before validating names. Treat failed closure
+  as hard failure; reject nil handles/info/entries, non-directories, invalid names
+  and duplicates. Accept only sole clean open-time absence, never mixed failures
+  or absence reported after a handle has been acquired.
+- Preserve provider-owned slices and lexical order; cache validated names. Compare
+  complete distinct-device views across permutations and repeated calls, and keep
+  concurrent collection contexts independent when the source supports concurrency.
+- Check cancellation before and after acquisition, parsed records and processing,
+  including final empty/absent/positive reads, nonmatching entries, nested USB scans,
+  early breaks, bitmap observation and snapshot canonicalization. A cancelled or
+  failed collection returns no snapshot and starts no later source acquisition.
+- Exercise inventory, plan, capture and finalize with read/close/cancellation
+  failures alongside successful controls. Require failure before output, capture
+  workers or signing; verify the positive reports through their real verifiers.
+- Exercise controlled production directories with more than 256 entries and a
+  portable closed-handle oracle. Linux-only cases check normal sysfs-style links
+  and read-only, nonblocking, close-on-exec descriptor flags.
+
+Focused Windows validation passed 1,900 test/subtest events across eight packages,
+with six platform test skips and no failures; formatting and focused vet passed.
+All 29 new portable test functions passed. The full host cohort passed 3,047
+test/subtest events across 25 packages, with 17 platform test skips, three packages
+without tests and no failures. Host vet passed; 28 Linux test binaries and five
+application targets built successfully, and the host artifact privacy check passed.
+Native validation passed 5,816 test/subtest events across 28 suites and 2,106
+race-test events across seven suites; all 39 CLI cases passed. There were no
+native/race skips or failures, and cleanup was confirmed. Each native architecture
+(amd64 and 386) executed all 31 new test functions: 26 portable inventory tests,
+two Linux-only directory tests and three command-boundary tests. The 28 inventory
+functions also ran in the inventory race suite; the three command functions ran
+in the command race suite. Their individual successful events were checked
+alongside the suite totals. The artifact privacy check passed all 573 files.
+See [requirements validation](requirements-validation.md).
+
+Raw inventory file reads and total acquisition/aggregate allocation still lack
+bounds. Optional file observation errors still become unknown values. Legacy
+aggregate sources and blocked operations support cancellation only at cooperative
+boundaries. No live-device, sampled-media, image, physical-pilot or release
+qualification follows from these fixture results.
+
 The current network readiness adapter checks driver attachment and link state
 without configuring an address, associating Wi-Fi, or generating traffic. The
 safe profile fails closed when any non-loopback interface is administratively

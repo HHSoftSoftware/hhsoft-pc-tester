@@ -30,8 +30,11 @@ func inputBitmapWordBitsForMachine(machine string) int {
 	}
 }
 
-func (collector *LinuxCollector) collectInput() []Component {
+func (collector *linuxCollection) collectInput() []Component {
 	components := collector.collectInputDevices()
+	if !collector.check() {
+		return nil
+	}
 	if len(components) == 0 {
 		return components
 	}
@@ -39,10 +42,22 @@ func (collector *LinuxCollector) collectInput() []Component {
 	if observe == nil {
 		observe = kernelInputBitmapWordBits
 	}
+	if !collector.check() {
+		return nil
+	}
 	wordBits := observe()
-	for index, component := range components {
+	if !collector.check() {
+		return nil
+	}
+	for index, component := range collectionItems(collector, components) {
+		if !collector.check() {
+			return nil
+		}
 		attributes := make(map[string]string, len(component.Attributes)+1)
-		for _, attribute := range component.Attributes {
+		for _, attribute := range collectionItems(collector, component.Attributes) {
+			if !collector.check() {
+				return nil
+			}
 			if attribute.Name != "bitmap_word_bits" {
 				attributes[attribute.Name] = attribute.Value
 			}
@@ -56,6 +71,9 @@ func (collector *LinuxCollector) collectInput() []Component {
 			firstNonEmpty(attributes["properties"], attributes["prop_capabilities"]), wordBits)
 		// Registry text cannot supply this reserved observation when the kernel
 		// layout is unknown; that cannot establish a functional input pass.
+		if !collector.check() {
+			return nil
+		}
 		components[index] = NewComponent(component.Type, component.ID, attributes)
 	}
 	return components

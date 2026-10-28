@@ -5,10 +5,13 @@ import (
 	"strings"
 )
 
-func (collector *LinuxCollector) collectPCI() []Component {
+func (collector *linuxCollection) collectPCI() []Component {
 	pciRoot := path.Join(collector.Paths.Sys, "bus/pci/devices")
 	var components []Component
-	for _, entry := range collector.readDir(pciRoot) {
+	for _, entry := range collectionItems(collector, collector.readDir(pciRoot)) {
+		if !collector.check() {
+			return nil
+		}
 		address := entry.Name()
 		attributes := map[string]string{"address": address}
 		collector.addAttributes(attributes, path.Join(pciRoot, address), []attributePath{
@@ -22,15 +25,21 @@ func (collector *LinuxCollector) collectPCI() []Component {
 			{name: "numa_node", relativePath: "numa_node"},
 			{name: "modalias", relativePath: "modalias"},
 		})
+		if !collector.check() {
+			return nil
+		}
 		components = append(components, NewComponent(ComponentPCI, "pci:"+address, attributes))
 	}
 	return components
 }
 
-func (collector *LinuxCollector) collectNetwork() []Component {
+func (collector *linuxCollection) collectNetwork() []Component {
 	networkRoot := path.Join(collector.Paths.Sys, "class/net")
 	var components []Component
-	for _, entry := range collector.readDir(networkRoot) {
+	for _, entry := range collectionItems(collector, collector.readDir(networkRoot)) {
+		if !collector.check() {
+			return nil
+		}
 		name := entry.Name()
 		attributes := map[string]string{"name": name}
 		collector.addAttributes(attributes, path.Join(networkRoot, name), []attributePath{
@@ -46,16 +55,22 @@ func (collector *LinuxCollector) collectNetwork() []Component {
 			{name: "vendor_id", relativePath: "device/vendor"},
 			{name: "device_id", relativePath: "device/device"},
 		})
+		if !collector.check() {
+			return nil
+		}
 		components = append(components, NewComponent(ComponentNetwork, "network:"+name, attributes))
 	}
 	return components
 }
 
-func (collector *LinuxCollector) collectUSB() []Component {
+func (collector *linuxCollection) collectUSB() []Component {
 	usbRoot := path.Join(collector.Paths.Sys, "bus/usb/devices")
 	entries := collector.readDir(usbRoot)
 	var components []Component
-	for _, entry := range entries {
+	for _, entry := range collectionItems(collector, entries) {
+		if !collector.check() {
+			return nil
+		}
 		name := entry.Name()
 		base := path.Join(usbRoot, name)
 		vendorID, ok := collector.readValue(path.Join(base, "idVendor"))
@@ -77,7 +92,10 @@ func (collector *LinuxCollector) collectUSB() []Component {
 			{name: "speed_mbps", relativePath: "speed"},
 			{name: "authorized", relativePath: "authorized"},
 		})
-		for _, interfaceEntry := range entries {
+		for _, interfaceEntry := range collectionItems(collector, entries) {
+			if !collector.check() {
+				return nil
+			}
 			if !strings.HasPrefix(interfaceEntry.Name(), name+":") {
 				continue
 			}
@@ -85,6 +103,9 @@ func (collector *LinuxCollector) collectUSB() []Component {
 				attributes["audio_interface"] = "true"
 				break
 			}
+		}
+		if !collector.check() {
+			return nil
 		}
 		components = append(components, NewComponent(ComponentUSB, "usb:"+name, attributes))
 	}

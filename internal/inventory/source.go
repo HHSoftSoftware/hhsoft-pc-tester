@@ -1,6 +1,7 @@
 package inventory
 
 import (
+	"context"
 	"io/fs"
 	"os"
 	"path"
@@ -26,11 +27,15 @@ func (source *RootPathSource) ReadFile(name string) ([]byte, error) {
 }
 
 func (source *RootPathSource) ReadDir(name string) ([]fs.DirEntry, error) {
-	return os.ReadDir(source.resolve(name))
+	return source.readDirectory(context.Background(), name)
 }
 
 func (source *RootPathSource) resolve(name string) string {
 	cleaned := path.Clean("/" + strings.TrimSpace(name))
 	relative := strings.TrimPrefix(cleaned, "/")
 	return filepath.Join(source.root, filepath.FromSlash(relative))
+}
+
+func (source *RootPathSource) readDirectory(ctx context.Context, name string) ([]fs.DirEntry, error) {
+	return readInventoryDirectory(ctx, source.resolve(name), openInventoryDirectory)
 }

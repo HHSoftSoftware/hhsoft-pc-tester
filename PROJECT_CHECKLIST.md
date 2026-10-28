@@ -319,8 +319,32 @@ the alpha still requires the separate documented release gates.
   passes across 28 suites, 1,930 race-test passes across six suites and all 39 CLI
   cases, with no native/race skips or failures and confirmed cleanup. Scalar
   fixtures use temporary files; block metadata and descriptors remain simulated.
-- [ ] Complete broader inventory enumeration, cancellation and error reporting;
-  define file and aggregate acquisition bounds.
+- [x] Enumerate inventory directories through actual EOF using bounded requests,
+  with no total device-count cutoff. Close acquired handles before admitting
+  names; reject directory failures and malformed or duplicate entries without
+  returning a successful partial snapshot. Preserve legitimate absent paths and
+  diskless systems.
+- [x] Keep collection context and errors separate for each call, preserve
+  source-owned slices, and check cancellation around acquisition, processing
+  and final snapshot creation. Reject collection errors at inventory, plan,
+  capture and finalize boundaries before output or later report work.
+- [x] Validate this increment with 1,900 focused Windows test/subtest passes
+  across eight packages, six platform test skips and no failures. Formatting
+  and focused vet passed; all 29 new portable test functions passed.
+- [x] Complete full host validation with 3,047 Windows test/subtest passes across
+  25 packages, 17 platform test skips, three packages without tests and no failures.
+  Vet passed; 28 cross-built test binaries and five application targets built
+  successfully. Source, documentation and host artifacts passed the privacy check.
+- [x] Complete native qualification with 5,816 test/subtest passes across 28
+  suites, 2,106 race-test passes across seven suites and all 39 CLI cases, with
+  no native/race skips or failures and confirmed cleanup. All 31 new test
+  functions passed on amd64 and 386; the 28 inventory functions and three
+  command-boundary functions also passed in their corresponding race suites.
+- [ ] Qualify this increment in rebuilt images and on physical devices; complete
+  the pilot and required release approval.
+- [ ] Bound raw inventory file reads and total acquisition/aggregate allocation;
+  improve optional field-error reporting. Cooperative cancellation does not
+  interrupt a blocked source operation.
 - [ ] Qualify storage readiness, replacement and cancellation in rebuilt images
   and on physical devices. Matching kernel numbers do not prove persistent
   physical identity or detect every same-number replacement.

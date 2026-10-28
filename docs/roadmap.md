@@ -156,6 +156,26 @@ qualification passed. Broader inventory completeness, error reporting and
 acquisition bounds remain open, along with sampled-media reads, fresh images
 and physical-device qualification.
 
+Inventory enumeration now consumes production directory streams through EOF
+without a total device-count cutoff, closes handles before admission and reports
+hard directory failures instead of successful partial snapshots. Per-call state,
+owned slices and cancellation checks cover acquisition, processing and final
+snapshot creation. Inventory, plan, capture and finalize reject collection errors
+before their later output or report work; legitimate missing interfaces and
+diskless operation remain supported.
+
+Focused Windows regressions, formatting and vet passed, including all 29 new
+portable test functions. Full host validation also passed: 3,047 test/subtest events
+across 25 packages, 28 cross-built test binaries and five application targets.
+Native validation passed 5,816 test/subtest events across 28 suites, 2,106 race-test
+events across seven suites and all 39 CLI cases, with no skips or failures and
+confirmed cleanup. All 31 new functions, including both Linux-only tests, passed
+on amd64 and 386 and in their corresponding inventory or command race suites;
+see [requirements validation](requirements-validation.md).
+Raw-file and aggregate acquisition bounds, optional field-error reporting and blocked-operation
+interruption remain open. This work enables no inactive catalog entries and does
+not close sampled-media, rebuilt-image, physical-pilot or release gates.
+
 The next thermal prerequisite is implemented in source: local CPU/RAM guards
 bound the initial and periodic observations, join before returning results, and
 record the coverage first introduced in CPU/memory v2 evidence. Unconfirmed cleanup blocks

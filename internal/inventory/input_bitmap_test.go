@@ -108,7 +108,7 @@ func TestInputBitmapKernelWidthIsObservedForProcAndSysfs(t *testing.T) {
 				collector := NewLinuxCollector(root)
 				observations := 0
 				collector.inputBitmapWordBits = func() int { observations++; return width }
-				components := collector.collectInput()
+				components := collector.newCollection(t.Context()).collectInput()
 				if len(components) != 1 || observations != 1 {
 					t.Fatalf("input inventory/observation counts = %d/%d", len(components), observations)
 				}

@@ -3,10 +3,9 @@ package inventory
 import (
 	"context"
 	"errors"
-	"io/fs"
+	"iter"
 	"path"
 	"regexp"
-	"sort"
 	"strconv"
 	"strings"
 )
@@ -42,36 +41,37 @@ func NewLinuxCollectorWithSource(source PathSource) *LinuxCollector {
 }
 
 func (collector *LinuxCollector) Collect(ctx context.Context) (Snapshot, error) {
-	if collector == nil || collector.Source == nil {
+	if collector == nil || nilInventoryValue(collector.Source) {
 		return Snapshot{}, ErrNoPathSource
 	}
-	if err := ctx.Err(); err != nil {
-		return Snapshot{}, err
+	if ctx == nil {
+		return Snapshot{}, ErrInvalidContext
 	}
-
+	collection := collector.newCollection(ctx)
+	if !collection.check() {
+		return Snapshot{}, collection.err
+	}
 	groups := []func() []Component{
-		collector.collectCPU,
-		collector.collectMemory,
-		collector.collectDMI,
-		collector.collectBlock,
-		collector.collectPCI,
-		collector.collectNetwork,
-		collector.collectInput,
-		collector.collectSound,
-		collector.collectVideo,
-		collector.collectUSB,
+		collection.collectCPU, collection.collectMemory, collection.collectDMI,
+		collection.collectBlock, collection.collectPCI, collection.collectNetwork,
+		collection.collectInput, collection.collectSound, collection.collectVideo,
+		collection.collectUSB,
 	}
 	var components []Component
 	for _, collect := range groups {
-		if err := ctx.Err(); err != nil {
-			return Snapshot{}, err
+		if !collection.check() {
+			return Snapshot{}, collection.err
 		}
-		components = append(components, collect()...)
+		group := collect()
+		if !collection.check() {
+			return Snapshot{}, collection.err
+		}
+		components = append(components, group...)
 	}
-	return NewSnapshot(components), nil
+	return collection.snapshot(components, NewSnapshot)
 }
 
-func (collector *LinuxCollector) collectMemory() []Component {
+func (collector *linuxCollection) collectMemory() []Component {
 	data, ok := collector.readFile(path.Join(collector.Paths.Proc, "meminfo"))
 	if !ok {
 		return nil
@@ -81,7 +81,13 @@ func (collector *LinuxCollector) collectMemory() []Component {
 		"memtotal":     "total_kib",
 		"memavailable": "available_kib",
 	} {
-		for _, line := range strings.Split(string(data), "\n") {
+		if !collector.check() {
+			return nil
+		}
+		for _, line := range collectionItems(collector, strings.Split(string(data), "\n")) {
+			if !collector.check() {
+				return nil
+			}
 			name, value, found := strings.Cut(line, ":")
 			if found && strings.EqualFold(strings.TrimSpace(name), sourceName) {
 				attributes[targetName] = strings.TrimSuffix(normalizeValue(value), " kB")
@@ -92,13 +98,19 @@ func (collector *LinuxCollector) collectMemory() []Component {
 	if attributes["total_kib"] == "" {
 		return nil
 	}
+	if !collector.check() {
+		return nil
+	}
 	return []Component{NewComponent(ComponentMemory, "memory:system", attributes)}
 }
 
-func (collector *LinuxCollector) collectCPU() []Component {
+func (collector *linuxCollection) collectCPU() []Component {
 	processors := make(map[string]map[string]string)
 	if data, ok := collector.readFile(path.Join(collector.Paths.Proc, "cpuinfo")); ok {
-		for recordIndex, record := range parseRecords(string(data)) {
+		for recordIndex, record := range collector.parseRecords(string(data)) {
+			if !collector.check() {
+				return nil
+			}
 			logicalIndex := record["processor"]
 			if logicalIndex == "" {
 				logicalIndex = strconv.Itoa(recordIndex)
@@ -109,7 +121,7 @@ func (collector *LinuxCollector) collectCPU() []Component {
 				processors[logicalIndex] = attributes
 			}
 			attributes["logical_index"] = logicalIndex
-			copyAliases(attributes, record, []alias{
+			collector.copyAliases(attributes, record, []alias{
 				{from: "vendor_id", to: "vendor"},
 				{from: "model name", to: "model"},
 				{from: "cpu family", to: "family"},
@@ -135,7 +147,10 @@ func (collector *LinuxCollector) collectCPU() []Component {
 	}
 
 	cpuRoot := path.Join(collector.Paths.Sys, "devices/system/cpu")
-	for _, entry := range collector.readDir(cpuRoot) {
+	for _, entry := range collectionItems(collector, collector.readDir(cpuRoot)) {
+		if !collector.check() {
+			return nil
+		}
 		if !cpuDirectoryPattern.MatchString(entry.Name()) {
 			continue
 		}
@@ -159,12 +174,15 @@ func (collector *LinuxCollector) collectCPU() []Component {
 
 	components := make([]Component, 0, len(processors))
 	for logicalIndex, attributes := range processors {
+		if !collector.check() {
+			return nil
+		}
 		components = append(components, NewComponent(ComponentCPU, "cpu:"+logicalIndex, attributes))
 	}
 	return components
 }
 
-func (collector *LinuxCollector) collectDMI() []Component {
+func (collector *linuxCollection) collectDMI() []Component {
 	dmiRoot := path.Join(collector.Paths.Sys, "class/dmi/id")
 	system := make(map[string]string)
 	collector.addAttributes(system, dmiRoot, []attributePath{
@@ -190,19 +208,31 @@ func (collector *LinuxCollector) collectDMI() []Component {
 	})
 
 	var components []Component
+	if !collector.check() {
+		return nil
+	}
 	if len(system) > 0 {
+		if !collector.check() {
+			return nil
+		}
 		components = append(components, NewComponent(ComponentSystem, "system", system))
 	}
 	if len(baseboard) > 0 {
+		if !collector.check() {
+			return nil
+		}
 		components = append(components, NewComponent(ComponentBaseboard, "baseboard", baseboard))
 	}
 	return components
 }
 
-func (collector *LinuxCollector) collectBlock() []Component {
+func (collector *linuxCollection) collectBlock() []Component {
 	blockRoot := path.Join(collector.Paths.Sys, "class/block")
 	var components []Component
-	for _, entry := range collector.readDir(blockRoot) {
+	for _, entry := range collectionItems(collector, collector.readDir(blockRoot)) {
+		if !collector.check() {
+			return nil
+		}
 		name := entry.Name()
 		attributes := map[string]string{"name": name, "kind": "device"}
 		collector.addAttributes(attributes, path.Join(blockRoot, name), []attributePath{
@@ -223,6 +253,9 @@ func (collector *LinuxCollector) collectBlock() []Component {
 			attributes["kind"] = "partition"
 			attributes["partition_number"] = partition
 		}
+		if !collector.check() {
+			return nil
+		}
 		components = append(components, NewComponent(ComponentBlock, "block:"+name, attributes))
 	}
 	return components
@@ -238,58 +271,67 @@ type alias struct {
 	to   string
 }
 
-func (collector *LinuxCollector) addAttributes(attributes map[string]string, base string, fields []attributePath) {
-	for _, field := range fields {
+func (collector *linuxCollection) addAttributes(attributes map[string]string, base string, fields []attributePath) {
+	for _, field := range collectionItems(collector, fields) {
+		if !collector.check() {
+			return
+		}
 		if value, ok := collector.readValue(path.Join(base, field.relativePath)); ok {
 			attributes[field.name] = value
 		}
 	}
 }
 
-func (collector *LinuxCollector) readFile(name string) ([]byte, bool) {
-	data, err := collector.Source.ReadFile(name)
-	return data, err == nil
-}
-
-func (collector *LinuxCollector) readValue(name string) (string, bool) {
+func (collector *linuxCollection) readValue(name string) (string, bool) {
 	data, ok := collector.readFile(name)
 	if !ok {
 		return "", false
 	}
 	value := normalizeValue(string(data))
+	if !collector.check() {
+		return "", false
+	}
 	return value, value != ""
 }
 
-func (collector *LinuxCollector) readDir(name string) []fs.DirEntry {
-	entries, err := collector.Source.ReadDir(name)
-	if err != nil {
-		return nil
-	}
-	sort.Slice(entries, func(i, j int) bool {
-		return entries[i].Name() < entries[j].Name()
-	})
-	return entries
-}
-
-func parseRecords(content string) []map[string]string {
-	var records []map[string]string
-	for _, block := range strings.Split(strings.ReplaceAll(content, "\r\n", "\n"), "\n\n") {
-		record := make(map[string]string)
-		for _, line := range strings.Split(block, "\n") {
-			name, value, found := strings.Cut(line, ":")
-			if found {
-				record[strings.ToLower(strings.TrimSpace(name))] = normalizeValue(value)
+func (collector *linuxCollection) parseRecords(content string) iter.Seq2[int, map[string]string] {
+	return func(yield func(int, map[string]string) bool) {
+		// CPU fallback IDs used the compacted nonempty-record slice index.
+		// Preserve that contract rather than exposing raw split-block indices.
+		recordIndex := 0
+		for _, block := range collectionItems(collector, strings.Split(strings.ReplaceAll(content, "\r\n", "\n"), "\n\n")) {
+			if !collector.check() {
+				return
+			}
+			record := make(map[string]string)
+			for _, line := range collectionItems(collector, strings.Split(block, "\n")) {
+				if !collector.check() {
+					return
+				}
+				name, value, found := strings.Cut(line, ":")
+				if found {
+					record[strings.ToLower(strings.TrimSpace(name))] = normalizeValue(value)
+				}
+			}
+			if len(record) > 0 {
+				if !collector.check() {
+					return
+				}
+				keepGoing := yield(recordIndex, record)
+				recordIndex++
+				if !collector.check() || !keepGoing {
+					return
+				}
 			}
 		}
-		if len(record) > 0 {
-			records = append(records, record)
-		}
 	}
-	return records
 }
 
-func copyAliases(destination, source map[string]string, aliases []alias) {
-	for _, item := range aliases {
+func (collector *linuxCollection) copyAliases(destination, source map[string]string, aliases []alias) {
+	for _, item := range collectionItems(collector, aliases) {
+		if !collector.check() {
+			return
+		}
 		if value := source[item.from]; value != "" {
 			destination[item.to] = value
 		}

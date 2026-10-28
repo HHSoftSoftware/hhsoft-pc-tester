@@ -23,7 +23,7 @@ func TestKeyboardClassificationUsesKernelBitmapWidth(t *testing.T) {
 			writeFixture(t, root, map[string]string{"proc/bus/input/devices": "I: Bus=0003 Vendor=1234 Product=5678 Version=0100\nN: Name=\"Generic HID\"\nH: Handlers=kbd event4\nB: EV=3\nB: KEY=" + item.bits + "\n"})
 			collector := NewLinuxCollector(root)
 			collector.inputBitmapWordBits = func() int { return item.width }
-			components := collector.collectInput()
+			components := collector.newCollection(t.Context()).collectInput()
 			if len(components) != 1 {
 				t.Fatal("missing component")
 			}

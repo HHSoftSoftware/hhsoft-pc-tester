@@ -18,10 +18,10 @@ var (
 	framebufferPattern  = regexp.MustCompile(`^fb[0-9]+$`)
 )
 
-func (collector *LinuxCollector) collectInputDevices() []Component {
+func (collector *linuxCollection) collectInputDevices() []Component {
 	inputDevices := path.Join(collector.Paths.Proc, "bus/input/devices")
 	if data, ok := collector.readFile(inputDevices); ok {
-		if components := parseInputDevices(string(data)); len(components) > 0 {
+		if components := collector.parseInputDevices(string(data)); len(components) > 0 {
 			return components
 		}
 	}
@@ -29,14 +29,20 @@ func (collector *LinuxCollector) collectInputDevices() []Component {
 	inputRoot := path.Join(collector.Paths.Sys, "class/input")
 	entries := collector.readDir(inputRoot)
 	useEvents := false
-	for _, entry := range entries {
+	for _, entry := range collectionItems(collector, entries) {
+		if !collector.check() {
+			return nil
+		}
 		if eventNodePattern.MatchString(entry.Name()) {
 			useEvents = true
 			break
 		}
 	}
 	var components []Component
-	for _, entry := range entries {
+	for _, entry := range collectionItems(collector, entries) {
+		if !collector.check() {
+			return nil
+		}
 		name := entry.Name()
 		if useEvents && !eventNodePattern.MatchString(name) {
 			continue
@@ -65,21 +71,33 @@ func (collector *LinuxCollector) collectInputDevices() []Component {
 			firstNonEmpty(attributes["absolute_capabilities"], attributes["abs_capabilities"]),
 			firstNonEmpty(attributes["properties"], attributes["prop_capabilities"]),
 		)
+		if !collector.check() {
+			return nil
+		}
 		components = append(components, NewComponent(ComponentInput, "input:"+name, attributes))
 	}
 	return components
 }
 
-func parseInputDevices(content string) []Component {
+func (collector *linuxCollection) parseInputDevices(content string) []Component {
 	content = strings.ReplaceAll(content, "\r\n", "\n")
 	var components []Component
-	for recordIndex, block := range strings.Split(content, "\n\n") {
+	for recordIndex, block := range collectionItems(collector, strings.Split(content, "\n\n")) {
+		if !collector.check() {
+			return nil
+		}
 		attributes := make(map[string]string)
-		for _, line := range strings.Split(block, "\n") {
+		for _, line := range collectionItems(collector, strings.Split(block, "\n")) {
+			if !collector.check() {
+				return nil
+			}
 			line = strings.TrimSpace(line)
 			switch {
 			case strings.HasPrefix(line, "I:"):
-				for _, field := range strings.Fields(strings.TrimSpace(strings.TrimPrefix(line, "I:"))) {
+				for _, field := range collectionItems(collector, strings.Fields(strings.TrimSpace(strings.TrimPrefix(line, "I:")))) {
+					if !collector.check() {
+						return nil
+					}
 					name, value, found := strings.Cut(field, "=")
 					if found {
 						attributes[strings.ToLower(name)] = value
@@ -106,6 +124,9 @@ func parseInputDevices(content string) []Component {
 			continue
 		}
 		attributes["category"] = ClassifyInput(attributes["name"], attributes["handlers"], attributes["key_capabilities"], attributes["rel_capabilities"], attributes["abs_capabilities"], attributes["prop_capabilities"])
+		if !collector.check() {
+			return nil
+		}
 		components = append(components, NewComponent(ComponentInput, "input:"+strconv.Itoa(recordIndex), attributes))
 	}
 	return components
@@ -206,10 +227,13 @@ func firstNonEmpty(values ...string) string {
 	return ""
 }
 
-func (collector *LinuxCollector) collectSound() []Component {
+func (collector *linuxCollection) collectSound() []Component {
 	soundRoot := path.Join(collector.Paths.Sys, "class/sound")
 	cards := make(map[string]map[string]string)
-	for _, entry := range collector.readDir(soundRoot) {
+	for _, entry := range collectionItems(collector, collector.readDir(soundRoot)) {
+		if !collector.check() {
+			return nil
+		}
 		name := entry.Name()
 		cardNumber := ""
 		if match := soundCardPattern.FindStringSubmatch(name); match != nil {
@@ -240,15 +264,21 @@ func (collector *LinuxCollector) collectSound() []Component {
 	}
 	components := make([]Component, 0, len(cards))
 	for cardNumber, attributes := range cards {
+		if !collector.check() {
+			return nil
+		}
 		components = append(components, NewComponent(ComponentSound, "sound:card"+cardNumber, attributes))
 	}
 	return components
 }
 
-func (collector *LinuxCollector) collectVideo() []Component {
+func (collector *linuxCollection) collectVideo() []Component {
 	var components []Component
 	drmRoot := path.Join(collector.Paths.Sys, "class/drm")
-	for _, entry := range collector.readDir(drmRoot) {
+	for _, entry := range collectionItems(collector, collector.readDir(drmRoot)) {
+		if !collector.check() {
+			return nil
+		}
 		name := entry.Name()
 		category := ""
 		switch {
@@ -273,11 +303,17 @@ func (collector *LinuxCollector) collectVideo() []Component {
 			{name: "subsystem_vendor_id", relativePath: "device/subsystem_vendor"},
 			{name: "subsystem_device_id", relativePath: "device/subsystem_device"},
 		})
+		if !collector.check() {
+			return nil
+		}
 		components = append(components, NewComponent(ComponentVideo, "video:drm:"+name, attributes))
 	}
 
 	videoRoot := path.Join(collector.Paths.Sys, "class/video4linux")
-	for _, entry := range collector.readDir(videoRoot) {
+	for _, entry := range collectionItems(collector, collector.readDir(videoRoot)) {
+		if !collector.check() {
+			return nil
+		}
 		name := entry.Name()
 		attributes := map[string]string{"interface": name, "category": "video_capture"}
 		collector.addAttributes(attributes, path.Join(videoRoot, name), []attributePath{
@@ -286,11 +322,17 @@ func (collector *LinuxCollector) collectVideo() []Component {
 			{name: "device_number", relativePath: "dev"},
 			{name: "modalias", relativePath: "device/modalias"},
 		})
+		if !collector.check() {
+			return nil
+		}
 		components = append(components, NewComponent(ComponentVideo, "video:capture:"+name, attributes))
 	}
 
 	graphicsRoot := path.Join(collector.Paths.Sys, "class/graphics")
-	for _, entry := range collector.readDir(graphicsRoot) {
+	for _, entry := range collectionItems(collector, collector.readDir(graphicsRoot)) {
+		if !collector.check() {
+			return nil
+		}
 		name := entry.Name()
 		if !framebufferPattern.MatchString(name) {
 			continue
@@ -302,6 +344,9 @@ func (collector *LinuxCollector) collectVideo() []Component {
 			{name: "bits_per_pixel", relativePath: "bits_per_pixel"},
 			{name: "device_number", relativePath: "dev"},
 		})
+		if !collector.check() {
+			return nil
+		}
 		components = append(components, NewComponent(ComponentVideo, "video:framebuffer:"+name, attributes))
 	}
 	return components

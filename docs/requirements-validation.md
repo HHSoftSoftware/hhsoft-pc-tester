@@ -600,6 +600,49 @@ Broader inventory completeness/error reporting and acquisition bounds,
 sampled-media reads, rebuilt images, physical-device checks, the pilot and
 release gates remain open.
 
+The inventory enumeration increment now reads production directories in
+positive bounded batches through actual EOF, with no total device-count cutoff.
+Short successful batches continue; partial errors, joined EOF/errors, no progress
+and oversized responses fail. Every acquired directory closes before names are
+validated and sorted. Failed closure is a hard error; malformed, duplicate and
+nil entries cannot become a successful partial snapshot. Only a sole clean
+open-time absence is optional, preserving missing interfaces and diskless views.
+
+Collection context and failure state are separate for each call. Providers retain
+their original slices; validated names are cached before use. Cancellation is
+checked around acquisition and processing, including nonmatching entries, parsed
+records, nested USB scans, a final-item break and snapshot canonicalization.
+Directory errors and failed closure remain failures during cancellation. Optional
+file observation errors retain their existing unknown-value policy. Legacy
+PathSource adapters still use their declared aggregate ReadDir operation.
+
+Inventory and plan reject failed collection before output; capture rejects it
+before workers and signing, and finalize rejects failed final inventory before
+report creation. Positive controls reach valid output or verified signed reports.
+The catalog, component identifiers and existing report/session schemas are unchanged.
+
+Focused Windows validation passed 1,900 test/subtest events across eight packages,
+with six platform test skips and no failures. Formatting and focused vet passed;
+all 29 new portable test functions passed. The full host cohort passed 3,047
+test/subtest events across 25 packages, with 17 platform test skips, three packages
+without tests and no failures. Host vet passed; 28 Linux test binaries across
+amd64 and 386 and five application targets built successfully. Source,
+documentation and host artifacts passed the privacy check.
+
+Native validation passed 5,816 test/subtest events across 28 suites, 2,106 race-test
+events across seven suites and all 39 CLI cases, with no native/race skips or
+failures and confirmed cleanup. All 31 new test functions passed on both amd64
+and 386, including the two Linux-only directory tests. The 28 inventory functions
+also passed in the inventory race suite, and the three command-boundary functions
+passed in the command race suite. Source, payload and native/host artifacts were
+checked together; all 573 files in the artifact privacy check passed.
+
+Bounded directory requests do not bound total enumeration memory. Raw file reads
+and aggregate acquisition/allocation bounds, optional field-error visibility and
+interruption of a blocked source operation remain unresolved. Inactive catalog
+entries remain inactive. These results do not qualify live hardware, sampled-media
+reads, rebuilt images, the physical pilot or a release.
+
 The next CPU increment implements twelve fixed binary64 addition, subtraction,
 multiplication and division vectors in the bounded worker. CPU v3 evidence adds
 ordered per-worker counts, exact mismatch bits and separate integer, SHA-256 and

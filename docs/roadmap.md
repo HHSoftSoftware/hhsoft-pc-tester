@@ -172,9 +172,62 @@ events across seven suites and all 39 CLI cases, with no skips or failures and
 confirmed cleanup. All 31 new functions, including both Linux-only tests, passed
 on amd64 and 386 and in their corresponding inventory or command race suites;
 see [requirements validation](requirements-validation.md).
-Raw-file and aggregate acquisition bounds, optional field-error reporting and blocked-operation
-interruption remain open. This work enables no inactive catalog entries and does
-not close sampled-media, rebuilt-image, physical-pilot or release gates.
+
+Inventory scalar acquisition now applies a 64 KiB raw-value budget and one-byte
+probe to every declared attribute and direct scalar role, covered through 105
+category/role cases. The owned reader requires a regular file, exact EOF and
+successful closure; protocol,
+overflow and cleanup failures stop collection. Ordinary unavailable observations
+remain unknown, decorators keep their declared ReadFile behavior, and there is
+no device-count cutoff. Focused Windows validation passed 2,215 test/subtest
+events across eight packages, including all 26 new portable test functions.
+Full host validation passed 3,362 test/subtest events across 25 packages, with
+17 platform test skips, three packages without tests and no failures. Vet,
+28 Linux test-binary builds and five application targets passed; the host artifact
+privacy check passed all 487 files with zero findings.
+
+Native Linux qualification passed 6,468 test/subtest events across 28 suites,
+2,432 race-test events across seven suites and all 39 CLI cases. There were
+no native/race failures or skips, and cleanup was confirmed. All 31 scalar
+and DRM test functions, including five Linux-only functions, passed on
+amd64 and 386 and in the corresponding race suites. The native artifact
+privacy check passed all 584 files with zero findings.
+
+DRM collection now separates connector status fields from controller and render
+PCI fields. This avoids treating nested device-link directories as scalar values
+while retaining strict type checks on the attributes each category owns.
+
+Primary proc acquisition now bounds memory records to 256 KiB, CPU records
+to 16 MiB and input-device records to 8 MiB. The owned reader requires a
+regular file, exact EOF and successful closure, with one extra probe byte.
+Buffers grow from a small initial allocation; decorator dispatch is
+preserved. Focused validation of this later increment passed 2,309
+test/subtest events across eight packages, with six platform skips and
+no failures. Formatting, vet and all 15 new portable functions passed,
+including 36 real command cases and four composed closure cases. The
+407-file privacy check passed with zero findings.
+
+Full host validation of the proc increment passed 3,456 test/subtest events
+across 25 packages, with 17 platform test skips, three packages without tests
+and no failures. Formatting and vet passed; 28 Linux test binaries and five
+application targets built successfully. All 15 new portable functions passed,
+including the 36 real command cases and four composed closure cases. The host
+privacy check passed all 493 files with zero findings.
+
+Native Linux qualification of the proc increment passed 6,660 test/subtest
+events across 28 suites, 2,528 race-test events across seven suites and all
+39 CLI cases. All 17 new functions, including two Linux-only functions,
+passed on both amd64 and 386 and in their corresponding race suites.
+There were no native/race failures or skips; cleanup and all six root
+postchecks passed. The native artifact privacy check passed all 590
+files with zero findings.
+
+Total acquisition, aggregate/peak allocation, parser CPU budgets and optional
+field-error visibility remain open. Legacy aggregate providers may allocate
+before returning, and cancellation cannot interrupt a blocked source call.
+Inactive catalog entries remain inactive. Rebuilt images, physical devices,
+sampled-media reads, the physical pilot and release approval remain separate
+gates.
 
 The next thermal prerequisite is implemented in source: local CPU/RAM guards
 bound the initial and periodic observations, join before returning results, and

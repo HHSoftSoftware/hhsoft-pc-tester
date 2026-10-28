@@ -323,11 +323,83 @@ in the command race suite. Their individual successful events were checked
 alongside the suite totals. The artifact privacy check passed all 573 files.
 See [requirements validation](requirements-validation.md).
 
-Raw inventory file reads and total acquisition/aggregate allocation still lack
-bounds. Optional file observation errors still become unknown values. Legacy
-aggregate sources and blocked operations support cancellation only at cooperative
-boundaries. No live-device, sampled-media, image, physical-pilot or release
-qualification follows from these fixture results.
+Inventory scalar acquisition adds these acceptance cases:
+
+- Distinguish 65,535 and 65,536 raw bytes plus exact EOF from a 65,537-byte
+  overflow, including trailing whitespace and fragmented reads. Check the final
+  one-byte probe; do not treat wrapped or joined EOF as complete data.
+- Reject malformed counts, no progress and unproved regular-file type before
+  admitting a value. Close every acquired handle once. Preserve overflow and
+  protocol failures over observation errors or cancellation, and give failed
+  closure precedence over every earlier outcome.
+- Keep ordinary open/read errors caused by absence, permission denial or
+  unsupported operations unknown, discarding partial bytes. A failed Stat call
+  remains a hard acquisition error. Check cancellation at open, Stat, read, EOF,
+  probe, closure and final observation boundaries without granting partial credit.
+- Exercise every declared attribute and direct scalar role through 105
+  category/role cases and their real prerequisites. Preserve decorator ReadFile dispatch,
+  the three separate bulk proc paths, 325 distinct devices, repeated calls and
+  independent concurrent collection state.
+- Require inventory, plan, capture and finalize to reject full Collect overflow,
+  nonregular values and cancellation before output or later report work. Reader
+  close-error injections and command error-propagation controls provide composed
+  cleanup coverage; they do not simulate an OS Close failure inside a command.
+- Exercise owned temporary files and closure. Linux-only controls check normal
+  sysfs-style links, descriptor flags and FIFO rejection without device I/O.
+
+DRM category cases require controller/render PCI leaves and connector status
+fields to remain separate, reject invalid declared values, and preserve plan
+and comparison semantics. Linux-only fixtures cover the corresponding symlink
+topology, optional absence and invalid leaf types. Their native execution passed.
+
+Focused Windows validation passed 2,215 test/subtest events across eight packages,
+with six platform test skips and no failures. Formatting and focused vet passed;
+all 26 new portable test functions passed. The isolated artifact privacy check
+passed all 397 files. Full host validation passed 3,362 test/subtest events across
+25 packages, with 17 platform test skips, three packages without tests and no
+failures. Host vet passed; 28 Linux test binaries and five application targets
+built successfully. The host cohort also executed all 26 new portable functions,
+105 scalar category/role cases and 12 full-collection command cases. Its artifact privacy
+check passed all 487 files with zero findings.
+
+Native Linux qualification passed 6,468 test/subtest events across 28 suites,
+2,432 race-test events across seven suites and all 39 CLI cases. There were
+no native/race failures or skips, and cleanup was confirmed. All 31 scalar
+and DRM test functions, including five Linux-only functions, passed on
+amd64 and 386 and in the corresponding race suites. The native artifact
+privacy check passed all 584 files with zero findings.
+
+Primary proc acquisition now bounds memory records to 256 KiB, CPU records
+to 16 MiB and input-device records to 8 MiB. The owned reader requires a
+regular file, exact EOF and successful closure, with one extra probe byte.
+Buffers grow from a small initial allocation; decorator dispatch is
+preserved. Focused validation of this later increment passed 2,309
+test/subtest events across eight packages, with six platform skips and
+no failures. Formatting, vet and all 15 new portable functions passed,
+including 36 real command cases and four composed closure cases. The
+407-file privacy check passed with zero findings.
+
+Full host validation of the proc increment passed 3,456 test/subtest events
+across 25 packages, with 17 platform test skips, three packages without tests
+and no failures. Formatting and vet passed; 28 Linux test binaries and five
+application targets built successfully. All 15 new portable functions passed,
+including the 36 real command cases and four composed closure cases. The host
+privacy check passed all 493 files with zero findings.
+
+Native Linux qualification of the proc increment passed 6,660 test/subtest
+events across 28 suites, 2,528 race-test events across seven suites and all
+39 CLI cases. All 17 new functions, including two Linux-only functions,
+passed on both amd64 and 386 and in their corresponding race suites.
+There were no native/race failures or skips; cleanup and all six root
+postchecks passed. The native artifact privacy check passed all 590
+files with zero findings.
+
+Total acquisition, aggregate/peak allocation, parser CPU budgets and optional
+field-error visibility remain open. Legacy aggregate providers may allocate
+before returning, and cancellation cannot interrupt a blocked source call.
+Inactive catalog entries remain inactive. Rebuilt images, physical devices,
+sampled-media reads, the physical pilot and release approval remain separate
+gates.
 
 The current network readiness adapter checks driver attachment and link state
 without configuring an address, associating Wi-Fi, or generating traffic. The

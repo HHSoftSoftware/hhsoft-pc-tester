@@ -342,9 +342,47 @@ the alpha still requires the separate documented release gates.
   command-boundary functions also passed in their corresponding race suites.
 - [ ] Qualify this increment in rebuilt images and on physical devices; complete
   the pilot and required release approval.
-- [ ] Bound raw inventory file reads and total acquisition/aggregate allocation;
-  improve optional field-error reporting. Cooperative cancellation does not
-  interrupt a blocked source operation.
+- [x] Bound inventory scalar values to 64 KiB (65,536 raw bytes), with one extra
+  probe byte, exact EOF and confirmed closure. Cover every declared attribute
+  and direct scalar role through 105 category/role cases; preserve optional
+  unknown values and all instances. Type, protocol, overflow and cleanup
+  failures stop collection.
+- [x] Read DRM connector status and enabled fields separately from controller
+  and render-node PCI fields. Keep unrelated device-link directories out of
+  scalar acquisition while preserving failures for invalid declared attributes.
+- [x] Validate scalar acquisition with 2,215 focused Windows test/subtest passes
+  across eight packages, six platform test skips and no failures. Formatting
+  and focused vet passed; all 26 new portable test functions passed.
+- [x] Complete scalar full host validation with 3,362 test/subtest passes across
+  25 packages, 17 platform test skips, three packages without tests and no failures.
+  Vet passed; 28 Linux test binaries and five application targets built. All 26
+  new portable functions, 105 scalar category/role cases and 12 full-collection
+  command cases passed. The host artifact privacy check passed all 487 files with zero findings.
+- [x] Complete scalar/DRM native qualification with 6,468 test/subtest passes
+  across 28 suites, 2,432 race-test passes across seven suites and all 39 CLI
+  cases. All 31 functions, including five Linux-only functions, passed on both
+  amd64 and 386 and in their corresponding race suites. No native/race skips
+  or failures occurred; cleanup and the 584-file privacy check passed.
+- [x] Bound primary proc memory, CPU and input-device acquisition to 256 KiB,
+  16 MiB and 8 MiB respectively, with exact EOF, one probe byte and confirmed
+  closure. Preserve decorator dispatch and grow buffers from a small allocation.
+- [x] Validate the proc increment with 2,309 focused test/subtest passes across
+  eight packages, six platform skips and no failures. Formatting, vet, all 15
+  new portable functions and the 407-file privacy check passed.
+- [x] Complete proc full host validation with 3,456 test/subtest passes across
+  25 packages, 17 platform test skips, three packages without tests and no
+  failures. Formatting, vet, 28 Linux test-binary builds and five application
+  targets passed. All 15 new portable functions and the 493-file host
+  privacy check passed.
+- [x] Complete proc native qualification with 6,660 test/subtest passes across
+  28 suites, 2,528 race-test passes across seven suites and all 39 CLI
+  cases. All 17 new functions, including two Linux-only functions, passed
+  on amd64 and 386 and in their corresponding race suites. No native/race
+  failures or skips occurred; cleanup, six root postchecks and the
+  590-file artifact privacy check passed.
+- [ ] Bound total acquisition, aggregate/peak allocation and parser CPU use;
+  improve optional field-error visibility. Legacy aggregate providers can
+  allocate before returning, and cancellation cannot interrupt a blocked call.
 - [ ] Qualify storage readiness, replacement and cancellation in rebuilt images
   and on physical devices. Matching kernel numbers do not prove persistent
   physical identity or detect every same-number replacement.

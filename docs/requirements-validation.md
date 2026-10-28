@@ -177,6 +177,53 @@ unsupported OS acquisition, installed-CLI execution, physical media,
 kernel-close faults, blocked-call deadlines, secure key erasure or durability.
 Existing image, physical-PC and release gates remain open.
 
+## Report-target Fingerprint Input Ownership
+
+The isolated Windows host run passed 5,159 tests and 29 packages, with 17 test
+skips and one skipped package. All eight commands and eight postchecks passed,
+including formatting, the full test suite, vet and Linux build checks. All
+106 required names from the new command tests passed on the host.
+
+Selected Linux amd64 and 386 runs passed 244 named outcomes across four suites
+and 44 root executions, with no failures, skips or extra named outcomes.
+Each architecture passed 22 roots and 122 required names: 12 command roots with
+106 names and ten retained report-target policy roots with 16 names. Nine of
+those policy roots are Linux-only. The selection has no declared nested groups;
+slash-containing child labels are single subtest names. Nine runtime ownership
+cases, 32 archive cases and all six root postchecks passed; cleanup was confirmed.
+These runs qualified an isolated source projection before public application.
+
+The command retains its public entry point and supplies explicit required
+input, discovery, authorization and destination functions to the tested body.
+Usage checks remain first. Fingerprint acquisition uses the existing exact
+32-byte role, with metadata eligibility before readable acquisition, matching
+descriptor identity and checked closure of both owners before byte acceptance.
+A reader error or malformed successful length takes precedence over the
+post-read cancellation check. Input failures use fixed diagnostics and prevent
+discovery, authorization and destination effects.
+
+A non-pass Catalog remains serializable data and returns success when output
+succeeds. Authorization errors retain their existing diagnostic and return
+without output. Target eligibility, typed confirmation, HMAC policy, output
+ownership and all persistence code remain unchanged. This increment adds no
+post-consumer cancellation policy.
+
+The command suite has ten portable roots and two Linux/Windows roots; all
+106 source-required names passed on the Windows host and both Linux targets.
+One separate root requires explicit unsupported input on other OSes and remains
+unqualified because it was not executed there. Positive checks compare complete
+literal catalog data and an independently fixed authorization HMAC. Failure
+cases use the real owned-input core and exact acquired/closed ledgers; real
+regular-file cases inject consumers rather than inspect host media.
+
+After this implementation, four legacy raw-key calls remain: one in deployment
+media discovery, two in persistence and one in save. The earlier capture and
+finalizer counts describe their respective completed stages. Frozen-plan and
+evidence readers, persistence's live verified-report owner and audit owners
+remain separate work. Physical-media, image, physical-PC and release gates
+remain open. These software fixtures do not establish installed-CLI execution,
+kernel-close faults, blocked-call deadlines, secure key erasure or durability.
+
 ## Current review boundaries
 
 The initial requirements review found no implementation TODO/FIXME placeholders

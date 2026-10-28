@@ -17,6 +17,14 @@ import (
 )
 
 func runReportTarget(ctx context.Context, arguments []string, stdout, stderr io.Writer) int {
+	return runReportTargetWith(ctx, arguments, stdout, stderr, readRetestInput, reporttarget.Discover, reporttarget.Authorize, writeDestination)
+}
+
+func runReportTargetWith(ctx context.Context, arguments []string, stdout, stderr io.Writer,
+	readInput retestInputReader,
+	discover func(context.Context, reporttarget.Options) reporttarget.Catalog,
+	authorize func(context.Context, reporttarget.Options, reporttarget.AuthorizationRequest) (reporttarget.Authorization, error),
+	writeOutput destinationWriter) int {
 	flags := flag.NewFlagSet("report-target", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	fingerprintKeyPath := flags.String("fingerprint-key", "", "file containing exactly 32 raw fingerprint-key bytes")
@@ -30,21 +38,29 @@ func runReportTarget(ctx context.Context, arguments []string, stdout, stderr io.
 		fmt.Fprintln(stderr, "report-target requires -fingerprint-key and either neither or both -device and -confirm")
 		return 2
 	}
-	fingerprintKey, err := readRawKey(*fingerprintKeyPath, 32)
-	if err != nil {
-		fmt.Fprintf(stderr, "read fingerprint key: %v\n", err)
+	if nilRetestInputValue(ctx) || readInput == nil || discover == nil || authorize == nil || writeOutput == nil || ctx.Err() != nil {
+		fmt.Fprintln(stderr, "report-target input acquisition failed")
+		return 1
+	}
+	fingerprintKey, err := readInput(ctx, *fingerprintKeyPath, retestFingerprintKeyInput)
+	if err != nil || len(fingerprintKey) != 32 {
+		fmt.Fprintln(stderr, "read fingerprint key: input acquisition failed")
+		return 1
+	}
+	if ctx.Err() != nil {
+		fmt.Fprintln(stderr, "report-target input acquisition failed")
 		return 1
 	}
 	options := reporttarget.Options{Root: "/", FingerprintKey: fingerprintKey}
 	if *device == "" {
-		return writeQuickResult(reporttarget.Discover(ctx, options), *outputPath, stdout, stderr, "report-target catalog")
+		return writeQuickResultDestination(discover(ctx, options), *outputPath, stdout, stderr, "report-target catalog", writeOutput)
 	}
-	authorization, err := reporttarget.Authorize(ctx, options, reporttarget.AuthorizationRequest{Device: *device, ConfirmationCode: *confirmation})
+	authorization, err := authorize(ctx, options, reporttarget.AuthorizationRequest{Device: *device, ConfirmationCode: *confirmation})
 	if err != nil {
 		fmt.Fprintf(stderr, "authorize report target: %v\n", err)
 		return 1
 	}
-	return writeQuickResult(authorization, *outputPath, stdout, stderr, "report-target authorization")
+	return writeQuickResultDestination(authorization, *outputPath, stdout, stderr, "report-target authorization", writeOutput)
 }
 
 func runPersist(ctx context.Context, arguments []string, stdout, stderr io.Writer) int {

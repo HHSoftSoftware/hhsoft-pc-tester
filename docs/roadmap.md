@@ -458,6 +458,22 @@ raw-key calls in discovery, persistence and save remain. Frozen-plan/evidence
 closure, persistence's live source owner and the broader feature roadmap remain
 separate work; existing image, physical-PC and release gates are unchanged.
 
+The report-target fingerprint input implementation now uses the existing
+bounded 32-byte owned reader before either discovery or authorization. Fixed
+input diagnostics and checked closure prevent key faults from reaching the
+selected consumer; cancellation is checked before consumer entry. Catalog
+status, authorization, target policy and output behavior remain unchanged.
+Windows host validation passed 5,159 tests and 29 packages. Selected Linux
+amd64/386 fixtures passed 244 named outcomes across four suites and 44 root
+executions, with no native failures or skips, as recorded in
+[requirements validation](requirements-validation.md#report-target-fingerprint-input-ownership).
+
+This implementation reduces the five legacy calls recorded after finalizer
+qualification to four: deployment discovery, two persistence inputs and save.
+Persistence's live source ownership and the broader feature roadmap remain
+separate work. Other-OS acquisition, installed-CLI and physical-media execution
+remain unqualified. Existing image, physical-PC and release gates remain open.
+
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.
 - Add CPU, partial memory, SMART/NVMe health, read-only storage, complete

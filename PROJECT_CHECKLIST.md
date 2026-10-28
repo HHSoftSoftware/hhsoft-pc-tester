@@ -173,6 +173,16 @@ the alpha still requires the separate documented release gates.
   the fresh session finalization context. Host and selected Linux amd64/386
   fixtures passed (see the
   [validation record](docs/requirements-validation.md#finalizer-fingerprint-input-ownership)).
+- [x] Implement checked fingerprint-key acquisition for report-target discovery
+  and authorization. Require exactly 32 bytes after checked input closure, use
+  fixed input diagnostics and stop on cancellation before the selected consumer.
+  Preserve catalog status, authorization and output policies.
+- [x] Validate this report-target input implementation on the Windows host and
+  selected Linux amd64/386 fixtures: 5,159 host test passes and 244 native named
+  passes across four suites. See the
+  [validation record](docs/requirements-validation.md#report-target-fingerprint-input-ownership).
+  Four legacy raw-key calls remain after this implementation: deployment
+  discovery, two persistence inputs and save.
 - [ ] Implement privacy-preserving enrollment and key-rotation service flows.
 
 ## Functional tests

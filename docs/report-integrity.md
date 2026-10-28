@@ -226,6 +226,25 @@ session's fresh bounded integrity context. Host and selected Linux amd64/386
 fixtures qualified this finalizer boundary. Five legacy raw-key calls remain,
 along with the separate frozen-plan/evidence and persistence-owner work.
 
+The report-target fingerprint implementation uses the same finite 32-byte
+role. Metadata eligibility precedes readable acquisition; descriptor identity
+and checked readable-then-metadata closure precede accepted key bytes.
+Malformed successful byte lengths, input faults and closure uncertainty stop
+the selected consumer before authorization or output. Input error and shape
+rejection precede the post-read cancellation check, and fixed input diagnostics
+do not disclose the key path or provider error.
+
+Windows host and selected Linux amd64/386 fixtures passed for this consumer
+boundary: 244 native named outcomes across four suites and 44 root executions.
+It preserves the catalog and authorization schemas, HMAC binding, same-boot
+authorization lifetime, target eligibility, typed confirmation and output
+ownership. It adds no cancellation rule after a consumer begins. This reduces
+the five calls recorded after finalizer qualification to four: one deployment-
+discovery input, two persistence inputs and one save input.
+Other readers and persistence's live verified-report owner remain separate work.
+Other-OS acquisition and installed-CLI execution remain unqualified; existing
+image, physical-PC and release gates remain open.
+
 Quick-session reports additionally bind a `session` object inside the existing
 run-integrity evidence. It records the stop reason, session budget, elapsed time,
 all worker states/outcomes, independent safety observations, and bounded

@@ -411,6 +411,29 @@ frozen-plan/evidence readers and persistence's live verified-report owner.
 These input checks add no blocked-call deadline, secure key-erasure or durability
 guarantee.
 
+### Report-target fingerprint input
+
+The report-target input implementation accepts its fingerprint key only after
+bounded regular-file acquisition and checked closure of both input owners.
+It requires exactly 32 bytes. A key-input or closure fault produces a fixed
+diagnostic without including the path or provider error. Cancellation observed
+before acquisition or after successful closed capture stops discovery or
+authorization before it begins.
+
+The existing flags and typed confirmation remain unchanged. A catalog with
+status not_present, inconclusive, error or aborted is still written as data;
+a zero exit status means output succeeded, not that eligible media were found.
+Authorization failures keep their existing diagnostic and produce no output.
+Exclusive destination creation and caller-owned standard output are unchanged.
+
+Windows host and selected Linux amd64/386 fixtures passed for this command
+boundary. The fixtures inject discovery and authorization or use synthetic
+media metadata; they do not qualify installed-CLI or physical-media execution.
+The explicit unsupported-input case on other OSes remains unexecuted.
+Four legacy raw-key calls remain: deployment discovery, two persistence inputs
+and save. Those inputs and persistence's live report owner remain separate work.
+Existing image, physical-PC and release gates remain open.
+
 ## Interpret Results
 
 Read both the frozen plan status and the final result. They answer different

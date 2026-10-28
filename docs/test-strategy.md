@@ -1366,6 +1366,52 @@ unsupported real adapters, installed-CLI execution, physical media, kernel-close
 faults, blocked-call deadlines, secure key erasure, fsync/durability or release.
 Existing image, physical-PC and release gates remain open.
 
+## Report-target Fingerprint Input Ownership Validation
+
+The authored command tests start with valid flags and synthetic key/result
+fixtures for both catalog and authorization modes. The catalog positive compares
+the complete decoded data. The authorization positive calls the real pure
+producer and compares its complete result with a fixed independent HMAC,
+device binding, boot lifetime and output policy vector. Neither positive relies
+only on exit status or a nonempty body.
+
+Consumer faults run through the actual shared owned-input core. Separate
+readable and metadata Close failures, including concurrent cancellation, require
+exactly-once acquired/closed ledgers and readable-before-metadata order. Acquired
+owners returned with errors, malformed owners, object identity, hard read and
+overflow-probe failures must stop all discovery, authorization and output.
+Malformed successful lengths and cancellation after closed capture separately
+test the command boundary. Raw key bytes, input paths and provider markers must
+not appear in successful public output or fixed acquisition diagnostics.
+
+The tests preserve usage ordering, literal arguments, required dependencies and
+both result policies. Non-pass catalogs remain serializable; authorization and
+output failures retain their existing diagnostics. Real destination helpers
+exercise exclusive creation, existing-file preservation, write/short-write/Close
+failure and caller-owned stdout. No new cancellation policy applies after a
+consumer begins.
+
+Linux/Windows regular-file cases cover 31, 32 and 33 bytes with injected
+consumers, avoiding host-media discovery. Real dispatch rejects non-regular
+input. Other OSes have an explicit unsupported-input case, not a portable
+production fallback. Ten portable and two supported-platform roots require
+106 source-declared names; slash-containing child labels introduce no nested
+group by themselves. The native policy selection passed ten relevant existing
+report-target roots and 16 names per architecture, including nine Linux-only
+roots, separately from persistence and mount validation.
+
+The Windows host run passed all 106 required command names within 5,159 test
+passes and 29 package passes; 17 tests and one package were skipped. Eight host
+commands and eight postchecks passed. Linux amd64 and 386 each passed the exact
+122 selected names and 22 roots, totaling 244 named passes, four suites and
+44 root executions. There were no native failures, skips, extra named outcomes
+or declared nested groups. Nine runtime ownership cases, 32 archive cases and
+six root postchecks passed, with cleanup confirmed.
+
+The other-OS rejection fixture remains unexecuted. This evidence does not
+qualify installed-CLI execution, physical-media operations or persistence/mount
+validation. Existing image, physical-PC and release gates remain open.
+
 ## Evidence contract
 
 Each case emits a structured result containing:

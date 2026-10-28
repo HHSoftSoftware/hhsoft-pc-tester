@@ -462,10 +462,45 @@ without configuring an address, associating Wi-Fi, or generating traffic. The
 safe profile fails closed when any non-loopback interface is administratively
 active, including software-created interfaces not treated as hardware evidence.
 
-The current USB readiness adapter records authorized kernel topology, class,
-speed, and direct USBFS character-node access. It opens nodes read-only without
-issuing any USB transfer, reset, or driver operation. It does not identify
-external ports or qualify their data integrity, power, orientation, or modes.
+The USB readiness adapter records authorized kernel topology, class,
+speed, and direct USBFS character-node access. It opens nodes read-only
+without application USB transfers, resets or driver operations. It does
+not identify external ports or qualify their data integrity, power,
+orientation or modes. Identity/closure acceptance cases require:
+
+- Observed selected-entry device numbers, including minor zero, and
+  matching bus/device/authorization observations, without inferred minor
+  arithmetic or a borrowed parent attribute. Duplicate observed device numbers
+  and addresses must fail before any node observation/open.
+- Rejection of unrelated matching character nodes, symlinks, changed
+  filesystem/inode identity, changed registry metadata and final-path
+  replacement. Ordinary sysfs registry-directory links remain valid.
+- Mandatory metadata boundaries at 256 bytes and the one-byte overflow
+  probe; exact EOF, partial errors, invalid counts, no progress, typed
+  nils and unprovable descriptor types. Initial and optional
+  `os.ReadFile` acquisition remains outside this bounded-reader claim.
+- Exactly one close attempt for every acquired handle, including a
+  handle returned with an open error. Close failure overrides concurrent
+  cancellation; cancellation after successful close revokes current
+  credit. Earlier diagnostics survive and no later USB node opens.
+- Real command/session/signed-finalizer paths retaining non-pass and
+  rejecting pass promotion. Producer-derived consumer fixtures cover
+  missing identity, empty discovery and cancellation; positive and
+  close-error consumer cases compose Result values rather than induce
+  an operating-system Close fault inside a command. No USB global
+  exit status 12 is added.
+
+The source contract contains 20 new test functions: eight portable and
+12 Linux-only, plus six retained USB functions. The eight portable functions
+and all 47 of their subtests passed in the closed host run. Native
+execution then passed all 21 selected USB and five command functions on
+each of amd64 and 386, including the 12 new Linux-only functions and six
+retained USB functions. Complete test2json lifecycles, zero skips/failures,
+exact input/archive membership and confirmed cleanup were reconciled.
+These selected tests use injected node observations and owned temporary
+fixtures; they do not perform application USB transfers or inspect real
+USB devices. Physical devices, functional transfers, rebuilt images and
+release approval remain separate gates.
 
 `Q`, `S`, `E`, `B`, and `D` identify profiles selecting a case by default. Each
 row is conditional on presence and prerequisites. Times are per component;

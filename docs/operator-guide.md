@@ -100,9 +100,25 @@ readiness checks, guided keyboard and relative-pointer actions, and modern-image
 graphics/display checks where applicable. The choices cover eleven tests on modern
 images and nine on legacy x86, subject to hardware applicability.
 Storage readiness opens eligible block devices read-only and issues no sector
-read. USB readiness issues no USB transfers. Network readiness configures
+read. USB readiness issues no application USB transfers. Network readiness configures
 nothing and sends no traffic. An active non-loopback interface or writable
 block mount causes safe mode to fail closed.
+
+USB readiness requires the selected registry identity and authorization to
+agree with the direct device node and the opened descriptor. The descriptor
+must close successfully before that device earns readable credit. Missing
+or malformed required identity, duplicate device addresses, or a failed
+close produce an error. An absent, inaccessible or replaced node remains
+inconclusive; cancellation aborts the check. A simultaneous close failure
+remains an error. Earlier device diagnostics are retained, and later USB
+nodes are not opened after a close failure or cancellation.
+
+`hhpt usb` returning zero means it wrote diagnostic JSON, not that USB
+readiness passed. USB errors remain non-passing evidence through session
+reporting and finalization. They do not introduce exit status 12 or a
+global stop of unrelated session workers. No application USB data
+transfer, reset or driver operation is issued; opening the kernel
+interface can still cause normal runtime-resume activity.
 
 The development CPU worker includes twelve fixed binary64 arithmetic checks.
 Reports show the validated scalar check count, workers with a completed suite,

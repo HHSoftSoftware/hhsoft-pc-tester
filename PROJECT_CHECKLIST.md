@@ -413,7 +413,21 @@ the alpha still requires the separate documented release gates.
 - [x] Check Ethernet/Wi-Fi driver and link readiness while failing closed on
   active non-loopback interfaces and generating no network traffic.
 - [x] Check USB root/device topology, authorization, speed, and read-only USBFS
-  node readiness without issuing USB transfers.
+  node readiness without issuing application USB transfers.
+- [x] Bind USB node readiness to the selected registry device number, address
+  and authorization, with matching pathname/open-descriptor identity and
+  successful close. Reject duplicate identities/addresses before node access;
+  retain partial diagnostics and stop later USB opens after closure failure
+  or cancellation. The existing result schema and session behavior remain.
+- [x] Complete host validation and Linux cross-test compilation of the USB
+  identity/closure correction.
+- [x] Complete selected USB identity/closure tests on Linux amd64 and 386,
+  including owned-process and archive checks with confirmed cleanup.
+- [ ] Qualify rebuilt images and physical USB ports separately from the
+  bounded synthetic readiness evidence.
+- [ ] Bound the initial and optional USB attribute acquisition and total
+  allocation. The 256-byte bound applies only to mandatory identity
+  observations/rechecks; initial and optional reads still use `os.ReadFile`.
 - [x] Check ALSA card and PCM/control node readiness without opening audio
   streams.
 - [ ] Select and restore native/safe display modes on every connector.

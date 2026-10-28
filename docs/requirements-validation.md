@@ -27,7 +27,7 @@ gaps despite existing passing tests:
 | Intended behavior | Independent failure case |
 | --- | --- |
 | Safe storage rejects every writable block mount | Writable dm, md, and loop devices omitted from hardware inventory; mount aliases and escaped paths |
-| USB readiness never passes unexamined devices | Readable root hub with an unauthorized or unknown-authorization peripheral; zero authorized devices |
+| USB readiness never passes unexamined or misidentified devices | Unauthorized/unknown-authorization peripherals; zero authorized devices; an unrelated matching character node; duplicate bus/device addresses; identity replacement; failed closure |
 | Report saving writes only to the currently authorized destination | Replacement paths, expired authorization, upstream hub identities, mapped or unregistered sibling partitions, unsupported or ambiguous filesystem headers, and external ext4 journals; descriptor binding through the mount operation |
 | Signed pass results contain sufficient consistent observations | Header-only results, zero work, missing safety fields, ambiguous JSON, and contradictory mount/traffic evidence |
 | Display acceptance requires every applicable pattern and operator criterion to pass | One successful output must not hide another failed or incomplete pattern; partial operator findings and explicit failures must survive aggregation and finalization |
@@ -766,6 +766,43 @@ events across 27 packages, all nine new functions and 93 child cases,
 with 17 existing test skips and three empty packages. Formatting, vet
 and Linux amd64/386/arm64 builds passed; native output fault qualification
 and release gates remain open.
+
+USB readiness now binds each authorized device to its selected registry
+device number, bus/device address and authorization. It rejects duplicate
+observed device numbers or addresses before opening nodes, then checks direct
+pathname, owned descriptor and final pathname identity. It rechecks the
+registry association and requires successful close before readable credit.
+A close failure remains an error even with cancellation; later USB opens
+stop and earlier diagnostics remain. Ordinary unavailable or replaced
+nodes remain inconclusive. The existing schema, current v5 emitter and
+catalog are unchanged, with no USB global cleanup exit or new transfers.
+
+Only mandatory identity observations/rechecks use the bounded reader:
+256 raw bytes plus one overflow probe, exact EOF, regular-file proof and
+exactly one close attempt per acquired handle. Initial bus/device and
+authorization reads, and optional class/speed/port reads, still use
+`os.ReadFile` with a length check afterward. Total acquisition and
+allocation, kernel-operation deadlines and enduring physical identity
+are not established by these observations.
+
+Host validation of this USB correction passed 3,933 tests across 28
+packages, with 17 existing test skips and two empty packages. All eight new
+portable test functions passed, together with formatting, vet and Linux
+amd64, 386 and arm64 whole-source builds. A separate pinned local Go 1.27.2
+cross-test build produced four test binaries and two test2json tools for
+amd64 and 386; all 14 build/metadata commands and seven postchecks passed.
+This verifies the local SDK closure, not upstream or release-toolchain
+qualification.
+
+Selected native execution of this correction passed 296 test/subtest
+events across four suites: 126 USB events and 22 command events on each
+of Linux amd64 and 386. All 26 required test functions passed on each
+architecture, with zero skips or failures. Nine owned-process cases,
+32 archive cases and six root postchecks passed with cleanup confirmed.
+The cohort runs the selected USB and command tests with injected device
+observations and owned temporary fixtures. It supplies no standalone CLI,
+race, real USB-device or functional-transfer evidence. Rebuilt images,
+physical USB ports and release approval require separate evidence.
 
 The next CPU increment implements twelve fixed binary64 addition, subtraction,
 multiplication and division vectors in the bounded worker. CPU v3 evidence adds

@@ -547,8 +547,15 @@ the alpha still requires the separate documented release gates.
   test/subtest passes across 27 packages, including all nine new test
   functions and 93 named child cases; 17 existing test skips and three
   empty packages. Formatting, vet and Linux amd64/386/arm64 builds passed.
-- [ ] Qualify these output fault cases natively. Closing a CLI destination
-  does not establish synchronization, durable storage or image readiness.
+- [x] Qualify the selected injected output faults on Linux amd64/386: 204
+  test/subtest outcomes across two suites, including all nine roots and 93
+  named children on each architecture, with no failures or skips. All 18
+  root executions, nine runtime ownership cases, 32 archive checks and six
+  final checks passed with cleanup confirmed.
+  These fixtures do not qualify kernel-close or fsync faults or installed-CLI
+  execution. Closing a CLI destination does not establish synchronization,
+  durable storage or image readiness. The existing durability, rebuilt-image,
+  physical-PC and release gates remain open.
 - [x] Integrate graphics through a generic functional-result record in the
   signed payload and HTML report.
 - [x] Save verified signed reports to a separately authorized removable USB

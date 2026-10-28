@@ -885,8 +885,22 @@ remain as a partial file. Close success alone proves neither fsync nor
 durability. The isolated candidate passed 3,878 Windows test/subtest
 events across 27 packages, all nine new functions and 93 child cases,
 with 17 existing test skips and three empty packages. Formatting, vet
-and Linux amd64/386/arm64 builds passed; native output fault qualification
-and release gates remain open.
+and Linux amd64/386/arm64 builds passed. Those host results alone did not
+qualify native output faults.
+
+The selected native output-completion cohort subsequently passed 204
+test/subtest outcomes across two Linux amd64/386 suites. All nine roots
+and 93 named children passed on each architecture, giving 18 root
+executions, with no failures or skips. Nine runtime ownership cases,
+32 archive checks and all six final checks passed with cleanup confirmed.
+This evidence covers injected open, write, short-write, close and combined
+failures, owned-handle completion and caller-owned stdout. Temporary-file
+fixtures separately verify exclusive creation, Linux mode-0600 permissions
+and retention of existing content or partial output. The command tests invoke
+controlled command functions; no standalone installed-CLI scenario is qualified.
+Injected Close errors do not establish kernel-close or fsync-fault behavior.
+The existing durability, rebuilt-image, physical-PC and release qualification
+gates remain open.
 
 The audio readiness acquisition increment keeps metadata-only operation and
 the existing result schema, catalog and eleven-worker v5 session. Registry

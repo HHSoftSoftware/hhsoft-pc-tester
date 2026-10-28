@@ -528,8 +528,26 @@ The isolated output candidate passed 3,878 Windows test/subtest events
 across 27 packages: all nine new roots and 93 named children passed.
 Seventeen existing tests and three empty packages were skipped.
 Formatting, vet and Linux amd64/386/arm64 builds passed, with all eight
-postchecks satisfied. These results do not establish native fault
-execution, fsync durability, rebuilt-image or physical-PC qualification.
+postchecks satisfied. Those host results alone do not establish native
+fault execution, fsync durability, rebuilt-image or physical-PC qualification.
+
+The separate selected native run passed 204 test/subtest outcomes across
+two Linux amd64/386 suites, with no failures or skips. Each architecture
+passed the same nine roots and all 93 named children: 102 outcomes per
+architecture and 18 root executions overall. All eight explicit command
+groups completed their descendants before passing, and every required
+name appeared exactly once. The event totals were recounted from the
+closed logs. Nine runtime ownership cases, 32 archive checks and all six
+final checks passed with cleanup confirmed.
+
+These native fixtures exercise injected writers and closers, controlled
+command dependencies and owned temporary files. The real-file permission
+assertion, excluded on Windows, passed with mode 0600 on both Linux targets.
+The tests preserve exit status 12 for cleanup uncertainty and reject finalizer
+success after close failure. They do not induce kernel-close or fsync faults
+and do not execute standalone installed-CLI scenarios; these are limits of
+the fixture evidence. The existing durability, rebuilt-image, physical-PC
+and release qualification gates remain open.
 
 The current network readiness adapter checks driver attachment and link state
 without configuring an address, associating Wi-Fi, or generating traffic. The

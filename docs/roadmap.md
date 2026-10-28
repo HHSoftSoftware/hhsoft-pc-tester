@@ -285,8 +285,18 @@ stdout are preserved; uncertain worker cleanup keeps exit status 12, and
 finalization announces success only after output close. The isolated
 candidate passed 3,878 Windows test/subtest events across 27 packages, all
 nine new test functions, formatting, vet and three Linux architecture
-builds. Native fault validation and durability remain separate gates;
-this change does not add fsync or remove partial output files.
+builds. This change does not add fsync or remove partial output files.
+
+Selected native output-fault qualification subsequently passed 204
+test/subtest outcomes across two Linux amd64/386 suites: all nine roots
+and 93 named children on each architecture, with no failures or skips.
+All 18 root executions, nine runtime ownership cases, 32 archive checks
+and six final checks passed with cleanup confirmed. The tests use injected
+writers and closers plus controlled temporary-file fixtures, including Linux
+mode-0600 permissions. They qualify the selected error and ownership behavior.
+Kernel-close and fsync faults and installed-CLI execution are outside this
+fixture evidence. The existing durability, rebuilt-image, physical-PC and
+release qualification gates remain open.
 
 The next thermal prerequisite is implemented in source: local CPU/RAM guards
 bound the initial and periodic observations, join before returning results, and

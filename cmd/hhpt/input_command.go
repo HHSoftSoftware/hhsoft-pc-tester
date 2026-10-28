@@ -12,6 +12,10 @@ import (
 )
 
 func runInput(ctx context.Context, arguments []string, stdout, stderr io.Writer) int {
+	return runInputWith(ctx, arguments, stdout, stderr, inputtest.Run)
+}
+
+func runInputWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect inputCollector) int {
 	flags := flag.NewFlagSet("input", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	outputPath := flags.String("output", "-", "new JSON output file, or - for stdout")
@@ -28,6 +32,6 @@ func runInput(ctx context.Context, arguments []string, stdout, stderr io.Writer)
 	if strings.TrimSpace(*categories) != "" {
 		requested = strings.Split(*categories, ",")
 	}
-	result := inputtest.Run(ctx, inputtest.Options{Root: "/", Duration: *duration, Categories: requested})
+	result := collect(ctx, inputtest.Options{Root: "/", Duration: *duration, Categories: requested})
 	return writeQuickResult(result, *outputPath, stdout, stderr, "input")
 }

@@ -339,6 +339,19 @@ and physical audio hardware remain open. Subsequent input, safe-mode and
 pointer work retains its own implementation and validation gates; this
 increment does not complete those paths or alter the frozen alpha scope.
 
+The input-readiness acquisition candidate bounds registry and selected identity
+reads, verifies metadata before readable node access, and closes every owned
+handle before accepting readiness. Bounded activity uses those same descriptors
+and retains aggregate counters only. Hard acquisition or close errors survive
+later cancellation; completed earlier rows remain diagnostic without an overall
+pass. The existing schema, catalog and eleven-worker v5 session policy remain.
+Implementation, host validation and selected Linux amd64/386 fixture execution
+are complete. The host suite records 4,205 passing test/subtest events; the
+selected native cohort records 364 across four suites and all 70 required root
+executions, without failures or skips. These results do not complete guided
+keyboard or pointer coverage, physical input qualification, safe display-mode
+selection, blocked-kernel deadlines, rebuilt images or release gates.
+
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.
 - Add CPU, partial memory, SMART/NVMe health, read-only storage, complete

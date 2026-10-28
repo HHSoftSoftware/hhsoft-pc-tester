@@ -820,6 +820,50 @@ it does not qualify physical devices or playback/capture. Blocked-kernel
 deadlines, channels, volume, jack behavior, rebuilt-image, physical-hardware
 and release qualification remain separate open gates.
 
+The input-readiness acquisition candidate preserves its existing evidence
+schema, catalog and session policy. Registry acquisition admits at most 1 MiB
+of raw data with one overflow byte, 4,096-byte requests, 65,536-byte lines,
+32,768 lines and 2,048 nonempty records, including irrelevant records. The
+existing 128 selected-interface limit remains fail closed. Selected device
+identity reads admit 128 raw bytes with bounded requests and exact EOF.
+
+The selected sysfs device number must be eligible for input events and match
+the node; it is never calculated from the event index. Root containment,
+contained sysfs links, final-component no-follow and metadata/readable-descriptor
+identity checks precede acceptance. Readiness closes each event's owned handles
+before granting readable credit. Activity uses the same bound descriptors,
+rejects incomplete or faulty event reads, and exports aggregate counters only.
+These checks do not prove persistent physical identity or interruptible kernel
+operations.
+
+Only a sole expected missing or permission error without an acquired handle
+can be ordinary unavailability at a device boundary. Mandatory registry and
+identity acquisition, malformed providers, substitutions and uncertain closure
+remain hard errors. A hard error survives later cancellation; cancellation after
+otherwise complete work prevents stale success. Earlier accepted rows remain
+diagnostic. Input errors remain reportable, aborted work follows the existing
+session stop policy, and consumers reject caller-pass promotion. No new global
+cleanup exit status is introduced.
+
+The closed Windows host run records 4,205 passing test/subtest events across
+29 packages, with 17 existing test skips and one empty package. All ten new
+portable roots and their 24 named children pass. Formatting, vet and complete
+Linux amd64/386/arm64 cross-builds also pass; cross-builds do not execute Linux
+tests.
+
+Selected Linux amd64/386 execution records 364 passing test/subtest events
+across four suites: 163 input and 19 command events on each architecture. All
+35 required roots run on each architecture (70 executions), without failures
+or skips. Nine ownership controls, 32 archive controls and six final checks
+pass with confirmed cleanup. This is the selected fixture cohort, not a full
+native run of every package or standalone CLI scenario.
+
+Nominal ownership and activity cases use injected handles. Real producer
+fixtures use regular files, links and missing paths, never input device nodes
+or real input collection. Producer close faults and signed consumer checks
+remain compositional. Physical input, broader guided keyboard/pointer coverage,
+blocked-kernel deadlines, rebuilt-image and release gates remain open.
+
 The network acquisition path adds bounded discovery while retaining
 the existing result schema, current v5 emission and catalog. Registry reads
 request at most 32 entries per call and enforce the existing 128-entry

@@ -461,6 +461,19 @@ the alpha still requires the separate documented release gates.
   function executions, and no failures or skips.
 - [ ] Establish blocked-kernel operation deadlines and qualify rebuilt images
   and physical audio hardware separately from metadata-readiness evidence.
+- [x] Bound input-readiness registry and identity acquisition with exact EOF,
+  metadata-only node verification, pinned readable descriptors and checked
+  owned closure. Retain earlier complete diagnostics after later faults.
+- [x] Preserve aggregate-only input activity, final cancellation handling and
+  existing command/session/finalizer behavior; reject non-pass promotion.
+- [x] Validate input acquisition with 4,205 passing host test/subtest events
+  across 29 packages, formatting, vet and Linux amd64/386/arm64 cross-builds;
+  all ten new portable roots and 24 named children pass.
+- [x] Execute selected input/command tests on Linux amd64 and 386: 364 passing
+  test/subtest events across four suites, all 70 required root executions,
+  no failures or skips, and confirmed cleanup.
+- [ ] Establish blocked-kernel deadlines and qualify physical input devices,
+  rebuilt images and release behavior separately from fixture evidence.
 - [ ] Select and restore native/safe display modes on every connector.
 - [x] Collect operator display findings for pixels, geometry, color, flicker,
   scaling, overscan, and artifacts.

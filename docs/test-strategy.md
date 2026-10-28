@@ -621,6 +621,46 @@ this increment;
 functional audio, blocked-kernel deadlines, images, physical hardware and
 release approval remain separate gates.
 
+Input-readiness acquisition has a separate owned-handle test contract:
+
+- Check raw-byte, line, record and selected-interface limits with exact-limit
+  positives and overflow negatives, including irrelevant records and values
+  whose whitespace would hide overflow after trimming. Require exact EOF;
+  reject invalid counts, zero progress, partial errors and ambiguous EOF.
+- Verify observed device-number eligibility, metadata/readable identity,
+  contained sysfs links and rejection of wrong types, symlink leaves,
+  substitutions and duplicate identities before readable credit.
+- Track each actual nonnil acquired handle, including handle-plus-error,
+  through one close attempt. Typed nils cannot become ordinary absence.
+  Compare literal retained rows after a later close error, including concurrent
+  cancellation and a third device that is never acquired.
+- Keep final parser faults ahead of cancellation; arm late identity tests
+  after event ownership. Activity tests use fixed synthetic frames, bounded
+  nonblocking reads, exact aggregate counters, evidence-loss reporting and
+  final cancellation. No keycodes, raw event payloads or timestamps are exported.
+- Exercise the real producer with owned non-device fixtures, then command,
+  session and signed-finalizer consumers. Prove readiness is scheduled in the
+  frozen plan before testing the exact pass-promotion rejection. Keep injected
+  close-fault coverage distinct from a same-run end-to-end claim.
+
+The source contract contains 27 new test functions: ten portable and seventeen
+Linux-only, plus eight retained readiness functions. The closed Windows host
+suite records 4,205 passing test/subtest events across 29 packages, with 17
+existing test skips and one empty package. All ten new portable roots and 24
+named children pass. Formatting, vet and complete Linux amd64/386/arm64 builds
+pass separately from Linux test execution.
+
+The selected Linux amd64/386 cohort executes all 35 required roots per
+architecture, including the retained functions: 70 root executions and 364
+passing test/subtest events across four suites. Each architecture records 163
+input and 19 command events, with no failures or skips. Nine ownership controls,
+32 archive controls and six final checks pass with confirmed cleanup. The
+selected command tests do not imply separate standalone CLI invocation evidence.
+
+The tests create no evdev nodes and collect no real input. Guided
+keyboard/pointer, physical-device, blocked-kernel deadline, image and release
+qualification retain separate gates.
+
 `Q`, `S`, `E`, `B`, and `D` identify profiles selecting a case by default. Each
 row is conditional on presence and prerequisites. Times are per component;
 the duration precedes the hard timeout.

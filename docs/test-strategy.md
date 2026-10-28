@@ -143,6 +143,41 @@ Windows and native Linux amd64/386 software qualification passed, including
 race checks and CLI workflows. Rebuilt-image and physical keyboard qualification
 remain pending.
 
+The keyboard acquisition increment adds these failure requirements:
+
+- Prove eligible descriptor type, device number, containment and identity before
+  readable event access. Exercise exact-limit/overflow metadata, EOF, invalid
+  counts, zero progress and ambiguous errors through the production acquisition
+  path. Track each acquired owner once, including a handle returned with an
+  error; close readable handles before their metadata handles and the root last.
+- Preserve hard faults through concurrent cancellation, evidence collection,
+  finalization and failed output. Keep uncertain cleanup at exit 12. A clean
+  pre-cancelled initial state and a pure stopped-context zero read remain aborted;
+  invalid counts and joined hard errors remain faults.
+- Compare the literal earlier completed row after a later device fault. Require
+  final idle, neutral and identity proof before retaining its pass. A final
+  zero-byte retry withholds pass without creating a hard error or another read.
+  After cancellation, permit only bounded proof for the already-selected
+  interface, with no fresh event endpoint or action credit.
+- During read-loop failure, later sources may already be owned. Assert no later
+  event processing and exact cleanup of those owners; reserve no-later-open
+  assertions for acquisition-stage failures.
+- Exercise real fixture-root rejection through command/session consumers,
+  separately from injected owner/result composition. Establish a valid scheduled
+  plan, preserve decoded signed evidence through the live gate, and check the
+  intended rejection of unbound or incomplete retained passes before signing.
+
+The contract adds 22 roots (eleven portable and eleven Linux-only) and retains
+97. All 86 selected host roots passed, including 54 new named children. Selected
+native suites passed 1,196 test/subtest outcomes with all 119 roots on each of
+Linux amd64 and 386, no failures or skips, and confirmed cleanup; the full host
+and per-suite counts are in [requirements validation](requirements-validation.md).
+The unchanged shared primitives also supply boundary coverage. These tests do
+not exhaust every combination of final-proof context, joined errors, invalid
+counts, socket type and registry metadata-close failure. No real evdev nodes or
+key capture, standalone CLI or race run, physical-input qualification, or
+blocked-kernel deadline guarantee is claimed by this acquisition cohort.
+
 The separate guided `input.pointer.quick` worker observes relative `EV_REL`
 interfaces with both X and Y axes. During a default 30-second window, every
 supported interface must show left/right and up/down movement, a primary-button

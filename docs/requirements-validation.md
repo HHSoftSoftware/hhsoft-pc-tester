@@ -442,6 +442,49 @@ open. They do not replace or expand the frozen initial alpha candidate's
 separate source, image and release gates. Full layouts, rollover, ghosting and
 other keyboard functions remain planned.
 
+The subsequent keyboard acquisition increment preserves functional evidence
+v1, definition 2, the six controls and session v5 policy. Registry reads retain
+their 1 MiB limit and selected identity reads their 128-byte limit, with bounded
+completion checks. Device type, number, containment and metadata identity must
+be established before readable event access. Malformed providers, typed nils,
+handles returned with errors, invalid progress and uncertain closure cannot
+silently produce usable input.
+
+Hard acquisition, protocol, read or identity faults survive later cancellation
+through the runner and command consumers. A clean stopped-context read remains
+interruption; an invalid count or an error joined with a hard fault does not.
+Unconfirmed owned-descriptor or console cleanup retains exit 12 even when
+diagnostic output also fails. Earlier completed rows keep a pass only after the
+existing final idle, neutral and identity proof. A final zero-byte retry means
+idle was not proved; it does not invent a hard fault. Bounded temporary metadata
+reads for an already-selected interface may complete that proof after a stop,
+with checked closure, no new event endpoint and no additional action credit.
+
+The isolated Windows suite passed 4,471 test/subtest outcomes across 29 packages,
+with 17 existing test skips and one empty package. All 86 selected host roots
+and their 385 outcomes passed: 65 belong to eleven new roots and 54 children,
+and 320 to retained coverage. Formatting, vet and application cross-builds for
+Linux amd64, 386 and arm64 passed. The separate selected-test build produced
+four test binaries and two test2json tools through fourteen commands and eight
+successful postchecks.
+
+Native Linux amd64/386 execution passed 1,196 test/subtest outcomes across four
+suites: 456 input-worker outcomes and 142 command outcomes on each architecture.
+All 119 selected roots passed on each architecture, for 238 root executions,
+with no failures or skips. Nine runtime-ownership checks, 32 archive checks and
+six root postchecks passed with cleanup confirmed. Independent recounts agree
+with the closed suite logs. These acquisition runs add no standalone CLI or
+race qualification to the historical results above.
+
+Fixtures exercise actual owned adapters and fixture-root rejection through
+command/session consumers. Injected owner and event faults remain distinct from
+literal evidence-composition tests. Scheduled-plan and live-session finalizer
+checks preserve signed error evidence and reject unbound or incomplete retained
+passes. Self-issued test bundles do not qualify provisioned report keys. The
+fixtures create no evdev nodes and collect no real keys. Physical input, full
+layout/rollover coverage, persistent device identity, total or peak allocation,
+blocked-kernel deadlines, rebuilt images and release approval remain open.
+
 The pointer wheel-direction extension passed Windows and native Linux amd64/386
 software qualification on 2026-10-26. Definition 2 and functional evidence v2 require
 both directions of every advertised vertical/horizontal axis on each supported

@@ -332,6 +332,25 @@ Layout-aware coverage, other keys, rollover and ghosting remain planned. The
 ten-PC beta pilot and the initial alpha's separate release gates remain open;
 this increment does not expand the frozen alpha candidate's scope.
 
+The keyboard acquisition increment bounds registry and selected identity reads
+and establishes metadata eligibility before readable event access. Every acquired
+handle has checked closure. Hard faults and cleanup uncertainty survive later
+cancellation, while clean interruption remains distinct. Earlier completed rows
+retain pass only after final idle, neutral and identity proof; bounded metadata
+checks for the already-selected interface may finish that proof after a stop
+without opening another event device or crediting new actions. The existing
+six-control criteria, functional evidence v1, definition 2, cleanup exit 12 and
+session v5 policy remain unchanged.
+
+The full host suite, formatting, vet and Linux amd64/386/arm64 cross-builds
+passed, including all 86 selected host roots and 385 test/subtest outcomes.
+Selected native Linux amd64/386 fixtures passed 1,196 outcomes across four
+suites and all 238 required root executions, with no failures or skips and
+confirmed cleanup. The acquisition cohort adds no standalone CLI or race run.
+Physical key actions, broader layouts and rollover, aggregate allocation,
+blocked-kernel deadlines, rebuilt images, the ten-PC pilot and release gates
+remain open; see [requirements validation](requirements-validation.md).
+
 The CPU worker now adds twelve fixed scalar binary64 operations per suite, with
 per-worker counts and exact mismatch bits. Definition 2 uses CPU v3 evidence in
 the existing eleven-worker v5 session; CPU v2 evidence keeps its historical

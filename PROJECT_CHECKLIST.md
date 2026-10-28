@@ -257,6 +257,17 @@ the alpha still requires the separate documented release gates.
   targets passed. Native Linux amd64/386 passed 3,784 events across 26 suite
   runs, and five race suites passed 1,461 events, with no skips. All 21 CLI
   scenarios passed with confirmed cleanup.
+- [x] Harden guided keyboard acquisition with bounded registry/identity reads,
+  metadata checks before readable access and checked closure of every owned
+  handle. Preserve hard faults and cleanup uncertainty across cancellation;
+  retain earlier passes only after final idle, neutral and identity proof.
+- [x] Validate the keyboard acquisition increment with the full host suite,
+  formatting, vet and Linux amd64/386/arm64 cross-builds. All 86 selected host
+  roots and their 385 test/subtest outcomes pass, including eleven new roots
+  and 54 children.
+- [x] Validate selected keyboard acquisition fixtures on Linux amd64/386:
+  1,196 test/subtest outcomes across four suites, all 238 required root
+  executions, no failures or skips, and confirmed cleanup.
 - [ ] Qualify the six-control keyboard check in rebuilt images and on physical
   keyboards, including multiple devices, held keys, incomplete actions,
   disconnects and cancellation. Full layouts and rollover remain separate.

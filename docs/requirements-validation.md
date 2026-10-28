@@ -541,6 +541,37 @@ these results establish neither loop backing nor physical-device or media-read
 correctness. AArch64 was cross-built only. The broader storage, rebuilt-image,
 physical-device, pilot and release gates remain open.
 
+The bounded registry increment replaces whole-directory enumeration with
+positive bounded requests through actual EOF. The existing limit still counts
+all 256 admitted entries before media filtering; a 257th entry rejects the view
+without truncation. Short successful batches require another read. Partial
+errors, no progress and malformed iterator responses fail. Every acquired
+directory closes once, and successful views retain lexical order before identity
+processing. Read/admission failures and failed closure take priority over
+simultaneous cancellation; cancellation alone aborts, including at the empty-view
+caller boundary. Earlier writable counts, readiness-v1 JSON, diskless views and
+normal sysfs links are preserved. The catalog, session versions and media-content
+I/O boundary are unchanged.
+
+Focused Windows regressions passed 1,790 test/subtest events across eight
+packages, with five platform test skips and no failures. The full Windows suite
+passed 2,848 events across 25 packages, with 17 platform test skips, three
+packages without host test files and no failures. Formatting, vet, 28 Linux
+test-binary builds and five application builds passed against the same source.
+
+Native Linux amd64/386 validation passed 5,256 test/subtest events across 28
+suites. Six race suites passed 1,930 events; both groups had no skips or failures.
+All 39 CLI cases passed, with confirmed cleanup and all six final environment
+checks reconciled. Real directory operations use controlled temporary fixtures;
+block metadata and descriptors remain simulated. These results establish no
+physical-device or media-read qualification. AArch64 was cross-built only.
+
+Source review identified a remaining path that classifies unavailable or invalid
+capacity metadata as empty media. Mandatory capacity admission, bounded scalar
+metadata reads and cancellation after metadata inspection remain open, along
+with broader inventory completeness/error reporting, sampled-media reads,
+rebuilt images, physical-device checks, the pilot and release gates.
+
 The next CPU increment implements twelve fixed binary64 addition, subtraction,
 multiplication and division vectors in the bounded worker. CPU v3 evidence adds
 ordered per-worker counts, exact mismatch bits and separate integer, SHA-256 and

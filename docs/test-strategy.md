@@ -235,6 +235,31 @@ cases also passed with confirmed cleanup. These fixtures exercise metadata
 admission without media reads; sampled-media reads, backing-device proof and
 physical qualification remain open.
 
+Bounded storage registry enumeration adds these acceptance cases:
+
+- Require actual EOF after short successful batches; reject partial errors,
+  joined EOF/errors, no progress, nil entries and responses exceeding the request.
+- Exercise 255, 256 and 257 total entries before filtering, including excluded
+  interfaces and partitions. Detect a malformed or duplicate final identity at
+  exactly 256 and reject overflow without returning a truncated prefix.
+- Close every acquired handle once. Preserve read/admission/closure failures
+  over simultaneous cancellation; a cancelled successful close prevents name
+  processing. Check cancellation again at the caller, including an empty view.
+- Compare literal first-error and partial-device-prefix expectations across
+  directory permutations. Preserve writable counts and readiness-v1 JSON while
+  counting directory ownership separately from block-node credit.
+- Exercise controlled temporary directories, normal sysfs-style links, diskless
+  views, missing/non-directory roots and invalid mount observations.
+
+Focused and full Windows suites, formatting, vet and cross-builds passed for
+this increment. Native Linux amd64/386 suites, six race suites and all 39 CLI
+cases passed with confirmed cleanup; see
+[requirements validation](requirements-validation.md). Block metadata and
+descriptors remain simulated, and no media-content I/O is claimed. Mandatory
+capacity admission, bounded scalar reads, cancellation after metadata inspection
+and broader inventory completeness remain separate follow-ups. Sampled-media
+reads, fresh images and physical qualification remain open.
+
 The current network readiness adapter checks driver attachment and link state
 without configuring an address, associating Wi-Fi, or generating traffic. The
 safe profile fails closed when any non-loopback interface is administratively

@@ -18,8 +18,6 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/safemode"
 )
 
-const maximumBlockDevices = 256
-
 var blockInterfacePattern = regexp.MustCompile(`^(sd[a-z]+|hd[a-z]+|vd[a-z]+|xvd[a-z]+|sr[0-9]+|fd[0-9]+|mmcblk[0-9]+|nvme[0-9]+(c[0-9]+)?n[0-9]+)$`)
 
 type mountState = safemode.MountState
@@ -37,6 +35,7 @@ type blockNodeOperations struct {
 	lstat        func(string) (os.FileInfo, error)
 	open         func(string, int, os.FileMode) (blockNodeFile, error)
 	deviceNumber func(string) (deviceNumber, bool)
+	openRegistry func(string) (blockRegistryDirectory, error)
 }
 
 func realBlockNodeOperations() blockNodeOperations {
@@ -46,12 +45,21 @@ func realBlockNodeOperations() blockNodeOperations {
 			return os.OpenFile(path, flags, mode)
 		},
 		deviceNumber: readDeviceNumber,
+		openRegistry: openBlockRegistry,
 	}
+}
+
+func openBlockRegistry(path string) (blockRegistryDirectory, error) {
+	directory, err := os.OpenFile(path, os.O_RDONLY|syscall.O_DIRECTORY|syscall.O_NONBLOCK|syscall.O_CLOEXEC, 0)
+	if err != nil {
+		return nil, err
+	}
+	return directory, nil
 }
 
 func runPlatformWith(ctx context.Context, options Options, operations blockNodeOperations) Result {
 	result := Result{Schema: Schema, Status: StatusError}
-	if ctx == nil || operations.lstat == nil || operations.open == nil || operations.deviceNumber == nil {
+	if ctx == nil || operations.lstat == nil || operations.open == nil || operations.deviceNumber == nil || operations.openRegistry == nil {
 		result.Detail = "storage readiness dependencies are incomplete"
 		return result
 	}
@@ -74,13 +82,22 @@ func runPlatformWith(ctx context.Context, options Options, operations blockNodeO
 		result.Detail = "cannot verify block mount safety"
 		return result
 	}
-	entries, err := os.ReadDir(filepath.Join(root, "sys/class/block"))
+	entries, err := readBlockRegistry(ctx, filepath.Join(root, "sys/class/block"), operations.openRegistry)
 	if err != nil {
-		result.Detail = "cannot read block device registry"
+		switch err {
+		case errBlockRegistryLimit:
+			result.Detail = "block device registry exceeds the supported limit"
+		case context.Canceled, context.DeadlineExceeded:
+			result.Status = StatusAborted
+			result.Detail = "cancelled"
+		default:
+			result.Detail = "cannot read block device registry"
+		}
 		return result
 	}
-	if len(entries) > maximumBlockDevices {
-		result.Detail = "block device registry exceeds the supported limit"
+	if ctx.Err() != nil {
+		result.Status = StatusAborted
+		result.Detail = "cancelled"
 		return result
 	}
 	registeredDevices := make(map[deviceNumber]struct{})

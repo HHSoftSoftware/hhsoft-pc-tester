@@ -100,6 +100,7 @@ func (fixture *nodeOperationsFixture) operations() blockNodeOperations {
 			}
 			return fixture.identity, fixture.identityOK
 		},
+		openRegistry: openBlockRegistry,
 	}
 }
 

@@ -295,6 +295,21 @@ the alpha still requires the separate documented release gates.
   test/subtest passes across 28 suites, 1,930 race-test passes across six suites
   and all 39 CLI cases, with no native or race skips and confirmed cleanup.
   Mount/storage fixtures do not establish physical-device or media-read behavior.
+- [x] Bound registry enumeration before the existing 256-entry admission limit.
+  Require complete EOF and successful directory closure; reject overflow without
+  truncation and preserve lexical error order, diskless views and normal sysfs
+  links. The limit counts every entry before supported-media filtering.
+- [x] Validate bounded enumeration with focused regressions and the full Windows
+  suite: 2,848 test/subtest passes across 25 packages, 17 platform test skips and
+  three packages without host test files. Formatting, vet, 28 Linux test-binary
+  builds and five application builds passed.
+- [x] Validate bounded enumeration on native Linux amd64/386: 5,256 test/subtest
+  passes across 28 suites, 1,930 race-test passes across six suites and all 39 CLI
+  cases, with no native/race skips or failures and confirmed cleanup. Directory
+  fixtures use temporary files; block metadata and descriptors remain simulated.
+- [ ] Require valid capacity metadata for supported media, bound scalar metadata
+  reads and recheck cancellation after metadata inspection. Bound broader
+  inventory enumeration with explicit completeness and error reporting.
 - [ ] Qualify storage readiness, replacement and cancellation in rebuilt images
   and on physical devices. Matching kernel numbers do not prove persistent
   physical identity or detect every same-number replacement.

@@ -139,6 +139,16 @@ checks and all 39 CLI cases. The existing runtime-safety/readiness v1 evidence,
 catalog and session versions are unchanged. Sampled storage reads remain
 planned; rebuilt-image and physical-device qualification remain open.
 
+Storage readiness now enumerates the block registry with bounded requests
+through actual EOF and closes the directory before processing identities. The
+existing 256-entry limit still counts excluded interfaces and partitions;
+overflow fails without truncation. Lexical error order, diskless views and normal
+sysfs links are preserved. Host and native fixture validation passed; see
+[requirements validation](requirements-validation.md). Mandatory capacity
+admission, bounded scalar metadata reads, cancellation after metadata inspection
+and broader inventory completeness remain follow-ups. Sampled-media reads,
+fresh images and physical-device qualification remain open.
+
 The next thermal prerequisite is implemented in source: local CPU/RAM guards
 bound the initial and periodic observations, join before returning results, and
 record the coverage first introduced in CPU/memory v2 evidence. Unconfirmed cleanup blocks

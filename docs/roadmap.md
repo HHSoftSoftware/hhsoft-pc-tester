@@ -131,6 +131,19 @@ continuous coverage, thermal or heartbeat monitoring, or preemption of a
 blocked kernel operation. The remaining functional adapters and beta/release
 requirements below still apply.
 
+The safemode acquisition increment adds bounded metadata and registry
+reads, exact completion, contained descriptor identity checks and confirmed
+owned-handle closure. Known writable-mount or active-interface counts remain
+failures after later errors or cancellation; incomplete observations never
+certify safety. It preserves runtime-safety v1, the shared mount parser, catalog
+and current session policy. Host validation and three Linux cross-builds have
+passed, including all 50 required host roots. Selected Linux amd64/386 fixtures
+also passed 640 test/subtest outcomes and all 108 required root executions.
+It adds
+no device-data access or network traffic. Blocked-kernel deadlines, aggregate
+allocation, continuous safety, rebuilt images, physical-PC and release gates
+remain open, as do the later functional and profile work below.
+
 The shared mount parser rejects conflicting filesystem types for one canonical
 zero-major device while retaining valid same-type aliases, diskless views and
 previously observed writable block counts. Focused and full Windows suites,

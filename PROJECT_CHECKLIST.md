@@ -594,6 +594,16 @@ the alpha still requires the separate documented release gates.
   same ten worker outcomes. Windows and native Linux suites, race checks,
   cross-builds, and 15 signed CLI scenarios passed. Each 2.5-second deadline
   case retained two periodic samples and an exact matching signed summary.
+- [x] Implement bounded safemode metadata acquisition with exact completion,
+  contained metadata/readable-descriptor identity checks, and confirmed closure
+  of owned root, registry and attribute handles. Preserve known unsafe counts
+  after later faults; incomplete observations cannot certify safety.
+- [x] Validate this acquisition increment with host tests, formatting, vet and
+  Linux amd64/386/arm64 cross-builds. All 50 required host roots and their
+  311 test/subtest outcomes passed.
+- [x] Execute the selected native Linux acquisition fixtures: 640 test/subtest
+  outcomes and all 108 required root executions passed across amd64 and 386,
+  with zero failures or skips and confirmed cleanup.
 - [ ] Qualify periodic mount/network monitoring in rebuilt bootable images and
   on physical hardware. Application and isolated VM tests do not close these
   gates or establish continuous safety, thermal, or heartbeat coverage.

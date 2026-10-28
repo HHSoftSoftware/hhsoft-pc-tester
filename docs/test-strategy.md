@@ -850,6 +850,42 @@ execution remain open; the run-wide thermal increment is described below.
 Direct capture and finalization without a session journal keep their older
 limited evidence scope; they do not acquire session stop/safety claims.
 
+The safemode acquisition increment is tested against these failure requirements:
+
+- Check 64-byte scalar and 4 MiB mount limits, positive reads no larger than
+  4 KiB, exact EOF and one overflow byte. Check 4,096/4,097 registry entries,
+  batches no larger than 32, cached names and no successful partial registry.
+  Invalid counts, no progress, joined errors, duplicates and typed nils must
+  fail closed.
+- Use actual owned temporary roots and real file identity to prove contained
+  sysfs links, final-component no-follow, metadata type checks and matching
+  descriptors. Reject escapes, substitutions and final identity changes before
+  granting observation credit.
+- Compare exact acquired and closed handle sets, including handle-plus-error
+  results. Require readable closure before its metadata handle and category
+  root closure last. Check cancellation at acquisition and final closure,
+  hard-error precedence and no later opens after cancellation.
+- Retain independently observed unsafe categories and literal network-prefix
+  counts after later read or close faults, including close plus cancellation
+  with a third interface never acquired. Discard bytes whose final identity
+  proof failed; known unsafe counts must never become a safe result.
+- Exercise the actual periodic monitor with the owned producer fault. Keep
+  exact-result CLI/session/finalizer composition distinct from a same-run
+  kernel fault through signing. Require a valid self-issued signing control,
+  the intended rejection reason and no signable output for uncertain or
+  promoted safety observations.
+
+Host execution of this increment passed 4,357 test/subtest outcomes across
+29 packages, with 17 existing test skips and one empty package. All 50 required
+host roots and 311 selected outcomes passed, including 19 new roots and their
+133 children. Formatting, vet and Linux amd64/386/arm64 cross-builds passed.
+Selected native Linux amd64/386 execution passed 640 test/subtest outcomes
+across four suites, including all 108 required root executions and the four new
+Linux-only roots on each architecture. No tests failed or skipped, and cleanup
+was confirmed. These are owned-fixture results. Physical hardware, rebuilt
+images, blocked-kernel deadlines, aggregate allocation, continuous safety and
+release approval remain separate gates.
+
 The shared periodic-engine extraction preserves the safemode API, v1 evidence
 and existing scheduling/cleanup rules. Six exact wire cases were executed
 against the previous implementation before migration. Full host tests, vet and

@@ -250,6 +250,41 @@ general hang supervision, or introduce privilege isolation. Fresh images,
 physical sensor validation, the beta pilot, all four alpha ISOs, source/image
 privacy review, and publication approval remain separate open gates.
 
+The safemode acquisition increment retains 64-byte scalar and 4 MiB
+mount-metadata limits, using positive requests of at most 4 KiB and one overflow
+byte. Registry enumeration requests at most 32 entries, retains the 4,096-entry
+limit and one overflow entry, and requires exact EOF. Names are validated,
+cached once, checked for duplicates and sorted before later acquisition.
+Short successful reads are progress; wrapped or joined EOF is not completion.
+
+Linux uses root containment, final-component no-follow, metadata type proof and
+matching metadata/readable-descriptor identity before accepting bytes. Every
+acquired root, metadata and readable handle closes once, including a handle
+returned with an open error. Failed acquisition or closure revokes safe credit.
+Hard errors survive simultaneous cancellation; a previously observed unsafe
+count retains failure precedence. Only complete, identity-bound values can
+retain unsafe diagnostics after a later close or cancellation failure. Each
+category remains independently observable unless cancellation stops new work.
+
+The result schema, mount parser, catalog and session policy are unchanged.
+Failure tests cover the actual owned fixture producer and periodic monitor;
+CLI, session and finalizer cases compose its exact diagnostic result. A valid
+self-issued signed control and exact rejection checks guard the finalizer
+tests. This is compositional coverage, not a same-run kernel fault through
+signing. Host validation passed 4,357 test/subtest outcomes across 29 packages.
+All 50 selected roots and their 311 outcomes passed: 19 new roots with 133
+children and 31 retained roots with 128 children. The full run retained 17
+existing test skips and one empty package. Formatting, vet and Linux
+amd64/386/arm64 cross-builds passed. Selected native Linux amd64/386 fixtures
+passed 640 test/subtest outcomes across four suite invocations, including all
+54 required roots per architecture (108 executions), with zero failures or
+skips. Six final checks and cleanup confirmation passed. This native evidence
+uses owned fixtures and does not establish physical or continuous safety.
+Historical results below retain their original scope. Device data, network
+traffic, physical hardware, rebuilt images and release qualification remain
+outside this increment; bounded requests do not preempt blocked kernel calls
+or bound aggregate allocation or continuous safety.
+
 The subsequent shared periodic-engine extraction preserves the safemode API,
 duration constants and v1 evidence. Six exact JSON cases were executed against
 the preceding implementation before extraction; their literal bytes remain

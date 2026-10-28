@@ -29,7 +29,7 @@ func discoverKeyboardInterfaces(ctx context.Context, root string) (interfaces []
 	if width != 32 && width != 64 {
 		return nil, errors.New("unknown input bitmap layout")
 	}
-	file, err := openInputPath(root, []string{"proc", "bus", "input", "devices"}, syscall.O_RDONLY, true)
+	file, err := openInputPath(root, []string{"proc", "bus", "input", "devices"}, syscall.O_RDONLY)
 	if err != nil {
 		return nil, err
 	}
@@ -106,11 +106,11 @@ func openKeyboardInterface(ctx context.Context, root, name string) (result keybo
 	if !pointerInterface(name) || pointerContextError(ctx) != nil {
 		return result, errors.New("invalid keyboard interface")
 	}
-	expected, err := inputSysfsDevice(root, name, true)
+	expected, err := inputSysfsDevice(root, name)
 	if err != nil {
 		return result, err
 	}
-	file, err := openInputPath(root, []string{"dev", "input", name}, syscall.O_RDONLY, true)
+	file, err := openInputPath(root, []string{"dev", "input", name}, syscall.O_RDONLY)
 	if err != nil {
 		return result, err
 	}
@@ -140,7 +140,7 @@ func openKeyboardInterface(ctx context.Context, root, name string) (result keybo
 		if err != nil || !os.SameFile(metadata, current) || current.Mode()&os.ModeCharDevice == 0 || current.Mode()&os.ModeSymlink != 0 {
 			return errors.New("keyboard path changed")
 		}
-		device, err := inputSysfsDevice(root, name, true)
+		device, err := inputSysfsDevice(root, name)
 		if err != nil {
 			return err
 		}

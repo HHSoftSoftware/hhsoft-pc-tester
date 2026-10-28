@@ -46,16 +46,18 @@ func pointerContextError(ctx context.Context) error {
 
 func runPointerWith(ctx context.Context, options PointerOptions, backend pointerBackend) (result PointerResult) {
 	result = PointerResult{Schema: PointerSchema, Status: StatusError, StopReason: "error", LimitMilliseconds: options.Duration.Milliseconds()}
-	if ctx == nil || options.Duration < 10*time.Millisecond || options.Duration > 90*time.Second {
+	if nilInputValue(ctx) || backend.discover == nil || backend.open == nil || options.Duration < 10*time.Millisecond || options.Duration > 90*time.Second {
 		result.LimitMilliseconds = 0
 		result.Detail = "pointer duration must be between 10ms and 90s with a valid context"
 		return
 	}
+	result.Status = StatusInconclusive // Initial state is not an observed hard failure.
 	started := time.Now()
 	deadline := started.Add(options.Duration)
 	var opened []pointerOpened
 	defer func() {
-		for _, source := range opened {
+		for index := len(opened) - 1; index >= 0; index-- {
+			source := opened[index]
 			if err := source.close(); err != nil {
 				result.Status, result.StopReason, result.Detail = StatusError, "error", "pointer descriptor cleanup failed"
 			}
@@ -72,7 +74,9 @@ func runPointerWith(ctx context.Context, options PointerOptions, backend pointer
 			return true
 		}
 		if !time.Now().Before(deadline) {
-			result.Status, result.StopReason, result.Detail = StatusInconclusive, "observation_timeout", "pointer criteria incomplete within the observation window"
+			if result.Status != StatusError {
+				result.Status, result.StopReason, result.Detail = StatusInconclusive, "observation_timeout", "pointer criteria incomplete within the observation window"
+			}
 			return true
 		}
 		return false
@@ -85,17 +89,21 @@ func runPointerWith(ctx context.Context, options PointerOptions, backend pointer
 	}
 	interfaces, err := backend.discover(ctx, options.Root)
 	if err != nil {
-		result.Detail = "pointer registry unavailable or invalid"
+		if err == context.Canceled || err == context.DeadlineExceeded {
+			result.MarkInterrupted(err)
+		} else {
+			result.Status, result.Detail = StatusError, "pointer registry unavailable or invalid"
+		}
 		return
 	}
 	sort.Strings(interfaces)
 	if len(interfaces) > maximumPointerDevices {
-		result.Detail = "pointer registry exceeds the supported device limit"
+		result.Status, result.Detail = StatusError, "pointer registry exceeds the supported device limit"
 		return
 	}
 	for index, name := range interfaces {
 		if !pointerInterface(name) || index > 0 && interfaces[index-1] == name {
-			result.Detail = "pointer registry contains an invalid or repeated interface"
+			result.Status, result.Detail = StatusError, "pointer registry contains an invalid or repeated interface"
 			return
 		}
 	}
@@ -122,11 +130,33 @@ func runPointerWith(ctx context.Context, options PointerOptions, backend pointer
 		}
 		device := &result.Devices[index]
 		source, err := backend.open(ctx, options.Root, name)
+		// Even an error return can transfer an owner. Register it before
+		// interpreting the error or checking interruption.
+		if source.close != nil {
+			opened = append(opened, source)
+		}
 		if err != nil {
 			device.Detail = "pointer descriptor or identity could not be verified"
-			continue
+			if err == errInputUnavailable && source.close == nil && source.read == nil && source.validate == nil {
+				if stop() {
+					return
+				}
+				continue
+			}
+			if (err == context.Canceled || err == context.DeadlineExceeded) && source.close == nil && source.read == nil && source.validate == nil {
+				result.MarkInterrupted(err)
+			} else {
+				result.Status, result.Detail = StatusError, "pointer descriptor acquisition failed"
+			}
+			return
 		}
-		opened = append(opened, source)
+		if source.close == nil || source.read == nil || source.validate == nil {
+			result.Status, result.Detail = StatusError, "pointer descriptor provider is incomplete"
+			return
+		}
+		if stop() {
+			return
+		}
 		device.Readable, device.Identity, device.Capabilities = true, &source.identity, &source.capabilities
 		device.Supported = supportedPointer(source.capabilities)
 		if !device.Supported {
@@ -136,7 +166,8 @@ func runPointerWith(ctx context.Context, options PointerOptions, backend pointer
 		device.Wheels = pointerWheelObservations(source.capabilities)
 		if source.eventSize < 8 || source.eventSize > 64 || source.typeOffset != source.eventSize-8 {
 			device.Detail = "unsupported pointer event record layout"
-			continue
+			result.Status, result.Detail = StatusError, device.Detail
+			return
 		}
 		device.Detail = "pointer criteria not yet complete"
 		devices = append(devices, observedPointer{source: source, state: newPointerState(device)})
@@ -162,16 +193,33 @@ func runPointerWith(ctx context.Context, options PointerOptions, backend pointer
 				return
 			}
 			if err := device.source.validate(); err != nil {
+				if err == context.Canceled || err == context.DeadlineExceeded {
+					result.MarkInterrupted(err)
+					return
+				}
 				device.state.reject("pointer interface or capabilities changed", false)
-				continue
-			}
-			count, readErr := device.source.read(buffer)
-			if stop() {
+				result.Status, result.Detail = StatusError, device.state.result.Detail
 				return
 			}
+			count, readErr := device.source.read(buffer)
 			if count < 0 || count > len(buffer) {
 				device.state.reject("invalid pointer event read", false)
-				continue
+				result.Status, result.Detail = StatusError, device.state.result.Detail
+				return
+			}
+			// Only the exact zero-byte idle/retry sentinels are benign.
+			hardRead := readErr != nil && !(count == 0 && (readErr == errPointerIdle || readErr == errPointerRetry)) || count == 0 && readErr == nil
+			if hardRead {
+				result.Status, result.Detail = StatusError, "pointer event stream disconnected or became unreadable"
+			}
+			if stop() {
+				if hardRead {
+					device.state.reject(result.Detail, false)
+				}
+				return
+			}
+			if count > 0 && device.state.result.Status == StatusPass {
+				device.state.result.Status, device.state.result.Detail = StatusInconclusive, "pointer criteria not yet complete"
 			}
 			device.pending = append(device.pending, buffer[:count]...)
 			if !device.baseline {
@@ -195,10 +243,10 @@ func runPointerWith(ctx context.Context, options PointerOptions, backend pointer
 				}
 				device.pending = device.pending[device.source.eventSize:]
 			}
-			if readErr != nil && !errors.Is(readErr, errPointerIdle) && !errors.Is(readErr, errPointerRetry) || count == 0 && readErr == nil {
+			if hardRead {
 				device.state.reject("pointer event stream disconnected or became unreadable", false)
 			}
-			idle := count == 0 && errors.Is(readErr, errPointerIdle)
+			idle := count == 0 && readErr == errPointerIdle
 			if !device.baseline && idle {
 				if len(device.pending) != 0 || device.baselineFrame {
 					device.state.reject("pointer queue began with a partial event packet", false)
@@ -206,7 +254,22 @@ func runPointerWith(ctx context.Context, options PointerOptions, backend pointer
 					device.baseline = true
 				}
 			}
-			if !device.state.failed && (!device.baseline || !device.state.complete() || len(device.pending) != 0 || !idle) {
+			if device.state.failed {
+				result.Status, result.Detail = StatusError, device.state.result.Detail
+				return
+			}
+			if device.baseline && device.state.complete() && len(device.pending) == 0 && idle {
+				if err := device.source.validate(); err != nil {
+					if err == context.Canceled || err == context.DeadlineExceeded {
+						result.MarkInterrupted(err)
+						return
+					}
+					device.state.reject("pointer identity changed before completion", false)
+					result.Status, result.Detail = StatusError, device.state.result.Detail
+					return
+				}
+				device.state.result.Status, device.state.result.Detail = StatusPass, ""
+			} else {
 				unfinished = true
 			}
 		}
@@ -214,16 +277,7 @@ func runPointerWith(ctx context.Context, options PointerOptions, backend pointer
 			result.Status, result.StopReason, result.Detail = StatusInconclusive, "error", "one or more pointer interfaces lack complete verified criteria"
 			passed := 0
 			for index := range devices {
-				device := &devices[index]
-				if stop() {
-					return
-				}
-				if device.state.complete() && len(device.pending) == 0 {
-					if err := device.source.validate(); err != nil {
-						device.state.reject("pointer identity changed before completion", false)
-						continue
-					}
-					device.state.result.Status, device.state.result.Detail = StatusPass, ""
+				if devices[index].state.result.Status == StatusPass {
 					passed++
 				}
 			}

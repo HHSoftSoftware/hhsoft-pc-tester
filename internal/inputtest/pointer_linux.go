@@ -10,12 +10,10 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"reflect"
 	"sort"
 	"strconv"
 	"strings"
 	"syscall"
-	"unsafe"
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
 )
@@ -24,13 +22,8 @@ func runPointerPlatform(ctx context.Context, options PointerOptions) PointerResu
 	return runPointerWith(ctx, options, pointerBackend{discover: discoverPointerInterfaces, open: openPointerInterface})
 }
 
-func openPointerPath(root string, parts []string, flags int) (*os.File, error) {
-	return openInputPath(root, parts, flags, false)
-}
-
-// The keyboard owner also accounts for temporary metadata/directory handles.
-// The pointer caller retains its established error behavior.
-func openInputPath(root string, parts []string, flags int, strictCleanup bool) (*os.File, error) {
+// The keyboard path retains its existing temporary-owner policy.
+func openInputPath(root string, parts []string, flags int) (*os.File, error) {
 	directory, err := syscall.Open(filepath.Clean(root), syscall.O_RDONLY|syscall.O_DIRECTORY|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0)
 	if err != nil {
 		return nil, err
@@ -42,7 +35,7 @@ func openInputPath(root string, parts []string, flags int, strictCleanup bool) (
 		}
 		next, openErr := syscall.Openat(directory, part, mode|syscall.O_NONBLOCK|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0)
 		closeErr := syscall.Close(directory)
-		if strictCleanup && closeErr != nil {
+		if closeErr != nil {
 			if openErr == nil {
 				_ = syscall.Close(next)
 			}
@@ -57,23 +50,7 @@ func openInputPath(root string, parts []string, flags int, strictCleanup bool) (
 }
 
 func discoverPointerInterfaces(ctx context.Context, root string) ([]string, error) {
-	if err := pointerContextError(ctx); err != nil {
-		return nil, err
-	}
-	file, err := openPointerPath(root, []string{"proc", "bus", "input", "devices"}, syscall.O_RDONLY)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	metadata, err := file.Stat()
-	if err != nil || !metadata.Mode().IsRegular() {
-		return nil, errors.New("invalid pointer registry file")
-	}
-	encoded, err := io.ReadAll(io.LimitReader(file, (1<<20)+1))
-	if err != nil || len(encoded) > 1<<20 {
-		return nil, errors.New("pointer registry exceeds its read limit")
-	}
-	return parsePointerInterfaces(strings.NewReader(string(encoded)))
+	return discoverPointerWithOperations(ctx, root, systemPointerOperations())
 }
 
 func parsePointerInterfaces(reader io.Reader) ([]string, error) {
@@ -147,11 +124,7 @@ func parseFunctionalInputInterfaces(reader io.Reader, wanted string, wordBits in
 	return result, nil
 }
 
-func pointerSysfsDevice(root, name string) (string, error) {
-	return inputSysfsDevice(root, name, false)
-}
-
-func inputSysfsDevice(root, name string, strictCleanup bool) (value string, err error) {
+func inputSysfsDevice(root, name string) (value string, err error) {
 	sysRoot := filepath.Join(filepath.Clean(root), "sys")
 	rootMetadata, err := os.Lstat(sysRoot)
 	if err != nil || !rootMetadata.IsDir() || rootMetadata.Mode()&os.ModeSymlink != 0 {
@@ -165,12 +138,12 @@ func inputSysfsDevice(root, name string, strictCleanup bool) (value string, err 
 	if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) || filepath.IsAbs(relative) {
 		return "", errors.New("pointer sysfs identity escapes its root")
 	}
-	file, err := openInputPath(sysRoot, strings.Split(relative, string(filepath.Separator)), syscall.O_RDONLY, strictCleanup)
+	file, err := openInputPath(sysRoot, strings.Split(relative, string(filepath.Separator)), syscall.O_RDONLY)
 	if err != nil {
 		return "", err
 	}
 	defer func() {
-		if closeErr := file.Close(); strictCleanup && closeErr != nil {
+		if closeErr := file.Close(); closeErr != nil {
 			value, err = "", errKeyboardCleanup
 		}
 	}()
@@ -210,76 +183,7 @@ func pointerDeviceNumber(metadata os.FileInfo) (string, bool) {
 }
 
 func openPointerInterface(ctx context.Context, root, name string) (pointerOpened, error) {
-	var result pointerOpened
-	if !pointerInterface(name) || pointerContextError(ctx) != nil {
-		return result, errors.New("invalid pointer interface request")
-	}
-	expected, err := pointerSysfsDevice(root, name)
-	if err != nil {
-		return result, err
-	}
-	file, err := openPointerPath(root, []string{"dev", "input", name}, syscall.O_RDONLY)
-	if err != nil {
-		return result, err
-	}
-	accepted := false
-	defer func() {
-		if !accepted {
-			_ = file.Close()
-		}
-	}()
-	metadata, err := file.Stat()
-	if err != nil {
-		return result, err
-	}
-	actual, valid := pointerDeviceNumber(metadata)
-	if !valid || actual != expected {
-		return result, errors.New("pointer descriptor does not match sysfs identity")
-	}
-	query := func(request uintptr, bytes []byte) (int, error) {
-		count, _, errno := syscall.Syscall(syscall.SYS_IOCTL, file.Fd(), request, uintptr(unsafe.Pointer(&bytes[0])))
-		if errno != 0 {
-			return 0, errno
-		}
-		return int(count), nil
-	}
-	identity, capabilities, err := queryPointerMetadata(query)
-	if err != nil {
-		return result, err
-	}
-	validate := func() error {
-		current, err := os.Lstat(filepath.Join(root, "dev", "input", name))
-		if err != nil || !os.SameFile(metadata, current) || current.Mode()&os.ModeCharDevice == 0 || current.Mode()&os.ModeSymlink != 0 {
-			return errors.New("pointer device node changed")
-		}
-		deviceNumber, err := pointerSysfsDevice(root, name)
-		if err != nil || deviceNumber != expected {
-			return errors.New("pointer sysfs identity changed")
-		}
-		currentIdentity, currentCapabilities, err := queryPointerMetadata(query)
-		if err != nil || identity != currentIdentity || !reflect.DeepEqual(capabilities, currentCapabilities) {
-			return errors.New("pointer device identity or capabilities changed")
-		}
-		return nil
-	}
-	if err := validate(); err != nil {
-		return result, err
-	}
-	result = pointerOpened{identity: identity, capabilities: capabilities,
-		eventSize: int(unsafe.Sizeof(inputEvent{})), typeOffset: int(unsafe.Offsetof(inputEvent{}.Type)),
-		validate: validate, close: file.Close,
-		read: func(buffer []byte) (int, error) {
-			count, err := syscall.Read(int(file.Fd()), buffer)
-			if errors.Is(err, syscall.EAGAIN) || errors.Is(err, syscall.EWOULDBLOCK) {
-				return 0, errPointerIdle
-			}
-			if errors.Is(err, syscall.EINTR) {
-				return 0, errPointerRetry
-			}
-			return count, err
-		}}
-	accepted = true
-	return result, nil
+	return openPointerWithOperations(ctx, root, name, systemPointerOperations())
 }
 
 // Read-only Linux input UAPI requests from include/uapi/linux/input.h. No

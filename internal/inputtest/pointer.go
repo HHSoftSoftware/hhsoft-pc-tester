@@ -89,7 +89,7 @@ func RunPointer(ctx context.Context, options PointerOptions) PointerResult {
 // MarkInterrupted retains observations and any explicit failure while
 // preventing a result at a cancellation boundary from claiming pass.
 func (result *PointerResult) MarkInterrupted(err error) {
-	if err == nil {
+	if err == nil || result.Status == StatusError && result.StopReason == "error" {
 		return
 	}
 	status, reason, detail := StatusAborted, "operator_cancelled", "pointer observation cancelled"

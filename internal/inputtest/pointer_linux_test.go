@@ -214,11 +214,19 @@ func TestPointerSysfsIdentityIsBoundedAndContained(t *testing.T) {
 		t.Fatal("escaping sysfs identity followed")
 	}
 	inside := pointerFixtureFile(t, root, "sys/devices/fixture/event2/dev", "13:66")
-	if err := os.Symlink(filepath.Dir(inside), filepath.Join(root, "sys/class/input/event2")); err != nil {
+	if err := os.Symlink(filepath.Join("..", "..", "devices", "fixture", "event2"), filepath.Join(root, "sys/class/input/event2")); err != nil {
 		t.Fatal(err)
 	}
 	if value, err := pointerSysfsDevice(root, "event2"); err != nil || value != "13:66" {
 		t.Fatal("contained normal sysfs link rejected")
+	}
+	for name, target := range map[string]string{"event3": filepath.Dir(inside), "event4": filepath.Join("..", "..", "..", "outside")} {
+		if err := os.Symlink(target, filepath.Join(root, "sys/class/input", name)); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := pointerSysfsDevice(root, name); err == nil {
+			t.Fatal("absolute or escaping relative sysfs identity followed")
+		}
 	}
 }
 
@@ -330,4 +338,30 @@ func TestPointerDescriptorDeviceNumberUsesActualMajorAndMinor(t *testing.T) {
 	if _, valid := pointerDeviceNumber(pointerStatFixture{0, 0x0d40}); valid {
 		t.Fatal("regular file metadata accepted as an event node")
 	}
+}
+
+// Legacy path-only assertions remain keyboard helper coverage. The pointer
+// producer now uses the separately tested metadata-only acquisition path.
+func openPointerPath(root string, parts []string, flags int) (*os.File, error) {
+	return openInputPath(root, parts, flags)
+}
+
+func pointerSysfsDevice(root, name string) (value string, err error) {
+	operations := systemPointerOperations()
+	owner, err := openPointerRoots(context.Background(), root, true, operations)
+	if owner != nil {
+		defer func() {
+			if closeErr := owner.close(); closeErr != nil {
+				value, err = "", closeErr
+			}
+		}()
+	}
+	if err != nil {
+		return "", err
+	}
+	number, err := inputRegistryNumber(context.Background(), owner.sys, operations.input, name)
+	if err != nil {
+		return "", err
+	}
+	return fmt.Sprintf("%d:%d", number.major, number.minor), nil
 }

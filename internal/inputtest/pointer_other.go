@@ -10,11 +10,12 @@ import (
 func runPointerPlatform(ctx context.Context, options PointerOptions) PointerResult {
 	result := PointerResult{Schema: PointerSchema, Status: StatusError, StopReason: "error", LimitMilliseconds: options.Duration.Milliseconds(),
 		Detail: "pointer functional testing is available only in the Linux boot environment"}
-	if ctx == nil || options.Duration < 10*time.Millisecond || options.Duration > 90*time.Second {
+	if nilInputValue(ctx) || options.Duration < 10*time.Millisecond || options.Duration > 90*time.Second {
 		result.LimitMilliseconds = 0
 		return result
 	}
-	if ctx != nil {
+	if ctx.Err() != nil {
+		result.Status = StatusInconclusive
 		result.MarkInterrupted(ctx.Err())
 	}
 	return result

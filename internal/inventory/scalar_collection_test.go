@@ -32,11 +32,14 @@ func scalarRoleGroups() []scalarRoleGroup {
 		{"network", "sys/class/net", "sys/class/net/eth0", []string{"eth0"}, []string{"address", "type", "ifindex", "iflink", "mtu", "operstate", "carrier", "speed", "duplex", "device/vendor", "device/device"}},
 		{"input", "sys/class/input", "sys/class/input/event0/device", []string{"event0"}, []string{"name", "phys", "uniq", "id/bustype", "id/vendor", "id/product", "id/version", "capabilities/ev", "capabilities/key", "capabilities/abs", "capabilities/rel", "properties"}},
 		{"sound", "sys/class/sound", "sys/class/sound/card0", []string{"card0"}, []string{"id", "device/vendor", "device/device"}},
-		{"drm", "sys/class/drm", "sys/class/drm/card0", []string{"card0"}, []string{"dev", "status", "enabled", "device/vendor", "device/device", "device/subsystem_vendor", "device/subsystem_device"}},
+		{"drm", "sys/class/drm", "sys/class/drm/card0", []string{"card0"}, []string{"dev", "device/vendor", "device/device", "device/subsystem_vendor", "device/subsystem_device"}},
 		{"video", "sys/class/video4linux", "sys/class/video4linux/video0", []string{"video0"}, []string{"name", "index", "dev", "device/modalias"}},
 		{"framebuffer", "sys/class/graphics", "sys/class/graphics/fb0", []string{"fb0"}, []string{"name", "virtual_size", "bits_per_pixel", "dev"}},
 		{"usb", "sys/bus/usb/devices", "sys/bus/usb/devices/1-1", []string{"1-1", "1-1:1.0"}, []string{"idProduct", "manufacturer", "product", "serial", "bcdDevice", "bDeviceClass", "bDeviceSubClass", "bDeviceProtocol", "busnum", "devnum", "speed", "authorized", "idVendor"}},
 		{"usb-interface", "sys/bus/usb/devices", "sys/bus/usb/devices/1-1:1.0", []string{"1-1", "1-1:1.0"}, []string{"bInterfaceClass"}},
+		// Preserve earlier group indices; cover all three DRM category bindings.
+		{"drm-connector", "sys/class/drm", "sys/class/drm/card0-HDMI-A-1", []string{"card0-HDMI-A-1"}, []string{"status", "enabled"}},
+		{"drm-render", "sys/class/drm", "sys/class/drm/renderD128", []string{"renderD128"}, []string{"dev", "device/vendor", "device/device", "device/subsystem_vendor", "device/subsystem_device"}},
 	}
 }
 
@@ -94,7 +97,7 @@ func TestInventoryScalarEveryDeclaredAndDirectRoleFailsClosed(t *testing.T) {
 			})
 		}
 	}
-	if count != 100 {
+	if count != 105 {
 		t.Fatalf("scalar role coverage changed: %d", count)
 	}
 }

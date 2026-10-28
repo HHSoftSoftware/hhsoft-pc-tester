@@ -294,15 +294,22 @@ func (collector *linuxCollection) collectVideo() []Component {
 		}
 		base := path.Join(drmRoot, name)
 		attributes := map[string]string{"interface": name, "category": category}
-		collector.addAttributes(attributes, base, []attributePath{
+		fields := []attributePath{
 			{name: "device_number", relativePath: "dev"},
-			{name: "status", relativePath: "status"},
-			{name: "enabled", relativePath: "enabled"},
 			{name: "vendor_id", relativePath: "device/vendor"},
 			{name: "device_id", relativePath: "device/device"},
 			{name: "subsystem_vendor_id", relativePath: "device/subsystem_vendor"},
 			{name: "subsystem_device_id", relativePath: "device/subsystem_device"},
-		})
+		}
+		if category == "display_connector" {
+			// A connector's device link names its DRM card, not the card's
+			// bus device. device/device can therefore be a directory.
+			fields = []attributePath{
+				{name: "status", relativePath: "status"},
+				{name: "enabled", relativePath: "enabled"},
+			}
+		}
+		collector.addAttributes(attributes, base, fields)
 		if !collector.check() {
 			return nil
 		}

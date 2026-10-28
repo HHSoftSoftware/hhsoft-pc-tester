@@ -10,6 +10,10 @@ import (
 )
 
 func runNetwork(ctx context.Context, arguments []string, stdout, stderr io.Writer) int {
+	return runNetworkWith(ctx, arguments, stdout, stderr, networktest.Run)
+}
+
+func runNetworkWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, probe func(context.Context, networktest.Options) networktest.Result) int {
 	flags := flag.NewFlagSet("network", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	outputPath := flags.String("output", "-", "new JSON output file, or - for stdout")
@@ -21,6 +25,5 @@ func runNetwork(ctx context.Context, arguments []string, stdout, stderr io.Write
 		fmt.Fprintln(stderr, "network accepts no positional arguments")
 		return 2
 	}
-	result := networktest.Run(ctx, networktest.Options{Root: "/", AllowActive: *allowActive})
-	return writeQuickResult(result, *outputPath, stdout, stderr, "network")
+	return writeQuickResult(probe(ctx, networktest.Options{Root: "/", AllowActive: *allowActive}), *outputPath, stdout, stderr, "network")
 }

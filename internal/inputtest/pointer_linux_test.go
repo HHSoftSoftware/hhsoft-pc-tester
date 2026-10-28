@@ -340,10 +340,48 @@ func TestPointerDescriptorDeviceNumberUsesActualMajorAndMinor(t *testing.T) {
 	}
 }
 
-// Legacy path-only assertions remain keyboard helper coverage. The pointer
-// producer now uses the separately tested metadata-only acquisition path.
-func openPointerPath(root string, parts []string, flags int) (*os.File, error) {
-	return openInputPath(root, parts, flags)
+// The historical regular-file flag assertions use the same production owned
+// observation used by both guided workers. No event device is created or opened.
+type pointerOwnedPathFixture struct {
+	observation *inputObservation
+	root        inputReadinessRoot
+}
+
+func (file *pointerOwnedPathFixture) Fd() uintptr {
+	return file.observation.reader.(interface{ Fd() uintptr }).Fd()
+}
+func (file *pointerOwnedPathFixture) Close() error {
+	err := closeInputObservation(file.observation)
+	if closeErr := file.root.Close(); closeErr != nil {
+		return closeErr
+	}
+	return err
+}
+func openPointerPath(root string, parts []string, flags int) (*pointerOwnedPathFixture, error) {
+	if flags != syscall.O_RDONLY {
+		return nil, errInputAcquire
+	}
+	operations := systemInputReadinessOperations()
+	owned, err := operations.openRoot(root)
+	if err != nil {
+		return nil, err
+	}
+	observation, err := openInputObservation(context.Background(), owned, operations, strings.Join(parts, "/"), nil)
+	if err != nil {
+		if closeErr := owned.Close(); closeErr != nil {
+			return nil, closeErr
+		}
+		return nil, err
+	}
+	return &pointerOwnedPathFixture{observation, owned}, nil
+}
+func pointerDeviceNumber(metadata os.FileInfo) (string, bool) {
+	identity, valid := inputIdentity(metadata, true)
+	if !valid || !inputEvdevNumber(identity.number()) {
+		return "", false
+	}
+	number := identity.number()
+	return fmt.Sprintf("%d:%d", number.major, number.minor), true
 }
 
 func pointerSysfsDevice(root, name string) (value string, err error) {

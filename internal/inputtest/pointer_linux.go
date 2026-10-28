@@ -8,45 +8,14 @@ import (
 	"encoding/binary"
 	"errors"
 	"io"
-	"os"
-	"path/filepath"
 	"sort"
-	"strconv"
 	"strings"
-	"syscall"
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
 )
 
 func runPointerPlatform(ctx context.Context, options PointerOptions) PointerResult {
 	return runPointerWith(ctx, options, pointerBackend{discover: discoverPointerInterfaces, open: openPointerInterface})
-}
-
-// The keyboard path retains its existing temporary-owner policy.
-func openInputPath(root string, parts []string, flags int) (*os.File, error) {
-	directory, err := syscall.Open(filepath.Clean(root), syscall.O_RDONLY|syscall.O_DIRECTORY|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0)
-	if err != nil {
-		return nil, err
-	}
-	for index, part := range parts {
-		mode := syscall.O_RDONLY | syscall.O_DIRECTORY
-		if index == len(parts)-1 {
-			mode = flags
-		}
-		next, openErr := syscall.Openat(directory, part, mode|syscall.O_NONBLOCK|syscall.O_NOFOLLOW|syscall.O_CLOEXEC, 0)
-		closeErr := syscall.Close(directory)
-		if closeErr != nil {
-			if openErr == nil {
-				_ = syscall.Close(next)
-			}
-			return nil, errKeyboardCleanup
-		}
-		if openErr != nil {
-			return nil, openErr
-		}
-		directory = next
-	}
-	return os.NewFile(uintptr(directory), "pointer interface"), nil
 }
 
 func discoverPointerInterfaces(ctx context.Context, root string) ([]string, error) {
@@ -122,64 +91,6 @@ func parseFunctionalInputInterfaces(reader io.Reader, wanted string, wordBits in
 	}
 	sort.Strings(result)
 	return result, nil
-}
-
-func inputSysfsDevice(root, name string) (value string, err error) {
-	sysRoot := filepath.Join(filepath.Clean(root), "sys")
-	rootMetadata, err := os.Lstat(sysRoot)
-	if err != nil || !rootMetadata.IsDir() || rootMetadata.Mode()&os.ModeSymlink != 0 {
-		return "", errors.New("invalid pointer sysfs root")
-	}
-	path, err := filepath.EvalSymlinks(filepath.Join(sysRoot, "class", "input", name, "dev"))
-	if err != nil {
-		return "", err
-	}
-	relative, err := filepath.Rel(sysRoot, path)
-	if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) || filepath.IsAbs(relative) {
-		return "", errors.New("pointer sysfs identity escapes its root")
-	}
-	file, err := openInputPath(sysRoot, strings.Split(relative, string(filepath.Separator)), syscall.O_RDONLY)
-	if err != nil {
-		return "", err
-	}
-	defer func() {
-		if closeErr := file.Close(); closeErr != nil {
-			value, err = "", errKeyboardCleanup
-		}
-	}()
-	metadata, err := file.Stat()
-	if err != nil || !metadata.Mode().IsRegular() {
-		return "", errors.New("invalid pointer sysfs identity")
-	}
-	encoded, err := io.ReadAll(io.LimitReader(file, 129))
-	if err != nil || len(encoded) > 128 {
-		return "", errors.New("invalid pointer device number")
-	}
-	value = strings.TrimSpace(string(encoded))
-	majorText, minorText, found := strings.Cut(value, ":")
-	major, majorErr := strconv.ParseUint(majorText, 10, 32)
-	minor, minorErr := strconv.ParseUint(minorText, 10, 32)
-	if !found || majorErr != nil || minorErr != nil || value != strconv.FormatUint(major, 10)+":"+strconv.FormatUint(minor, 10) {
-		return "", errors.New("invalid pointer device number")
-	}
-	return value, nil
-}
-
-func pointerDeviceNumber(metadata os.FileInfo) (string, bool) {
-	if metadata.Mode()&os.ModeCharDevice == 0 || metadata.Mode()&os.ModeSymlink != 0 {
-		return "", false
-	}
-	stat, ok := metadata.Sys().(*syscall.Stat_t)
-	if !ok {
-		return "", false
-	}
-	device := uint64(stat.Rdev)
-	major := (device >> 8 & 0xfff) | (device >> 32 & 0xfffff000)
-	minor := (device & 0xff) | (device >> 12 & 0xffffff00)
-	if major != 13 || minor < 64 || minor > 95 && minor < 256 {
-		return "", false
-	}
-	return strconv.FormatUint(major, 10) + ":" + strconv.FormatUint(minor, 10), true
 }
 
 func openPointerInterface(ctx context.Context, root, name string) (pointerOpened, error) {

@@ -179,8 +179,8 @@ func TestKeyboardLinuxRejectsNonEvdevNodesAndRetainsCloseOwnership(t *testing.T)
 			if err == nil {
 				t.Fatal("non-evdev node accepted")
 			}
-			if kind == "regular" && owned.close == nil {
-				t.Fatal("metadata failure lost descriptor ownership")
+			if owned.close != nil {
+				t.Fatal("rejected acquisition transferred an already-closed owner")
 			}
 			if kind == "regular" {
 				data, err := os.ReadFile(node)

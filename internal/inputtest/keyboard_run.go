@@ -13,7 +13,6 @@ const maximumKeyboardDevices = 128
 
 var errKeyboardIdle = errors.New("keyboard queue idle")
 var errKeyboardRetry = errors.New("keyboard read interrupted")
-var errKeyboardCleanup = errors.New("keyboard temporary descriptor cleanup unconfirmed")
 
 type keyboardOpened struct {
 	identity              KeyboardIdentity
@@ -21,6 +20,7 @@ type keyboardOpened struct {
 	eventSize, typeOffset int
 	read                  func([]byte) (int, error)
 	validate              func() error
+	finalValidate         func() error
 	neutral               func() (bool, error)
 	close                 func() error
 }
@@ -39,7 +39,7 @@ type observedKeyboard struct {
 
 func runKeyboardWith(ctx context.Context, options KeyboardOptions, backend keyboardBackend) (result KeyboardResult) {
 	result = newKeyboardResult(options)
-	if ctx == nil || options.Duration < 10*time.Millisecond || options.Duration > 90*time.Second || backend.discover == nil || backend.open == nil {
+	if nilInputValue(ctx) || options.Duration < 10*time.Millisecond || options.Duration > 90*time.Second || backend.discover == nil || backend.open == nil {
 		result.LimitMilliseconds, result.Detail = 0, "invalid_options"
 		return
 	}
@@ -50,6 +50,21 @@ func runKeyboardWith(ctx context.Context, options KeyboardOptions, backend keybo
 		index  int
 	}
 	var devices []observedKeyboard
+	hardError := func(detail string) {
+		if result.Status != StatusError || result.StopReason != "error" || result.Detail == "" {
+			result.Status, result.StopReason, result.Detail = StatusError, "error", detail
+		}
+	}
+	observeError := func(err error, detail string) {
+		if errors.Is(err, errInputClose) {
+			result.CleanupConfirmed = false
+			hardError("cleanup_unconfirmed")
+		} else if err == context.Canceled || err == context.DeadlineExceeded {
+			result.MarkInterrupted(err)
+		} else {
+			hardError(detail)
+		}
+	}
 	defer func() {
 		for index := range devices {
 			device := &devices[index]
@@ -65,8 +80,8 @@ func runKeyboardWith(ctx context.Context, options KeyboardOptions, backend keybo
 					if observed.resultIndex != owned.index {
 						continue
 					}
-					if err := recheckKeyboardPass(observed); errors.Is(err, errKeyboardCleanup) {
-						result.CleanupConfirmed = false
+					if err := recheckKeyboardPass(observed); err != nil {
+						observeError(err, observed.state.result.Detail)
 					}
 					break
 				}
@@ -96,6 +111,9 @@ func runKeyboardWith(ctx context.Context, options KeyboardOptions, backend keybo
 			result.Status, result.StopReason, result.Detail = StatusError, "cleanup_unconfirmed", "cleanup_unconfirmed"
 			return true
 		}
+		if result.Status == StatusError && result.StopReason == "error" && result.Detail != "" {
+			return true
+		}
 		if err := pointerContextError(ctx); err != nil {
 			result.MarkInterrupted(err)
 			return true
@@ -106,11 +124,6 @@ func runKeyboardWith(ctx context.Context, options KeyboardOptions, backend keybo
 		}
 		return false
 	}
-	observeError := func(err error) {
-		if errors.Is(err, errKeyboardCleanup) {
-			result.CleanupConfirmed = false
-		}
-	}
 	if stop() {
 		return
 	}
@@ -119,8 +132,10 @@ func runKeyboardWith(ctx context.Context, options KeyboardOptions, backend keybo
 	}
 	interfaces, err := backend.discover(ctx, options.Root)
 	if err != nil {
-		observeError(err)
-		result.Detail = "registry_unavailable"
+		observeError(err, "registry_unavailable")
+		return
+	}
+	if stop() {
 		return
 	}
 	sort.Strings(interfaces)
@@ -156,13 +171,23 @@ func runKeyboardWith(ctx context.Context, options KeyboardOptions, backend keybo
 			device.CleanupConfirmed = false
 		}
 		if err != nil {
-			observeError(err)
 			device.Detail = "identity_unavailable"
-			continue
+			if source.close == nil && (source.read != nil || source.validate != nil || source.neutral != nil || source.finalValidate != nil) {
+				result.CleanupConfirmed = false
+			}
+			if err == errInputUnavailable && source.close == nil && source.read == nil && source.validate == nil && source.neutral == nil && source.finalValidate == nil {
+				continue
+			}
+			observeError(err, "identity_unavailable")
+			return
 		}
 		if source.close == nil || source.read == nil || source.validate == nil || source.neutral == nil {
 			device.Detail = "identity_unavailable"
-			continue
+			if source.close == nil && (source.read != nil || source.validate != nil || source.neutral != nil || source.finalValidate != nil) {
+				result.CleanupConfirmed = false
+			}
+			hardError("identity_unavailable")
+			return
 		}
 		device.Readable, device.Identity = true, &source.identity
 		capabilities := source.capabilities
@@ -176,7 +201,8 @@ func runKeyboardWith(ctx context.Context, options KeyboardOptions, backend keybo
 		state := newKeyboardState(device)
 		if source.eventSize < 8 || source.eventSize > 64 || source.typeOffset != source.eventSize-8 {
 			state.reject("unsupported_record_layout", false)
-			continue
+			hardError("unsupported_record_layout")
+			return
 		}
 		devices = append(devices, observedKeyboard{source: source, state: state, resultIndex: index})
 	}
@@ -195,17 +221,29 @@ func runKeyboardWith(ctx context.Context, options KeyboardOptions, backend keybo
 				return
 			}
 			if err := device.source.validate(); err != nil {
-				observeError(err)
 				device.state.reject("identity_changed", false)
-				continue
-			}
-			count, readErr := device.source.read(buffer)
-			if stop() {
+				observeError(err, "identity_changed")
 				return
 			}
-			if count < 0 || count > len(buffer) {
+			count, readErr := device.source.read(buffer)
+			if count < 0 || count > len(buffer) || count > 0 && (readErr == errKeyboardIdle || readErr == errKeyboardRetry) {
 				device.state.reject("malformed_events", false)
-				continue
+				hardError("malformed_events")
+				return
+			}
+			if count == 0 && (readErr == context.Canceled || readErr == context.DeadlineExceeded) {
+				if stopped := pointerContextError(ctx); stopped != nil {
+					result.MarkInterrupted(stopped)
+					return
+				}
+			}
+			if readErr != nil && readErr != errKeyboardIdle && readErr != errKeyboardRetry || count == 0 && readErr == nil {
+				device.state.reject("disconnected", false)
+				hardError("disconnected")
+				return
+			}
+			if stop() {
+				return
 			}
 			device.pending = append(device.pending, buffer[:count]...)
 			if !device.state.result.BaselineNeutral {
@@ -234,18 +272,22 @@ func runKeyboardWith(ctx context.Context, options KeyboardOptions, backend keybo
 				}
 				device.pending = device.pending[device.source.eventSize:]
 			}
-			if readErr != nil && !errors.Is(readErr, errKeyboardIdle) && !errors.Is(readErr, errKeyboardRetry) || count == 0 && readErr == nil {
-				device.state.reject("disconnected", false)
+			if device.state.failed {
+				hardError(device.state.result.Detail)
+				return
 			}
-			idle := count == 0 && errors.Is(readErr, errKeyboardIdle)
+			idle := count == 0 && readErr == errKeyboardIdle
 			if !device.state.failed && idle && !device.state.result.BaselineNeutral {
 				if len(device.pending) != 0 || device.baselineFrame {
 					device.state.reject("malformed_events", false)
+					hardError("malformed_events")
+					return
 				} else {
 					neutral, err := device.source.neutral()
 					if err != nil {
-						observeError(err)
 						device.state.reject("baseline_unavailable", false)
+						observeError(err, "baseline_unavailable")
+						return
 					} else if neutral {
 						device.state.result.BaselineNeutral = true
 					}
@@ -256,12 +298,14 @@ func runKeyboardWith(ctx context.Context, options KeyboardOptions, backend keybo
 				if idle && len(device.pending) == 0 && device.state.complete() {
 					neutral, err := device.source.neutral()
 					if err != nil {
-						observeError(err)
 						device.state.reject("identity_changed", false)
+						observeError(err, "identity_changed")
+						return
 					} else if neutral {
 						if err := device.source.validate(); err != nil {
-							observeError(err)
 							device.state.reject("identity_changed", false)
+							observeError(err, "identity_changed")
+							return
 						} else if !stop() {
 							device.state.result.Status, device.state.result.Detail, device.state.result.FinalNeutral = StatusPass, "", true
 						}
@@ -277,13 +321,12 @@ func runKeyboardWith(ctx context.Context, options KeyboardOptions, backend keybo
 		}
 		if !unfinished {
 			current, err := backend.discover(ctx, options.Root)
-			observeError(err)
 			sort.Strings(current)
 			if err != nil || !slices.Equal(current, interfaces) {
 				for index := range devices {
 					devices[index].state.reject("registry_changed", false)
 				}
-				result.Detail = "registry_changed"
+				observeError(err, "registry_changed")
 				return
 			}
 			result.Status, result.StopReason, result.Detail = StatusInconclusive, "error", "incomplete_actions"
@@ -292,8 +335,9 @@ func runKeyboardWith(ctx context.Context, options KeyboardOptions, backend keybo
 				device := &devices[index]
 				if device.state.result.Status == StatusPass {
 					if err := device.source.validate(); err != nil {
-						observeError(err)
 						device.state.reject("identity_changed", false)
+						observeError(err, "identity_changed")
+						return
 					} else {
 						passed++
 					}
@@ -317,14 +361,25 @@ func runKeyboardWith(ctx context.Context, options KeyboardOptions, backend keybo
 // This last bounded observation also runs on cancellation. It never interprets
 // or credits queued post-stop events, and starts no additional time window.
 func recheckKeyboardPass(device *observedKeyboard) error {
-	if err := device.source.validate(); err != nil {
+	validate := device.source.finalValidate
+	if validate == nil {
+		validate = device.source.validate
+	}
+	if err := validate(); err != nil {
 		device.state.reject("identity_changed", false)
 		return err
 	}
 	var buffer [4096]byte
 	count, err := device.source.read(buffer[:])
-	if count != 0 || !errors.Is(err, errKeyboardIdle) || len(device.pending) != 0 || !device.state.complete() {
+	if count < 0 || count > len(buffer) || count > 0 && err != nil || count == 0 && err == nil {
+		device.state.reject("malformed_events", false)
+		return errInputStream
+	}
+	if count != 0 || err != errKeyboardIdle || len(device.pending) != 0 || !device.state.complete() {
 		device.state.reject("incomplete_actions", false)
+		if err == errKeyboardRetry {
+			return nil
+		}
 		return err
 	}
 	neutral, err := device.source.neutral()
@@ -332,7 +387,7 @@ func recheckKeyboardPass(device *observedKeyboard) error {
 		device.state.reject("incomplete_actions", false)
 		return err
 	}
-	if err := device.source.validate(); err != nil {
+	if err := validate(); err != nil {
 		device.state.reject("identity_changed", false)
 		return err
 	}

@@ -325,20 +325,20 @@ func TestKeyboardTemporaryCleanupFailureNeverBecomesOrdinaryAbsence(t *testing.T
 			backend.discover = func(ctx context.Context, root string) ([]string, error) {
 				discovers++
 				if phase == "initial registry" || phase == "final registry" && discovers > 1 {
-					return nil, errKeyboardCleanup
+					return nil, errInputClose
 				}
 				return original(ctx, root)
 			}
 			if phase == "open metadata" {
-				source.openError = errKeyboardCleanup
+				source.openError = errInputClose
 			}
 			if phase == "live identity" {
-				source.check = func(int) error { return errKeyboardCleanup }
+				source.check = func(int) error { return errInputClose }
 			}
 			if phase == "final identity" {
 				source.check = func(count int) error {
 					if count == 5 {
-						return errKeyboardCleanup
+						return errInputClose
 					}
 					return nil
 				}
@@ -499,8 +499,12 @@ func TestKeyboardCancellationRechecksPriorCompletedDeviceWithoutCreditingNewActi
 				}
 			}
 			result := runKeyboardWith(ctx, KeyboardOptions{Duration: time.Second}, keyboardFixtureBackend(first, second))
-			if result.Status != StatusAborted || first.closes != 1 || second.closes != 1 {
-				t.Fatal("cancelled ownership did not finish")
+			want := StatusAborted
+			if condition == "replacement" {
+				want = StatusError
+			}
+			if result.Status != want || first.closes != 1 || second.closes != 1 {
+				t.Fatal("cancelled ownership or hard-identity precedence did not finish")
 			}
 			if (result.Devices[0].Status == StatusPass) != (condition == "still neutral") {
 				t.Fatal("prior completed device escaped its final recheck")

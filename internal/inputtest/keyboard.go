@@ -63,7 +63,7 @@ func RunKeyboard(ctx context.Context, options KeyboardOptions) KeyboardResult {
 }
 
 func (result *KeyboardResult) MarkInterrupted(err error) {
-	if err == nil || !result.CleanupConfirmed {
+	if err == nil || !result.CleanupConfirmed || result.Status == StatusError && result.StopReason == "error" && result.Detail != "" {
 		return
 	}
 	result.Status, result.StopReason, result.Detail = StatusAborted, "operator_cancelled", "operator_cancelled"

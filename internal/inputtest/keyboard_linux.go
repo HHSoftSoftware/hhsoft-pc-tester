@@ -6,47 +6,14 @@ import (
 	"context"
 	"encoding/binary"
 	"errors"
-	"io"
-	"os"
-	"path/filepath"
-	"reflect"
-	"strings"
-	"syscall"
-	"unsafe"
-
-	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
 )
 
 func runKeyboardPlatform(ctx context.Context, options KeyboardOptions) KeyboardResult {
 	return runKeyboardWith(ctx, options, keyboardBackend{discover: discoverKeyboardInterfaces, open: openKeyboardInterface})
 }
 
-func discoverKeyboardInterfaces(ctx context.Context, root string) (interfaces []string, err error) {
-	if err := pointerContextError(ctx); err != nil {
-		return nil, err
-	}
-	width := inventory.ObservedInputBitmapWordBits()
-	if width != 32 && width != 64 {
-		return nil, errors.New("unknown input bitmap layout")
-	}
-	file, err := openInputPath(root, []string{"proc", "bus", "input", "devices"}, syscall.O_RDONLY)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		if file.Close() != nil {
-			interfaces, err = nil, errKeyboardCleanup
-		}
-	}()
-	metadata, err := file.Stat()
-	if err != nil || !metadata.Mode().IsRegular() {
-		return nil, errors.New("invalid input registry")
-	}
-	raw, err := io.ReadAll(io.LimitReader(file, (1<<20)+1))
-	if err != nil || len(raw) > 1<<20 {
-		return nil, errors.New("input registry exceeds limit")
-	}
-	return parseFunctionalInputInterfaces(strings.NewReader(string(raw)), "keyboard", width)
+func discoverKeyboardInterfaces(ctx context.Context, root string) ([]string, error) {
+	return discoverKeyboardWithOperations(ctx, root, systemPointerOperations())
 }
 
 type keyboardMetadata struct {
@@ -102,72 +69,6 @@ func queryKeyboardNeutral(query func(uintptr, []byte) (int, error)) (bool, error
 	return true, nil
 }
 
-func openKeyboardInterface(ctx context.Context, root, name string) (result keyboardOpened, err error) {
-	if !pointerInterface(name) || pointerContextError(ctx) != nil {
-		return result, errors.New("invalid keyboard interface")
-	}
-	expected, err := inputSysfsDevice(root, name)
-	if err != nil {
-		return result, err
-	}
-	file, err := openInputPath(root, []string{"dev", "input", name}, syscall.O_RDONLY)
-	if err != nil {
-		return result, err
-	}
-	// Transfer close ownership even when subsequent metadata validation fails.
-	result.close = file.Close
-	metadata, err := file.Stat()
-	if err != nil {
-		return result, err
-	}
-	actual, valid := pointerDeviceNumber(metadata)
-	if !valid || actual != expected {
-		return result, errors.New("keyboard descriptor identity mismatch")
-	}
-	query := func(request uintptr, data []byte) (int, error) {
-		count, _, errno := syscall.Syscall(syscall.SYS_IOCTL, file.Fd(), request, uintptr(unsafe.Pointer(&data[0])))
-		if errno != 0 {
-			return 0, errno
-		}
-		return int(count), nil
-	}
-	observed, err := queryKeyboardMetadata(query)
-	if err != nil {
-		return result, err
-	}
-	validate := func() error {
-		current, err := os.Lstat(filepath.Join(root, "dev", "input", name))
-		if err != nil || !os.SameFile(metadata, current) || current.Mode()&os.ModeCharDevice == 0 || current.Mode()&os.ModeSymlink != 0 {
-			return errors.New("keyboard path changed")
-		}
-		device, err := inputSysfsDevice(root, name)
-		if err != nil {
-			return err
-		}
-		if device != expected {
-			return errors.New("keyboard sysfs changed")
-		}
-		latest, err := queryKeyboardMetadata(query)
-		if err != nil || !reflect.DeepEqual(latest, observed) {
-			return errors.New("keyboard identity or capabilities changed")
-		}
-		return nil
-	}
-	if err := validate(); err != nil {
-		return result, err
-	}
-	result.identity, result.capabilities = observed.identity, observed.capabilities
-	result.eventSize, result.typeOffset = int(unsafe.Sizeof(inputEvent{})), int(unsafe.Offsetof(inputEvent{}.Type))
-	result.validate, result.neutral = validate, func() (bool, error) { return queryKeyboardNeutral(query) }
-	result.read = func(buffer []byte) (int, error) {
-		count, err := syscall.Read(int(file.Fd()), buffer)
-		if errors.Is(err, syscall.EAGAIN) || errors.Is(err, syscall.EWOULDBLOCK) {
-			return 0, errKeyboardIdle
-		}
-		if errors.Is(err, syscall.EINTR) {
-			return 0, errKeyboardRetry
-		}
-		return count, err
-	}
-	return result, nil
+func openKeyboardInterface(ctx context.Context, root, name string) (keyboardOpened, error) {
+	return openKeyboardWithOperations(ctx, root, name, systemPointerOperations())
 }

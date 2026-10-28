@@ -575,6 +575,52 @@ injected close faults and public consumer cases remain compositional,
 without provisioned-key or physical-device qualification. Total allocation
 and blocked-kernel deadlines remain open.
 
+Audio readiness acquisition has a separate metadata-only test contract:
+
+- Exercise registry boundaries at 4,096 and 4,097 entries with positive
+  requests no larger than 32, cached names and exact completion. Reject
+  empty nonterminal batches, invalid counts, unsafe or duplicate names,
+  typed nils and partial or wrapped EOF errors.
+- Exercise 64-byte attribute reads and the 65th-byte overflow witness before
+  parsing device-number grammar. Reader acceptance alone is not a valid
+  device number. Check no-progress, partial-error and cancellation boundaries.
+- Preserve contained sysfs directory links, final-component no-follow,
+  regular-file proof and matching metadata/readable-descriptor identity.
+  Real root operations must distinguish an absent registry and missing node
+  from joined, wrong-phase and acquired-handle failures.
+- Compare every nonnil acquired handle with an exact one-close map, including
+  handles returned with open errors. Require readable closure before its
+  paired metadata handle and root closure last; the registry may close before
+  later attributes are acquired. Test root, directory and both attribute
+  close failures, including simultaneous cancellation.
+- Prove final clean-close cancellation revokes tentative success and earlier
+  hard failures survive later stops. Compare literal retained card/control/PCM
+  records and counters after a later read or close fault, including close
+  failure with cancellation and a third endpoint that is never opened.
+- Keep actual producer fault tests and public consumer tests distinct.
+  Command, session and signed-finalizer cases retain diagnostic results and
+  reject pass promotion. Finalizer negatives first prove the scheduled-plan
+  precondition and then the intended rejection reason. Self-issued fixture
+  verification is not provisioned-key or physical-hardware qualification.
+- Preserve audio's session policy: a reportable error alone does not force
+  unrelated workers to stop or prevent signing; aborted work follows the
+  existing generic stop path. Do not infer a new global cleanup exit status.
+
+The contract adds 22 functions: twelve portable and ten Linux-only. The
+closed host run passed all twelve portable functions and their 62 named
+children; full-suite and cross-build totals are recorded in
+[requirements validation](requirements-validation.md). Native execution of
+these functions and the 19 retained Linux functions passed on amd64 and 386:
+438 test/subtest events in four suites, all 82 required function executions,
+and no failures or skips. The non-Linux cancellation implementation does
+not qualify the Linux function with the same name; that function executed
+in the native cohort. Node-creation fixtures retain explicit executed
+outcomes. Unconfirmed closure cannot yield an overall readiness pass; prior
+Ready rows remain diagnostic. No playback or capture streams are opened by
+this increment;
+functional audio, blocked-kernel deadlines, images, physical hardware and
+release approval remain separate gates.
+
 `Q`, `S`, `E`, `B`, and `D` identify profiles selecting a case by default. Each
 row is conditional on presence and prerequisites. Times are per component;
 the duration precedes the hard timeout.

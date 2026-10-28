@@ -451,6 +451,16 @@ the alpha still requires the separate documented release gates.
   deadlines; retain separate image, physical-port and release gates.
 - [x] Check ALSA card and PCM/control node readiness without opening audio
   streams.
+- [x] Bound ALSA registry and attribute acquisition with exact completion,
+  cached names and checked closure of every owned metadata handle. Retain
+  root containment, final-component no-follow and descriptor identity checks.
+- [x] Validate the audio acquisition increment with the full Windows suite,
+  all twelve new portable functions, formatting, vet and three Linux builds.
+- [x] Execute and reconcile all 41 required audio/command functions on Linux
+  amd64 and 386: 438 test/subtest events across four suites, all 82 required
+  function executions, and no failures or skips.
+- [ ] Establish blocked-kernel operation deadlines and qualify rebuilt images
+  and physical audio hardware separately from metadata-readiness evidence.
 - [ ] Select and restore native/safe display modes on every connector.
 - [x] Collect operator display findings for pixels, geometry, color, flicker,
   scaling, overscan, and artifacts.

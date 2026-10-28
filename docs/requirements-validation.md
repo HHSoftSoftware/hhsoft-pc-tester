@@ -767,6 +767,59 @@ with 17 existing test skips and three empty packages. Formatting, vet
 and Linux amd64/386/arm64 builds passed; native output fault qualification
 and release gates remain open.
 
+The audio readiness acquisition increment keeps metadata-only operation and
+the existing result schema, catalog and eleven-worker v5 session. Registry
+enumeration uses positive batches of at most 32 entries, with a 4,096-entry
+limit and one overflow witness. Names are read once, validated, cached and
+sorted. Attribute reads admit at most 64 raw bytes with one overflow byte,
+bounded requests and exact EOF. Invalid counts, no progress, partial errors,
+unsafe entries cannot produce readiness credit. Unconfirmed closure cannot
+yield an overall readiness pass; prior Ready rows remain diagnostic.
+
+Root containment and ordinary contained sysfs links remain supported. Final
+attribute components use no-follow metadata handles; the readable descriptor
+must identify the same regular file. Audio device nodes are inspected through
+metadata only. An absent registry remains no-device evidence, and
+an absent node remains a missing-node diagnostic; joined errors, wrong-phase
+errors and handles returned alongside an error do not gain that exception.
+Every acquired root, directory and attribute handle receives one close attempt.
+Close failure takes precedence over cancellation, while cancellation after
+clean final closure revokes tentative success. Earlier complete rows and
+counters remain diagnostic after a later fault, without acquiring later endpoint
+metadata.
+
+Audio errors retain the existing reportable-result policy: they do not by
+themselves stop unrelated session workers or prohibit signing. Aborted audio
+work follows the generic session stop handling. No global cleanup exit status
+is added, and consumers cannot promote error or aborted evidence to a pass.
+Injected operating-system close faults and command/session/finalizer cases
+establish separate, compositional boundaries; they do not claim one induced
+Close fault ran through every layer in the same invocation. Real producer
+fixtures cover absence, missing nodes, attribute overflow, final-component
+symlinks and cancellation.
+
+The closed Windows host run passed 4,171 test/subtest events across 29 packages,
+with 17 existing test skips and one empty package. All twelve new portable
+functions and their 62 named children passed. Formatting, vet and whole-source
+Linux amd64, 386 and arm64 builds passed, with all eight final checks true.
+The actual formatted candidate contains 448 source files, against the prior
+442-file baseline. These host and cross-build results remain distinct from
+the selected native evidence below.
+
+Selected native Linux amd64 and 386 qualification passed 438 test/subtest
+events across four suites: 194 audio events and 25 command events on each
+architecture. All 41 required functions per architecture passed, including
+22 new functions and 19 retained Linux functions, for 82 required executions.
+There were no failures or skips; retained device-node fixtures therefore have
+explicit executed outcomes. The host's non-Linux cancellation implementation
+does not supply this Linux credit. Nine ownership controls, 32 archive
+controls and six final checks passed, with owned-process cleanup confirmed.
+No standalone CLI scenarios or race run were included in this native cohort.
+This evidence is bound to the same 448-source-file cohort and uses fixtures;
+it does not qualify physical devices or playback/capture. Blocked-kernel
+deadlines, channels, volume, jack behavior, rebuilt-image, physical-hardware
+and release qualification remain separate open gates.
+
 The network acquisition path adds bounded discovery while retaining
 the existing result schema, current v5 emission and catalog. Registry reads
 request at most 32 entries per call and enforce the existing 128-entry

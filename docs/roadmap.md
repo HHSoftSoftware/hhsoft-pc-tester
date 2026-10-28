@@ -323,6 +323,22 @@ and signed direct, standalone and session workflows passed. Rebuilt images,
 physical memory, broader working sets, SPD/ECC, extended stress and Memtest86+
 remain open. The frozen alpha scope is unchanged.
 
+The audio readiness acquisition increment checks closure of its owned root,
+registry and attribute handles, bounds metadata reads and retains earlier
+diagnostics after later faults. It preserves root containment and inspects
+device-node metadata without opening playback or capture streams. The result
+schema, catalog and eleven-worker v5 session remain unchanged: audio errors
+remain reportable, while aborted work follows the existing session stop policy.
+The full Windows suite, twelve new portable functions, vet, formatting and
+three Linux builds passed. Selected Linux amd64 and 386 fixtures also passed:
+438 test/subtest events across four suites, including all 82 required function
+executions, with no failures or skips. This is fixture evidence, not physical
+audio qualification.
+Functional playback, capture, channels, volume, jack behavior, rebuilt images
+and physical audio hardware remain open. Subsequent input, safe-mode and
+pointer work retains its own implementation and validation gates; this
+increment does not complete those paths or alter the frozen alpha scope.
+
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.
 - Add CPU, partial memory, SMART/NVMe health, read-only storage, complete

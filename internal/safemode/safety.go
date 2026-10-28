@@ -7,9 +7,6 @@ import (
 	"bufio"
 	"context"
 	"errors"
-	"io"
-	"os"
-	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -34,22 +31,28 @@ func (result Result) Safe() bool {
 }
 
 func check(ctx context.Context, root string) Result {
+	return checkWith(ctx, root, systemSafetyOperations())
+}
+
+func checkWith(ctx context.Context, root string, operations safetyOperations) Result {
 	result := Result{Schema: Schema, Status: "error"}
-	var storageErr, networkErr error
-	result.WritableBlockMounts, storageErr = writableBlockMounts(ctx, root)
-	result.StorageObserved = storageErr == nil
+	storage, storageErr := observeSafetyRoot(ctx, root, operations, writableBlockMounts)
+	network, networkErr := observeSafetyRoot(ctx, root, operations, activeInterfaces)
+	result.WritableBlockMounts, result.ActiveNonLoopInterfaces = storage, network
+	result.StorageObserved, result.NetworkObserved = storageErr == nil, networkErr == nil
 	if storageErr != nil {
 		result.StorageDetail = "block mount safety could not be established"
 	}
-	result.ActiveNonLoopInterfaces, networkErr = activeInterfaces(ctx, root)
-	result.NetworkObserved = networkErr == nil
 	if networkErr != nil {
 		result.NetworkDetail = "offline network state could not be established"
 	}
 	switch {
-	case result.WritableBlockMounts > 0 || result.ActiveNonLoopInterfaces > 0:
+	case storage > 0 || network > 0:
 		result.Status = "fail"
-	case ctx.Err() != nil:
+	case storageErr != nil && storageErr != context.Canceled && storageErr != context.DeadlineExceeded ||
+		networkErr != nil && networkErr != context.Canceled && networkErr != context.DeadlineExceeded:
+		// Hard acquisition errors and cleanup uncertainty outrank cancellation.
+	case !nilSafetyValue(ctx) && ctx.Err() != nil:
 		result.Status = "aborted"
 	case result.StorageObserved && result.NetworkObserved:
 		result.Status = "pass"
@@ -59,46 +62,6 @@ func check(ctx context.Context, root string) Result {
 
 var interfaceName = regexp.MustCompile(`^[A-Za-z0-9_.:-]{1,64}$`)
 var deviceNumber = regexp.MustCompile(`^(0|[1-9][0-9]*):(0|[1-9][0-9]*)$`)
-
-func readMetadata(ctx context.Context, path string, limit int64) ([]byte, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, err
-	}
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	data, err := io.ReadAll(io.LimitReader(file, limit+1))
-	if err != nil || int64(len(data)) > limit {
-		return nil, errors.New("invalid kernel metadata")
-	}
-	if err := ctx.Err(); err != nil {
-		return nil, err
-	}
-	return data, nil
-}
-
-func registry(ctx context.Context, path string) ([]os.DirEntry, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, err
-	}
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	entries, err := file.ReadDir(4097)
-	if err != nil && !errors.Is(err, io.EOF) || len(entries) > 4096 {
-		return nil, errors.New("invalid kernel registry")
-	}
-	for _, entry := range entries {
-		if !interfaceName.MatchString(entry.Name()) || entry.Name() == "." || entry.Name() == ".." {
-			return nil, errors.New("invalid kernel interface")
-		}
-	}
-	return entries, nil
-}
 
 func validDeviceNumber(value string) bool {
 	if !deviceNumber.MatchString(value) {
@@ -112,25 +75,32 @@ func validDeviceNumber(value string) bool {
 	return true
 }
 
-func writableBlockMounts(ctx context.Context, root string) (int, error) {
-	entries, err := registry(ctx, filepath.Join(root, "sys/class/block"))
+func writableBlockMounts(ctx context.Context, root safetyRoot) (int, error) {
+	entries, err := registry(ctx, root, "sys/class/block")
 	if err != nil {
 		return 0, err
 	}
 	devices := map[string]bool{}
-	for _, entry := range entries {
-		data, err := readMetadata(ctx, filepath.Join(root, "sys/class/block", entry.Name(), "dev"), 64)
+	for _, name := range entries {
+		data, err := readMetadata(ctx, root, "sys/class/block/"+name+"/dev", 64)
+		if err != nil {
+			return 0, err
+		}
 		number := strings.TrimSpace(string(data))
-		if err != nil || !validDeviceNumber(number) || strings.HasPrefix(number, "0:") || devices[number] {
+		if !validDeviceNumber(number) || strings.HasPrefix(number, "0:") || devices[number] {
 			return 0, errors.New("invalid block device registry")
 		}
 		devices[number] = true
 	}
-	data, err := readMetadata(ctx, filepath.Join(root, "proc/self/mountinfo"), 4<<20)
-	if err != nil {
-		return 0, err
+	data, readErr := readMetadata(ctx, root, "proc/self/mountinfo", 4<<20)
+	if data == nil {
+		return 0, readErr
 	}
-	return parseMounts(data, devices)
+	writable, parseErr := parseMounts(data, devices)
+	if parseErr != nil {
+		return writable, errors.Join(readErr, parseErr)
+	}
+	return writable, readErr
 }
 
 // These kernel filesystems use non-block device numbers. Writable overlays are
@@ -265,29 +235,35 @@ func mountWritable(options string) (bool, error) {
 	return writable == 1, nil
 }
 
-func activeInterfaces(ctx context.Context, root string) (int, error) {
-	entries, err := registry(ctx, filepath.Join(root, "sys/class/net"))
+func activeInterfaces(ctx context.Context, root safetyRoot) (int, error) {
+	entries, err := registry(ctx, root, "sys/class/net")
 	if err != nil {
 		return 0, err
 	}
 	active, loopback := 0, false
-	for _, entry := range entries {
-		data, err := readMetadata(ctx, filepath.Join(root, "sys/class/net", entry.Name(), "flags"), 64)
+	for _, name := range entries {
+		data, readErr := readMetadata(ctx, root, "sys/class/net/"+name+"/flags", 64)
+		if data == nil && readErr != nil {
+			return active, readErr
+		}
 		value := strings.TrimSpace(string(data))
-		if err != nil || !strings.HasPrefix(value, "0x") {
-			return active, errors.New("network flags unavailable")
+		if !strings.HasPrefix(value, "0x") {
+			return active, errors.Join(readErr, errors.New("network flags unavailable"))
 		}
 		flags, err := strconv.ParseUint(strings.TrimPrefix(value, "0x"), 16, 32)
 		if err != nil {
-			return active, errors.New("invalid network flags")
+			return active, errors.Join(readErr, errors.New("invalid network flags"))
 		}
-		if entry.Name() == "lo" {
+		if name == "lo" {
 			if flags&8 == 0 {
-				return active, errors.New("invalid loopback interface")
+				return active, errors.Join(readErr, errors.New("invalid loopback interface"))
 			}
 			loopback = true
 		} else if flags&1 != 0 {
 			active++
+		}
+		if readErr != nil {
+			return active, readErr
 		}
 	}
 	if !loopback {

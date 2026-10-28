@@ -57,7 +57,7 @@ func useRealSessionFinalizer(t *testing.T, h *sessionHarness, collect snapshotCo
 		for _, outcome := range request.Outcomes {
 			args = append(args, "-outcome", outcome)
 		}
-		result := runFinalizeOwned(ctx, args, out, errOut, collect, random, time.Now, request.Gate)
+		result := runFinalizeTestOwned(t, ctx, args, out, errOut, collect, random, time.Now, request.Gate)
 		h.request = request
 		h.finalized = result.Code == 0
 		if result.Journal != nil {
@@ -372,7 +372,7 @@ func TestFinalizeRejectsSerializedSessionGate(t *testing.T) {
 	arguments = append(arguments, "-session-journal", filepath.Join(fixture.directory, "session-journal.json"), "-run-stop", fixture.journal.StopReason)
 	random := &journalForbiddenRandom{}
 	var errOut bytes.Buffer
-	if code := runFinalizeWith(t.Context(), arguments, io.Discard, &errOut, func(context.Context) (inventory.Snapshot, error) {
+	if code := runFinalizeTestWith(t, t.Context(), arguments, io.Discard, &errOut, func(context.Context) (inventory.Snapshot, error) {
 		t.Fatal("file replay reached inventory")
 		return inventory.Snapshot{}, nil
 	}, random, time.Now); code != 2 || random.calls != 0 || !strings.Contains(errOut.String(), "live coordinator gate") {

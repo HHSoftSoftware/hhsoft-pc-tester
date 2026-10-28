@@ -238,7 +238,7 @@ func assertQuickSafetyFinalizationRejected(t *testing.T, id string, evidence any
 	var stdout, stderr bytes.Buffer
 	random := &journalForbiddenRandom{}
 	collections, clocks := 0, 0
-	code := runFinalizeWith(t.Context(), args, &stdout, &stderr,
+	code := runFinalizeTestWith(t, t.Context(), args, &stdout, &stderr,
 		func(context.Context) (inventory.Snapshot, error) { collections++; return snapshot, nil }, random,
 		func() time.Time { clocks++; return time.Unix(1, 0) })
 	if code != 1 || collections != 0 || random.calls != 0 || clocks != 0 || stdout.Len() != 0 || !strings.Contains(stderr.String(), "validate evidence "+id) {
@@ -288,7 +288,7 @@ func TestFinalizePreservesHotJoinedQuickEvidence(t *testing.T) {
 				evidence := quickSafetyFixture(id, status, safety)
 				args, snapshot, reportPath := prepareQuickFinalization(t, id, evidence, string(status))
 				var stdout, stderr bytes.Buffer
-				if code := runFinalizeWith(t.Context(), args, &stdout, &stderr, func(context.Context) (inventory.Snapshot, error) { return snapshot, nil }, bytes.NewReader(bytes.Repeat([]byte{0x2a}, 256)), func() time.Time { return time.Unix(1, 0) }); code != 0 {
+				if code := runFinalizeTestWith(t, t.Context(), args, &stdout, &stderr, func(context.Context) (inventory.Snapshot, error) { return snapshot, nil }, bytes.NewReader(bytes.Repeat([]byte{0x2a}, 256)), func() time.Time { return time.Unix(1, 0) }); code != 0 {
 					t.Fatalf("joined thermal result rejected: %d %s", code, &stderr)
 				}
 				encoded, err := os.ReadFile(reportPath)
@@ -425,7 +425,7 @@ func TestFinalizeQuickEvidenceReadBoundaryAndMissingFallback(t *testing.T) {
 					}
 					collections := 0
 					var stdout, stderr bytes.Buffer
-					code := runFinalizeWith(t.Context(), args, &stdout, &stderr,
+					code := runFinalizeTestWith(t, t.Context(), args, &stdout, &stderr,
 						func(context.Context) (inventory.Snapshot, error) { collections++; return snapshot, nil },
 						bytes.NewReader(bytes.Repeat([]byte{0x3a}, 256)), func() time.Time { return time.Unix(1, 0) })
 					if mode == "missing" {

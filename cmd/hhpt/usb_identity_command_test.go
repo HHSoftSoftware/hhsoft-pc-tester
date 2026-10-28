@@ -97,7 +97,7 @@ func TestUSBReadinessFinalizerPreservesNonPassWithoutPromotion(t *testing.T) {
 			evidence := usbReadinessDiagnostic(status)
 			arguments, snapshot, path := prepareUSBFinalization(t, evidence, string(status))
 			var stdout, stderr bytes.Buffer
-			if code := runFinalizeWith(t.Context(), arguments, &stdout, &stderr, func(context.Context) (inventory.Snapshot, error) { return snapshot, nil }, bytes.NewReader(bytes.Repeat([]byte{0x37}, 64)), time.Now); code != 0 {
+			if code := runFinalizeTestWith(t, t.Context(), arguments, &stdout, &stderr, func(context.Context) (inventory.Snapshot, error) { return snapshot, nil }, bytes.NewReader(bytes.Repeat([]byte{0x37}, 64)), time.Now); code != 0 {
 				t.Fatalf("reportable USB outcome rejected: %s", stderr.String())
 			}
 			encoded, err := os.ReadFile(path)
@@ -128,7 +128,7 @@ func TestUSBReadinessFinalizerPreservesNonPassWithoutPromotion(t *testing.T) {
 				arguments, snapshot, path = prepareUSBFinalization(t, evidence, "pass")
 				collected := false
 				var rejected bytes.Buffer
-				if code := runFinalizeWith(t.Context(), arguments, &bytes.Buffer{}, &rejected, func(context.Context) (inventory.Snapshot, error) { collected = true; return snapshot, nil }, bytes.NewReader(bytes.Repeat([]byte{0x37}, 64)), time.Now); code != 1 || collected {
+				if code := runFinalizeTestWith(t, t.Context(), arguments, &bytes.Buffer{}, &rejected, func(context.Context) (inventory.Snapshot, error) { collected = true; return snapshot, nil }, bytes.NewReader(bytes.Repeat([]byte{0x37}, 64)), time.Now); code != 1 || collected {
 					t.Fatal("claimed pass reached collection/signing")
 				}
 				if _, err := os.Stat(path); !os.IsNotExist(err) {

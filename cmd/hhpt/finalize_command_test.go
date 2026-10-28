@@ -4,8 +4,10 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -16,6 +18,32 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/plan"
 )
+
+// Portable policy fixtures use the authentic owned core on unsupported systems.
+// Linux and Windows keep the real production wrappers and platform adapter.
+func runFinalizeTestWith(t *testing.T, ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, random io.Reader, now func() time.Time) int {
+	t.Helper()
+	if runtime.GOOS == "linux" || runtime.GOOS == "windows" {
+		return runFinalizeWith(ctx, arguments, stdout, stderr, collect, random, now)
+	}
+	return runFinalizeOwnedDestinationWithPrevious(ctx, arguments, stdout, stderr, collect, random, now, nil, writeDestination, nil, captureFixtureInput(t)).Code
+}
+
+func runFinalizeTestOwned(t *testing.T, ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, random io.Reader, now func() time.Time, gate sessionFinalGate) sessionFinalizationResult {
+	t.Helper()
+	if runtime.GOOS == "linux" || runtime.GOOS == "windows" {
+		return runFinalizeOwned(ctx, arguments, stdout, stderr, collect, random, now, gate)
+	}
+	return runFinalizeOwnedDestinationWithPrevious(ctx, arguments, stdout, stderr, collect, random, now, gate, writeDestination, nil, captureFixtureInput(t))
+}
+
+func runFinalizeTestDestination(t *testing.T, ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, random io.Reader, now func() time.Time, gate sessionFinalGate, writeOutput destinationWriter) sessionFinalizationResult {
+	t.Helper()
+	if runtime.GOOS == "linux" || runtime.GOOS == "windows" {
+		return runFinalizeOwnedDestination(ctx, arguments, stdout, stderr, collect, random, now, gate, writeOutput)
+	}
+	return runFinalizeOwnedDestinationWithPrevious(ctx, arguments, stdout, stderr, collect, random, now, gate, writeOutput, nil, captureFixtureInput(t))
+}
 
 func TestFinalizeBuildsSelfIssuedReportFromExistingEvidence(t *testing.T) {
 	directory := t.TempDir()
@@ -37,7 +65,7 @@ func TestFinalizeBuildsSelfIssuedReportFromExistingEvidence(t *testing.T) {
 	collect := func(context.Context) (inventory.Snapshot, error) { return snapshot, nil }
 	random := bytes.NewReader(bytes.Repeat([]byte{0x31}, sessionIDLength+32))
 	var stdout, stderr bytes.Buffer
-	if result := runFinalizeWith(context.Background(), arguments, &stdout, &stderr, collect, random, func() time.Time { return time.Unix(10, 20) }); result != 0 {
+	if result := runFinalizeTestWith(t, context.Background(), arguments, &stdout, &stderr, collect, random, func() time.Time { return time.Unix(10, 20) }); result != 0 {
 		t.Fatalf("finalize returned %d: %s", result, stderr.String())
 	}
 	if !strings.Contains(stdout.String(), "reduced identity assurance") {
@@ -72,12 +100,12 @@ func TestFinalizeBuildsSelfIssuedReportFromExistingEvidence(t *testing.T) {
 	}
 	stdout.Reset()
 	stderr.Reset()
-	if result := runVerify(context.Background(), []string{"-self-issued", reportPath}, &stdout, &stderr); result != 0 || !strings.Contains(stdout.String(), "does not prove operator identity") {
+	if result := runVerifyWithInput(context.Background(), []string{"-self-issued", reportPath}, &stdout, &stderr, captureFixtureInput(t)); result != 0 || !strings.Contains(stdout.String(), "does not prove operator identity") {
 		t.Fatalf("self-issued verification failed: result=%d stdout=%q stderr=%q", result, stdout.String(), stderr.String())
 	}
 	stdout.Reset()
 	stderr.Reset()
-	if result := runCompare(t.Context(), []string{"-self-issued", reportPath, reportPath}, &stdout, &stderr); result != 0 || !bytes.Contains(stdout.Bytes(), []byte(`"status": "unchanged"`)) {
+	if result := runCompareDestination(t.Context(), []string{"-self-issued", reportPath, reportPath}, &stdout, &stderr, writeDestination, captureFixtureInput(t)); result != 0 || !bytes.Contains(stdout.Bytes(), []byte(`"status": "unchanged"`)) {
 		t.Fatalf("self-issued comparison failed: result=%d stdout=%q stderr=%q", result, stdout.String(), stderr.String())
 	}
 }
@@ -97,7 +125,7 @@ func TestFinalizeRejectsEvidenceOutcomeMismatch(t *testing.T) {
 		"-outcome", "network.readiness.quick=not_present", "-outcome", "storage.readiness.quick=not_present", "-outcome", "usb.readiness.quick=not_present"}
 	called := false
 	collect := func(context.Context) (inventory.Snapshot, error) { called = true; return inventory.Snapshot{}, nil }
-	if result := runFinalizeWith(context.Background(), arguments, bytes.NewBuffer(nil), bytes.NewBuffer(nil), collect, bytes.NewReader(bytes.Repeat([]byte{1}, 48)), time.Now); result != 1 {
+	if result := runFinalizeTestWith(t, context.Background(), arguments, bytes.NewBuffer(nil), bytes.NewBuffer(nil), collect, bytes.NewReader(bytes.Repeat([]byte{1}, 48)), time.Now); result != 1 {
 		t.Fatalf("finalize returned %d", result)
 	}
 	if called {
@@ -150,7 +178,7 @@ func TestFinalizeWillNotSignUnsupportedPassEvidence(t *testing.T) {
 			collected := false
 			collect := func(context.Context) (inventory.Snapshot, error) { collected = true; return snapshot, nil }
 			var stderr bytes.Buffer
-			if result := runFinalizeWith(context.Background(), arguments, bytes.NewBuffer(nil), &stderr, collect, bytes.NewReader(nil), time.Now); result != 1 {
+			if result := runFinalizeTestWith(t, context.Background(), arguments, bytes.NewBuffer(nil), &stderr, collect, bytes.NewReader(nil), time.Now); result != 1 {
 				t.Fatalf("unsupported evidence was signed: result=%d error=%s", result, stderr.String())
 			}
 			if collected || !strings.Contains(stderr.String(), "validate evidence") {
@@ -183,7 +211,7 @@ func TestFinalizeRecordsHotPlugAgainstFrozenPlan(t *testing.T) {
 		"-outcome", "network.readiness.quick=not_present", "-outcome", "storage.readiness.quick=pass", "-outcome", "usb.readiness.quick=not_present"}
 	collect := func(context.Context) (inventory.Snapshot, error) { return final, nil }
 	var stdout, stderr bytes.Buffer
-	if result := runFinalizeWith(context.Background(), arguments, &stdout, &stderr, collect, bytes.NewReader(bytes.Repeat([]byte{0x51}, 48)), time.Now); result != 0 {
+	if result := runFinalizeTestWith(t, context.Background(), arguments, &stdout, &stderr, collect, bytes.NewReader(bytes.Repeat([]byte{0x51}, 48)), time.Now); result != 0 {
 		t.Fatalf("finalize returned %d: %s", result, stderr.String())
 	}
 	if !strings.Contains(stdout.String(), "HHPT_RUN_INTEGRITY status=fail") {
@@ -216,7 +244,7 @@ func TestFinalizeRejectsPassForNonScheduledTest(t *testing.T) {
 	arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory, "-output", reportPath,
 		"-outcome", "audio.readiness.quick=pass", "-outcome", "cpu.quick=not_present", "-outcome", "display.operator.quick=not_present", "-outcome", "graphics.quick=not_present", "-outcome", "input.keyboard.quick=not_present", "-outcome", "input.pointer.quick=not_present", "-outcome", "input.readiness.quick=not_present",
 		"-outcome", "memory.quick=not_present", "-outcome", "network.readiness.quick=not_present", "-outcome", "storage.readiness.quick=not_present", "-outcome", "usb.readiness.quick=not_present"}
-	if result := runFinalizeWith(context.Background(), arguments, bytes.NewBuffer(nil), bytes.NewBuffer(nil), func(context.Context) (inventory.Snapshot, error) { return inventory.Snapshot{}, nil }, bytes.NewReader(bytes.Repeat([]byte{1}, 48)), time.Now); result != 1 {
+	if result := runFinalizeTestWith(t, context.Background(), arguments, bytes.NewBuffer(nil), bytes.NewBuffer(nil), func(context.Context) (inventory.Snapshot, error) { return inventory.Snapshot{}, nil }, bytes.NewReader(bytes.Repeat([]byte{1}, 48)), time.Now); result != 1 {
 		t.Fatalf("finalize returned %d", result)
 	}
 }
@@ -234,7 +262,7 @@ func TestFinalizeRecordsWorkerErrorWhenEvidenceIsIncomplete(t *testing.T) {
 	arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory, "-output", reportPath,
 		"-outcome", "audio.readiness.quick=error", "-outcome", "cpu.quick=not_present", "-outcome", "display.operator.quick=not_present", "-outcome", "graphics.quick=not_present", "-outcome", "input.keyboard.quick=not_present", "-outcome", "input.pointer.quick=not_present", "-outcome", "input.readiness.quick=not_present",
 		"-outcome", "memory.quick=not_present", "-outcome", "network.readiness.quick=not_present", "-outcome", "storage.readiness.quick=not_present", "-outcome", "usb.readiness.quick=not_present"}
-	if result := runFinalizeWith(context.Background(), arguments, bytes.NewBuffer(nil), bytes.NewBuffer(nil), func(context.Context) (inventory.Snapshot, error) { return snapshot, nil }, bytes.NewReader(bytes.Repeat([]byte{1}, 48)), time.Now); result != 0 {
+	if result := runFinalizeTestWith(t, context.Background(), arguments, bytes.NewBuffer(nil), bytes.NewBuffer(nil), func(context.Context) (inventory.Snapshot, error) { return snapshot, nil }, bytes.NewReader(bytes.Repeat([]byte{1}, 48)), time.Now); result != 0 {
 		t.Fatalf("finalize returned %d", result)
 	}
 	reportFile, err := os.Open(reportPath)
@@ -282,7 +310,7 @@ func TestFinalizeWillNotReplaceKnownDisplayFailureWithExecutionNote(t *testing.T
 			collected := false
 			collect := func(context.Context) (inventory.Snapshot, error) { collected = true; return snapshot, nil }
 			var stderr bytes.Buffer
-			if result := runFinalizeWith(t.Context(), arguments, bytes.NewBuffer(nil), &stderr, collect, bytes.NewReader(nil), time.Now); result != 1 {
+			if result := runFinalizeTestWith(t, t.Context(), arguments, bytes.NewBuffer(nil), &stderr, collect, bytes.NewReader(nil), time.Now); result != 1 {
 				t.Fatalf("known display failure was signed under another outcome: result=%d error=%s", result, stderr.String())
 			}
 			if collected || !strings.Contains(stderr.String(), "explicit display failure") {
@@ -306,7 +334,7 @@ func TestFinalizeSignsLegitimatePartialDisplayEvidence(t *testing.T) {
 			arguments, snapshot, reportPath := prepareDisplayFinalization(t, display, string(status))
 			collect := func(context.Context) (inventory.Snapshot, error) { return snapshot, nil }
 			var stderr bytes.Buffer
-			if result := runFinalizeWith(t.Context(), arguments, bytes.NewBuffer(nil), &stderr, collect, bytes.NewReader(bytes.Repeat([]byte{0x37}, 64)), time.Now); result != 0 {
+			if result := runFinalizeTestWith(t, t.Context(), arguments, bytes.NewBuffer(nil), &stderr, collect, bytes.NewReader(bytes.Repeat([]byte{0x37}, 64)), time.Now); result != 0 {
 				t.Fatalf("partial display result was rejected: result=%d error=%s", result, stderr.String())
 			}
 			encoded, err := os.ReadFile(reportPath)

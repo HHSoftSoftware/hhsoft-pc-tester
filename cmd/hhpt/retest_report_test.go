@@ -633,8 +633,14 @@ func TestRetestVerifiedSummaryCannotBeReplacedByPathOrJournal(t *testing.T) {
 	args = append(args, "-session-id", retestChildID)
 	var out, errOut bytes.Buffer
 	reads := 0
-	result := runFinalizeOwnedDestinationWithPrevious(t.Context(), args, &out, &errOut, func(context.Context) (inventory.Snapshot, error) { return snapshot, nil }, bytes.NewReader(bytes.Repeat([]byte{0x41}, 64)), time.Now, nil, writeDestination, summary, func(context.Context, string, retestInputKind) ([]byte, error) { reads++; return nil, errRetestInput })
-	if result.Code != 0 || reads != 0 {
+	result := runFinalizeOwnedDestinationWithPrevious(t.Context(), args, &out, &errOut, func(context.Context) (inventory.Snapshot, error) { return snapshot, nil }, bytes.NewReader(bytes.Repeat([]byte{0x41}, 64)), time.Now, nil, writeDestination, summary, func(ctx context.Context, path string, kind retestInputKind) ([]byte, error) {
+		reads++
+		if reads != 1 || path != args[1] || kind != retestFingerprintKeyInput {
+			t.Fatal("immutable summary requested a parent reopen or changed key role")
+		}
+		return readRetestInput(ctx, path, kind)
+	})
+	if result.Code != 0 || reads != 1 {
 		t.Fatalf("immutable summary reopened a parent path: %d %s", result.Code, &errOut)
 	}
 	encoded, err := os.ReadFile(output)

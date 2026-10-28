@@ -156,7 +156,7 @@ func TestFinalizeAcceptsActualWorkerJSONSerialization(t *testing.T) {
 			}
 			collect := func(context.Context) (inventory.Snapshot, error) { return snapshot, nil }
 			var stdout, stderr bytes.Buffer
-			if code := runFinalizeWith(context.Background(), arguments, &stdout, &stderr, collect,
+			if code := runFinalizeTestWith(t, context.Background(), arguments, &stdout, &stderr, collect,
 				bytes.NewReader(bytes.Repeat([]byte{0x38}, sessionIDLength+32)), func() time.Time { return time.Unix(10, 20) }); code != 0 {
 				t.Fatalf("worker output could not finalize: code=%d stderr=%s", code, stderr.String())
 			}

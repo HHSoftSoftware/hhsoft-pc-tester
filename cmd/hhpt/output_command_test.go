@@ -66,7 +66,7 @@ func outputCommandCases(t *testing.T) []outputCommandCase {
 				}, write)
 		}},
 		{"finalize", func(write destinationWriter, stdout, stderr io.Writer) int {
-			return runFinalizeOwnedDestination(t.Context(), finalizeArguments, stdout, stderr, collect,
+			return runFinalizeTestDestination(t, t.Context(), finalizeArguments, stdout, stderr, collect,
 				bytes.NewReader(bytes.Repeat([]byte{0x34}, 64)), now, nil, write).Code
 		}},
 		{"plan", func(write destinationWriter, stdout, stderr io.Writer) int {

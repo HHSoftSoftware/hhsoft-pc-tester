@@ -442,9 +442,21 @@ before collection. It preserves later worker/signing/output policy and cleanup
 exit 12. The isolated host suite passed 5,004 test/subtest outcomes; selected
 Linux amd64/386 fixtures passed 1,074 across eight suites and 100 required root
 executions. The [validation record](requirements-validation.md#capture-input-ownership)
-separates that evidence from the remaining six raw-key calls in finalization,
-discovery, persistence and save, and from persistence's live source ownership.
+records the six raw-key calls left at that capture stage in finalization,
+discovery, persistence and save, separately from persistence's live source
+ownership. The finalizer increment below reduces the remaining key calls to five.
 Existing image, physical-PC and release gates are unchanged.
+
+Finalization checks the exact 32-byte fingerprint input and both owned closures,
+contains input diagnostics and handles local malformed contexts before linked
+verification or key acquisition. It preserves the verified parent summary,
+current evidence and the session's fresh finalization context. The host suite
+passed 5,053 test/subtest outcomes and all 121 required host roots. Selected
+Linux amd64/386 fixtures passed 1,934 outcomes across eight suites and 256 root
+executions, with zero failures or skips and confirmed cleanup. Five legacy
+raw-key calls in discovery, persistence and save remain. Frozen-plan/evidence
+closure, persistence's live source owner and the broader feature roadmap remain
+separate work; existing image, physical-PC and release gates are unchanged.
 
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.

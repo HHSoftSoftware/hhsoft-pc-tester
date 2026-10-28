@@ -129,7 +129,7 @@ func TestSafetyAcquisitionFinalizerIndependentlyRejectsPromotedJournal(t *testin
 			if mode == "baseline-safe" {
 				random = bytes.NewReader(bytes.Repeat([]byte{0x45}, 64))
 			}
-			result := runFinalizeOwned(t.Context(), args, &stdout, &stderr, func(context.Context) (inventory.Snapshot, error) { collections++; return fixture.snapshot, nil }, random, time.Now, func(context.Context) (sessionJournal, error) { gates++; return value, nil })
+			result := runFinalizeTestOwned(t, t.Context(), args, &stdout, &stderr, func(context.Context) (inventory.Snapshot, error) { collections++; return fixture.snapshot, nil }, random, time.Now, func(context.Context) (sessionJournal, error) { gates++; return value, nil })
 			if mode == "baseline-safe" {
 				if result.Code != 0 || gates != 1 || collections != 1 || stderr.Len() != 0 {
 					t.Fatalf("safe control did not reach signing: %d %s", result.Code, stderr.String())

@@ -181,7 +181,7 @@ func assertKeyboardAcquisitionFinalizerBoundary(t *testing.T, raw []byte, cleanu
 				return sessionJournal{}, nil
 			}
 		}
-		code := runFinalizeOwned(t.Context(), args, &out, &stderr, func(context.Context) (inventory.Snapshot, error) { collections++; return snapshot, nil }, entropy, time.Now, gate).Code
+		code := runFinalizeTestOwned(t, t.Context(), args, &out, &stderr, func(context.Context) (inventory.Snapshot, error) { collections++; return snapshot, nil }, entropy, time.Now, gate).Code
 		wantCode, wantReason := 1, "functional keyboard evidence requires the live current session gate\n"
 		if promote {
 			wantReason = "validate evidence input.keyboard.quick: schema or status does not match supervisor outcome\n"

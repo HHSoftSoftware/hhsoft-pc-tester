@@ -34,6 +34,7 @@ func journalShortMonitor() safemode.MonitorResult {
 }
 
 type journalFixture struct {
+	t                     *testing.T
 	directory, reportPath string
 	arguments             []string
 	frozen                plan.Plan
@@ -79,7 +80,7 @@ func newJournalFixture(t *testing.T, selected ...string) *journalFixture {
 	if err := os.WriteFile(planPath, encoded, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	fixture := &journalFixture{directory: directory, reportPath: filepath.Join(directory, "report.hhpcr"), frozen: frozen, snapshot: snapshot}
+	fixture := &journalFixture{t: t, directory: directory, reportPath: filepath.Join(directory, "report.hhpcr"), frozen: frozen, snapshot: snapshot}
 	fixture.arguments = []string{"-fingerprint-key", keyPath, "-plan", planPath, "-evidence-dir", directory,
 		"-session-id", "journal-fixture", "-output", fixture.reportPath}
 	fixture.journal = sessionJournal{Schema: sessionJournalSchema, PlanID: frozen.ID, StopReason: "operator_cancelled", BudgetMilliseconds: 1000, ElapsedMilliseconds: 100, Monitor: journalShortMonitor(), PreparationStartedMilliseconds: 100, InventoryPreparedMilliseconds: 100, StopRequestedMilliseconds: 100, SafetyJoinedMilliseconds: 100, Thermal: sessionThermalSummary(100), LocalThermalSources: []sessionevidence.LocalThermalSource{}}
@@ -495,7 +496,7 @@ func TestFinalizeSessionCannotDowngradeCompletedFailure(t *testing.T) {
 func TestFinalizeSessionFlagsMustAppearTogether(t *testing.T) {
 	for _, extra := range [][]string{{"-run-stop", "completed"}, {"-session-journal", "journal.json"}, {"-session-journal", "", "-run-stop", "completed"}, {"-session-journal", "journal.json", "-run-stop", ""}} {
 		arguments := append([]string{"-fingerprint-key", "key", "-plan", "plan", "-output", "report"}, extra...)
-		if code := runFinalizeWith(t.Context(), arguments, &bytes.Buffer{}, &bytes.Buffer{}, nil, nil, nil); code != 2 {
+		if code := runFinalizeTestWith(t, t.Context(), arguments, &bytes.Buffer{}, &bytes.Buffer{}, nil, nil, nil); code != 2 {
 			t.Fatalf("unpaired session flags returned %d", code)
 		}
 	}
@@ -601,7 +602,7 @@ func TestFinalizeWithoutJournalDoesNotObserveSafetyOrAddSession(t *testing.T) {
 		arguments = append(arguments, "-outcome", worker.ID+"="+worker.Outcome)
 	}
 	var stderr bytes.Buffer
-	code := runFinalizeWith(t.Context(), arguments, &bytes.Buffer{}, &stderr,
+	code := runFinalizeTestWith(t, t.Context(), arguments, &bytes.Buffer{}, &stderr,
 		func(context.Context) (inventory.Snapshot, error) { return fixture.snapshot, nil },
 		bytes.NewReader(bytes.Repeat([]byte{0x65}, 64)), time.Now)
 	if code != 0 {
@@ -621,7 +622,7 @@ func TestFinalizeWithoutJournalDoesNotObserveSafetyOrAddSession(t *testing.T) {
 }
 
 func (fixture *journalFixture) finalize(ctx context.Context, args []string, out, errOut io.Writer, collect snapshotCollector, random io.Reader, now func() time.Time, observe func(context.Context) safemode.Result) int {
-	return runFinalizeOwned(ctx, args, out, errOut, collect, random, now, func(ctx context.Context) (sessionJournal, error) {
+	return runFinalizeTestOwned(fixture.t, ctx, args, out, errOut, collect, random, now, func(ctx context.Context) (sessionJournal, error) {
 		if observe == nil {
 			return sessionJournal{}, errors.New("missing live observation")
 		}

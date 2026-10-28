@@ -92,7 +92,7 @@ func TestInputUniqueIdentifiersNeverReachSignedReportsOrViews(t *testing.T) {
 				arguments = append(arguments, "-outcome", id+"="+outcomes[id])
 			}
 			var stdout, stderr bytes.Buffer
-			if code := runFinalizeWith(t.Context(), arguments, &stdout, &stderr, collector.Collect,
+			if code := runFinalizeTestWith(t, t.Context(), arguments, &stdout, &stderr, collector.Collect,
 				bytes.NewReader(bytes.Repeat([]byte{0x31}, 64)), func() time.Time { return time.Unix(1, 0) }); code != 0 {
 				t.Fatalf("finalize returned %d: %s", code, stderr.String())
 			}

@@ -214,7 +214,7 @@ func assertAudioSignedDiagnostic(t *testing.T, evidence audio.Result) {
 	arguments, snapshot, output := prepareAudioAcquisitionFinalization(t, evidence, string(evidence.Status))
 	var stdout, stderr bytes.Buffer
 	collections := 0
-	if code := runFinalizeWith(t.Context(), arguments, &stdout, &stderr, func(context.Context) (inventory.Snapshot, error) { collections++; return snapshot, nil }, bytes.NewReader(bytes.Repeat([]byte{0x73}, 64)), time.Now); code != 0 || collections != 1 || stderr.Len() != 0 {
+	if code := runFinalizeTestWith(t, t.Context(), arguments, &stdout, &stderr, func(context.Context) (inventory.Snapshot, error) { collections++; return snapshot, nil }, bytes.NewReader(bytes.Repeat([]byte{0x73}, 64)), time.Now); code != 0 || collections != 1 || stderr.Len() != 0 {
 		t.Fatalf("audio finalization failed: %d %s", code, stderr.String())
 	}
 	raw, err := os.ReadFile(output)
@@ -245,7 +245,7 @@ func assertAudioSignedDiagnostic(t *testing.T, evidence audio.Result) {
 		arguments, snapshot, output = prepareAudioAcquisitionFinalization(t, evidence, "pass")
 		collected := false
 		var rejectedOut, rejectedErr bytes.Buffer
-		code := runFinalizeWith(t.Context(), arguments, &rejectedOut, &rejectedErr, func(context.Context) (inventory.Snapshot, error) { collected = true; return snapshot, nil }, bytes.NewReader(bytes.Repeat([]byte{0x73}, 64)), time.Now)
+		code := runFinalizeTestWith(t, t.Context(), arguments, &rejectedOut, &rejectedErr, func(context.Context) (inventory.Snapshot, error) { collected = true; return snapshot, nil }, bytes.NewReader(bytes.Repeat([]byte{0x73}, 64)), time.Now)
 		if code != 1 || collected || rejectedOut.Len() != 0 || rejectedErr.String() != "validate evidence audio.readiness.quick: schema or status does not match supervisor outcome\n" {
 			t.Fatalf("wrong rejection boundary: %d %v %q", code, collected, rejectedErr.String())
 		}

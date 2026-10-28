@@ -388,6 +388,29 @@ is unchanged. Host and selected Linux amd64/386 fixtures passed; these checks
 do not establish blocked-call deadlines, secure key erasure or physical-media
 qualification.
 
+### Finalizer fingerprint input
+
+The finalizer checks its 32-byte fingerprint key through
+bounded regular-file acquisition. Metadata establishes eligibility before
+readable acquisition; the readable handle must match that object, and both
+owners must close before bytes are accepted. Input, size or closure faults
+return a fixed key-input diagnostic. Observed cancellation before or just after
+acquisition stops later finalization work.
+
+These checks follow existing argument, predecessor, outcome and evidence-directory
+validation and precede frozen-plan loading. Earlier authorized predecessor reads
+can therefore occur. The already verified parent summary is not reopened merely
+to acquire the fingerprint key. Cleanly stopped sessions retain their fresh
+bounded finalization context, and later safety, signing, output and worker
+cleanup-exit-12 policy remain unchanged.
+
+Host and selected Linux amd64/386 fixtures qualified this input boundary
+(see the [validation record](requirements-validation.md#finalizer-fingerprint-input-ownership)).
+Five legacy raw-key calls in discovery, persistence and save remain, along with
+frozen-plan/evidence readers and persistence's live verified-report owner.
+These input checks add no blocked-call deadline, secure key-erasure or durability
+guarantee.
+
 ## Interpret Results
 
 Read both the frozen plan status and the final result. They answer different

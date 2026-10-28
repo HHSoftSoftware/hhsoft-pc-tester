@@ -117,14 +117,14 @@ func assertPointerAcquisitionFinalizer(t *testing.T, raw []byte, status inputtes
 		var out, stderr bytes.Buffer
 		if promote {
 			entropy := &pointerUnexpectedEntropy{}
-			if code := runFinalizeWith(t.Context(), args, &out, &stderr, collect, entropy, time.Now); code != 1 || stderr.String() != "validate evidence input.pointer.quick: schema or status does not match supervisor outcome\n" || collected != 0 || entropy.calls != 0 || out.Len() != 0 {
+			if code := runFinalizeTestWith(t, t.Context(), args, &out, &stderr, collect, entropy, time.Now); code != 1 || stderr.String() != "validate evidence input.pointer.quick: schema or status does not match supervisor outcome\n" || collected != 0 || entropy.calls != 0 || out.Len() != 0 {
 				t.Fatalf("promotion failed at wrong boundary: %d %q", code, stderr.String())
 			}
 			if _, err := os.Stat(report); !os.IsNotExist(err) {
 				t.Fatal("promoted report exists")
 			}
 		} else {
-			if code := runFinalizeWith(t.Context(), args, &out, &stderr, collect, bytes.NewReader(bytes.Repeat([]byte{0x47}, 32)), time.Now); code != 0 || collected != 1 || stderr.Len() != 0 {
+			if code := runFinalizeTestWith(t, t.Context(), args, &out, &stderr, collect, bytes.NewReader(bytes.Repeat([]byte{0x47}, 32)), time.Now); code != 0 || collected != 1 || stderr.Len() != 0 {
 				t.Fatalf("honest evidence rejected: %d %q", code, stderr.String())
 			}
 			reportBytes, err := os.ReadFile(report)

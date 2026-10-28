@@ -88,7 +88,7 @@ func TestNetworkAcquisitionCommandRetainsDiagnosticStatuses(t *testing.T) {
 		arguments, snapshot, output := prepareNetworkAcquisitionFinalization(t, got, "pass")
 		collected := false
 		var finalizeStdout, finalizeStderr bytes.Buffer
-		if code := runFinalizeWith(t.Context(), arguments, &finalizeStdout, &finalizeStderr, func(context.Context) (inventory.Snapshot, error) { collected = true; return snapshot, nil }, bytes.NewReader(bytes.Repeat([]byte{0x52}, 64)), time.Now); code != 1 || collected || finalizeStdout.Len() != 0 || finalizeStderr.String() != "validate evidence network.readiness.quick: schema or status does not match supervisor outcome\n" {
+		if code := runFinalizeTestWith(t, t.Context(), arguments, &finalizeStdout, &finalizeStderr, func(context.Context) (inventory.Snapshot, error) { collected = true; return snapshot, nil }, bytes.NewReader(bytes.Repeat([]byte{0x52}, 64)), time.Now); code != 1 || collected || finalizeStdout.Len() != 0 || finalizeStderr.String() != "validate evidence network.readiness.quick: schema or status does not match supervisor outcome\n" {
 			t.Fatalf("partial diagnostic was not rejected by network evidence validation: code=%d collected=%v stderr=%q", code, collected, finalizeStderr.String())
 		}
 		if _, err := os.Stat(output); !os.IsNotExist(err) {
@@ -174,7 +174,7 @@ func TestNetworkAcquisitionManualFinalizerPreservesEvidenceWithoutPromotion(t *t
 			args, snapshot, output := prepareNetworkAcquisitionFinalization(t, evidence, string(status))
 			var finalizeStdout, finalizeStderr bytes.Buffer
 			collections := 0
-			if code := runFinalizeWith(t.Context(), args, &finalizeStdout, &finalizeStderr, func(context.Context) (inventory.Snapshot, error) { collections++; return snapshot, nil }, bytes.NewReader(bytes.Repeat([]byte{0x52}, 64)), time.Now); code != 0 || collections != 1 || finalizeStderr.Len() != 0 {
+			if code := runFinalizeTestWith(t, t.Context(), args, &finalizeStdout, &finalizeStderr, func(context.Context) (inventory.Snapshot, error) { collections++; return snapshot, nil }, bytes.NewReader(bytes.Repeat([]byte{0x52}, 64)), time.Now); code != 0 || collections != 1 || finalizeStderr.Len() != 0 {
 				t.Fatalf("standalone diagnostic finalization failed: code=%d collections=%d stderr=%q", code, collections, finalizeStderr.String())
 			}
 			raw, err := os.ReadFile(output)
@@ -205,7 +205,7 @@ func TestNetworkAcquisitionManualFinalizerPreservesEvidenceWithoutPromotion(t *t
 				args, snapshot, output = prepareNetworkAcquisitionFinalization(t, evidence, "pass")
 				collected := false
 				var rejectedStdout, rejectedStderr bytes.Buffer
-				if code := runFinalizeWith(t.Context(), args, &rejectedStdout, &rejectedStderr, func(context.Context) (inventory.Snapshot, error) { collected = true; return snapshot, nil }, bytes.NewReader(bytes.Repeat([]byte{0x52}, 64)), time.Now); code != 1 || collected || rejectedStdout.Len() != 0 || rejectedStderr.String() != "validate evidence network.readiness.quick: schema or status does not match supervisor outcome\n" {
+				if code := runFinalizeTestWith(t, t.Context(), args, &rejectedStdout, &rejectedStderr, func(context.Context) (inventory.Snapshot, error) { collected = true; return snapshot, nil }, bytes.NewReader(bytes.Repeat([]byte{0x52}, 64)), time.Now); code != 1 || collected || rejectedStdout.Len() != 0 || rejectedStderr.String() != "validate evidence network.readiness.quick: schema or status does not match supervisor outcome\n" {
 					t.Fatalf("false pass was not rejected by network evidence validation: code=%d collected=%v stderr=%q", code, collected, rejectedStderr.String())
 				}
 				if _, err := os.Stat(output); !os.IsNotExist(err) {

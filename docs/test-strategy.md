@@ -1329,6 +1329,43 @@ physical-media, kernel-close fault, blocked-kernel deadline, key-erasure or
 fsync/durability qualification. Remaining raw-key consumers and persistence's
 live source owner stay outside this increment; existing release gates remain.
 
+## Finalizer Fingerprint Input Ownership Validation
+
+The finalizer consumer tests establish a valid planned report before injecting
+key faults. They use the actual shared owned-input body for metadata/readable
+Close faults, concurrent cancellation and a representative acquired-owner-plus-error
+case. Exact acquired/closed ledgers and readable-before-metadata order accompany
+fixed diagnostics and zero later random, collector, clock, gate and destination
+effects. Malformed successful byte lengths and cancellation after closed
+successful acquisition have separate consumer checks. The existing primitive
+protocol matrix remains distinct from these integration witnesses.
+
+Otherwise-valid explicit-parent and verified-summary fixtures expose both early
+typed-nil-context boundaries. The immutable-parent test permits exactly one
+fingerprint path/role read and rejects every parent reopen. Independent fixed
+HMAC vectors, signed references, raw-key absence and current result fields
+prevent self-derived positive oracles. Retained real session-adapter coverage
+keeps clean worker stops separate from a canceled finalization context and
+preserves consumed/unsafe-gate, completed-failure and cleanup-exit-12 policy.
+
+Portable injected fixtures do not qualify an unsupported real adapter. The
+isolated Windows run passed 5,053 test/subtest outcomes and all 121 required
+host roots, with 29 packages passing, 17 test skips and one skipped package.
+All eight commands and eight postchecks passed; the unsupported-only candidate
+root was not executed.
+
+Selected Linux amd64/386 execution passed 1,934 test/subtest outcomes across
+eight suites and 256 root executions. Each architecture passed all 128 selected
+roots and 967 required names, including the four symlink leaves skipped by the
+Windows host. Zero native failures or skips occurred, and cleanup was confirmed.
+The eight explicit nested output-command groups per architecture passed 144
+child-start ordering checks in total; slash characters alone do not create an
+intermediate parent event. Nine ownership cases, 32 archive cases and six root
+postchecks also passed. This software fixture evidence does not qualify
+unsupported real adapters, installed-CLI execution, physical media, kernel-close
+faults, blocked-call deadlines, secure key erasure, fsync/durability or release.
+Existing image, physical-PC and release gates remain open.
+
 ## Evidence contract
 
 Each case emits a structured result containing:

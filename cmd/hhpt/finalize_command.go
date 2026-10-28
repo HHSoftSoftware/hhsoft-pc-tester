@@ -119,6 +119,10 @@ func runFinalizeOwnedDestinationWithPrevious(ctx context.Context, arguments []st
 			return 2
 		}
 		if parentOptions.present() {
+			if nilRetestInputValue(ctx) || readInput == nil {
+				fmt.Fprintln(stderr, "finalize: predecessor input or verification failed")
+				return 1
+			}
 			var parentErr error
 			previous, parentErr = parentOptions.load(ctx, readInput)
 			if parentErr != nil {
@@ -126,7 +130,7 @@ func runFinalizeOwnedDestinationWithPrevious(ctx context.Context, arguments []st
 				return 1
 			}
 		}
-		if previous != nil && (ctx == nil || ctx.Err() != nil) {
+		if previous != nil && (nilRetestInputValue(ctx) || ctx.Err() != nil) {
 			fmt.Fprintln(stderr, "finalize: linked retest cancelled")
 			return 1
 		}
@@ -139,9 +143,21 @@ func runFinalizeOwnedDestinationWithPrevious(ctx context.Context, arguments []st
 			fmt.Fprintf(stderr, "validate evidence directory: %v\n", err)
 			return 1
 		}
-		fingerprintKey, err := readRawKey(*fingerprintKeyPath, 32)
-		if err != nil {
-			fmt.Fprintf(stderr, "read fingerprint key: %v\n", err)
+		if nilRetestInputValue(ctx) || readInput == nil {
+			fmt.Fprintln(stderr, "finalize input acquisition failed")
+			return 1
+		}
+		if ctx.Err() != nil {
+			fmt.Fprintln(stderr, "finalize input acquisition failed")
+			return 1
+		}
+		fingerprintKey, err := readInput(ctx, *fingerprintKeyPath, retestFingerprintKeyInput)
+		if err != nil || len(fingerprintKey) != 32 {
+			fmt.Fprintln(stderr, "read fingerprint key: input acquisition failed")
+			return 1
+		}
+		if ctx.Err() != nil {
+			fmt.Fprintln(stderr, "finalize input acquisition failed")
 			return 1
 		}
 		encodedPlan, err := readSmallRegularFile(*planPath, 1<<20)

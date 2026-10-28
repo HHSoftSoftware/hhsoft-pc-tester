@@ -73,7 +73,7 @@ func TestFinalizeRejectsRehashedCapabilityHiddenOnUnchangedHardware(t *testing.T
 	collect := func(context.Context) (inventory.Snapshot, error) { collected = true; return snapshot, nil }
 	random := bytes.NewReader(bytes.Repeat([]byte{0x63}, 64))
 	var stdout, stderr bytes.Buffer
-	if result := runFinalizeWith(t.Context(), arguments, &stdout, &stderr, collect, random, time.Now); result != 1 {
+	if result := runFinalizeTestWith(t, t.Context(), arguments, &stdout, &stderr, collect, random, time.Now); result != 1 {
 		t.Fatalf("hidden display was signed: result=%d stderr=%s", result, stderr.String())
 	}
 	if !collected || !strings.Contains(stderr.String(), "plan does not match unchanged hardware") {
@@ -119,7 +119,7 @@ func TestFinalizeRejectsContradictoryPlanJSONBeforeSigning(t *testing.T) {
 			collect := func(context.Context) (inventory.Snapshot, error) { collected = true; return snapshot, nil }
 			random := bytes.NewReader(bytes.Repeat([]byte{0x64}, 64))
 			var stdout, stderr bytes.Buffer
-			if result := runFinalizeWith(t.Context(), arguments, &stdout, &stderr, collect, random, time.Now); result != 1 {
+			if result := runFinalizeTestWith(t, t.Context(), arguments, &stdout, &stderr, collect, random, time.Now); result != 1 {
 				t.Fatalf("contradictory plan was signed: result=%d stderr=%s", result, stderr.String())
 			}
 			if collected || !strings.Contains(stderr.String(), "validate frozen plan: decode plan:") {

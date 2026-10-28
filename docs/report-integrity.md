@@ -206,9 +206,25 @@ Cancellation is checked before either key and before randomness or collection.
 This increment leaves HMAC identities, signed bytes, coverage scope, later
 worker/signing policy and output behavior unchanged. It adds no live-session
 gate, key-erasure guarantee or durability claim. Host and selected Linux
-amd64/386 fixtures qualified this capture boundary. Six legacy raw-key calls
-remain in finalization, deployment/report-target discovery, persistence and
-save; persistence's live verified-report owner also remains separate work.
+amd64/386 fixtures qualified this capture boundary. At that stage, six legacy
+raw-key calls remained in finalization, deployment/report-target discovery,
+persistence and save. The finalizer increment below reduces the remaining key
+calls to five; persistence's live verified-report owner remains separate work.
+
+The finalizer reuses the finite 32-byte fingerprint role.
+It accepts bytes only after checked metadata/readable closure, rejects malformed
+successful reader results and preserves input-fault priority when cancellation
+also occurs. Nil and typed-nil contexts are rejected locally before either
+linked predecessor path can inspect them, as well as at fingerprint acquisition.
+Fixed input diagnostics do not interpolate key paths or provider errors.
+
+A verified predecessor summary remains immutable: fingerprint acquisition adds
+one key read without reopening the parent or changing its signed reference.
+HMAC identities, key epochs, coverage, report formats and later finalization
+policy remain unchanged. A stopped worker context is not substituted for the
+session's fresh bounded integrity context. Host and selected Linux amd64/386
+fixtures qualified this finalizer boundary. Five legacy raw-key calls remain,
+along with the separate frozen-plan/evidence and persistence-owner work.
 
 Quick-session reports additionally bind a `session` object inside the existing
 run-integrity evidence. It records the stop reason, session budget, elapsed time,

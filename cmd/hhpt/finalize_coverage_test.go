@@ -73,7 +73,7 @@ func TestFinalizeAccountsForEveryFrozenTestWithoutInventingExecution(t *testing.
 					arguments = append(arguments, "-outcome", worker.id+"="+string(planned[worker.id].Status))
 				}
 				var stdout, stderr bytes.Buffer
-				if code := runFinalizeWith(t.Context(), arguments, &stdout, &stderr,
+				if code := runFinalizeTestWith(t, t.Context(), arguments, &stdout, &stderr,
 					func(context.Context) (inventory.Snapshot, error) { return snapshot, nil },
 					bytes.NewReader(bytes.Repeat([]byte{0x39}, 32)), time.Now); code != 0 {
 					t.Fatalf("finalize returned %d: %s", code, stderr.String())

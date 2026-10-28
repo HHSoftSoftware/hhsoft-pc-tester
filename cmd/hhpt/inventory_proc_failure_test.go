@@ -122,7 +122,7 @@ func requireProcCommandBoundary(t *testing.T, command string, factory func(*int)
 			bytes.NewReader(nil), func() time.Time { clocks++; return time.Unix(100, 0) })
 	case "finalize":
 		args, _, _, output = selectedCPUFinalization(t, "excluded")
-		code = runFinalizeWith(t.Context(), args, &stdout, &stderr, collect, bytes.NewReader(bytes.Repeat([]byte{0x64}, 64)), func() time.Time { clocks++; return time.Unix(100, 0) })
+		code = runFinalizeTestWith(t, t.Context(), args, &stdout, &stderr, collect, bytes.NewReader(bytes.Repeat([]byte{0x64}, 64)), func() time.Time { clocks++; return time.Unix(100, 0) })
 	}
 	if calls != 1 || code != 1 || stdout.Len() != 0 || workers != 0 || clocks != 0 || !strings.Contains(stderr.String(), want.Error()) {
 		t.Fatalf("primary observation failure crossed command boundary: code=%d calls=%d workers=%d clocks=%d stderr=%s", code, calls, workers, clocks, &stderr)

@@ -127,13 +127,55 @@ ownership cases, 32 archive cases and six root postchecks also passed. These
 measurements used the isolated 494-file projection; its 492-file committed
 baseline remained distinct.
 
-Six legacy raw-key calls remain: one in finalization, one in deployment media
-discovery, one in report-target discovery/authorization, two in persistence
-and one in save. Persistence's live source handle and other existing input
-loaders remain separate ownership work. These software fixtures do not qualify
+At completion of the capture increment, six legacy raw-key calls remained: one
+in finalization, one in deployment media discovery, one in report-target
+discovery/authorization, two in persistence and one in save. The finalizer
+increment below reduces this count to five. Persistence's live source handle
+and other existing input loaders remain separate ownership work. These software fixtures do not qualify
 installed-CLI execution, physical media, kernel-close faults, blocked-kernel
 deadlines, secure key erasure or durability. Existing image, physical-PC and
 release gates remain open.
+
+## Finalizer Fingerprint Input Ownership
+
+Finalization routes its fingerprint key through the existing
+bounded regular-file reader with its exact 32-byte role. Metadata eligibility
+precedes readable acquisition; matching readable identity and checked closure of
+both owners precede byte acceptance. Missing or malformed contexts/readers and
+observed cancellation fail safely. Earlier linked predecessor checks handle nil
+and typed-nil contexts locally. A key error or wrong length takes precedence over
+post-read cancellation, with fixed input diagnostics.
+
+The key remains after existing argument, predecessor, outcome and evidence-directory
+checks and before frozen-plan loading. An immutable verified-parent summary is
+not reopened for the key read. The post-acquisition finalization policy, HMAC and
+plan binding, current failure evidence, one-use live gate, self-issued signing
+and output ownership are unchanged. Cleanly stopped sessions continue with their
+fresh bounded integrity context; key failure does not redefine worker cleanup
+exit 12.
+
+The 2026-10-28 isolated Windows run passed 5,053 test/subtest outcomes and
+29 packages, with 17 test skips and one skipped package. All 121 required
+changed-file host roots passed. Formatting, vet and Linux amd64/386/arm64 builds
+passed, with eight commands and eight postchecks successful. The unsupported-only
+candidate root was not executed.
+
+Selected Linux amd64 and 386 runs passed 1,934 test/subtest outcomes across eight
+suites, with zero failures or skips and confirmed cleanup. Each architecture
+passed all 128 selected roots and 967 required names: 906 command, 54 bundle,
+one report and six render outcomes. This totals 256 root executions. All four
+symlink cases skipped on Windows passed on each Linux architecture. The eight
+explicit nested groups per architecture satisfied 144 child-start ordering
+checks in total. Nine ownership cases, 32 archive cases and six root postchecks
+also passed.
+
+Five legacy raw-key calls remain: one in deployment media discovery, one in
+report-target discovery/authorization, two in persistence and one in save.
+Frozen-plan/evidence reader closure, persistence's live verified-report owner
+and audit owners remain separate work. These fixture results do not qualify
+unsupported OS acquisition, installed-CLI execution, physical media,
+kernel-close faults, blocked-call deadlines, secure key erasure or durability.
+Existing image, physical-PC and release gates remain open.
 
 ## Current review boundaries
 

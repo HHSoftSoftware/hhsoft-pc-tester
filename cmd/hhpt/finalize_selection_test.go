@@ -30,7 +30,7 @@ func TestFinalizePreservesAllSelectionIntentAndHotPlugEvidence(t *testing.T) {
 			}
 			collect := func(context.Context) (inventory.Snapshot, error) { return snapshot, nil }
 			var stdout, stderr bytes.Buffer
-			if code := runFinalizeWith(t.Context(), arguments, &stdout, &stderr, collect, bytes.NewReader(bytes.Repeat([]byte{0x51}, 64)), time.Now); code != 0 {
+			if code := runFinalizeTestWith(t, t.Context(), arguments, &stdout, &stderr, collect, bytes.NewReader(bytes.Repeat([]byte{0x51}, 64)), time.Now); code != 0 {
 				t.Fatalf("selected plan could not be reconstructed: %d %s", code, stderr.String())
 			}
 			encoded, err := os.ReadFile(reportPath)
@@ -97,7 +97,7 @@ func TestFinalizeRejectsPassForOperatorExcludedTest(t *testing.T) {
 	collected := false
 	collect := func(context.Context) (inventory.Snapshot, error) { collected = true; return snapshot, nil }
 	var stdout, stderr bytes.Buffer
-	if code := runFinalizeWith(t.Context(), arguments, &stdout, &stderr, collect, bytes.NewReader(nil), time.Now); code != 1 || collected || !strings.Contains(stderr.String(), "non-scheduled plan status excluded") {
+	if code := runFinalizeTestWith(t, t.Context(), arguments, &stdout, &stderr, collect, bytes.NewReader(nil), time.Now); code != 1 || collected || !strings.Contains(stderr.String(), "non-scheduled plan status excluded") {
 		t.Fatalf("operator exclusion was reported as pass: %d collected=%t %s", code, collected, stderr.String())
 	}
 	if _, err := os.Stat(reportPath); !os.IsNotExist(err) {
@@ -113,7 +113,7 @@ func TestFinalizeRejectsStaleEvidenceForOperatorExcludedTest(t *testing.T) {
 	collected := false
 	collect := func(context.Context) (inventory.Snapshot, error) { collected = true; return snapshot, nil }
 	var stdout, stderr bytes.Buffer
-	if code := runFinalizeWith(t.Context(), arguments, &stdout, &stderr, collect, bytes.NewReader(nil), time.Now); code != 1 || collected || !strings.Contains(stderr.String(), "evidence exists for a non-scheduled test") {
+	if code := runFinalizeTestWith(t, t.Context(), arguments, &stdout, &stderr, collect, bytes.NewReader(nil), time.Now); code != 1 || collected || !strings.Contains(stderr.String(), "evidence exists for a non-scheduled test") {
 		t.Fatalf("excluded test accepted stale worker evidence: %d collected=%t %s", code, collected, stderr.String())
 	}
 	if _, err := os.Stat(reportPath); !os.IsNotExist(err) {

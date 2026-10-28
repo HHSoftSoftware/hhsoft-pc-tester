@@ -95,7 +95,7 @@ func TestFinalizePreservesMatchingQuickFailureAndPartialEvidence(t *testing.T) {
 				arguments, snapshot, reportPath := prepareQuickFinalization(t, id, evidence, string(status))
 				collect := func(context.Context) (inventory.Snapshot, error) { return snapshot, nil }
 				var stderr bytes.Buffer
-				if code := runFinalizeWith(t.Context(), arguments, &bytes.Buffer{}, &stderr, collect, bytes.NewReader(bytes.Repeat([]byte{0x37}, 64)), time.Now); code != 0 {
+				if code := runFinalizeTestWith(t, t.Context(), arguments, &bytes.Buffer{}, &stderr, collect, bytes.NewReader(bytes.Repeat([]byte{0x37}, 64)), time.Now); code != 0 {
 					t.Fatalf("legitimate result rejected: code=%d error=%s", code, stderr.String())
 				}
 				encoded, err := os.ReadFile(reportPath)
@@ -130,7 +130,7 @@ func assertFinalizationRejected(t *testing.T, id string, evidence any, outcome s
 	collected := false
 	collect := func(context.Context) (inventory.Snapshot, error) { collected = true; return snapshot, nil }
 	var stderr bytes.Buffer
-	if code := runFinalizeWith(t.Context(), arguments, &bytes.Buffer{}, &stderr, collect, bytes.NewReader(bytes.Repeat([]byte{0x37}, 64)), time.Now); code != 1 || collected {
+	if code := runFinalizeTestWith(t, t.Context(), arguments, &bytes.Buffer{}, &stderr, collect, bytes.NewReader(bytes.Repeat([]byte{0x37}, 64)), time.Now); code != 1 || collected {
 		t.Fatalf("failure downgrade reached signing: code=%d collected=%v error=%s", code, collected, stderr.String())
 	}
 	if !strings.Contains(stderr.String(), "explicit worker failure") {

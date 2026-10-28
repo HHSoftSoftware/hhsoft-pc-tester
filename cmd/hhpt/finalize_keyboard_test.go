@@ -112,7 +112,7 @@ func TestFinalizeKeyboardRejectsUnboundRetainedPassAndCleanupBeforeSigning(t *te
 					return sessionJournal{}, nil
 				}
 			}
-			code := runFinalizeOwned(t.Context(), arguments, &out, &diagnostic, func(context.Context) (inventory.Snapshot, error) { return final, nil }, entropy, time.Now, gate).Code
+			code := runFinalizeTestOwned(t, t.Context(), arguments, &out, &diagnostic, func(context.Context) (inventory.Snapshot, error) { return final, nil }, entropy, time.Now, gate).Code
 			want := 1
 			if condition == "uncertain cleanup" {
 				want = workerCleanupUncertainExitCode

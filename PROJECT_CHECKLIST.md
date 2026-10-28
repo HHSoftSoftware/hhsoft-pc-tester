@@ -168,6 +168,11 @@ the alpha still requires the separate documented release gates.
   collection. Preserve worker cleanup exit 12, signing and output policy;
   host and selected Linux amd64/386 fixtures passed (see the
   [validation record](docs/requirements-validation.md#capture-input-ownership)).
+- [x] Check finalizer fingerprint-key input ownership. Accept exactly 32 bytes
+  only after checked input closure, reject invalid contexts locally and preserve
+  the fresh session finalization context. Host and selected Linux amd64/386
+  fixtures passed (see the
+  [validation record](docs/requirements-validation.md#finalizer-fingerprint-input-ownership)).
 - [ ] Implement privacy-preserving enrollment and key-rotation service flows.
 
 ## Functional tests

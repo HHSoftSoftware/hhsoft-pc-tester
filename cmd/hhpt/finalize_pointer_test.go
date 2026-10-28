@@ -470,7 +470,7 @@ func TestFinalizeRejectsUnboundOrIncompletePointerPassBeforeSigning(t *testing.T
 			collect := func(context.Context) (inventory.Snapshot, error) { collected = true; return final, nil }
 			random := &pointerUnexpectedEntropy{}
 			var stdout, stderr bytes.Buffer
-			if code := runFinalizeWith(t.Context(), arguments, &stdout, &stderr, collect, random, time.Now); code != 1 {
+			if code := runFinalizeTestWith(t, t.Context(), arguments, &stdout, &stderr, collect, random, time.Now); code != 1 {
 				t.Fatalf("accepted invalid pointer evidence: %d %s", code, stderr.String())
 			}
 			if collected != item.collect || random.calls != 0 || stdout.Len() != 0 || !strings.Contains(stderr.String(), "validate") {
@@ -542,7 +542,7 @@ func TestFinalizeSignsPointerCoverageAndPreservesUnrelatedHotplugFailure(t *test
 			final = inventory.NewSnapshot(final.Components[:1])
 		}
 		var stdout, stderr bytes.Buffer
-		if code := runFinalizeWith(t.Context(), arguments, &stdout, &stderr, func(context.Context) (inventory.Snapshot, error) { return final, nil }, bytes.NewReader(bytes.Repeat([]byte{0x47}, 32)), time.Now); code != 0 {
+		if code := runFinalizeTestWith(t, t.Context(), arguments, &stdout, &stderr, func(context.Context) (inventory.Snapshot, error) { return final, nil }, bytes.NewReader(bytes.Repeat([]byte{0x47}, 32)), time.Now); code != 0 {
 			t.Fatalf("pointer finalization failed: %d %s", code, stderr.String())
 		}
 		report, err := os.ReadFile(reportPath)

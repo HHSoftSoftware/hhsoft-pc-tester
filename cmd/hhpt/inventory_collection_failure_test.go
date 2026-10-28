@@ -137,7 +137,7 @@ func TestFinalizeRejectsFailedCollectionBeforeReportCreation(t *testing.T) {
 			calls := 0
 			collect := func(context.Context) (inventory.Snapshot, error) { calls++; return snapshot, failure }
 			var stdout, stderr bytes.Buffer
-			code := runFinalizeWith(t.Context(), args, &stdout, &stderr, collect, bytes.NewReader(bytes.Repeat([]byte{0x64}, 64)), func() time.Time { return time.Unix(100, 0) })
+			code := runFinalizeTestWith(t, t.Context(), args, &stdout, &stderr, collect, bytes.NewReader(bytes.Repeat([]byte{0x64}, 64)), func() time.Time { return time.Unix(100, 0) })
 			if calls != 1 {
 				t.Fatalf("valid finalization prerequisites did not reach collection: %d %s", calls, &stderr)
 			}

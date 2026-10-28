@@ -283,7 +283,7 @@ func (collector *linuxCollection) addAttributes(attributes map[string]string, ba
 }
 
 func (collector *linuxCollection) readValue(name string) (string, bool) {
-	data, ok := collector.readFile(name)
+	data, ok := collector.readScalar(name)
 	if !ok {
 		return "", false
 	}

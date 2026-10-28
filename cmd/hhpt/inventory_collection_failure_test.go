@@ -24,7 +24,7 @@ import (
 
 func TestInventoryAndPlanRejectFailedCollectionBeforeOutput(t *testing.T) {
 	for _, command := range []string{"inventory", "plan"} {
-		for _, failure := range []error{nil, inventory.ErrDirectoryRead, inventory.ErrDirectoryClose, context.Canceled} {
+		for _, failure := range []error{nil, inventory.ErrDirectoryRead, inventory.ErrDirectoryClose, inventory.ErrScalarRead, inventory.ErrScalarLimit, inventory.ErrScalarClose, context.Canceled} {
 			label := "success"
 			if failure != nil {
 				label = failure.Error()
@@ -69,7 +69,7 @@ func TestInventoryAndPlanRejectFailedCollectionBeforeOutput(t *testing.T) {
 }
 
 func TestCaptureRejectsFailedCollectionBeforeWorkersAndSigning(t *testing.T) {
-	for _, failure := range []error{nil, inventory.ErrDirectoryRead, inventory.ErrDirectoryClose, context.Canceled} {
+	for _, failure := range []error{nil, inventory.ErrDirectoryRead, inventory.ErrDirectoryClose, inventory.ErrScalarRead, inventory.ErrScalarLimit, inventory.ErrScalarClose, context.Canceled} {
 		label := "success"
 		if failure != nil {
 			label = failure.Error()
@@ -127,7 +127,7 @@ func TestCaptureRejectsFailedCollectionBeforeWorkersAndSigning(t *testing.T) {
 }
 
 func TestFinalizeRejectsFailedCollectionBeforeReportCreation(t *testing.T) {
-	for _, failure := range []error{nil, inventory.ErrDirectoryRead, inventory.ErrDirectoryClose, context.Canceled} {
+	for _, failure := range []error{nil, inventory.ErrDirectoryRead, inventory.ErrDirectoryClose, inventory.ErrScalarRead, inventory.ErrScalarLimit, inventory.ErrScalarClose, context.Canceled} {
 		label := "success"
 		if failure != nil {
 			label = failure.Error()

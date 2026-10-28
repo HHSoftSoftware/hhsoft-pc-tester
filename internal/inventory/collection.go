@@ -39,7 +39,7 @@ func (collector *linuxCollection) check() bool {
 	if collector.err != nil {
 		return false
 	}
-	if collector.ctx == nil {
+	if nilInventoryValue(collector.ctx) {
 		collector.err = ErrInvalidContext
 		return false
 	}

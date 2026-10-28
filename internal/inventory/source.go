@@ -39,3 +39,10 @@ func (source *RootPathSource) resolve(name string) string {
 func (source *RootPathSource) readDirectory(ctx context.Context, name string) ([]fs.DirEntry, error) {
 	return readInventoryDirectory(ctx, source.resolve(name), openInventoryDirectory)
 }
+
+func (source *RootPathSource) readScalar(ctx context.Context, name string) ([]byte, bool, error) {
+	if source == nil {
+		return nil, false, ErrNoPathSource
+	}
+	return readInventoryScalar(ctx, source.resolve(name), openInventoryScalar)
+}

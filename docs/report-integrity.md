@@ -313,8 +313,11 @@ I/O or full-media coverage. Historical v4/v5 wire behavior stays supported and
 those schemas reject storage sampling claims. Current commands still emit v5
 sessions with eleven workers; this reader adds no media worker or command and
 leaves the sampling catalog entry inactive. Host fixture tests and Linux
-amd64/386/arm64 cross-builds passed. Native reader execution and subsequent
-media, image, physical and release qualification remain separate gates.
+amd64/386/arm64 cross-builds passed. Reader fixtures subsequently passed
+natively on Linux amd64 and 386, including 62 verify/compare CLI cases
+using provisioned trust and no/both views. That reader cohort predates
+the separate output-completion fix. Media, rebuilt-image, physical and
+release qualification remain open.
 
 ## Privacy-Preserving Fingerprints
 
@@ -417,6 +420,15 @@ confidence when classifying a replacement, and keeps identity-less or
 ambiguous duplicate records unresolved.
 Signing policy decisions and append-only comparison receipts remain service
 work; local JSON is an explanation of signed inputs, not an authorization.
+
+CLI output completion is separate from signature verification and durable
+persistence. The shared inventory, plan, comparison, report and quick-test
+output path requires successful writes and owned-file close before
+reporting output success. Combined write/close failures remain visible,
+and finalization prints its success banner only after close. Existing
+destinations are never overwritten, but failed new outputs may remain
+partial. Caller-owned stdout is not closed. These checks do not add
+fsync, durable-storage or native fault qualification.
 
 ## Offline Report Persistence
 

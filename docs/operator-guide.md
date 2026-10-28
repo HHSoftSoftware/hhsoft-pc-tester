@@ -450,6 +450,16 @@ parts, unavailable serials, different keys/epochs, and ambiguous topology
 remain unresolved rather than becoming false matches. The JSON comparison is
 not itself a trusted authorization decision.
 
+Inventory, plan, comparison, report capture/finalization and quick-test
+evidence outputs refuse to overwrite an existing destination. A write,
+short write or file-close failure makes output unsuccessful; a partial
+file may remain. Choose a new filename after investigating the error.
+Do not treat an existing file or finalizer banner alone as durable
+storage: ordinary CLI output does not synchronize it. The separately
+verified USB persistence flow has its own read-back and sync checks.
+Uncertain worker cleanup still reports exit status 12 when output also
+fails. Standard output remains owned by the calling process.
+
 Provisioned signer verification syntax exists for future/trusted deployments:
 
 ```powershell

@@ -742,8 +742,30 @@ model cohort. The integrated reader passed 3,776 Windows test/subtest events
 across 27 packages, including all 67 candidate test functions, with 17 existing
 test skips and three empty packages. Formatting, vet and Linux amd64/386/arm64
 cross-builds passed. These are host fixture and build checks, without media I/O.
-Native reader execution, production sampling, loop backing/lifetime safeguards,
-all four rebuilt images, physical checks and release approval remain open.
+A subsequent native run of that reader source passed 1,582 test/subtest
+events across seven suites on each of Linux amd64 and 386, including all
+67 candidate roots per architecture. All 62 verify/compare CLI cases
+passed, with no failures or skips. Nine runtime ownership cases,
+32 archive cases, all six final checks and cleanup passed. The CLI
+subset covers provisioned signing trust and bundles with no views or
+both views. It does not qualify other CLI trust/view combinations or
+the later output-completion fault cases. Production sampling, loop
+backing/lifetime safeguards, all four rebuilt images, physical checks
+and release approval remain open.
+
+CLI output completion requires successful writes and successful close of
+each owned destination. Short writes, including a final newline, fail;
+write and close errors remain discoverable together. Exclusive creation
+uses mode 0600 and leaves existing destinations untouched. Caller-owned
+stdout is never closed. Worker cleanup uncertainty retains exit status 12
+even when output also fails, with both diagnostics preserved; the
+finalizer success banner follows successful close. A failed output may
+remain as a partial file. Close success alone proves neither fsync nor
+durability. The isolated candidate passed 3,878 Windows test/subtest
+events across 27 packages, all nine new functions and 93 child cases,
+with 17 existing test skips and three empty packages. Formatting, vet
+and Linux amd64/386/arm64 builds passed; native output fault qualification
+and release gates remain open.
 
 The next CPU increment implements twelve fixed binary64 addition, subtraction,
 multiplication and division vectors in the bounded worker. CPU v3 evidence adds

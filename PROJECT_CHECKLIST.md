@@ -400,7 +400,13 @@ the alpha still requires the separate documented release gates.
   test/subtest passes across 27 packages, including all 67 candidate test
   functions; 17 existing test skips and three empty packages. Formatting, vet
   and Linux amd64/386/arm64 cross-builds passed using fixtures without media I/O.
-  Native reader execution remains a separate gate.
+- [x] Qualify that reader source on Linux amd64 and 386: 1,582 test/subtest
+  passes across 14 suite runs, all 67 candidate roots on each architecture,
+  and 62 verify/compare CLI cases. No failures or skips; nine runtime
+  ownership and 32 archive checks passed with six final checks and
+  confirmed cleanup. The CLI matrix uses provisioned trust and no/both
+  views. This predates the separate output-completion change and grants
+  no native close-fault, media, rebuilt-image or physical qualification.
 - [ ] Implement and qualify the media worker, backing-device and loop-lifetime
   safeguards, supervised acceptance and catalog activation. Rebuilt images,
   physical media and release approval remain separate gates.
@@ -454,6 +460,16 @@ the alpha still requires the separate documented release gates.
 - [x] Require the entire bundle's deterministic ZIP bytes and persisted copy
   digest to match the version independently verified.
 - [x] Create output files exclusively instead of silently overwriting evidence.
+- [x] Treat write, short-write and owned-file close failures as CLI output
+  failures. Preserve combined errors, close owned destinations exactly once,
+  retain caller-owned stdout, and print finalizer success only after close.
+  Uncertain worker cleanup retains exit status 12 over output failure.
+- [x] Validate output completion in an isolated Windows candidate: 3,878
+  test/subtest passes across 27 packages, including all nine new test
+  functions and 93 named child cases; 17 existing test skips and three
+  empty packages. Formatting, vet and Linux amd64/386/arm64 builds passed.
+- [ ] Qualify these output fault cases natively. Closing a CLI destination
+  does not establish synchronization, durable storage or image readiness.
 - [x] Integrate graphics through a generic functional-result record in the
   signed payload and HTML report.
 - [x] Save verified signed reports to a separately authorized removable USB

@@ -241,9 +241,23 @@ events across 30 test functions, with no skips; formatting and vet passed. Those
 fixture checks cover that model cohort only. The integrated reader then passed
 3,776 Windows test/subtest events across 27 packages, including all 67 candidate
 test functions. Formatting, vet and Linux amd64/386/arm64 cross-builds passed.
-The media worker, supervised acceptance and complete backing-device safeguards
-remain planned. Native reader execution, rebuilt images, physical media and
-release qualification remain separate gates; these fixtures accessed no media.
+The same reader source subsequently passed 1,582 native Linux amd64/386
+test/subtest events across 14 suite runs, all 67 candidate roots on each
+architecture and 62 verify/compare CLI cases, without failures or skips.
+Cleanup and all six final checks passed. That native cohort predates
+the separate CLI output-completion change. The media worker, supervised
+acceptance and complete backing-device safeguards remain planned.
+Rebuilt images, physical media and release qualification remain open;
+these fixtures accessed no media.
+
+CLI evidence outputs now propagate write, short-write and owned-file close
+failures, including simultaneous errors. Exclusive creation and caller-owned
+stdout are preserved; uncertain worker cleanup keeps exit status 12, and
+finalization announces success only after output close. The isolated
+candidate passed 3,878 Windows test/subtest events across 27 packages, all
+nine new test functions, formatting, vet and three Linux architecture
+builds. Native fault validation and durability remain separate gates;
+this change does not add fsync or remove partial output files.
 
 The next thermal prerequisite is implemented in source: local CPU/RAM guards
 bound the initial and periodic observations, join before returning results, and

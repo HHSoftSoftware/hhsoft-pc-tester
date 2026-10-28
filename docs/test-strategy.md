@@ -409,7 +409,18 @@ passed. These were fixture checks without media access.
 The integrated reader passed 3,776 Windows test/subtest events across 27
 packages, including all 67 candidate test functions. Seventeen existing tests
 and three empty packages were skipped. Formatting, vet and Linux
-amd64/386/arm64 cross-builds passed; this does not establish native execution.
+amd64/386/arm64 cross-builds passed. A subsequent native reader run
+passed 1,582 test/subtest events across seven suites on each of Linux
+amd64 and 386, including all 134 required root executions, with no
+failures or skips. All 62 verify/compare CLI cases, nine runtime
+ownership cases and 32 archive cases passed; six final checks and
+cleanup were confirmed. The 15 signed fixture cases include accepted
+failure, vanished diagnostics, paired hidden-claim controls, signed
+forgeries and cleanup rejection. The CLI subset uses provisioned trust
+with no views or both views. Self-issued, single-view and literal legacy
+CLI variants receive no execution credit from that subset. AArch64
+remains cross-built only. This native cohort predates the separate
+output-completion fix and does not qualify its injected close faults.
 
 The fixture tests exercise the shared finite decoder through signed-bundle
 verification with and without views, HTML/PDF rendering and comparison. Cases
@@ -428,6 +439,23 @@ it does not reproduce precise parent timing, kernel ownership or media behavior.
 Media-worker supervision, loop lifetime, native sampling, rebuilt images and
 physical qualification require their own evidence. Earlier inventory native
 results do not qualify this new reader or a future sampler.
+
+CLI output-completion regressions use injected writers and closers to
+exercise open failures, partial writes, nil-error short writes, final
+newline failures, close failures and combined write/close errors. Each
+owned handle closes once even after writing fails; a stdout value that
+also implements Close remains caller-owned. Real filesystem controls
+check exclusive creation and preservation of existing content. Caller
+tests cover inventory, planning, comparison, report capture/finalization
+and quick-test outputs, including cleanup exit status 12 and suppression
+of the finalizer success banner after close failure.
+
+The isolated output candidate passed 3,878 Windows test/subtest events
+across 27 packages: all nine new roots and 93 named children passed.
+Seventeen existing tests and three empty packages were skipped.
+Formatting, vet and Linux amd64/386/arm64 builds passed, with all eight
+postchecks satisfied. These results do not establish native fault
+execution, fsync durability, rebuilt-image or physical-PC qualification.
 
 The current network readiness adapter checks driver attachment and link state
 without configuring an address, associating Wi-Fi, or generating traffic. The

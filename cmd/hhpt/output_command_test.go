@@ -89,7 +89,7 @@ func outputCommandCases(t *testing.T) []outputCommandCase {
 				func(context.Context, inputtest.Options) inputtest.Result { return completeInputEvidence() },
 				func(context.Context, networktest.Options) networktest.Result { return completeNetworkEvidence() },
 				func(context.Context, storage.Options) storage.Result { return completeStorageEvidence() },
-				func(context.Context, usbtest.Options) usbtest.Result { return completeUSBEvidence() }, bytes.NewReader(nil), now, write)
+				func(context.Context, usbtest.Options) usbtest.Result { return completeUSBEvidence() }, bytes.NewReader(nil), now, write, captureFixtureInput(t))
 		}},
 	}
 }

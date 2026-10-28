@@ -50,10 +50,10 @@ func runCapture(ctx context.Context, arguments []string, stdout, stderr io.Write
 }
 
 func runCaptureWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, probeGraphics graphicsCollector, probeCPU cpuCollector, probeMemory memoryCollector, probeInput inputCollector, probeNetwork networkCollector, probeStorage storageCollector, probeUSB usbCollector, random io.Reader, now func() time.Time) int {
-	return runCaptureWithDestination(ctx, arguments, stdout, stderr, collect, probeGraphics, probeCPU, probeMemory, probeInput, probeNetwork, probeStorage, probeUSB, random, now, writeDestination)
+	return runCaptureWithDestination(ctx, arguments, stdout, stderr, collect, probeGraphics, probeCPU, probeMemory, probeInput, probeNetwork, probeStorage, probeUSB, random, now, writeDestination, readRetestInput)
 }
 
-func runCaptureWithDestination(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, probeGraphics graphicsCollector, probeCPU cpuCollector, probeMemory memoryCollector, probeInput inputCollector, probeNetwork networkCollector, probeStorage storageCollector, probeUSB usbCollector, random io.Reader, now func() time.Time, writeOutput destinationWriter) int {
+func runCaptureWithDestination(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, probeGraphics graphicsCollector, probeCPU cpuCollector, probeMemory memoryCollector, probeInput inputCollector, probeNetwork networkCollector, probeStorage storageCollector, probeUSB usbCollector, random io.Reader, now func() time.Time, writeOutput destinationWriter, readInput retestInputReader) int {
 	flags := flag.NewFlagSet("capture", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	fingerprintKeyPath := flags.String("fingerprint-key", "", "file containing exactly 32 raw random bytes")
@@ -91,19 +91,35 @@ func runCaptureWithDestination(ctx context.Context, arguments []string, stdout, 
 		return 2
 	}
 
-	fingerprintKey, err := readRawKey(*fingerprintKeyPath, 32)
-	if err != nil {
-		fmt.Fprintf(stderr, "read fingerprint key: %v\n", err)
+	if nilRetestInputValue(ctx) || readInput == nil || writeOutput == nil {
+		fmt.Fprintln(stderr, "capture input acquisition failed")
 		return 1
 	}
-	privateKeyBytes, err := readRawKey(*signingKeyPath, ed25519.PrivateKeySize)
-	if err != nil {
-		fmt.Fprintf(stderr, "read signing key: %v\n", err)
+	if ctx.Err() != nil {
+		fmt.Fprintln(stderr, "capture input acquisition failed")
+		return 1
+	}
+	fingerprintKey, err := readInput(ctx, *fingerprintKeyPath, retestFingerprintKeyInput)
+	if err != nil || len(fingerprintKey) != 32 {
+		fmt.Fprintln(stderr, "read fingerprint key: input acquisition failed")
+		return 1
+	}
+	if ctx.Err() != nil {
+		fmt.Fprintln(stderr, "capture input acquisition failed")
+		return 1
+	}
+	privateKeyBytes, err := readInput(ctx, *signingKeyPath, retestSigningKeyInput)
+	if err != nil || len(privateKeyBytes) != ed25519.PrivateKeySize {
+		fmt.Fprintln(stderr, "read signing key: input acquisition failed")
 		return 1
 	}
 	privateKey := ed25519.PrivateKey(privateKeyBytes)
 	if subtle.ConstantTimeCompare(privateKey, ed25519.NewKeyFromSeed(privateKey.Seed())) != 1 {
 		fmt.Fprintln(stderr, "read signing key: inconsistent Ed25519 seed and public key")
+		return 1
+	}
+	if ctx.Err() != nil {
+		fmt.Fprintln(stderr, "capture input acquisition failed")
 		return 1
 	}
 	resolvedSessionID := strings.TrimSpace(*sessionID)
@@ -115,6 +131,10 @@ func runCaptureWithDestination(ctx context.Context, arguments []string, stdout, 
 		}
 	}
 
+	if ctx.Err() != nil {
+		fmt.Fprintln(stderr, "capture input acquisition failed")
+		return 1
+	}
 	snapshot, err := collect(ctx)
 	if err != nil {
 		fmt.Fprintf(stderr, "collect inventory: %v\n", err)

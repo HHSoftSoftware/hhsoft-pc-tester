@@ -1290,7 +1290,44 @@ with zero failures/skips and confirmed cleanup. Nine owned-resource cases,
 32 archive cases and six root postchecks also passed. These are software fixture
 results, not installed-CLI, physical-media, blocked-kernel deadline, kernel-close
 fault or fsync/durability qualification. Existing image/physical/release gates
-and capture/persistence input-ownership work remain separate.
+and the remaining legacy key/persistence input-ownership work remain separate.
+
+## Capture Input Ownership Validation
+
+Capture tests exercise both key roles through the actual owned acquisition
+body. Metadata/readable Close faults, including concurrent cancellation,
+require exact acquired/closed owner ledgers and close order, fixed diagnostics
+and no later key, randomness, collection or output. The first key's owners
+close before the second acquisition. Valid controls independently verify the
+signed artifact and retain the limited direct-capture coverage, HMAC/epoch,
+session-ID and worker/output policy. Uncertain worker cleanup retains exit 12.
+
+Finite-role cases cover exact 32-byte fingerprint/public inputs and the
+64-byte private key. A malformed successful reader is rejected before seed
+access; a valid fingerprint followed by an independently inconsistent 64-byte
+private key reaches the intended consistency check. Exact final data with EOF
+still requires the overflow probe. Provider, identity, malformed-progress,
+Close and cancellation cases use the shared core; command cases also check
+required dependencies and cancellation before later effects. They do not add
+a late worker/signing policy or an interruptible arbitrary OS call.
+
+Portable injected-owner coverage is distinct from real Linux/Windows file
+acquisition. Retained worker/output fixtures use injected owned inputs only
+where real acquisition is unsupported; production has no unchecked fallback.
+Two unsupported-only candidate roots were not executed by the Windows/Linux
+qualification runs.
+
+The isolated Windows run passed 5,004 test/subtest outcomes and 29 packages,
+including 28 changed-file host roots and all 44 broader-contract roots, with
+17 test skips and one skipped package. All eight commands and eight postchecks
+passed. Selected Linux amd64/386 execution passed 1,074 outcomes across eight
+suites, all 100 required root executions and 537 required named outcomes per
+architecture, with zero failures/skips and confirmed cleanup. Nine runtime
+ownership cases, 32 archive cases and six root postchecks passed as well.
+These measurements are software fixture evidence, not installed-CLI,
+physical-media, kernel-close fault, blocked-kernel deadline, key-erasure or
+fsync/durability qualification. Remaining raw-key consumers and persistence's
+live source owner stay outside this increment; existing release gates remain.
 
 ## Evidence contract
 

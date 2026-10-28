@@ -92,9 +92,48 @@ A cancellation observed in an already-entered destination callback can leave
 an empty exclusively created file; failed output is not rolled back. This
 increment does not establish deadlines for blocked OS calls, kernel-close fault
 behavior, fsync durability, installed-CLI execution or physical-media outcomes.
-Capture/private signing keys and persistence's live source handle remain
-separate input-ownership work. Existing image, physical-PC and release gates
-remain open; prior cohort counts are not new comparison evidence.
+Capture keys have separate qualification below. Remaining legacy key inputs
+and persistence's live source handle remain separate ownership work. Existing
+image, physical-PC and release gates remain open; prior cohort counts are not
+new comparison evidence.
+
+## Capture Input Ownership
+
+Capture routes its fingerprint and raw Ed25519 signing keys through bounded
+regular-file acquisition. Metadata establishes eligibility before readable
+acquisition, and the readable handle must match that object. Checked closure
+of both owners precedes key acceptance. Exact sizes remain 32 and 64 bytes;
+public-key input remains 32 bytes. Length is validated before seed access,
+and inconsistent private keys are rejected. Input diagnostics are fixed.
+Hard input or cleanup faults remain failures when cancellation also occurs.
+
+The command checks cancellation before each key, before session-ID randomness
+and before collection. Its later worker, signing and output policies, including
+worker cleanup exit 12, are unchanged. This is not a new live-session safety
+gate or a deadline for blocked calls.
+
+The 2026-10-28 isolated Windows run passed 5,004 test/subtest outcomes and
+29 packages, with 17 test skips and one skipped package. All 28 changed-file
+host roots and all 44 roots in the broader host contract passed. Formatting,
+vet and Linux amd64/386/arm64 builds passed, with eight commands and eight
+postchecks successful. The two unsupported-only candidate roots were not
+executed in these Windows/Linux cohorts.
+
+Selected native Linux amd64/386 execution passed 1,074 outcomes across eight
+suites and all 100 required root executions (50 per architecture), with no
+failures or skips and confirmed cleanup. Each architecture passed 537 required
+named outcomes: 476 command, 54 bundle, six render and one report. Nine runtime
+ownership cases, 32 archive cases and six root postchecks also passed. These
+measurements used the isolated 494-file projection; its 492-file committed
+baseline remained distinct.
+
+Six legacy raw-key calls remain: one in finalization, one in deployment media
+discovery, one in report-target discovery/authorization, two in persistence
+and one in save. Persistence's live source handle and other existing input
+loaders remain separate ownership work. These software fixtures do not qualify
+installed-CLI execution, physical media, kernel-close faults, blocked-kernel
+deadlines, secure key erasure or durability. Existing image, physical-PC and
+release gates remain open.
 
 ## Current review boundaries
 

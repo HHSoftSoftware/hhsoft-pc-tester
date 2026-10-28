@@ -80,7 +80,7 @@ func TestCaptureAndVerifyRoundTrip(t *testing.T) {
 	now := time.Date(2026, time.October, 12, 13, 14, 15, 123456789, time.FixedZone("PDT", -7*60*60))
 	arguments := []string{"-fingerprint-key", fingerprintKeyPath, "-key-epoch", "lab-2", "-signing-key", privateKeyPath, "-key-id", "signer-7", "-output", reportPath, "-graphics-pattern-frames", "12", "-memory-bytes", "4194304", "-memory-passes", "1"}
 	var stdout, stderr bytes.Buffer
-	if result := runCaptureWith(context.Background(), arguments, &stdout, &stderr, collect, probe, probeCPU, probeMemory, probeInput, probeNetwork, probeStorage, probeUSB, bytes.NewReader(bytes.Repeat([]byte{0xab}, sessionIDLength)), func() time.Time { return now }); result != 0 {
+	if result := runCaptureTestWith(t, context.Background(), arguments, &stdout, &stderr, collect, probe, probeCPU, probeMemory, probeInput, probeNetwork, probeStorage, probeUSB, bytes.NewReader(bytes.Repeat([]byte{0xab}, sessionIDLength)), func() time.Time { return now }); result != 0 {
 		t.Fatalf("capture returned %d: %s", result, stderr.String())
 	}
 	if collectorCalls != 1 || probeCalls != 1 || stdout.Len() != 0 {
@@ -141,7 +141,7 @@ func TestCaptureAndVerifyRoundTrip(t *testing.T) {
 
 	stdout.Reset()
 	stderr.Reset()
-	if result := runVerify(context.Background(), []string{"-public-key", publicKeyPath, "-key-id", "signer-7", reportPath}, &stdout, &stderr); result != 0 {
+	if result := runVerifyWithInput(context.Background(), []string{"-public-key", publicKeyPath, "-key-id", "signer-7", reportPath}, &stdout, &stderr, captureFixtureInput(t)); result != 0 {
 		t.Fatalf("verify returned %d: %s", result, stderr.String())
 	}
 	if stdout.String() != "verified: report signature and contents are valid\n" {
@@ -154,7 +154,7 @@ func TestCaptureAndVerifyRoundTrip(t *testing.T) {
 	}
 	stdout.Reset()
 	stderr.Reset()
-	if result := runCaptureWith(context.Background(), arguments, &stdout, &stderr, collect, probe, probeCPU, probeMemory, probeInput, probeNetwork, probeStorage, probeUSB, bytes.NewReader(bytes.Repeat([]byte{0xcd}, sessionIDLength)), time.Now); result != 1 {
+	if result := runCaptureTestWith(t, context.Background(), arguments, &stdout, &stderr, collect, probe, probeCPU, probeMemory, probeInput, probeNetwork, probeStorage, probeUSB, bytes.NewReader(bytes.Repeat([]byte{0xcd}, sessionIDLength)), time.Now); result != 1 {
 		t.Fatalf("duplicate capture returned %d", result)
 	}
 	after, err := os.ReadFile(reportPath)
@@ -194,7 +194,7 @@ func TestCaptureRejectsBadKeysBeforeCollection(t *testing.T) {
 	}
 	probeStorage := func(context.Context, storage.Options) storage.Result { called = true; return storage.Result{} }
 	probeUSB := func(context.Context, usbtest.Options) usbtest.Result { called = true; return usbtest.Result{} }
-	if result := runCaptureWith(context.Background(), arguments, bytes.NewBuffer(nil), bytes.NewBuffer(nil), collect, probe, probeCPU, probeMemory, probeInput, probeNetwork, probeStorage, probeUSB, bytes.NewReader(make([]byte, sessionIDLength)), time.Now); result != 1 {
+	if result := runCaptureTestWith(t, context.Background(), arguments, bytes.NewBuffer(nil), bytes.NewBuffer(nil), collect, probe, probeCPU, probeMemory, probeInput, probeNetwork, probeStorage, probeUSB, bytes.NewReader(make([]byte, sessionIDLength)), time.Now); result != 1 {
 		t.Fatalf("capture returned %d", result)
 	}
 	if called {
@@ -264,7 +264,7 @@ func TestCaptureWillNotSignUnsupportedPassEvidence(t *testing.T) {
 				return result
 			}
 			var stderr bytes.Buffer
-			if result := runCaptureWith(context.Background(), arguments, bytes.NewBuffer(nil), &stderr, collect, gpu, cpu, memory, input, network, disk, usb, bytes.NewReader(nil), time.Now); result != 1 {
+			if result := runCaptureTestWith(t, context.Background(), arguments, bytes.NewBuffer(nil), &stderr, collect, gpu, cpu, memory, input, network, disk, usb, bytes.NewReader(nil), time.Now); result != 1 {
 				t.Fatalf("unsupported %s evidence was signed: result=%d", target, result)
 			}
 			if !strings.Contains(stderr.String(), "build "+target+" evidence") {

@@ -14,6 +14,8 @@ type retestInputKind uint8
 const (
 	retestArtifactInput retestInputKind = iota + 1
 	retestPublicKeyInput
+	retestFingerprintKeyInput
+	retestSigningKeyInput
 )
 
 var (
@@ -54,8 +56,10 @@ func readRetestInputWithOperations(ctx context.Context, path string, kind retest
 	minimum, maximum := int64(22), int64(64<<20)
 	switch kind {
 	case retestArtifactInput:
-	case retestPublicKeyInput:
+	case retestPublicKeyInput, retestFingerprintKeyInput:
 		minimum, maximum = 32, 32
+	case retestSigningKeyInput:
+		minimum, maximum = 64, 64
 	default:
 		return nil, errRetestInput
 	}

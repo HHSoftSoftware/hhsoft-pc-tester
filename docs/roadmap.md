@@ -431,9 +431,20 @@ suite passed 4,875 test/subtest outcomes; the selected Linux amd64/386 cohort
 passed 938 across eight suites and 120 required root executions. The
 [validation record](requirements-validation.md#comparison-input-ownership)
 separates these software fixtures from installed-CLI and physical evidence.
-Capture and persistence input ownership remain separate work. This increment
+Capture has separate input qualification below; remaining legacy key inputs
+and persistence's live source ownership remain separate work. This increment
 does not activate sampled storage reads or change the existing image,
 physical-PC or release gates.
+
+The capture-input increment now checks ownership and closure of its fingerprint
+and signing-key inputs, uses fixed input diagnostics and observes cancellation
+before collection. It preserves later worker/signing/output policy and cleanup
+exit 12. The isolated host suite passed 5,004 test/subtest outcomes; selected
+Linux amd64/386 fixtures passed 1,074 across eight suites and 100 required root
+executions. The [validation record](requirements-validation.md#capture-input-ownership)
+separates that evidence from the remaining six raw-key calls in finalization,
+discovery, persistence and save, and from persistence's live source ownership.
+Existing image, physical-PC and release gates are unchanged.
 
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.

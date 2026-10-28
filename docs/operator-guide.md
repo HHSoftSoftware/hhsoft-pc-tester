@@ -377,6 +377,17 @@ non-pass status. These checks establish consistency within the implemented
 check's scope; they cannot prove that hardware or a compromised collector told
 the truth.
 
+Capture checks both its 32-byte fingerprint key and 64-byte raw Ed25519 signing
+key before collection. Each input must be a bounded regular file; its readable
+handle must match the acquired metadata object, and both owners must close
+successfully before the key is accepted. Invalid input or unconfirmed closure
+stops capture with a fixed input diagnostic. Cancellation is checked between
+key acquisitions and before session-ID randomness and collection. The existing
+later worker, signing and output policy, including worker cleanup exit 12,
+is unchanged. Host and selected Linux amd64/386 fixtures passed; these checks
+do not establish blocked-call deadlines, secure key erasure or physical-media
+qualification.
+
 ## Interpret Results
 
 Read both the frozen plan status and the final result. They answer different
@@ -605,9 +616,10 @@ Malformed or incomplete inputs, substituted readable objects and uncertain
 closure do not authorize verification success. The readable object must remain
 the exact acquired object; a Windows pathname rename alone does not invalidate
 that proof. Other OS input adapters fail explicitly. These checks
-do not establish deadlines for blocked filesystem calls. Existing unrelated capture and persistence input paths have not all acquired
-this same checked-close contract; their existing authorization and output rules
-remain in force.
+do not establish deadlines for blocked filesystem calls. Remaining key inputs
+in finalization, deployment/report-target discovery, persistence and save, and
+persistence's live source handle, have not all acquired this checked-close
+contract; their existing authorization and output rules remain in force.
 
 ## Update and Recovery
 

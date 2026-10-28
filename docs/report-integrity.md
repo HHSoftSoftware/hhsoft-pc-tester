@@ -100,9 +100,9 @@ captured bytes released only after every acquired metadata/readable owner
 closes successfully. Linux and Windows provide the supported adapters; other
 OSes fail explicitly. Reports are bounded to 64 MiB and external public keys
 to exactly 32 bytes. Provider errors are reduced to fixed diagnostics.
-Unrelated legacy capture/persistence input loaders are outside this
-increment; neither blocked-kernel deadlines nor filesystem durability follow
-from checked input closure.
+Remaining legacy key inputs in finalization, discovery, persistence and save
+are outside this increment; neither blocked-kernel deadlines nor filesystem
+durability follow from checked input closure.
 
 A linked session retains only a private verified-parent summary and passes it
 directly to the existing consumed finalization gate. A journal file cannot
@@ -193,6 +193,22 @@ statuses, including in bundles without views. The verifier checks their schema
 and consistency; it does not reconstruct the original plan or rerun hardware
 checks. Historical reports without these fields retain their existing rendering.
 New reports require the matching companion utility.
+
+Capture uses separate finite roles for its 32-byte fingerprint key and 64-byte
+raw Ed25519 private key; the existing public-key input remains exactly 32 bytes.
+Regular-file metadata establishes eligibility before readable acquisition, and
+the readable handle must then match that object. Both owners close before key
+bytes are accepted. Length is checked before private-key seed access, and the
+existing seed/public-key consistency check remains. Input and cleanup faults
+cannot become success when cancellation occurs concurrently.
+
+Cancellation is checked before either key and before randomness or collection.
+This increment leaves HMAC identities, signed bytes, coverage scope, later
+worker/signing policy and output behavior unchanged. It adds no live-session
+gate, key-erasure guarantee or durability claim. Host and selected Linux
+amd64/386 fixtures qualified this capture boundary. Six legacy raw-key calls
+remain in finalization, deployment/report-target discovery, persistence and
+save; persistence's live verified-report owner also remains separate work.
 
 Quick-session reports additionally bind a `session` object inside the existing
 run-integrity evidence. It records the stop reason, session budget, elapsed time,
@@ -494,8 +510,9 @@ there may leave an empty new file, without adding rollback or durability.
 Canonical v1/v2 verification, global self-issued Boolean behavior, default or
 separate after-key trust, comparison schema and HMAC identity policy remain
 unchanged. Host and selected Linux amd64/386 software fixtures qualified this
-bounded command path. Capture, persistence and other shared input loaders
-remain outside this increment.
+bounded command path. The separately qualified capture boundary is described
+above; remaining legacy key inputs and persistence's live source owner are not
+covered by this comparison increment.
 
 CLI output completion is separate from signature verification and durable
 persistence. The shared inventory, plan, comparison, report and quick-test

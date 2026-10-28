@@ -45,7 +45,7 @@ func TestCaptureStopsOnUncertainQuickCleanupBeforeLaterWorkOrSigning(t *testing.
 					memoryCalls, laterCalls, clockCalls := 0, 0, 0
 					random := &journalForbiddenRandom{}
 					var stdout, stderr bytes.Buffer
-					code := runCaptureWith(t.Context(), arguments, &stdout, &stderr,
+					code := runCaptureTestWith(t, t.Context(), arguments, &stdout, &stderr,
 						func(context.Context) (inventory.Snapshot, error) { return inventory.NewSnapshot(nil), nil },
 						func(context.Context, int) graphics.Result { laterCalls++; return completeGraphicsEvidence() },
 						func(context.Context, quick.CPUOptions) quick.CPUResult { return cpu },

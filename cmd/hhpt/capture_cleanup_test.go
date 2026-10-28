@@ -36,7 +36,7 @@ func TestCaptureStopsOnUncertainGraphicsCleanupBeforeLaterWorkOrSigning(t *testi
 		return result
 	}
 	var stdout, stderr bytes.Buffer
-	code := runCaptureWith(t.Context(), arguments, &stdout, &stderr,
+	code := runCaptureTestWith(t, t.Context(), arguments, &stdout, &stderr,
 		func(context.Context) (inventory.Snapshot, error) { return inventory.NewSnapshot(nil), nil }, probe,
 		func(context.Context, quick.CPUOptions) quick.CPUResult { return completeCPUEvidence() },
 		func(context.Context, quick.MemoryOptions) quick.MemoryResult { return completeMemoryEvidence() },

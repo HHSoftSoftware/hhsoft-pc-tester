@@ -163,6 +163,11 @@ the alpha still requires the separate documented release gates.
   before output and use fixed input/verification diagnostics. Preserve trust
   defaults, HMAC identity policy and output ownership; host and selected Linux
   amd64/386 fixtures passed (see the [validation record](docs/requirements-validation.md#comparison-input-ownership)).
+- [x] Acquire capture's fingerprint and signing keys through bounded regular-file
+  reads with checked ownership, fixed input diagnostics and cancellation before
+  collection. Preserve worker cleanup exit 12, signing and output policy;
+  host and selected Linux amd64/386 fixtures passed (see the
+  [validation record](docs/requirements-validation.md#capture-input-ownership)).
 - [ ] Implement privacy-preserving enrollment and key-rotation service flows.
 
 ## Functional tests

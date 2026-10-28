@@ -105,7 +105,7 @@ func requireProcCommandBoundary(t *testing.T, command string, factory func(*int)
 		signer := ed25519.NewKeyFromSeed(bytes.Repeat([]byte{0x63}, ed25519.SeedSize))
 		signing := writeTestKey(t, root, "signing.key", signer)
 		args = append(args, "-signing-key", signing, "-key-id", "fixture-inventory", "-session-id", "proc-fixture", "-graphics-pattern-frames", "12", "-memory-bytes", "4194304", "-memory-passes", "1")
-		code = runCaptureWith(t.Context(), args, &stdout, &stderr, collect,
+		code = runCaptureTestWith(t, t.Context(), args, &stdout, &stderr, collect,
 			func(context.Context, int) graphics.Result { workers++; return completeGraphicsEvidence() },
 			func(context.Context, quick.CPUOptions) quick.CPUResult { workers++; return completeCPUEvidence() },
 			func(context.Context, quick.MemoryOptions) quick.MemoryResult {

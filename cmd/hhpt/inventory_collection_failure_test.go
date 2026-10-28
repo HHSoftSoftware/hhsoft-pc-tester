@@ -85,7 +85,7 @@ func TestCaptureRejectsFailedCollectionBeforeWorkersAndSigning(t *testing.T) {
 			calls, workers, clocks := 0, 0, 0
 			var stdout, stderr bytes.Buffer
 			collect := func(context.Context) (inventory.Snapshot, error) { calls++; return inventory.NewSnapshot(nil), failure }
-			code := runCaptureWith(t.Context(), args, &stdout, &stderr, collect,
+			code := runCaptureTestWith(t, t.Context(), args, &stdout, &stderr, collect,
 				func(context.Context, int) graphics.Result { workers++; return completeGraphicsEvidence() },
 				func(context.Context, quick.CPUOptions) quick.CPUResult { workers++; return completeCPUEvidence() },
 				func(context.Context, quick.MemoryOptions) quick.MemoryResult {

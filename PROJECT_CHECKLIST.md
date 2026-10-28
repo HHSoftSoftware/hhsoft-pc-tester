@@ -412,6 +412,17 @@ the alpha still requires the separate documented release gates.
   physical media and release approval remain separate gates.
 - [x] Check Ethernet/Wi-Fi driver and link readiness while failing closed on
   active non-loopback interfaces and generating no network traffic.
+- [x] Bound network registry, scalar, driver-link and fallback acquisition
+  with exact EOF and owned closure. Preserve earlier complete interface
+  diagnostics after later faults.
+- [x] Complete corrected network acquisition host validation: all ten portable
+  functions, formatting, vet and Linux amd64/386/arm64 whole-source builds.
+- [x] Execute all 21 required network/command functions on Linux amd64 and
+  386, including ten portable, seven new Linux and four retained Linux
+  functions, with zero failures or skips and confirmed cleanup.
+- [ ] Bound total/peak network acquisition allocation and establish blocked
+  kernel-operation deadlines and persistent physical identity. Functional
+  traffic, rebuilt-image, physical-hardware and release gates remain open.
 - [x] Check USB root/device topology, authorization, speed, and read-only USBFS
   node readiness without issuing application USB transfers.
 - [x] Bind USB node readiness to the selected registry device number, address

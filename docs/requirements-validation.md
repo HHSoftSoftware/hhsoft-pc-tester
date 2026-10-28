@@ -767,6 +767,67 @@ with 17 existing test skips and three empty packages. Formatting, vet
 and Linux amd64/386/arm64 builds passed; native output fault qualification
 and release gates remain open.
 
+The network acquisition path adds bounded discovery while retaining
+the existing result schema, current v5 emission and catalog. Registry reads
+request at most 32 entries per call and enforce the existing 128-entry
+limit with one overflow witness. Names are validated, cached and sorted;
+ordinary sysfs directory links remain usable. Scalar bodies admit 256 raw
+bytes, and driver-link and fallback metadata bodies admit 4,096 bytes,
+each with a bounded overflow check. Scalar and fallback reads require exact
+EOF, regular-descriptor proof and successful owned closure.
+
+Optional absence requires a sole open-time missing-file error without an
+acquired handle. Only carrier, speed and duplex may additionally treat a
+sole first read returning zero bytes with `EINVAL` as unavailable. Open,
+stat, partial-read, later-read, joined-error and close faults do not receive
+that exception. Successfully acquired malformed optional values retain
+their earlier unknown-value behavior. Close failure remains an error during
+cancellation; cancellation after clean closure revokes current credit and
+stops later acquisition. Earlier completed interface rows remain diagnostic
+when a later interface fails.
+
+Driver lookup uses a bounded link read, falling back to bounded metadata
+only for an absent link or an invalid driver basename in a successfully
+acquired target. NUL, overlong targets and acquisition faults remain hard
+errors. The production syscall adapter handles the actual negative count
+returned with a readlink error without weakening generic invalid-count
+rejection. The frozen tests include real-syscall missing-link fallback,
+missing-both cases, retained-prefix faults and consumer status checks.
+Network errors and aborted results stop the session safety sequence before
+later workers and signing. Standalone finalization must retain diagnostic
+status and reject a caller's unsupported pass claim.
+
+This increment has 17 new test functions, ten portable and seven Linux-only,
+plus four retained Linux functions. The corrected isolated Windows run
+passed 4,097 test/subtest events across 29 packages, with 17 existing test
+skips and one empty package. All ten portable functions and their 87 named
+children passed. The four standalone-finalizer status cases preserve signed
+diagnostics; intended caller-pass rejection checks also passed within those
+cases and the retained-prefix case. These fixtures use self-issued bundle
+verification and remain compositional rather than provisioned-key evidence.
+
+Formatting, vet, Linux amd64/386/arm64 whole-source builds and all eight
+postchecks passed. A separate pinned local Go 1.27.2 build produced four
+selected Linux test binaries and two test2json tools; all 14 commands and
+seven postchecks passed. This binds the local SDK closure without claiming
+upstream or release-toolchain qualification.
+
+The matching native run passed 404 test/subtest events across four suites:
+177 network events and 25 command events on each of Linux amd64 and 386.
+All 21 required functions passed on each architecture, including the ten
+portable, seven new Linux and four retained Linux functions, with zero
+failures or skips. Missing-link fallback, missing-both and retained-prefix
+read, close and close-plus-cancel cases passed on both architectures. Nine
+owned-process cases, 32 archive cases and all six root postchecks passed
+with cleanup confirmed. These suites use injected acquisition faults and
+owned temporary fixtures; they do not qualify standalone CLI runs, races,
+real network hardware or functional traffic.
+
+Historical USB validation below is separate from this network increment.
+Functional traffic, blocked-kernel deadlines, total/peak allocation,
+persistent identity, rebuilt-image, physical-PC and release qualification
+remain open.
+
 USB readiness now binds each authorized device to its selected registry
 device number, bus/device address and authorization. It rejects duplicate
 observed device numbers or addresses before opening nodes, then checks direct

@@ -104,6 +104,26 @@ read. USB readiness issues no application USB transfers. Network readiness confi
 nothing and sends no traffic. An active non-loopback interface or writable
 block mount causes safe mode to fail closed.
 
+Network acquisition bounds discovery reads and closes each acquired handle
+before accepting an observation. Permission, type,
+overflow, incomplete-read and close failures become errors, with earlier
+complete interface diagnostics retained and later acquisition stopped.
+Optional missing attributes or successfully read malformed values remain
+unknown. Only carrier, speed and duplex additionally permit a sole
+first-read `EINVAL` with zero bytes as unavailable; partial or later read
+errors do not qualify. Driver discovery falls back to bounded device
+metadata when the link is absent or a successfully acquired target has an
+invalid driver basename. NUL, overlong targets and acquisition faults
+remain hard errors.
+
+`hhpt network` returning zero means diagnostic JSON was written, not that
+readiness passed. Network readiness is a session safety check: an error or
+aborted result stops later workers and session signing. Separate manual
+finalization may retain non-pass diagnostics, but cannot promote them to
+pass. These acquisition changes add no configuration, interface activation
+or network traffic. They do not establish deadlines for blocked kernel
+calls, total allocation bounds or persistent physical identity.
+
 USB readiness requires the selected registry identity and authorization to
 agree with the direct device node and the opened descriptor. The descriptor
 must close successfully before that device earns readable credit. Missing

@@ -462,6 +462,54 @@ without configuring an address, associating Wi-Fi, or generating traffic. The
 safe profile fails closed when any non-loopback interface is administratively
 active, including software-created interfaces not treated as hardware evidence.
 
+The network acquisition tests cover the following boundaries:
+
+- Exact scalar/fallback EOF and overflow boundaries, finite read requests,
+  regular-descriptor proof and exactly one close attempt for every acquired
+  handle, including a handle returned with an open error. Reject invalid
+  counts, no progress, partial errors and wrapped or joined EOF.
+- Registry 128/129 boundaries, positive batches no larger than 32, explicit
+  EOF probes, safe unique cached names and closure before attribute access.
+  Preserve ordinary sysfs directory links and reject silent truncation.
+- Optional absence only at a sole missing-file open without a handle. Permit
+  a sole zero-byte first-read `EINVAL` only for carrier, speed and duplex;
+  reject the same error at other phases, after progress or with another
+  fault. Preserve the established optional-value parsing rules.
+- Bounded driver-link/fallback acquisition, including the real syscall
+  negative-count/error convention, absent link with valid fallback, absent
+  link and fallback, and generic invalid-count rejection. Presence probes
+  must distinguish ordinary absence from permission and other failures.
+- Close-error precedence over cancellation, cancellation at each acquisition
+  boundary and no later operations. Retain an exact earlier interface row
+  after a later read, close or close-plus-cancel fault; the next interface
+  must remain unopened and all acquired handles must be accounted for.
+- Real command/session paths preserving diagnostic outcomes and stopping
+  unsafe session progression. Standalone-finalizer fixtures must first
+  establish a scheduled network plan, then retain each status or reject the
+  intended evidence/status mismatch. An unrelated plan rejection cannot
+  satisfy a negative test. Signed consumer fixtures use self-issued bundle
+  verification; injected producer faults and those consumer cases remain
+  compositional, without provisioned-key or physical-device credit.
+
+The corrected host run passed all ten portable functions and 87 exact named
+children, including the four finalizer status cases and the retained-prefix
+case. Each finalizer fixture now establishes the scheduled network plan;
+negative cases require the intended evidence mismatch before inventory
+collection or report output. Full-suite totals and build evidence are recorded
+in [requirements validation](requirements-validation.md).
+
+The matching native run passed all 21 required functions on Linux amd64
+and 386: ten portable, seven new Linux and four retained Linux functions.
+Independent event review confirmed the full function selection, the host
+named-case selection and the Linux fallback and retained-prefix witnesses
+on both architectures. Measured totals and cleanup evidence are recorded
+in [requirements validation](requirements-validation.md). These acquisition
+changes add no traffic generation and retain the schema, current v5 emitter
+and catalog.
+Functional network tests, blocked-kernel deadlines, total/peak allocation,
+persistent identity, images, physical hardware and release approval remain
+separate open gates.
+
 The USB readiness adapter records authorized kernel topology, class,
 speed, and direct USBFS character-node access. It opens nodes read-only
 without application USB transfers, resets or driver operations. It does

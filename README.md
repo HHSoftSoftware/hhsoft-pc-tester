@@ -292,6 +292,20 @@ the [operator interpretation](docs/operator-guide.md#read-firmware-and-tpm-inven
 and [finite contract](docs/requirements-validation.md#firmware-and-tpm-inventory).
 Secure Boot image support, physical qualification and release gates remain open.
 
+The Linux inventory also implements finite SMBIOS Type 17 observations for each
+eligible exposed memory-device entry: capacity in bytes, memory type and form
+factor. Each field has a reported, unknown, unavailable, malformed or unsupported
+state. Raw strings and stable identifiers are excluded; row ordinals are
+nonpersistent and identity remains unavailable. No rows means no reported data.
+
+These observations participate in the frozen configuration and signed report.
+They do not establish usable OS RAM, RAM health or physical module continuity.
+Host tests and selected native Linux amd64/386 fixtures passed for this addition.
+Physical systems and release images still need qualification. See
+[how to read the fields](docs/operator-guide.md#read-memory-device-inventory)
+and [the finite contract](docs/requirements-validation.md#memory-device-inventory).
+Broader SPD, ECC, topology, speed and firmware/OS reconciliation remain open.
+
 The periodic-monitor milestone introduced read-only mount/network sampling
 and a v3 session journal, without changing the catalog or ten worker outcomes.
 The v4 increment retained that monitor summary and added thermal evidence;

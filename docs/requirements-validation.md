@@ -224,6 +224,188 @@ on unsupported operating systems. Broader firmware-lock, attestation, Secure
 Boot image, physical-PC, installed-CLI, image, race/durability and release gates
 remain open where documented.
 
+## Memory Device Inventory
+
+The finite Linux producer and its graph/report/comparison integration are
+implemented and have passed host tests and selected native Linux amd64/386
+software fixtures. The scope is three selected numeric observations from exposed
+SMBIOS Type 17 records; it does not complete the broader memory requirement.
+
+### Acquisition and row contract
+
+The collector reads eligible entries under `/sys/firmware/dmi/entries/` through
+the existing owned directory and scalar acquisition paths. It sorts cached names
+lexically, accepts only the ASCII spelling `17-(0|[1-9][0-9]*)`, then opens only
+the accepted entry's `raw` file. Nonmatching names are skipped without opening
+their raw file. The suffix is neither converted to a fixed-width integer nor
+exported. Each eligible entry receives a one-based, nonpersistent
+`memory_device:N` ordinal. An absent, empty or ineligible-only registry adds no
+rows and establishes no hardware absence.
+
+Ordinary scalar errors discard all returned bytes, including favorable bytes
+returned alongside an error, and produce a row with all three fields unavailable.
+Existing ownership, protocol, bound, checked-close, directory and cancellation
+failures retain their stronger policy: the collector returns no partial snapshot.
+The existing 65,536-byte scalar bound is a product limit, not an SMBIOS ABI maximum.
+The existing `memory:system` OS observation remains the RAM provider.
+
+| Attribute | Finite interpretation |
+| --- | --- |
+| `capacity_bytes` | Decimal byte count, present only when reported. |
+| `memory_type` | One admitted type label, present only when reported. |
+| `form_factor` | One admitted form-factor label, present only when reported. |
+| Each field's `_state` | `reported`, `unknown`, `unavailable`, `malformed` or `unsupported`. |
+| `observation_source` | Always `smbios_type17` on an eligible row. |
+
+`unknown` describes a firmware field with no known value; `unavailable`
+describes an unobserved eligible entry. `malformed` describes failed structure;
+`unsupported` describes a value outside the admitted encoding policy. Only
+`reported` has a value. Missing, rejected and unknown capacity never becomes
+zero. The source label identifies the input family without authenticating it.
+
+### Whole-record framing
+
+Parsing requires at least the four-byte header, Type 17, a formatted length from
+21 through 255 bytes, and at least two bytes after that formatted area. The first
+double NUL at or after the formatted boundary must end exactly at the end of the
+raw file. Missing terminators, trailing bytes, concatenated records, wrong type,
+short headers and incomplete formatted areas make all three fields malformed.
+Opaque string bytes, including non-UTF-8 bytes, are allowed when this framing is
+valid; they are never decoded or borrowed to complete a selected field. Handles,
+string indexes and unselected fields are ignored. This is a bounded projection,
+not a full SMBIOS conformance or authenticity validator.
+
+Size is the little-endian 16-bit field at offset 12; Form Factor is byte 14;
+Memory Type is byte 18. Extended Size, when selected and wholly present, is the
+little-endian 32-bit field at offset 28.
+
+### Capacity policy
+
+| Size field | Capacity state and value |
+| --- | --- |
+| `0` | `reported`, `0` bytes: firmware's empty-entry observation. |
+| `0x0001..0x7FFE` | `reported`, Size multiplied by 1,048,576 bytes. |
+| `0x7FFF` | Select Extended Size according to the rules below. |
+| `0x8000` | `unsupported` under the product's conservative policy. |
+| `0x8001..0xFFFE` | `reported`, low 15 bits multiplied by 1,024 bytes. |
+| `0xFFFF` | `unknown` with no value. |
+
+For Size `0x7FFF`, a formatted length at most 28 means Extended Size is absent:
+capacity is `unknown`. Lengths 29 through 31 contain only part of that field:
+capacity is `malformed` while valid type and form-factor observations survive.
+At length 32 or greater, bit 31 set in Extended Size is `unsupported`.
+Values 0 through 32,766 are also `unsupported` under the product's conservative
+policy; values 32,767 through 2,147,483,647 report that many MiB in bytes.
+An extension is ignored when Size is not `0x7FFF`.
+
+The base `0x8000` and sub-threshold extension choices are product policies, not
+claims that every SMBIOS producer universally prohibits those encodings.
+Multiplication widens to `uint64` first. The largest admitted capacity is
+2,251,799,812,636,672 bytes; this boundary passed on native Linux 386.
+A reported zero does not prove a physical slot is empty. Capacities are not
+summed or substituted for usable OS RAM.
+
+### Finite type and form-factor labels
+
+Both enums map code 1 to reported `other` and code 2 to `unknown` without a
+value. Every unlisted code, including future codes, is `unsupported` without
+echoing the raw code. The following are the complete reported mappings; code
+numbers are decimal.
+
+| Form-factor code | Label | Form-factor code | Label |
+| --- | --- | --- | --- |
+| 1 | `other` | 3 | `simm` |
+| 4 | `sip` | 5 | `chip` |
+| 6 | `dip` | 7 | `zip` |
+| 8 | `proprietary_card` | 9 | `dimm` |
+| 10 | `tsop` | 11 | `row_of_chips` |
+| 12 | `rimm` | 13 | `sodimm` |
+| 14 | `srimm` | 15 | `fb_dimm` |
+| 16 | `die` | 17 | `camm` |
+| 18 | `cudimm` | 19 | `csodimm` |
+
+| Memory-type code | Label | Memory-type code | Label |
+| --- | --- | --- | --- |
+| 1 | `other` | 3 | `dram` |
+| 4 | `edram` | 5 | `vram` |
+| 6 | `sram` | 7 | `ram` |
+| 8 | `rom` | 9 | `flash` |
+| 10 | `eeprom` | 11 | `feprom` |
+| 12 | `eprom` | 13 | `cdram` |
+| 14 | `3dram` | 15 | `sdram` |
+| 16 | `sgram` | 17 | `rdram` |
+| 18 | `ddr` | 19 | `ddr2` |
+| 20 | `ddr2_fb_dimm` | 24 | `ddr3` |
+| 25 | `fbd2` | 26 | `ddr4` |
+| 27 | `lpddr` | 28 | `lpddr2` |
+| 29 | `lpddr3` | 30 | `lpddr4` |
+| 31 | `logical_nonvolatile_device` | 32 | `hbm` |
+| 33 | `hbm2` | 34 | `ddr5` |
+| 35 | `lpddr5` | 36 | `hbm3` |
+| 37 | `mrdimm` | | |
+
+`logical_nonvolatile_device` remains an enum observation; it does not imply
+physical module topology or usable volatile RAM.
+
+### Privacy, graph and consumer boundaries
+
+Raw names, handles, indexes, opaque strings, serial/location data, unselected
+fields and provider error text are excluded from the new observations. Identity
+remains unavailable with existing algorithm/key-epoch bookkeeping and no new
+source, value or confidence. Ordinals can shift and equal finite rows cannot
+establish physical continuity, including indistinguishable same-count replacement.
+
+All finite values, states and rows enter the ordinary configuration graph and
+comparison; none is marked volatile. A changed configuration requires a new plan
+for future execution. Finalization retains a signed failed-integrity diagnostic
+with exact changed component references when the final graph differs. Existing
+payload/signature/view rules and independent linked parent/child trust remain
+in force. Signatures bind captured bytes, not firmware truth. This producer adds
+no generic semantic validator for arbitrary inventory attributes or new strict
+evidence schema. When no rows are added, old snapshot, graph, payload and view
+bytes are preserved.
+
+The addition reads no SPD or EDAC data, performs no device command, loads no
+module, requests no extra privilege and adds no global-table fallback, worker,
+capability, catalog row, dependency or identity algorithm. Quick v7 and explicit
+standard v8 retain their 12/13-worker schedules, 22 catalog rows and nine inactive
+functional families.
+
+### Qualification and remaining requirements
+
+The complete source defines 34 new test roots and 691 required test/subtest names;
+the portable subset is 30 roots and 681 names. The host run separately confirmed
+all 691 new required names passed. Source requirements and measured outcomes are
+distinct.
+
+| Closed software validation | Measured outcome |
+| --- | --- |
+| Full host suite | 7,639 named test/subtest passes and 30 package passes; 17 test skips and one package skip. |
+| Selected native Linux amd64 and 386 suites | 5,268 named test/subtest passes across 14 package executions; no skips or failures. |
+
+Each native architecture executed 2,634 required names across 402 test roots.
+Exact names, completed lifecycles and child-before-parent completion were
+reconciled independently, with no duplicate or extra native outcomes. This
+includes actual 32-bit capacity arithmetic. Format checks, vet and Linux
+amd64/386/arm64 application builds passed; cross-builds are compilation evidence,
+not native execution or AArch64 qualification. Historical CPU and firmware
+results remain evidence for those earlier changes.
+
+The [parser and projection fixtures](../internal/inventory/memory_device_test.go),
+[owned acquisition fixtures](../internal/inventory/memory_device_acquisition_test.go)
+and [signed consumer fixtures](../cmd/hhpt/memory_device_report_test.go) define
+the executable coverage. See
+[the validation scope and remaining gates](test-strategy.md#memory-device-inventory-validation).
+
+SPD, ECC deltas, topology and slot locations, speed/rate/voltage/rank,
+firmware/OS capacity reconciliation, RAM correctness, broader working sets,
+extended stress and pre-boot Memtest86+ remain open. Image/sysfs exposure and
+permissions, physical-PC observations, installed-command/image behavior,
+race/durability qualification, actual 600-second standard sessions, all four
+release images, the physical pilot and
+required release approval remain separate gates. No memory-health,
+attestation or physical-continuity conclusion follows from this inventory.
+
 ## Bounded Standard CPU Stress
 
 Implementation is present across the standard coordinator, strict evidence,

@@ -472,6 +472,41 @@ change. It does not add Secure Boot image support: current images still require
 Secure Boot disabled. Keep the existing firmware setup instructions and physical
 qualification limits. See [the field contract](requirements-validation.md#firmware-and-tpm-inventory).
 
+## Read Memory Device Inventory
+
+When Linux exposes eligible SMBIOS Type 17 entries, inventory includes
+`memory_device:N` rows. Read each value together with its `_state` field:
+
+| Field | Meaning when reported |
+| --- | --- |
+| `capacity_bytes` | Firmware's selected capacity observation, in decimal bytes. |
+| `memory_type` | A finite type label such as `ddr4` or `ddr5`. |
+| `form_factor` | A finite form-factor label such as `dimm` or `sodimm`. |
+
+`reported` includes a value. `unknown` means the firmware field does not
+supply a known value; `unavailable` means the entry could not be observed.
+`malformed` means the record or selected field fails its required structure.
+`unsupported` means the encoding is outside the product's admitted set.
+The last four states omit the value; none substitutes zero.
+
+A reported capacity of `0` is firmware's empty-entry observation. It does not
+prove that a physical slot is empty. No rows means no reported data. Do not sum
+these rows to infer usable OS memory, or infer RAM health from any of these
+fields. `observation_source=smbios_type17` identifies the observation source,
+without authenticating firmware.
+
+Ordinals can shift between collections. They are neither slot labels nor stable
+module identifiers, and identity remains unavailable. Raw source names, strings
+and serial/location data are excluded. A comparison can show changed values,
+states or rows without proving whether a physical module changed.
+
+These observations belong to the frozen configuration. If they change before
+finalization, the signed report retains a failed-integrity diagnostic and exact
+changed component references. Prepare a new plan before future execution on the
+new configuration. Host tests and selected native Linux amd64/386 fixtures
+passed; physical systems and image availability need separate qualification. See
+[the field contract and remaining gaps](requirements-validation.md#memory-device-inventory).
+
 ## Save the Signed Report
 
 The only authoritative artifact is the `.hhpcr` bundle. Its HTML and PDF views

@@ -596,6 +596,42 @@ The full host suite and selected native Linux amd64/386 fixtures passed. Quick
 v7, standard v8 and historical report behavior are retained; physical, image,
 durability and release gates remain separate.
 
+## Memory Device Inventory Assertions
+
+The Linux producer emits `memory_device` components with finite
+`capacity_bytes`, `memory_type` and `form_factor` attributes, their explicit
+`_state` attributes and `observation_source=smbios_type17`. A value appears only
+with `reported`. Every eligible row remains observable even when all selected
+fields are unavailable; an absent or empty registry adds no observation.
+
+Raw registry names, record handles, string indexes, opaque strings and
+serial/location data do not become payload attributes or hashed aliases.
+Memory-device identity remains unavailable, preserving existing algorithm and
+key-epoch bookkeeping without adding identity source, value or confidence.
+Ordinals can shift. Equal finite rows, including identical same-count
+replacement, cannot establish physical continuity.
+
+All emitted values, states and rows participate in the ordinary configuration
+graph; none is excluded as volatile. A changed graph requires a new plan for
+later execution. The finalizer retains a signed failed-integrity diagnostic with
+exact changed component references when final collection differs from the frozen
+graph. Ordinary comparison preserves both observations and the existing identity
+policy; it does not match raw names or invent stable module aliases.
+
+Signatures bind recorded bytes and signer policy. They do not establish firmware
+truth, installed capacity, RAM health or attestation. The source label carries no
+authenticity assertion. The existing payload, signature, no-view, semantic-view
+and linked-report rules remain in force, including independently selected parent
+and child trust. This adds no strict evidence schema or generic finite-attribute
+semantic validator for arbitrary inventory input.
+
+The addition preserves old snapshot, graph, payload and view bytes when it adds
+no rows. Host tests and selected native Linux amd64/386 fixtures passed for this
+addition; prior CPU and firmware results remain separate evidence. See
+[the finite contract](requirements-validation.md#memory-device-inventory).
+Physical-PC, installed-command/image, durability and release gates remain open
+where documented.
+
 ## Standard CPU Stress Evidence
 
 The new observed result is `hhsoft.pc-tester.cpu-stress/v1` for scheduled

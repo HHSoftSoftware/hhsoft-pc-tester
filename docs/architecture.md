@@ -501,6 +501,42 @@ and inactive storage sampling are unchanged. The full host suite and selected
 native Linux amd64/386 fixtures passed; no measured-boot, attestation, TPM-health
 or physical firmware claim follows from metadata collection.
 
+## Finite memory device inventory
+
+The Linux collector adds `memory_device` rows from the exposed SMBIOS Type 17
+registry. It uses the existing owned directory and scalar acquisition paths:
+sort the cached entry names lexically, accept only ASCII `17-(0|[1-9][0-9]*)`,
+then read only each accepted entry's `raw` file. The private numeric suffix is
+never converted to a fixed-width integer or exported. One-based
+`memory_device:N` ordinals follow eligible-entry order and are not persistent
+identities. An absent, empty or ineligible-only registry adds no rows.
+
+Each eligible entry produces finite `capacity_bytes`, `memory_type` and
+`form_factor` observations, companion `_state` attributes and the constant
+`observation_source=smbios_type17`. Only a reported field carries a value.
+Ordinary scalar failures discard returned bytes and retain an unavailable row;
+existing ownership, protocol, bound, checked-close, directory and cancellation
+failures retain their stronger failure policy and discard the partial snapshot.
+The existing 65,536-byte scalar bound is a product limit.
+
+The parser admits one complete Type 17 record before projecting selected numeric
+fields. A framing failure makes all three fields malformed; a partially present
+Extended Size field affects capacity alone. Handles, indexes, opaque strings and
+unselected fields never become attributes or identity material. Capacity and
+enum policies are specified in [the field contract](requirements-validation.md#memory-device-inventory).
+This projection is not a full SMBIOS conformance or authenticity check.
+
+All finite fields, states and rows participate in the configuration graph and
+ordinary comparison. Changes require a new plan for future execution; finalization
+retains a signed failed-integrity diagnostic with changed component references.
+Identity stays unavailable, so equal rows or ordinals cannot establish physical
+continuity. The existing `memory:system` OS observation and RAM provider remain
+unchanged. There is no added worker, capability, catalog row, evidence schema,
+identity algorithm or dependency; quick v7 and standard v8 keep their existing
+schedules. Host tests and selected native Linux amd64/386 fixtures passed for
+this addition. Actual image/sysfs availability and physical-device coverage
+remain separate.
+
 ## Bounded standard CPU stress
 
 The explicit `standard` coordinator inserts `cpu.stress` after a passing

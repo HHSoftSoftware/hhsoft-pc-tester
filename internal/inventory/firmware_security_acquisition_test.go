@@ -28,6 +28,9 @@ func firmwareAcquisitionSource(t *testing.T, entries []fs.DirEntry, read func(st
 		if name == "sys/class/tpm" {
 			return entries, nil
 		}
+		if name == "sys/firmware/dmi/entries" {
+			return nil, fs.ErrNotExist
+		}
 		if strings.Contains(name, "firmware") || strings.HasPrefix(name, "dev") {
 			t.Fatal("unapproved enumeration", name)
 		}

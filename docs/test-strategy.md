@@ -1708,6 +1708,75 @@ by these four inventory fields. This slice adds no TPM commands, provisioning,
 firmware-policy changes, physical-device, installed-CLI, image, race or durability
 qualification. See [requirements and limits](requirements-validation.md#firmware-and-tpm-inventory).
 
+## Memory Device Inventory Validation
+
+The finite memory-device implementation has 34 new test roots and 691 required
+test/subtest names in source; the portable subset has 30 roots and 681 names.
+These counts specify coverage requirements. The actual host run separately
+confirmed all 691 new required names passed within 7,639 named test/subtest
+passes and 30 package passes; 17 tests and one package were skipped.
+
+Selected native Linux amd64/386 execution passed 5,268 required test/subtest
+names across 14 package executions: 2,634 names and 402 test roots per
+architecture, with no skips or failures. Independent event reconciliation
+confirmed exact required-name membership, lifecycles completed exactly once and
+child-before-parent completion, with no extra or duplicate outcomes. The
+native run also passed nine runtime ownership cases and 32 source-archive
+cases. Previous CPU/firmware results remain evidence for those earlier changes.
+
+Parser oracles use literal raw records and independently specified complete
+attributes, rather than deriving expectations from production lookup tables.
+They require all 22 capacity boundaries and 512 individual enum-code cases,
+including the 18 reported form factors, 33 reported memory types, explicit
+unknown encodings and every unsupported byte value. Capacity cases distinguish
+reported zero, absent and partial Extended Size, string tails that cannot supply
+a field, reserved/sub-threshold extensions, ignored unused extensions, and the
+largest widened 64-bit product. Native Linux 386 execution covered that maximum.
+
+Routing and framing cases require literal names, mixed entries, lexical order,
+long decimal suffixes without fixed-width conversion, malformed/future formatted
+lengths, trailing and concatenated records, opaque strings and exact terminators.
+Read ledgers must prove skipped names are not opened and only admitted raw paths
+are read. Irrelevant bytes and private canaries must not change or appear in
+attributes, graph, payload, HTML/PDF views or comparison. Empty and absent
+registries require literal old snapshot/graph/payload/view fixtures, with the
+OS memory observation and RAM scheduling retained.
+
+Acquisition cases must reach the ownership operations they claim: ordinary
+data-plus-error discards favorable bytes, while fatal protocol, byte-bound,
+checked-close, directory and cancellation failures discard the whole partial
+snapshot. Check actual read and terminal-probe ledgers, final-entry cancellation,
+directory batching and concurrent collectors. Faults injected through an
+aggregate source wrapper demonstrate that wrapper's policy, not every hidden
+owner failure. The existing product byte bound does not imply a kernel-blocking
+deadline or physical sysfs qualification.
+
+Consumer coverage requires independent graph and HMAC expectations, unavailable
+memory-device identity alongside an identified control, unchanged plan/scheduler
+behavior, and real finalization. Keep both the stable positive and the signed
+failed-integrity diagnostic with exact changed component references. Fatal
+acquisition must reach the finalizer before entropy or output, with explicit
+tripwires. Signed legacy and linked bundles need valid trust prerequisites,
+no-view and both-view cases, re-signed semantic-view failures, and independent
+parent/child trust. Actual signed comparison must retain exact add/remove/change
+references, ordinal shifts and unresolved identical same-count replacement.
+Signature success is not a generic semantic check of arbitrary inventory fields.
+
+The closed software qualification binds the complete source to actual command
+results and test events, with exact required-name membership, parent ordering,
+failures, skips, native cleanup and input stability checked. Host source
+formatting and the selected native outcomes were reconciled independently.
+Formatting, vet and Linux amd64/386/arm64 application builds passed separately;
+an arm64 cross-build does not establish an AArch64 run. These measured outcomes
+complete the finite addition's software qualification row without completing
+physical, image or release qualification.
+
+This slice does not fulfill SPD, ECC, topology, speed, OS-capacity reconciliation
+or RAM-correctness requirements. Physical hardware, actual images and permissions,
+installed CLI, actual 600-second standard sessions, race/durability, four-image
+release and physical-pilot gates remain
+separate. See [the exact field contract and limits](requirements-validation.md#memory-device-inventory).
+
 ## Bounded Standard CPU Stress Validation
 
 The new standard path must be qualified as a consumed workflow, separately from

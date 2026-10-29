@@ -619,6 +619,31 @@ image support, physical-PC pilot, installed-command/image qualification and
 release approval remain open. Quick v7, standard v8 and their budgets are
 unchanged.
 
+### Finite memory device inventory
+
+The Linux inventory implements selected SMBIOS Type 17 capacity, memory-type
+and form-factor observations with explicit reported, unknown, unavailable,
+malformed and unsupported states. Raw source strings and identifiers stay
+private; nonpersistent ordinals retain unavailable identity. The observations
+participate in the configuration graph, signed reports and ordinary comparison,
+including signed failed-integrity diagnostics for changed configurations.
+
+Host tests and selected native Linux amd64/386 fixtures passed for this finite
+addition, including actual 32-bit capacity boundaries. The 34 new roots and
+691 named source requirements are tracked separately from measured outcomes.
+See [the finite contract, results and remaining gates](requirements-validation.md#memory-device-inventory).
+Earlier CPU and firmware results remain evidence for those earlier changes.
+
+This bounded inventory slice adds no worker or catalog row and leaves nine
+functional families inactive. Quick v7 and explicit standard v8 retain their
+schedules and budgets. Broader SPD, ECC, topology, speed, firmware/OS capacity
+reconciliation, RAM correctness, extended testing and pre-boot Memtest86+
+requirements remain open. Selected firmware observations establish neither
+usable OS RAM nor module health or physical continuity. Image/sysfs availability,
+the physical-PC pilot, all four release images, installed-command/image behavior,
+actual 600-second standard sessions, race/durability and release approval still
+require their documented qualification.
+
 ### Bounded standard CPU stress
 
 The consumed standard path is implemented and has passed host, selected native

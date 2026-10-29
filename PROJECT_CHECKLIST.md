@@ -581,6 +581,17 @@ the alpha still requires the separate documented release gates.
 - [ ] Test CPU correctness, instruction coverage, performance, stability, power,
   and thermal behavior.
 - [ ] Extend the RAM quick worker to broader working-set coverage and extended testing.
+- [x] Implement finite Linux SMBIOS Type 17 memory-device inventory: capacity,
+  memory type and form factor with explicit field states, private source strings,
+  unavailable identity and ordinary graph/report/comparison integration.
+  See [the bounded contract](docs/requirements-validation.md#memory-device-inventory).
+- [x] Qualify this finite memory-device implementation with the full host suite
+  and selected native Linux amd64/386 fixtures, including actual 32-bit capacity
+  boundaries, owned acquisition failures and signed consumers. The host recorded
+  7,639 named test/subtest passes and 30 package passes, with 17 test skips and
+  one package skip. Selected native runs recorded 5,268 named passes across
+  14 package executions, with no skips or failures. Physical and release
+  qualification remain separate.
 - [ ] Cross-check memory capacity, topology, speed, and exposed SPD data against
   firmware and OS observations; monitor corrected and uncorrected ECC deltas.
 - [ ] Add the separate Memtest86+ boot entry for complete memory coverage.

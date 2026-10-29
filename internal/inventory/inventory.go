@@ -26,6 +26,7 @@ const (
 	ComponentPowerSupply      ComponentType = "power_supply"
 	ComponentFirmwareSecurity ComponentType = "firmware_security"
 	ComponentTPM              ComponentType = "tpm"
+	ComponentMemoryDevice     ComponentType = "memory_device"
 )
 
 type Attribute struct {

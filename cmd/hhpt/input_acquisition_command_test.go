@@ -147,7 +147,7 @@ func prepareInputAcquisitionFinalization(t *testing.T, evidence inputtest.Result
 	keyPath := writeTestKey(t, directory, "fingerprint.key", key)
 	snapshot := inventory.NewSnapshot([]inventory.Component{inventory.NewComponent(inventory.ComponentInput, "input:keyboard", map[string]string{"category": "keyboard", "handlers": "kbd event0"})})
 	// Guided keyboard is explicitly excluded in the real frozen selection.
-	frozen, err := plan.BuildWithSelection(snapshot, plan.ProfileQuick, "x86_64", key, "ephemeral-session", []string{"input.keyboard.quick"})
+	frozen, err := plan.BuildWithSelection(snapshot, plan.ProfileQuick, "x86_64", key, "ephemeral-session", []string{"input.keyboard.quick", "inspection.exterior.quick"})
 	if err != nil {
 		t.Fatal(err)
 	}

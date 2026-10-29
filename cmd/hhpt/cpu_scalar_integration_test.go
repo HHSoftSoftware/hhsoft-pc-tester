@@ -89,7 +89,7 @@ func TestCPUScalarFaultsCrossCoordinatorFinalizerAndSignedConsumers(t *testing.T
 				if err != nil || view == nil || view.MismatchedWorkers != 1 || !view.CalculationFailures.Scalar || view.WorkersStarted != 2 || view.WorkersCompleted != 1+btoi(test.later) {
 					t.Fatal("signed scalar finding changed", err)
 				}
-				if len(payload.TestResults) != 22 || len(h.journal.Workers) != 11 || !strings.Contains(string(artifact.InventoryJSON), "7ff8000000000001") {
+				if len(payload.TestResults) != 23 || len(h.journal.Workers) != 12 || !strings.Contains(string(artifact.InventoryJSON), "7ff8000000000001") {
 					t.Fatal("coverage or exact mismatch lost")
 				}
 			})

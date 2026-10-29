@@ -157,6 +157,9 @@ func prepareQuickFinalization(t *testing.T, id string, evidence any, outcome str
 	arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "quick-fixture", "-output", reportPath}
 	for _, definition := range quickResultDefinitions {
 		status := "not_present"
+		if definition.id == "inspection.exterior.quick" {
+			status = "excluded"
+		}
 		if definition.id == id {
 			status = outcome
 			if err := os.WriteFile(filepath.Join(directory, definition.filename), encodeEvidenceFixture(t, evidence), 0o600); err != nil {

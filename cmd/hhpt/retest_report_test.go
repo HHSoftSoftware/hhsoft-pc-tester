@@ -465,6 +465,9 @@ func retestFinalizeFixture(t *testing.T) ([]string, inventory.Snapshot, string) 
 	args := []string{"-fingerprint-key", keyPath, "-plan", planPath, "-evidence-dir", dir, "-output", output}
 	for _, definition := range quickResultDefinitions {
 		outcome := "not_present"
+		if definition.id == "inspection.exterior.quick" {
+			outcome = "excluded"
+		}
 		if definition.id == "cpu.quick" {
 			outcome = "pass"
 		}

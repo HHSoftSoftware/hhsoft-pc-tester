@@ -22,7 +22,7 @@ type journalV6Wire struct {
 // A source cannot be silently discarded by changing the declared schema.
 func (j Journal) MarshalJSON() ([]byte, error) {
 	switch j.Schema {
-	case SchemaV4, SchemaV5:
+	case SchemaV4, SchemaV5, SchemaV7:
 		if j.StorageSource != nil {
 			return nil, ErrInvalid
 		}

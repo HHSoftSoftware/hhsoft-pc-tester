@@ -149,6 +149,9 @@ func TestFinalizeAcceptsActualWorkerJSONSerialization(t *testing.T) {
 				"-session-id", "fixture-session", "-output", reportPath}
 			for _, definition := range quickResultDefinitions {
 				status := "not_present"
+				if definition.id == "inspection.exterior.quick" {
+					status = "excluded"
+				}
 				if definition.id == "cpu.quick" {
 					status = "pass"
 				}

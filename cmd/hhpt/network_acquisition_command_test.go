@@ -158,6 +158,9 @@ func prepareNetworkAcquisitionFinalization(t *testing.T, evidence networktest.Re
 	arguments := []string{"-fingerprint-key", keyPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "network-fixture", "-output", output}
 	for _, definition := range quickResultDefinitions {
 		status := "not_present"
+		if definition.id == "inspection.exterior.quick" {
+			status = "excluded"
+		}
 		if definition.id == "network.readiness.quick" {
 			status = outcome
 			writeSessionFixture(t, filepath.Join(directory, definition.filename), evidence)

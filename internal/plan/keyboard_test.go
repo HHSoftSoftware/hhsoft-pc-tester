@@ -20,7 +20,7 @@ func TestKeyboardDefinitionSchedulesEveryKeyboardAndKeepsCatalogSize(t *testing.
 			t.Run(architecture+"/"+string(profile), func(t *testing.T) {
 				p := buildValidationPlan(t, snapshot, profile, architecture)
 				row := findPlanTest(t, &p, "input.keyboard.quick")
-				if len(p.Tests) != 21 || row.Version != 2 || row.Status != TestScheduled || row.Destructive || row.TimeoutSeconds != 90 || row.EstimatedSeconds != 30 || !slices.Equal(row.ComponentIDs, []string{"input:0", "input:1"}) {
+				if len(p.Tests) != 22 || row.Version != 2 || row.Status != TestScheduled || row.Destructive || row.TimeoutSeconds != 90 || row.EstimatedSeconds != 30 || !slices.Equal(row.ComponentIDs, []string{"input:0", "input:1"}) {
 					t.Fatal("bounded keyboard row or exact coverage changed")
 				}
 				if _, err := Decode(rehashPlanForTest(t, &p)); err != nil {

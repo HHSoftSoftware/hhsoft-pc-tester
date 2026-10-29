@@ -110,6 +110,10 @@ func inventoryPDFLines(payload app.InventoryPayload, version string) ([]string, 
 }
 
 func inventoryPDFLinesWithPrevious(payload app.InventoryPayload, version string, previous *report.PreviousReport) ([]string, error) {
+	inspection, err := inspectionReportDocument(payload)
+	if err != nil {
+		return nil, err
+	}
 	thermal, err := sessionThermalDocument(payload)
 	if err != nil {
 		return nil, err
@@ -171,6 +175,7 @@ func inventoryPDFLinesWithPrevious(payload app.InventoryPayload, version string,
 		lines.field("Previous manifest", previous.ManifestDigest, "  ")
 		lines.field("Previous canonical bundle", previous.BundleSHA256, "  ")
 	}
+	appendInspectionPDF(&lines, inspection)
 	appendCPUScalarPDF(&lines, cpuScalar)
 	appendMemoryPDF(&lines, memory)
 	appendStoragePDF(&lines, storage)

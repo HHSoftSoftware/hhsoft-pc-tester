@@ -170,6 +170,9 @@ func sessionCompleteEvidence(id string) any {
 		return completeGraphicsEvidence()
 	case "display.operator.quick":
 		return completeDisplayEvidence()
+	case "inspection.exterior.quick":
+		// Literal finite evidence; this fixture does not advance its clock.
+		return json.RawMessage(`{"schema":"hhsoft.pc-tester.exterior-inspection/v1","source":"operator_reported","scope":"whole_device","criterion":"visible_exterior_enclosure_damage","finding":"no_defect_observed","response_complete":true,"stop_reason":"completed","status":"pass","observation_milliseconds":0}`)
 	}
 	panic("unknown synthetic session worker")
 }
@@ -195,7 +198,7 @@ func TestSessionPointerIncompleteActionsRemainVisibleAndAllowLaterWorkers(t *tes
 		writeSessionFixture(t, worker.OutputPath, result)
 		return 0
 	}
-	if code := h.run(t.Context()); code != 0 || !h.finalized || len(h.calls) != 11 || h.journal.StopReason != "completed" {
+	if code := h.run(t.Context()); code != 0 || !h.finalized || len(h.calls) != 12 || h.journal.StopReason != "completed" {
 		t.Fatalf("incomplete pointer interrupted unrelated work: code=%d", code)
 	}
 	if h.journal.Workers[5].Outcome != "inconclusive" || h.journal.Workers[5].State != "completed" ||
@@ -244,6 +247,7 @@ func TestSessionExecutesFrozenAllowlistAndRetainsSelection(t *testing.T) {
 			if architecture != "legacy-x86" {
 				want = append(want, "graphics.quick", "display.operator.quick")
 			}
+			want = append(want, "inspection.exterior.quick")
 			if !h.finalized || !reflect.DeepEqual(h.calls, want) || h.journal.StopReason != "completed" || h.safetyCalls != len(want)+3 {
 				t.Fatalf("calls=%v finalized=%v safety=%d stop=%s", h.calls, h.finalized, h.safetyCalls, h.journal.StopReason)
 			}
@@ -418,7 +422,7 @@ func TestSessionOrdinaryGraphicsErrorRemainsReportable(t *testing.T) {
 		}
 		return worker(ctx, w, in, out, errOut)
 	}
-	if code := h.run(t.Context()); code != 0 || !h.finalized || len(h.calls) != 11 || h.journal.Workers[9].Outcome != "error" {
+	if code := h.run(t.Context()); code != 0 || !h.finalized || len(h.calls) != 12 || h.journal.Workers[9].Outcome != "error" {
 		t.Fatalf("ordinary error behavior changed: code=%d stderr=%s", code, &h.stderr)
 	}
 }

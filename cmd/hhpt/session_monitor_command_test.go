@@ -151,7 +151,7 @@ func TestSessionMonitorWindowIncludesInputCleanupAndFinalSafety(t *testing.T) {
 	h.dependencies.FinishInput = func() error { h.inputFinished = true; h.clock = h.clock.Add(2500 * time.Millisecond); return nil }
 	var earlyStop atomic.Bool
 	monitor := &sessionMonitorFixture{result: func() safemode.MonitorResult {
-		earlyStop.Store(!h.inputFinished || h.safetyCalls != 14)
+		earlyStop.Store(!h.inputFinished || h.safetyCalls != 15)
 		return sessionMonitorSummary(2500)
 	}}
 	h.dependencies.StartMonitor = func(time.Time, context.CancelFunc) (sessionSafetyMonitor, error) { return monitor, nil }

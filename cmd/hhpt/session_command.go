@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/exteriorinspection"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inputtest"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/keyboardevidence"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/plan"
@@ -497,7 +498,7 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 func printSessionWorkerResult(output io.Writer, record sessionWorkerRecord) {
 	labels := map[string]string{"cpu.quick": "CPU", "memory.quick": "MEMORY", "audio.readiness.quick": "AUDIO_READINESS",
 		"input.readiness.quick": "INPUT_READINESS", "input.keyboard.quick": "KEYBOARD", "input.pointer.quick": "POINTER", "network.readiness.quick": "NETWORK_READINESS", "storage.readiness.quick": "STORAGE_READINESS",
-		"usb.readiness.quick": "USB_READINESS", "graphics.quick": "GRAPHICS", "display.operator.quick": "DISPLAY"}
+		"usb.readiness.quick": "USB_READINESS", "graphics.quick": "GRAPHICS", "display.operator.quick": "DISPLAY", "inspection.exterior.quick": "EXTERIOR_INSPECTION"}
 	fmt.Fprintf(output, "HHPT_%s status=%s\n", labels[record.ID], record.Outcome)
 }
 
@@ -518,6 +519,35 @@ func sessionStopReason(parent, run, worker context.Context, now, runDeadline, wo
 }
 
 func sessionWorkerOutcomeEvidence(encoded []byte, readErr error, schema string, code int, interrupted bool) (string, string, error) {
+	if schema == exteriorinspection.Schema {
+		if readErr != nil {
+			if readErr != os.ErrNotExist {
+				return "", "", exteriorinspection.ErrEvidence
+			}
+			if interrupted {
+				return "aborted", "interrupted", nil
+			}
+			return "error", "completed", nil
+		}
+		value, err := exteriorinspection.Decode(encoded)
+		if err != nil {
+			return "", "", err
+		}
+		wantCode := 0
+		if value.Status == "error" {
+			wantCode = 1
+		}
+		if code != wantCode {
+			return "", "", exteriorinspection.ErrEvidence
+		}
+		if value.Status == "fail" {
+			return "fail", "completed", nil
+		}
+		if interrupted && (value.Status == "aborted" || value.Status == "error") {
+			return value.Status, "interrupted", nil
+		}
+		return value.Status, "completed", nil
+	}
 	if schema == inputtest.PointerSchema && readErr != nil && readErr != os.ErrNotExist {
 		return "", "", pointerevidence.ErrInvalid
 	}

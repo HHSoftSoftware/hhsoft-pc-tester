@@ -28,8 +28,8 @@ func storageBindings(j Journal) []ResultBinding {
 	return rows
 }
 
-func TestStorageJournalV6AllOffKeepsActiveEmitterV5(t *testing.T) {
-	if Schema != "hhsoft.pc-tester.quick-session/v5" || len(WorkerIDs()) != 11 {
+func TestStorageJournalV6KeepsStorageInactiveInV7(t *testing.T) {
+	if Schema != "hhsoft.pc-tester.quick-session/v7" || len(WorkerIDs()) != 12 || WorkerIDs()[11] != "inspection.exterior.quick" {
 		t.Fatal("inactive reader changed the current producer")
 	}
 	j := storageJournal()
@@ -61,7 +61,7 @@ func TestStorageJournalWireRejectsMissingAmbiguousAndLegacySource(t *testing.T) 
 		"array":            bytes.Replace(raw, []byte(`"storage_source":null`), []byte(`"storage_source":[]`), 1),
 		"unstarted object": bytes.Replace(raw, []byte(`"storage_source":null`), []byte(`"storage_source":{}`), 1),
 		"duplicate schema": bytes.Replace(raw, []byte(`"schema":"hhsoft.pc-tester.quick-session/v6"`), []byte(`"schema":"hhsoft.pc-tester.quick-session/v5","schema":"hhsoft.pc-tester.quick-session/v6"`), 1),
-		"unknown version":  bytes.Replace(raw, []byte(`quick-session/v6`), []byte(`quick-session/v7`), 1),
+		"unknown version":  bytes.Replace(raw, []byte(`quick-session/v6`), []byte(`quick-session/v99`), 1),
 		"trailing record":  append(append([]byte{}, raw...), []byte(` {}`)...),
 		"invalid utf8":     append(append([]byte{}, raw...), 0xff),
 	}

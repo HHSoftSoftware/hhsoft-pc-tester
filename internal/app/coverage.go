@@ -38,6 +38,9 @@ func ValidateCoverage(payload InventoryPayload) error {
 	if err := validateStorageReport(payload); err != nil {
 		return err
 	}
+	if err := validateInspectionReport(payload); err != nil {
+		return err
+	}
 	_, err := validatedSessionThermal(payload)
 	return err
 }

@@ -85,7 +85,7 @@ func TestInputUniqueIdentifiersNeverReachSignedReportsOrViews(t *testing.T) {
 				outcomes[test.ID] = status
 			}
 			for _, id := range []string{"audio.readiness.quick", "cpu.quick", "display.operator.quick", "graphics.quick",
-				"input.keyboard.quick", "input.pointer.quick", "input.readiness.quick", "memory.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick"} {
+				"input.keyboard.quick", "input.pointer.quick", "input.readiness.quick", "inspection.exterior.quick", "memory.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick"} {
 				if outcomes[id] == "" {
 					t.Fatalf("quick workflow result absent from plan: %s", id)
 				}

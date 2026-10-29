@@ -27,7 +27,7 @@ func TestPointerPlanSchedulesEveryPointerWithoutEnablingTouchInput(t *testing.T)
 					!slices.Equal(pointer.ComponentIDs, []string{"input:0", "input:1"}) {
 					t.Fatalf("incorrect pointer plan: %+v", pointer)
 				}
-				if len(p.Tests) != 21 {
+				if len(p.Tests) != 22 {
 					t.Fatalf("catalog row count changed: %d", len(p.Tests))
 				}
 				assertTestStatus(t, p, "input.keyboard.quick", TestScheduled)

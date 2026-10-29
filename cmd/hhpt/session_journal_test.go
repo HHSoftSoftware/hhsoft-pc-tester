@@ -332,7 +332,7 @@ func TestFinalizeSessionPreservesFailureAndNeverStartedReadiness(t *testing.T) {
 	if err := json.Unmarshal(artifact.InventoryJSON, &payload); err != nil {
 		t.Fatal(err)
 	}
-	if len(payload.TestResults) != 22 {
+	if len(payload.TestResults) != 23 {
 		t.Fatal("session changed frozen catalog coverage")
 	}
 	found := false
@@ -354,7 +354,7 @@ func TestFinalizeSessionPreservesFailureAndNeverStartedReadiness(t *testing.T) {
 				t.Fatal("signed session missing")
 			}
 			journal := evidence.Session
-			if journal.Schema != "hhsoft.pc-tester.quick-session/v5" || journal.PlanID != fixture.frozen.ID || journal.StopReason != "worker_stop" || len(journal.Safety) != len(fixture.journal.Safety) || journal.Safety[len(journal.Safety)-1].Phase != "pre-sign" || !journal.Safety[len(journal.Safety)-1].Result.Safe() ||
+			if journal.Schema != "hhsoft.pc-tester.quick-session/v7" || journal.PlanID != fixture.frozen.ID || journal.StopReason != "worker_stop" || len(journal.Safety) != len(fixture.journal.Safety) || journal.Safety[len(journal.Safety)-1].Phase != "pre-sign" || !journal.Safety[len(journal.Safety)-1].Result.Safe() ||
 				!bytes.Equal(encodeEvidenceFixture(t, journal.Monitor), encodeEvidenceFixture(t, fixture.journal.Monitor)) {
 				t.Fatal("fresh safety or session intent not bound")
 			}

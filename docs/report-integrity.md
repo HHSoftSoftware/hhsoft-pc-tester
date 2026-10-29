@@ -349,10 +349,12 @@ rerunning them. The periodic-monitor increment introduced
 introduced v4 with the same ten worker outcomes. The enabled pointer definition
 changed the catalog digest and required a fresh frozen plan. The monitoring
 increments leave that digest unchanged. A journal file cannot authorize new
-execution or signing in place of the one-use live final gate. The catalog still
-has 21 rows, plus run integrity. Historical signed reports, including earlier session evidence,
+execution or signing in place of the one-use live final gate. Those monitoring
+increments retained 21 catalog rows plus run integrity. Historical signed reports,
+including earlier session evidence,
 retain their existing verification and rendering behavior. Direct capture's
-limited subset does not include guided keyboard or pointer evidence. Each retained pointer
+limited subset does not include guided keyboard, pointer or exterior-inspection
+evidence. Each retained pointer
 pass, including a completed device inside a partial result, must match the
 frozen and final component identity and advertised capabilities. Kernel bitmap
 word width is independently observed and bound in the component fingerprint;
@@ -436,11 +438,11 @@ mismatch bits and separate integer/SHA-256/scalar failure flags. Its definition
 version is 2; current finalization requires that pair. Historical definition 1
 and CPU v2 keep their original field order, omission rules and typed hash through
 an immutable wire type, including in strict v4/v5 reports. New scalar evidence
-requires v5 or v6 for session reports, but remains supported in strict standalone
+requires v5, v6 or v7 for session reports, but remains supported in strict standalone
 capture/finalization. Unknown versions, impossible counter or failure
 relationships, hidden claims and definition downgrades fail shared validation,
-including bundles without views. Current emission keeps eleven workers and
-22 report rows. Host and native Linux validation passed for the v5 increment,
+including bundles without views. Current v7 emission has twelve workers and
+23 report rows. Host and native Linux validation passed for the v5 CPU increment,
 including signed standalone and v5 session CPU cases. Rebuilt-image and physical
 qualification remain open.
 
@@ -454,9 +456,9 @@ matching bytes and accepted work; a mismatching read is never a verified byte.
 Historical memory definition 1 and v2 keep their exact field order, omission
 rules and nested safety encoding, including strict v4/v5 typed hashes. Current
 memory evidence supports strict direct capture and standalone finalization;
-session reports require v5 or v6. Definition/schema mismatches, hidden claims and
+session reports require v5, v6 or v7. Definition/schema mismatches, hidden claims and
 impossible counters are rejected even without bundle views. Current emission keeps
-21 test rows plus run integrity, eleven workers and the existing seven-row
+22 test rows plus run integrity, twelve workers and the existing seven-row
 direct-capture subset. Full host and native Linux validation passed for the v5
 increment, including signed direct-capture, standalone-finalization and v5 session
 cases. Rebuilt-image
@@ -483,11 +485,55 @@ Complete initial/final inventory cannot be reconstructed by an offline verifier.
 Case aliases, duplicate or hidden modern claims and omitted bundle views cannot
 turn functional evidence into an opaque historical or unexecuted note. A strict
 nonexecution note can preserve standalone finalization without a session;
-functional keyboard observations require v5 or v6 in session reports. Current
-emission remains v5. Windows and native Linux amd64/386 qualification, including
+functional keyboard observations require v5, v6 or v7 in session reports. Current
+emission is v7. Windows and native Linux amd64/386 qualification, including
 race checks and signed CLI workflows, passed for the v5 increment. These checks
 establish software behavior, not physical input coverage;
 rebuilt-image and physical-keyboard validation remain open.
+
+## Bounded Exterior Inspection Evidence
+
+Exterior inspection definition 1 is an operator assertion about safely visible
+enclosure surfaces inspected without moving or opening the device. Its v1
+evidence has exactly nine fields: schema, source, scope, criterion, finding,
+response completion, stop reason, status and `observation_milliseconds`.
+The fixed source is `operator_reported`; it contains no free text, raw input
+stream, photograph or component identity.
+
+Strict decoding admits only the finite finding/completion/stop/status tuples,
+bounds observation time to 0 through 45,000 milliseconds, and rejects missing,
+extra, duplicate, aliased or malformed fields. Incomplete input cannot pass.
+A completed defect survives a clean stop; a hard input fault remains an error
+while retaining an observed defect. Time is credited observation time, not
+preparation, cleanup or a hard execution deadline.
+
+A typed result requires the exact inspection row, definition and whole-device
+operator plan binding. A session claim also requires strict v7 integrity, its
+inspection worker, matching outcome and observation time no larger than that
+worker's interval. Current v7 retains the earlier eleven workers and appends
+inspection. V4/v5/v6 keep their historical worker lists and cannot be relabeled
+as current evidence. V7 does not activate the v6 storage sampling contract.
+
+Complete validation precedes HTML/PDF output and runs during bundle verification
+even without views. Absent bounded evidence requires the exact excluded,
+error or aborted supervisor note allowed by its plan and worker state;
+malformed present evidence cannot become an execution note.
+Whole-token detection examines hidden, duplicate, case-aliased and escaped
+claims before strict validation; an unknown family cannot bypass those rules. An ordinary integrity selection reference requires its
+exact validated exclusion or session binding and actual inspection row; it
+cannot hide an evidence schema claim.
+
+The shared validated result supplies the view section. Reports without an
+inspection claim, including historical reports, retain their prior view bytes.
+Linked finalization observes the current run and preserves the predecessor's
+exact manifest and canonical bundle reference; parent and child trust stay
+independent. Comparison keeps its existing component-identity rules.
+
+A valid signature authenticates these bytes and their stated provenance.
+It does not establish that an operator inspected every surface, reported the
+truth or tested physical condition. Full host validation and the selected
+native Linux fixture suites passed. Broader limits remain in
+[requirements validation](requirements-validation.md#bounded-exterior-inspection).
 
 ## Inactive Storage Evidence Reader
 
@@ -514,8 +560,8 @@ Source digests, close/final-binding flags and timing remain signed assertions;
 they do not prove kernel behavior, precise monotonic acceptance or physical
 continuity. Buffered sample consistency cannot establish drive health, uncached
 I/O or full-media coverage. Historical v4/v5 wire behavior stays supported and
-those schemas reject storage sampling claims. Current commands still emit v5
-sessions with eleven workers; this reader adds no media worker or command and
+those schemas reject storage sampling claims. Current commands emit v7
+sessions with twelve workers; this reader adds no media worker or command and
 leaves the sampling catalog entry inactive. Host fixture tests and Linux
 amd64/386/arm64 cross-builds passed. Reader fixtures subsequently passed
 natively on Linux amd64 and 386, including 62 verify/compare CLI cases

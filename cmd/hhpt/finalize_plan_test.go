@@ -23,7 +23,7 @@ func TestFinalizeRejectsRehashedCapabilityHiddenOnUnchangedHardware(t *testing.T
 	snapshot := inventory.NewSnapshot([]inventory.Component{
 		inventory.NewComponent(inventory.ComponentVideo, "video:connector:card0-HDMI-A-1", map[string]string{"category": "display_connector"}),
 	})
-	frozen, err := plan.Build(snapshot, plan.ProfileQuick, "x86_64", fingerprintKey, "ephemeral-session")
+	frozen, err := plan.BuildWithSelection(snapshot, plan.ProfileQuick, "x86_64", fingerprintKey, "ephemeral-session", []string{"inspection.exterior.quick"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,7 +139,11 @@ func absentPlanFinalizationArguments(directory, fingerprintPath, planPath, repor
 	arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory,
 		"-session-id", "plan-validation-fixture", "-output", reportPath}
 	for _, definition := range quickResultDefinitions {
-		arguments = append(arguments, "-outcome", definition.id+"=not_present")
+		status := "not_present"
+		if definition.id == "inspection.exterior.quick" {
+			status = "excluded"
+		}
+		arguments = append(arguments, "-outcome", definition.id+"="+status)
 	}
 	return arguments
 }

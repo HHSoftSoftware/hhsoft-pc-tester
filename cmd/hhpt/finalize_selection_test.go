@@ -80,7 +80,7 @@ func TestFinalizePreservesAllSelectionIntentAndHotPlugEvidence(t *testing.T) {
 					if err := json.Unmarshal(result.Evidence, &evidence); err != nil {
 						t.Fatal(err)
 					}
-					if result.Status != wantIntegrity || !slices.Equal(evidence.ExcludedTests, []string{"cpu.quick", "usb.readiness.quick"}) || hotPlug && (len(evidence.Added) != 1 || evidence.Added[0].ID != "usb:new") {
+					if result.Status != wantIntegrity || !slices.Equal(evidence.ExcludedTests, []string{"cpu.quick", "inspection.exterior.quick", "usb.readiness.quick"}) || hotPlug && (len(evidence.Added) != 1 || evidence.Added[0].ID != "usb:new") {
 						t.Fatalf("signed integrity omitted selection or hardware change: %+v", evidence)
 					}
 				}
@@ -127,7 +127,7 @@ func selectedCPUFinalization(t *testing.T, cpuOutcome string) ([]string, invento
 	key := bytes.Repeat([]byte{0x45}, 32)
 	keyPath := writeTestKey(t, directory, "fingerprint.key", key)
 	snapshot := inventory.NewSnapshot([]inventory.Component{inventory.NewComponent(inventory.ComponentCPU, "cpu:0", nil)})
-	frozen, err := plan.BuildWithSelection(snapshot, plan.ProfileQuick, "x86_64", key, "ephemeral-session", []string{"cpu.quick", "usb.readiness.quick"})
+	frozen, err := plan.BuildWithSelection(snapshot, plan.ProfileQuick, "x86_64", key, "ephemeral-session", []string{"cpu.quick", "inspection.exterior.quick", "usb.readiness.quick"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -143,6 +143,9 @@ func selectedCPUFinalization(t *testing.T, cpuOutcome string) ([]string, invento
 	arguments := []string{"-fingerprint-key", keyPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "selected-fixture", "-output", reportPath}
 	for _, definition := range quickResultDefinitions {
 		status := "not_present"
+		if definition.id == "inspection.exterior.quick" {
+			status = "excluded"
+		}
 		if definition.id == "cpu.quick" {
 			status = cpuOutcome
 		}

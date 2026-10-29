@@ -168,7 +168,7 @@ choices. Canonically ordered exclusions become part of the plan ID. An empty
 selection preserves the default plan encoding and ID within the same catalog.
 Exclusions only change tests that would otherwise be scheduled, preserving absent-hardware and
 missing-driver evidence. Both boot supervisors retain their unconditional mount
-and network safety checks and pass all eleven quick outcomes to finalization.
+and network safety checks and pass all twelve quick outcomes to finalization.
 Signed run-integrity evidence includes the exclusions, including choices for
 hardware that was not available.
 
@@ -179,12 +179,13 @@ inventory and fingerprint key; when the stable hardware graph is unchanged,
 the rebuilt and frozen plan IDs must agree before signing. Reconstruction carries
 the frozen exclusions so an operator's choices remain bound to the report.
 
-Finalized reports retain all 21 frozen catalog rows and one run-integrity row.
+Finalized reports retain all 22 frozen catalog rows and one run-integrity row.
 Each catalog result carries its definition version and `planned_status`, even
 when no adapter runs. The signed `coverage_scope` is `frozen_plan`; HTML/PDF
 views show the planned disposition and its reason alongside the final outcome.
 Direct capture instead labels its seven collected checks `direct_capture` and
-does not run guided keyboard/pointer checks or claim a frozen plan. Optional absent
+does not run guided keyboard/pointer checks or exterior observation, or claim a
+frozen plan. Optional absent
 coverage fields preserve historical report rendering; new reports require a
 matching rebuilt companion verifier.
 The quick-session coordinator adds a signed session journal inside run-integrity
@@ -196,8 +197,8 @@ thermal observations, joins both session monitors, and returns an immutable
 journal. Finalization validates that journal against the frozen plan and retained
 evidence before generating a report key or signing.
 
-Guided pointer execution uses the existing `input.pointer.quick` row, so reports
-still contain 21 catalog results plus run integrity. Enabling that row changes
+The guided pointer increment used the existing `input.pointer.quick` row and
+retained its then-current 21 catalog results plus run integrity. Enabling that row changes
 the catalog digest and requires fresh plans. That increment introduced
 `hhsoft.pc-tester.quick-session/v2` with ten worker records. The subsequent
 periodic-monitor increment introduced `hhsoft.pc-tester.quick-session/v3`.
@@ -224,15 +225,16 @@ Rebuilt-image and physical-device qualification remain open.
 The guided keyboard increment activates definition version 2 of the existing
 `input.keyboard.quick` row and requires fresh plans. Journal v5 inserts its
 eleventh worker between input readiness and pointer testing. Shared validation
-dispatches v4 to its original ten-worker rules, v5 to eleven-worker rules and
-v6 to its twelve-worker read format. Current emission remains v5; unknown
-versions and relabeled journals cannot bypass those checks. A shared
+dispatches v4 to its original ten-worker rules, v5 to eleven-worker rules,
+v6 to its twelve-worker storage read format and v7 to its twelve-worker exterior
+inspection format. Current emission is v7; unknown versions and relabeled
+journals cannot bypass those checks. A shared
 keyboard decoder binds fixed action summaries, cleanup, worker timing and
 unchanged per-device identity/capabilities. Raw input events and typed text are
 never exported. Standalone finalization may retain strict nonexecution notes
 for excluded, absent, unsupported or missing-driver keyboards without claiming
-session coverage. Keyboard execution uses the live v5 workflow; report reading
-also accepts its functional evidence in v6.
+session coverage. Keyboard execution uses the live v7 workflow; historical
+v5/v6 reports retain their explicit functional-evidence rules.
 Windows and native Linux amd64/386 qualification, including race checks and CLI
 workflows, passed for the v5 keyboard integration. This qualifies that application
 source;
@@ -243,8 +245,8 @@ The inactive storage evidence reader shares one finite Result validator across
 report verification, rendering and comparison. Explicit v6 read support binds a
 storage source to its typed result, reconstructs topology/fixture eligibility and
 keeps accepted work separate from diagnostics. Historical v4/v5 wire handling is
-preserved. Current emission, eleven workers and the inactive sampling catalog
-entry are unchanged. This adds no media acquisition backend; see
+preserved. Current emission is v7 with twelve workers; the sampling catalog
+entry remains inactive. This reader adds no media acquisition backend; see
 [report integrity](report-integrity.md) for signed-assertion and cleanup limits.
 
 A graph change does not discard evidence. It fails run integrity and preserves
@@ -373,7 +375,8 @@ failure. Joined per-worker rows form CPU v3 evidence with checked counter sums.
 Counter overflow makes the result structurally unsignable, even if cleanup
 changes its diagnostic. The shared decoder supplies copied scalar summaries to
 consumers and preserves CPU v2's immutable wire encoding for historical hashes.
-CPU definition 2 uses the existing v5 journal; no catalog row or worker is added.
+The CPU definition-2 increment retained the then-current v5 journal without
+adding a catalog row or worker.
 Host and native Linux validation passed, including race tests and signed CLI
 paths. Rebuilt-image and physical checks for this increment remain open.
 
@@ -393,6 +396,39 @@ confirmed loads, comparisons, stores and descending indexing, without a claim
 of cache bypass or physical-memory coverage. Full host checks, native Linux
 suites, race tests and signed CLI workflows passed. Rebuilt-image and physical
 qualification remain pending.
+
+## Bounded exterior observation
+
+`inspection.exterior.quick` definition 1 uses the explicit `operator.exterior`
+capability and `whole_device_operator` applicability. Frozen plan schema 3
+can select or exclude it without fabricating a hardware component. The current
+catalog has 22 rows; modern images offer twelve selectable quick checks and
+legacy x86 offers ten. Current v7 appends inspection after the eleven v5
+workers. Historical v4/v5/v6 retain their original wire rules; v6 storage
+reading does not activate storage sampling in v7.
+
+The real Linux console owner is shared by session cancellation and operator
+prompts. Exterior observation borrows that owner and discards input preceding
+its prompt. The standalone command owns its input receipt. Both paths require
+confirmed owner cleanup before successful output or signing; cleanup-uncertain
+exit 12 is unchanged. A queued request fault survives concurrent cancellation.
+
+Observation time covers prompt attempt through decision, capped at the earlier
+effective or parent deadline. Owner preparation and join are excluded. A
+decision at or after that deadline cannot pass even if context notification
+lags; the evidence value is not a hard operating-system return deadline.
+
+Finalization binds typed evidence to the plan, graph, result status and,
+for a session claim, the v7 worker interval. Its fresh live safety gate and
+complete cleanup precede signing. A shared validated accessor supplies a copied
+result to rendering; no-view bundle verification applies the same claim rules.
+Linked retesting records a fresh child observation and preserves exact parent
+binding and independent trust. Comparison does not use an operator observation
+as component identity or physical continuity.
+
+Full host validation and the selected native Linux amd64/386 fixture suites
+passed. Signed bytes authenticate an operator assertion, not the physical truth
+or completeness of the inspection.
 
 ## Privilege and process model
 

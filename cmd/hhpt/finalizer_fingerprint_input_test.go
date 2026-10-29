@@ -66,6 +66,9 @@ func newFinalizerFingerprintHarness(t *testing.T) *finalizerFingerprintHarness {
 	args := []string{"-fingerprint-key", keyPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "finalizer-fixture", "-output", outputPath}
 	for _, definition := range quickResultDefinitions {
 		outcome := "not_present"
+		if definition.id == "inspection.exterior.quick" {
+			outcome = "excluded"
+		}
 		if definition.id == "cpu.quick" {
 			outcome = "pass"
 		}
@@ -180,7 +183,7 @@ func (h *finalizerFingerprintHarness) success(result sessionFinalizationResult) 
 			integrityPass = row.Status == app.TestPass && row.PlanID == h.frozen.ID
 		}
 	}
-	if !cpuPass || !integrityPass || len(payload.TestResults) != 22 {
+	if !cpuPass || !integrityPass || len(payload.TestResults) != 23 {
 		h.t.Fatal("current evidence or frozen-plan binding changed")
 	}
 	return artifact

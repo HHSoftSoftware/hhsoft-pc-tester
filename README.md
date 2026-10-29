@@ -187,9 +187,10 @@ hhpt pointer -duration 30s -timeout 90s -output pointer.json
 
 Pointer joins the quick session's shared five-minute budget and signed results;
 direct `capture` retains its existing subset and does not run this guided check.
-The selection menu offers eleven modern or nine legacy quick tests. Pointer
+The selection menu offers twelve modern or ten legacy quick tests. Pointer
 definition 2 and evidence v2 add advertised wheel directions and require a fresh
-plan. Session v5 keeps eleven workers. Historical pointer v1 retains its original
+plan. That pointer increment retained session v5 with eleven workers. Historical
+pointer v1 retains its original
 movement/button scope and rendering. Windows tests, native Linux amd64/386
 suites, race checks, and standalone and signed-session CLI checks passed for the
 wheel increment. VM observations remained incomplete without supplied actions;
@@ -206,19 +207,34 @@ booleans, without typed text, raw events or the order of the operator's actions.
 hhpt keyboard -duration 30s -timeout 90s -output keyboard.json
 ```
 
-Keyboard definition version 2 requires fresh plans. Session journal v5 has
-eleven workers and retains v4's thermal and safety boundaries. Existing v4
-reports continue through strict validation. The report still has 21 catalog
-rows plus run integrity; direct capture omits both guided input workers.
+Keyboard definition version 2 requires fresh plans. Its v5 increment introduced
+eleven workers and retained v4's thermal and safety boundaries, with 21 catalog
+rows plus run integrity. Existing v4 reports continue through strict validation;
+direct capture omits both guided input workers.
 Windows tests, vet and cross-builds, native Linux amd64/386 suites, race checks
 and command-line workflows passed. Rebuilt images, physical keyboards and full
 layout/rollover validation remain open. See
 [requirements validation](docs/requirements-validation.md).
 
+The exterior-inspection check records an operator's finite observation of safely
+visible enclosure surfaces, without moving or opening the device. It does not
+verify physical condition or imply coverage of unseen surfaces. Current v7
+sessions append this check after the existing eleven workers; finalized reports
+contain 22 catalog results plus run integrity. Direct capture retains its
+seven-check subset and does not acquire this observation.
+
+The complete implementation passed the host suite, formatting, vet and three
+Linux application cross-builds. The selected native Linux amd64/386 fixture
+suites also passed, with no failures or skips and confirmed cleanup. See the
+[operator instructions](docs/operator-guide.md#observe-the-visible-exterior)
+and [validation scope](docs/requirements-validation.md#bounded-exterior-inspection).
+Broader inspection, rebuilt images, physical testing and release approval remain
+separate gates.
+
 The periodic-monitor milestone introduced read-only mount/network sampling
 and a v3 session journal, without changing the catalog or ten worker outcomes.
 The v4 increment retained that monitor summary and added thermal evidence;
-the current v5 workflow keeps those same monitoring requirements.
+the current v7 workflow keeps those same monitoring requirements.
 Its first unsafe or uncertain observation stops active work and blocks signing.
 This is bounded periodic coverage, not continuous safety monitoring or kernel
 preemption. Automated tests, native Linux suites, race checks, and signed CLI
@@ -240,8 +256,8 @@ readiness result.
 Offline report reading additionally supports the finite storage sampling evidence
 and explicit v6 session format through verification, HTML/PDF views and
 comparison. This checks signed assertions and separates accepted work from
-diagnostics; it does not perform media reads. Current commands keep the v5
-eleven-worker session and the sampling catalog entry remains inactive. See
+diagnostics; it does not perform media reads. Current commands emit v7 sessions
+with twelve workers; the sampling catalog entry remains inactive. See
 [report integrity](docs/report-integrity.md) for the evidence and cleanup limits.
 
 `hhpt network` inventories only hardware-backed Ethernet and Wi-Fi interfaces,

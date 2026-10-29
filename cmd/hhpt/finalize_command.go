@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/app"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/exteriorinspection"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/graphics"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inputtest"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
@@ -47,6 +48,7 @@ var quickResultDefinitions = []quickResultDefinition{
 	{id: "input.keyboard.quick", filename: "keyboard.json", schema: inputtest.KeyboardSchema},
 	{id: "input.pointer.quick", filename: "pointer.json", schema: inputtest.PointerSchema},
 	{id: "input.readiness.quick", filename: "input.json", schema: "hhsoft.pc-tester.input-readiness/v1"},
+	{id: "inspection.exterior.quick", filename: "exterior-inspection.json", schema: exteriorinspection.Schema},
 	{id: "memory.quick", filename: "memory.json", schema: quick.MemorySchema},
 	{id: "network.readiness.quick", filename: "network.json", schema: "hhsoft.pc-tester.network-readiness/v1"},
 	{id: "storage.readiness.quick", filename: "storage.json", schema: "hhsoft.pc-tester.storage-readiness/v1"},
@@ -227,6 +229,10 @@ func runFinalizeOwnedDestinationWithPrevious(ctx context.Context, arguments []st
 				retainedEvidence[definition.id] = append([]byte(nil), encoded...)
 			}
 			if readErr != nil {
+				if definition.schema == exteriorinspection.Schema && readErr != os.ErrNotExist {
+					fmt.Fprintln(stderr, "validate inspection evidence: existing evidence is unreadable")
+					return 1
+				}
 				if definition.schema == inputtest.PointerSchema && readErr != os.ErrNotExist {
 					fmt.Fprintln(stderr, "validate pointer evidence: existing evidence is unreadable")
 					return 1
@@ -272,6 +278,10 @@ func runFinalizeOwnedDestinationWithPrevious(ctx context.Context, arguments []st
 					return 1
 				}
 				evidenceStatus, normalized := normalizeOutcome(evidenceSourceStatus)
+				if definition.schema == exteriorinspection.Schema && (statusErr != nil || !normalized || evidenceStatus != normalizedStatus) {
+					fmt.Fprintln(stderr, "validate inspection evidence: observations do not match the supervisor outcome")
+					return 1
+				}
 				if errors.Is(statusErr, errDisplayFailureDowngrade) ||
 					(definition.schema == graphics.VisualSchema && statusErr == nil && evidenceStatus == app.TestFail && normalizedStatus != app.TestFail) {
 					fmt.Fprintf(stderr, "validate evidence %s: explicit display failure cannot be replaced by another outcome\n", definition.id)

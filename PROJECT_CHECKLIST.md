@@ -8,8 +8,9 @@ are complete. Architecture and policy documents alone do not make an item
 complete; real-hardware requirements remain open until physically tested.
 
 The 2026-10-24 requirements audit compared the retained test matrix with the
-catalog and execution paths. Development source now contains eleven implemented
-safe quick test definitions, subject to hardware and architecture applicability.
+catalog and execution paths. Development source now contains twelve implemented
+safe quick test definitions, subject to hardware, architecture and explicit
+operator applicability.
 The pointer movement/button and wheel-direction increments passed automated
 and native Linux software validation. Guided keyboard software qualification
 also passed; rebuilt-image and physical gates remain open for both. The planner
@@ -468,8 +469,9 @@ the alpha still requires the separate documented release gates.
   cleanup semantics. Evidence contains no media data or content fingerprint.
 - [x] Add explicit v6 session read support through signed-report verification,
   HTML/PDF rendering and comparison, including bundles without optional views.
-  Preserve v4/v5 wire behavior; current emission stays v5 with eleven workers
-  and the storage sampling catalog entry remains inactive.
+  Preserve historical v4/v5 wire behavior. That reader increment retained the
+  v5 emitter; current v7 sessions have twelve workers and the storage sampling
+  catalog entry remains inactive.
 - [x] Validate the preceding admission and observation model with 140 Windows
   test/subtest passes across 30 test functions, no skips, formatting and vet.
   This fixture result does not qualify the later integrated report reader.
@@ -583,6 +585,22 @@ the alpha still requires the separate documented release gates.
   hot-plug behavior with appropriate fixtures.
 - [ ] Measure RTC/monotonic discontinuities and drift against a trusted reference
   over a sufficient observation period.
+- [x] Implement bounded operator-reported exterior-enclosure observation,
+  without moving or opening the device. Finite D/N/I responses, incomplete
+  input and retained defects reach planning, the session coordinator,
+  finalization, signed verification, HTML/PDF views and linked comparison.
+  Current v7 sessions have twelve workers; the catalog has 22 test rows.
+- [x] Validate the complete exterior-inspection source with the full host suite:
+  5,942 test/subtest passes across 30 packages, 17 platform test skips and one
+  skipped package. Formatting, vet, Linux amd64/386/arm64 application builds
+  and all eight postchecks passed.
+- [x] Qualify the selected exterior-inspection and regression fixtures on native
+  Linux amd64/386: 4,580 named passes across 16 suites and 836 root executions,
+  with no failures or skips and confirmed cleanup. Each architecture passed
+  2,290 names and 418 roots, including the selected Linux-only cases. See
+  [validation details](docs/requirements-validation.md#bounded-exterior-inspection).
+  The broader inspection, ten-PC pilot, four-image and release gates remain open.
+
 - [ ] Add operator physical-inspection findings for chassis, hinges, ports,
   damage, cooling noise, and battery swelling.
 - [ ] Add short versus long variants and capability-based applicability for all

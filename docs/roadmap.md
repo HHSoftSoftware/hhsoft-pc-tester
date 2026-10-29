@@ -113,7 +113,7 @@ not qualify the new worker.
 
 Pointer definition 2 now adds both directions of each advertised wheel axis.
 It preserves standalone finalization and historical pointer-v1 report scope;
-current sessions keep the eleven-worker v5 journal. Windows and native Linux
+that pointer increment retained the eleven-worker v5 journal. Windows and native Linux
 amd64/386 suites, race checks, and standalone and signed-session CLI checks passed
 for this extension. Fresh images and physical wheel devices remain separate
 gates; wheel precision, extra buttons and touch gestures remain planned.
@@ -262,7 +262,7 @@ The inactive storage result reader now checks complete typed topology and fixtur
 facts, finite read observations and accepted versus diagnostic counters. Explicit
 v6 session read support reaches signed-report verification, HTML/PDF rendering
 and comparison, including bundles without views. Historical v4/v5 handling stays
-supported. Current session emission remains v5 with eleven workers, and the
+supported. Current session emission is v7 with twelve workers, and the
 storage sampling catalog entry remains inactive.
 
 The preceding admission and observation model passed 140 Windows test/subtest
@@ -334,7 +334,7 @@ remain open. See [requirements validation](requirements-validation.md).
 
 Guided keyboard source now implements six fixed controls on each evdev keyboard,
 with no typed text or raw event stream retained. It activates the existing row
-as definition version 2 and uses an eleven-worker v5 journal while preserving
+as definition version 2; that increment introduced an eleven-worker v5 journal while preserving
 strict v4 verification. Windows tests, vet and cross-builds, native Linux
 amd64/386 suites, race checks and command-line workflows passed. Rebuilding and
 qualifying all four beta images and testing physical keyboards remain open.
@@ -363,7 +363,7 @@ remain open; see [requirements validation](requirements-validation.md).
 
 The CPU worker now adds twelve fixed scalar binary64 operations per suite, with
 per-worker counts and exact mismatch bits. Definition 2 uses CPU v3 evidence in
-the existing eleven-worker v5 session; CPU v2 evidence keeps its historical
+that increment's eleven-worker v5 session; CPU v2 evidence keeps its historical
 definition and typed hash. Focused tests cover arithmetic, stop boundaries and
 signed consumers. Full host and native Linux validation passed, including race
 checks and standalone/session CLI paths. Rebuilt images and physical CPU checks
@@ -374,7 +374,7 @@ throttling checks remain planned.
 The RAM worker adds a fixed moving-inversion sequence after its three existing
 patterns. Memory v3 records completed phases and passes, accepted and uncredited
 logical work, and an explicit mismatch, including offset zero. Definition 2
-uses the existing eleven-worker v5 journal; historical memory v2 keeps its typed
+used the then-current eleven-worker v5 journal; historical memory v2 keeps its typed
 hash. Full Windows tests, vet and cross-builds passed; compiled x86 inspection
 confirmed buffer accesses and reverse indexing. Native Linux suites, race tests
 and signed direct, standalone and session workflows passed. Rebuilt images,
@@ -385,7 +385,7 @@ The audio readiness acquisition increment checks closure of its owned root,
 registry and attribute handles, bounds metadata reads and retains earlier
 diagnostics after later faults. It preserves root containment and inspects
 device-node metadata without opening playback or capture streams. The result
-schema, catalog and eleven-worker v5 session remain unchanged: audio errors
+schema, catalog and eleven-worker v5 session were preserved by that increment: audio errors
 remain reportable, while aborted work follows the existing session stop policy.
 The full Windows suite, twelve new portable functions, vet, formatting and
 three Linux builds passed. Selected Linux amd64 and 386 fixtures also passed:
@@ -402,7 +402,8 @@ reads, verifies metadata before readable node access, and closes every owned
 handle before accepting readiness. Bounded activity uses those same descriptors
 and retains aggregate counters only. Hard acquisition or close errors survive
 later cancellation; completed earlier rows remain diagnostic without an overall
-pass. The existing schema, catalog and eleven-worker v5 session policy remain.
+pass. That increment preserved the existing schema, catalog and eleven-worker
+v5 session policy.
 Implementation, host validation and selected Linux amd64/386 fixture execution
 are complete. The host suite records 4,205 passing test/subtest events; the
 selected native cohort records 364 across four suites and all 70 required root
@@ -540,6 +541,30 @@ durability qualification. Existing image, physical-PC and release gates stay ope
   without destructive tests.
 
 Exit: `0.2.0-beta.1` gives useful resale acceptance results in under 15 minutes.
+
+### Bounded exterior-enclosure observation
+
+The finite operator-reported check is implemented through planning, the quick
+coordinator, signed finalization, no-view verification, HTML/PDF rendering and
+linked comparison. It covers safely visible enclosure surfaces without moving
+or opening the device. N records no listed defect observed on inspected
+surfaces; uncertain or incomplete work cannot pass. A complete defect survives
+a later stop, and hard input errors remain errors.
+
+The whole-device operator row requires fresh schema-3 plans. Current session
+v7 has twelve workers and the catalog has 22 test rows. Historical v4/v5/v6
+remain supported; storage sampling is inactive. Full host validation passed
+5,942 test/subtest outcomes across 30 packages, with 17 test skips and one
+skipped package. Formatting, vet and three Linux application cross-builds
+passed. The selected native Linux amd64/386 cohort passed 4,580 named outcomes
+across 16 suites and 836 root executions, with no failures or skips and confirmed
+cleanup. Each architecture passed 2,290 names and 418 roots; see
+[the exact scope](requirements-validation.md#bounded-exterior-inspection).
+
+This bounded row does not complete the broader chassis, hinges, functional
+ports, cooling-noise or battery-swelling work. The ten-PC pilot, all four
+bootable images, installed-command qualification and release approval remain
+open. It adds no prerequisite to the already defined alpha gates.
 
 ## Phase 3 — complete profiles
 

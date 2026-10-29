@@ -64,7 +64,7 @@ func TestValidatedPointerStandaloneAndSessionOwnTheirViews(t *testing.T) {
 func TestPointerV1RemainsMovementAndButtonEvidence(t *testing.T) {
 	old := thermalFixture(t, "pointer-v1-standalone-pass")
 	oldRow := *pointerRow(t, &old)
-	for _, schema := range []string{"", sessionevidence.SchemaV4, sessionevidence.Schema} {
+	for _, schema := range []string{"", sessionevidence.SchemaV4, sessionevidence.SchemaV5} {
 		payload := thermalFixture(t, "session-v5-pointer-v2-pass")
 		*pointerRow(t, &payload) = oldRow
 		mutateIntegrity(t, &payload, func(value *sessionevidence.IntegrityEvidence) {

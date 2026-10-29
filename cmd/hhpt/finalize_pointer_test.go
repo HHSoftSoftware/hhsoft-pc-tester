@@ -440,7 +440,7 @@ func TestFinalizeRejectsUnboundOrIncompletePointerPassBeforeSigning(t *testing.T
 			evidence := completePointerEvidence()
 			initial, final := pointerInventoryFixture(false, false), pointerInventoryFixture(false, false)
 			item.change(&evidence, &initial, &final)
-			frozen, err := plan.BuildWithSelection(initial, plan.ProfileQuick, "x86_64", key, "ephemeral-session", []string{"input.readiness.quick"})
+			frozen, err := plan.BuildWithSelection(initial, plan.ProfileQuick, "x86_64", key, "ephemeral-session", []string{"input.readiness.quick", "inspection.exterior.quick"})
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -506,7 +506,7 @@ func TestFinalizeSignsPointerCoverageAndPreservesUnrelatedHotplugFailure(t *test
 			initial.Components = append(initial.Components, inventory.NewComponent(inventory.ComponentInput, "input:1", map[string]string{"category": "pointer", "handlers": "mouse1 event1"}))
 			pointerEvidence.Devices = append(pointerEvidence.Devices, inputtest.PointerDeviceResult{Interface: "event1", Status: inputtest.StatusInconclusive, Wheels: []inputtest.PointerWheelResult{}})
 		}
-		frozen, err := plan.BuildWithSelection(initial, plan.ProfileQuick, "x86_64", key, "ephemeral-session", []string{"input.readiness.quick"})
+		frozen, err := plan.BuildWithSelection(initial, plan.ProfileQuick, "x86_64", key, "ephemeral-session", []string{"input.readiness.quick", "inspection.exterior.quick"})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -557,7 +557,7 @@ func TestFinalizeSignsPointerCoverageAndPreservesUnrelatedHotplugFailure(t *test
 		if err := json.Unmarshal(artifact.InventoryJSON, &payload); err != nil {
 			t.Fatal(err)
 		}
-		if len(payload.TestResults) != 22 || payload.CoverageScope != app.CoverageFrozenPlan {
+		if len(payload.TestResults) != 23 || payload.CoverageScope != app.CoverageFrozenPlan {
 			t.Fatal("pointer execution changed frozen catalog coverage")
 		}
 		for _, result := range payload.TestResults {

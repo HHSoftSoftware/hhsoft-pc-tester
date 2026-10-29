@@ -47,7 +47,7 @@ func TestFinalizeKeyboardRejectsUnboundRetainedPassAndCleanupBeforeSigning(t *te
 			keyPath := writeTestKey(t, directory, "fingerprint.key", key)
 			initial := inventory.NewSnapshot([]inventory.Component{keyboardInventoryFixture()})
 			final := inventory.NewSnapshot([]inventory.Component{keyboardInventoryFixture()})
-			frozen, err := plan.BuildWithSelection(initial, plan.ProfileQuick, "x86_64", key, "ephemeral-session", []string{"input.readiness.quick"})
+			frozen, err := plan.BuildWithSelection(initial, plan.ProfileQuick, "x86_64", key, "ephemeral-session", []string{"input.readiness.quick", "inspection.exterior.quick"})
 			if err != nil {
 				t.Fatal(err)
 			}

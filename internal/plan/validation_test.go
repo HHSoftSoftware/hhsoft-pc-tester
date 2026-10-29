@@ -108,7 +108,7 @@ func TestValidateRejectsUnsupportedSchedulingAcrossTargets(t *testing.T) {
 				if _, err := Decode(encoded); err != nil {
 					t.Fatalf("pretty-printed Build output rejected: %v", err)
 				}
-				if p.SchemaVersion != 2 {
+				if p.SchemaVersion != 3 {
 					t.Fatal("plan wire schema changed")
 				}
 				findPlanTest(t, &p, "storage.destructive").Status = TestScheduled

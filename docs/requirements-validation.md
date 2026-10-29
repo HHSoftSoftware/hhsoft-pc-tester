@@ -18,6 +18,65 @@ At each feature milestone and before publication:
 5. Record what ran, what was skipped, and what still needs VM or physical
    evidence. Check off the item only after its applicable validation passes.
 
+## Bounded Exterior Inspection
+
+The implemented check records a finite operator assertion about safely visible
+exterior enclosure surfaces without moving or opening the device. It does not
+verify physical truth or complete chassis coverage. D reports cracks, broken
+or missing enclosure pieces, or deformation; N reports none of those defects
+observed on inspected surfaces. I, empty, invalid or incomplete input cannot
+establish a pass. A completed defect stays adverse after a clean stop.
+Hard prompt/input errors retain error status.
+
+The consumed path includes the standalone Linux console command, quick-test
+menu and coordinator, finalization, signed bundles without optional views,
+HTML/PDF rendering and linked retesting/comparison. Plan schema 3 makes the
+row applicable to an operator rather than a discovered component. Current v7
+has twelve ordered workers and 22 catalog rows plus run integrity. Modern
+selection offers twelve checks; legacy x86 offers ten. Direct capture retains
+its seven-check subset. Historical v4/v5/v6 reports and their original
+validation results stay separate; storage sampling remains inactive.
+
+Observation time starts at prompt attempt and ends at the response or stop
+decision, capped at the effective deadline including a shorter parent deadline.
+Preparation and final owner cleanup are excluded. Decisions at or after the
+deadline cannot pass, independent of delayed context notification. This is
+bounded evidence, not a hard return-time guarantee. Queued hard input faults
+survive cancellation; the actual final owner receipt must still succeed before
+output or signing. Cleanup uncertainty retains exit 12.
+
+The complete integrated source passed the full Windows host run: **5,942
+test/subtest passes across 30 packages**, **17 test skips** and **one skipped
+package**. Formatting, format checking, vet and Linux amd64/386/arm64 application
+cross-builds passed, along with all eight postchecks. Earlier partial runs are
+not used as qualification of this complete source.
+
+The selected native Linux amd64/386 fixture cohort passed **4,580 named
+outcomes across 16 suites**, with **836 root executions** and no failures or
+skips. Each architecture passed exactly **2,290 required names and 418 roots**
+across the command, exterior-inspection, plan, session-evidence, application,
+bundle, rendering and comparison packages. These totals include retained
+regressions; they are not counts of new inspection tests.
+
+All 43 selected Linux-only names and four names skipped on Windows passed on
+each native architecture. The real Linux broker and owner fixtures therefore
+have native execution evidence. Nine ownership cases, 32 archive cases and all
+six postchecks passed, with cleanup confirmed. Independent actual-evidence
+review confirmed the exact named lifecycles and the source-declared group
+ordering. Independent source review also closed the finite tuples, malformed
+no-view signed bundles, real coordinator/finalizer composition and exact
+parent-pair verification.
+
+No installed-command or race scenarios ran in this cohort. It does not qualify
+actual media access, kernel-close/fsync fault injection or output durability.
+
+These tests use controlled assertions and fixtures. They do not establish
+installed-command operation on new images, truthful or complete physical
+inspection, hinge or port function, cooling noise, battery condition, output
+durability or broad hardware coverage. The required ten-PC pilot, all four
+bootable images, release safety checks and release approval remain open.
+This bounded implementation does not close the broader inspection checklist.
+
 ## Linked Retest Contract
 
 The linked retest implementation is an opt-in report relationship, not a
@@ -1207,8 +1266,8 @@ HTML/PDF and comparison paths. It checks full node/result correspondence,
 typed backing and fixture facts, fixed sample geometry and recomputed accepted
 counters. Required integer masks, exact fields, nullable objects and bounded
 arrays reject ambiguous or hidden claims. Historical v4/v5 wire handling remains
-supported; the current emitter stays v5 with eleven workers and storage.quick
-remains inactive.
+supported; that reader increment retained the v5 emitter with eleven workers.
+Storage sampling remains inactive in the current v7 workflow.
 
 Accepted failures survive later stops. Unaccepted observations remain diagnostic
 and add no accepted work; an unfinished eligible target cannot claim clean
@@ -1266,7 +1325,7 @@ The existing durability, rebuilt-image, physical-PC and release qualification
 gates remain open.
 
 The audio readiness acquisition increment keeps metadata-only operation and
-the existing result schema, catalog and eleven-worker v5 session. Registry
+the then-current result schema, catalog and eleven-worker v5 session. Registry
 enumeration uses positive batches of at most 32 entries, with a 4,096-entry
 limit and one overflow witness. Names are read once, validated, cached and
 sorted. Attribute reads admit at most 64 raw bytes with one overflow byte,
@@ -1363,7 +1422,7 @@ remain compositional. Physical input, broader guided keyboard/pointer coverage,
 blocked-kernel deadlines, rebuilt-image and release gates remain open.
 
 The network acquisition path adds bounded discovery while retaining
-the existing result schema, current v5 emission and catalog. Registry reads
+the existing result schema, then-current v5 emission and catalog. Registry reads
 request at most 32 entries per call and enforce the existing 128-entry
 limit with one overflow witness. Names are validated, cached and sorted;
 ordinary sysfs directory links remain usable. Scalar bodies admit 256 raw
@@ -1430,7 +1489,7 @@ pathname, owned descriptor and final pathname identity. It rechecks the
 registry association and requires successful close before readable credit.
 A close failure remains an error even with cancellation; later USB opens
 stop and earlier diagnostics remain. Ordinary unavailable or replaced
-nodes remain inconclusive. The existing schema, current v5 emitter and
+nodes remain inconclusive. The existing schema, then-current v5 emitter and
 catalog are unchanged, with no USB global cleanup exit or new transfers.
 
 The acquisition increment extends the same owned reader to every USB
@@ -1493,7 +1552,7 @@ identity also remain open.
 The next CPU increment implements twelve fixed binary64 addition, subtraction,
 multiplication and division vectors in the bounded worker. CPU v3 evidence adds
 ordered per-worker counts, exact mismatch bits and separate integer, SHA-256 and
-scalar failure flags. Current CPU definition 2 uses the existing v5 journal and
+scalar failure flags. That CPU definition-2 increment used the existing v5 journal and
 22-row report. Historical CPU v2 hashes and definition 1 remain valid under their
 original strict v4/v5 rules; that CPU increment left memory evidence unchanged.
 
@@ -1592,8 +1651,8 @@ failures also require an overall graphics failure. Matching failure and partial
 results retain their original evidence in the signed report. These checks do
 not upgrade readiness into physical qualification.
 The standalone report verifier checks bundle integrity and signatures. Strict
-v4/v5 claims additionally require the shared journal and local-thermal evidence
-checks described above; v5 functional keyboard claims also require their shared
+supported session claims additionally require the shared journal and local-thermal
+evidence checks described above; functional keyboard claims also require their shared
 decoder and final-inventory bindings. Verification does not rerun hardware
 tests or establish physical truth.
 

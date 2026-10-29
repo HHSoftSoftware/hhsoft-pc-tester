@@ -90,7 +90,7 @@ func TestFinalizeAccountsForEveryFrozenTestWithoutInventingExecution(t *testing.
 				if err := json.Unmarshal(artifact.InventoryJSON, &payload); err != nil {
 					t.Fatal(err)
 				}
-				wantIDs := []string{"audio.quick", "audio.readiness.quick", "camera.quick", "cpu.quick", "cpu.stress", "display.operator.quick", "graphics.quick", "input.keyboard.quick", "input.pointer.quick", "input.readiness.quick", "input.touchpad.quick", "input.touchscreen.quick", "memory.quick", "memory.stress", "network.quick", "network.readiness.quick", "run.integrity.quick", "storage.destructive", "storage.quick", "storage.readiness.quick", "usb.quick", "usb.readiness.quick"}
+				wantIDs := []string{"audio.quick", "audio.readiness.quick", "camera.quick", "cpu.quick", "cpu.stress", "display.operator.quick", "graphics.quick", "input.keyboard.quick", "input.pointer.quick", "input.readiness.quick", "input.touchpad.quick", "input.touchscreen.quick", "inspection.exterior.quick", "memory.quick", "memory.stress", "network.quick", "network.readiness.quick", "run.integrity.quick", "storage.destructive", "storage.quick", "storage.readiness.quick", "usb.quick", "usb.readiness.quick"}
 				gotIDs := make([]string, 0, len(payload.TestResults))
 				for _, result := range payload.TestResults {
 					gotIDs = append(gotIDs, result.ID)
@@ -142,13 +142,16 @@ func TestFinalizeAccountsForEveryFrozenTestWithoutInventingExecution(t *testing.
 }
 
 func TestFinalizeRejectsScheduledRowsWithoutExecutionAdapters(t *testing.T) {
-	frozen, err := plan.Build(inventory.NewSnapshot(nil), plan.ProfileQuick, "x86_64", make([]byte, 32), "fixture")
+	frozen, err := plan.BuildWithSelection(inventory.NewSnapshot(nil), plan.ProfileQuick, "x86_64", make([]byte, 32), "fixture", []string{"inspection.exterior.quick"})
 	if err != nil {
 		t.Fatal(err)
 	}
 	outcomes := make(map[string]string)
 	for _, worker := range quickResultDefinitions {
 		outcomes[worker.id] = "not_present"
+		if worker.id == "inspection.exterior.quick" {
+			outcomes[worker.id] = "excluded"
+		}
 	}
 	for _, id := range []string{"camera.quick", "future.quick"} {
 		candidate := frozen

@@ -12,7 +12,8 @@ import (
 const MaximumSelectionBytes = 16 * 1024
 
 // SelectableQuickTests returns the safe, implemented quick tests supported by
-// the image. Applicability is resolved later from the inventoried hardware.
+// the image. Applicability is resolved later from hardware or an explicit
+// whole-device operator scope.
 func SelectableQuickTests(architecture string) ([]string, error) {
 	if !validSelectionArchitecture(architecture) {
 		return nil, errors.New("invalid selection architecture")

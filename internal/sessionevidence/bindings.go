@@ -61,6 +61,11 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 		if _, exists := byID[binding.ID]; exists {
 			return ErrInvalid
 		}
+		if HasInspectionClaim(binding.Evidence) || strings.EqualFold(binding.ID, "inspection.exterior.quick") {
+			if j.Schema != SchemaV7 || binding.ID != "inspection.exterior.quick" || binding.Version != 1 {
+				return ErrInvalid
+			}
+		}
 		if HasStorageClaim(binding.Evidence) && (j.Schema != SchemaV6 || binding.ID != "storage.quick" || binding.Version != 2) ||
 			strings.EqualFold(binding.ID, "storage.quick") && (binding.ID != "storage.quick" || binding.Version != 1 && (binding.Version != 2 || j.Schema != SchemaV6)) {
 			return ErrInvalid
@@ -96,6 +101,12 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 		}
 		if len(binding.Evidence) == 0 || len(binding.Evidence) > 1<<20 || !json.Valid(binding.Evidence) {
 			return ErrInvalid
+		}
+		if worker.ID == "inspection.exterior.quick" {
+			if validateInspectionBinding(worker, binding) != nil {
+				return ErrInvalid
+			}
+			continue
 		}
 		if worker.ID == "storage.quick" {
 			if err := validateStorageBinding(j, worker, binding); err != nil {

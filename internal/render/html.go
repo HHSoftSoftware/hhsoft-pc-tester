@@ -32,6 +32,7 @@ type inventoryDocument struct {
 	Memory              *memoryDocument
 	Pointer             *pointerDocument
 	Storage             *storageDocument
+	Inspection          *inspectionDocument
 }
 
 type testDocument struct {
@@ -105,7 +106,19 @@ table{background:var(--panel);border-collapse:collapse;border:1px solid var(--li
 </tbody>
 </table>
 </section>
-{{if .Storage}}<section class="section" aria-labelledby="storage-sample-heading">
+{{if .Inspection}}<section class="section" aria-labelledby="exterior-inspection-heading">
+<h2 id="exterior-inspection-heading">Operator-reported exterior inspection</h2>
+<p>{{.Inspection.Scope}}</p>
+<table><tbody>
+<tr><th class="label" scope="row">Finding</th><td>{{.Inspection.Finding}}</td></tr>
+<tr><th class="label" scope="row">Status</th><td>{{.Inspection.Status}}</td></tr>
+<tr><th class="label" scope="row">Response complete</th><td>{{.Inspection.ResponseComplete}}</td></tr>
+<tr><th class="label" scope="row">Stop reason</th><td>{{.Inspection.StopReason}}</td></tr>
+<tr><th class="label" scope="row">Bounded observation time (ms)</th><td>{{.Inspection.ObservationMilliseconds}}</td></tr>
+</tbody></table>
+<p>{{.Inspection.TimingNote}}</p>
+</section>
+{{end}}{{if .Storage}}<section class="section" aria-labelledby="storage-sample-heading">
 <h2 id="storage-sample-heading">Storage Sample Observations</h2>
 <p>{{.Storage.ScopeNote}}</p>
 <p>{{.Storage.Finding}}</p>
@@ -278,6 +291,10 @@ func renderInventoryHTMLWithPrevious(output io.Writer, payload app.InventoryPayl
 	if err := validateVersion(version); err != nil {
 		return err
 	}
+	inspection, err := inspectionReportDocument(payload)
+	if err != nil {
+		return err
+	}
 	thermal, err := sessionThermalDocument(payload)
 	if err != nil {
 		return err
@@ -337,6 +354,7 @@ func renderInventoryHTMLWithPrevious(output io.Writer, payload app.InventoryPayl
 		CPUScalar:           cpuScalar,
 		Memory:              memory,
 		Storage:             storage,
+		Inspection:          inspection,
 	}
 	return inventoryTemplate.Execute(&limitedWriter{destination: output}, document)
 }

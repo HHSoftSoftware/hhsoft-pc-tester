@@ -17,7 +17,7 @@ import (
 func shortJournal() Journal {
 	safe := safemode.Result{Schema: safemode.Schema, Status: "pass", StorageObserved: true, NetworkObserved: true}
 	unavailable := quick.ThermalSnapshot{Coverage: quick.ThermalUnavailable}
-	j := Journal{Schema: Schema, PlanID: "sha256:" + strings.Repeat("a", 64), StopReason: "completed", BudgetMilliseconds: 1000, ElapsedMilliseconds: 100,
+	j := Journal{Schema: SchemaV5, PlanID: "sha256:" + strings.Repeat("a", 64), StopReason: "completed", BudgetMilliseconds: 1000, ElapsedMilliseconds: 100,
 		PreparationStartedMilliseconds: 80, InventoryPreparedMilliseconds: 90, StopRequestedMilliseconds: 100, SafetyJoinedMilliseconds: 100,
 		Safety: []SafetyRecord{{"preflight", safe}, {"final", safe}, {"pre-sign", safe}}, LocalThermalSources: []LocalThermalSource{},
 		Monitor: safemode.MonitorResult{Schema: safemode.MonitorSchema, Status: "pass", IntervalMilliseconds: 1000, ObservationTimeoutMilliseconds: 1000, MaximumAllowedGapMilliseconds: 2500, ElapsedMilliseconds: 100, MaximumGapMilliseconds: 100, CleanupConfirmed: true},
@@ -26,7 +26,7 @@ func shortJournal() Journal {
 			Initial:   thermal.PhaseRecord{Attempted: true, Completed: true, CompletedMilliseconds: 5, Observation: &unavailable},
 			Final:     thermal.PhaseRecord{RequestedMilliseconds: 90, Attempted: true, Completed: true, StartedMilliseconds: 95, CompletedMilliseconds: 99, Observation: &unavailable},
 			Aggregate: thermal.Aggregate{Coverage: quick.ThermalUnavailable, AcceptedObservations: 2, UnavailableObservations: 2}, CleanupConfirmed: true, Joined: true, JoinedMilliseconds: 100, LastObservation: &unavailable}}
-	for _, id := range WorkerIDs() {
+	for _, id := range []string{"cpu.quick", "memory.quick", "audio.readiness.quick", "input.readiness.quick", "input.keyboard.quick", "input.pointer.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick", "graphics.quick", "display.operator.quick"} {
 		j.Workers = append(j.Workers, WorkerRecord{ID: id, State: "not_scheduled", Outcome: "excluded"})
 	}
 	return j

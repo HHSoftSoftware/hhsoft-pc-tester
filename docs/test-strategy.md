@@ -40,7 +40,7 @@ Operators may deselect a test, but it remains `skip` in the report. A custom
 profile inherits one below and discloses every override.
 
 The implemented operator selection currently covers the safe quick catalog:
-eleven tests on modern images and nine on legacy x86. Only otherwise scheduled
+twelve tests on modern images and ten on legacy x86. Only otherwise scheduled
 tests become `excluded`, reported as `skip` with the exclusion reason. Absent
 and missing-driver states retain their applicability reason, and unsupported
 or destructive work cannot be enabled through selection. Reports retain explicit
@@ -507,7 +507,7 @@ Retained passed devices require exact final inventory, while a vanished
 nonaccepted diagnostic does not erase an earlier valid pass. Cleanup uncertainty
 must reach every consumer as an error.
 
-Current emission remains v5 with eleven workers and the sampling catalog entry
+Current emission is v7 with twelve workers and the sampling catalog entry
 stays inactive. The reader validates signed assertions and feasible time fields;
 it does not reproduce precise parent timing, kernel ownership or media behavior.
 Media-worker supervision, loop lifetime, native sampling, rebuilt images and
@@ -596,8 +596,8 @@ Independent event review confirmed the full function selection, the host
 named-case selection and the Linux fallback and retained-prefix witnesses
 on both architectures. Measured totals and cleanup evidence are recorded
 in [requirements validation](requirements-validation.md). These acquisition
-changes add no traffic generation and retain the schema, current v5 emitter
-and catalog.
+changes add no traffic generation and retained the schema, then-current v5
+emitter and catalog.
 Functional network tests, blocked-kernel deadlines, total/peak allocation,
 persistent identity, images, physical hardware and release approval remain
 separate open gates.
@@ -899,7 +899,7 @@ The coordinator takes snapshots at
 session preflight, before each started worker, and after execution stops. The
 finalizer validates that history against the plan, outcomes, and worker evidence.
 The current live final gate supplies the fresh pre-sign observation before the
-completed v5 journal is written. Missing, contradictory, unsafe, or
+completed v7 journal is written. Missing, contradictory, unsafe, or
 incomplete observations block signing. A clean cancellation/deadline can use a
 fresh finalization context after confirmed cleanup, but cannot turn an aborted
 safety-readiness check or an earlier unsafe observation into permission to sign.
@@ -1057,7 +1057,7 @@ not establish a physical cooling or thermal-stress result. See
 [requirements validation](requirements-validation.md) for the qualification scope
 and resolved test-harness failure.
 
-The current keyboard increment preserves these monitoring boundaries in v5.
+The keyboard increment preserved these monitoring boundaries in v5.
 Its acceptance cases must also establish:
 
 - Six complete press/release pairs on each interface; no credit from another
@@ -1111,7 +1111,7 @@ Regression acceptance for the current coordinator requires:
 - Coverage validation rejects missing or contradictory timing, excessive
   leading/trailing gaps, fabricated zero-tick coverage, and an older execution
   journal. Clean operator stops preserve completed failures after a confirmed
-  monitor join; all eleven v5 worker outcomes remain present. Original v4
+  monitor join; all twelve v7 worker outcomes remain present. Original v4
   journals retain their ten-worker rules and historical report verification.
 - Deterministic monitor fixtures control observation completion and time rather
   than relying on sleeps. Native checks use private mount/network namespaces;
@@ -1548,6 +1548,55 @@ mount, activation-output, authorization, frozen-plan/evidence and live-source
 owners remain separate. No installed-CLI, physical-media, kernel-close, deadline,
 secure-erasure, rollback or durability credit is implied; existing image,
 physical-PC and release gates remain open.
+
+## Bounded Exterior Inspection Validation
+
+Core tests enumerate all 16 admitted finite evidence tuples and independent
+reducer cases. They reject ambiguous shape, invalid scalar types, out-of-range
+observation time and inconsistent completion/finding/status. Command tests
+distinguish complete CR/LF input, incomplete EOF and conservative empty broker
+results. Wrapped or joined clean EOF/context leaves stay clean; any hard sibling
+wins. Returned cancellation is retained even if outer notification lags.
+Exact-deadline and late decisions cannot pass; a complete defect stays adverse.
+
+Timing tests measure prompt attempt through decision, exclude owner preparation
+and join, and cap credit at the earlier effective deadline. The Linux broker
+test forces the actual cancellation branch using handshakes and a real queued
+overflow, without consuming or requeuing the result in the test. Request-only
+overflow still has a clean actual final owner receipt. Separate persistent-input
+and restoration faults reach the real failed finish receipt.
+
+Plan tests require whole-device operator applicability without invented
+hardware. Integration tests reach the actual coordinator, fresh live final
+gate, finalizer, signing and companion verification. They check owner closure
+before effects, no signing on invalid evidence, retained defects, exclusions
+and missing-row rejection. Legacy v4/v5/v6 fixtures remain literal data.
+
+Independent bundle encoders correctly re-sign malformed evidence and omit
+views, so signature success cannot replace semantic validation. Ordinary and
+linked profiles, trusted and self-issued choices, and optional views are
+covered. A valid alternate parent with the same manifest content but a
+different canonical bundle is rejected by pair verification. Rendering uses
+the shared validated result; absent-section bytes and identified-component
+comparison rules stay unchanged.
+
+The complete host run passed 5,942 test/subtest outcomes across 30 packages,
+with 17 test skips and one skipped package. Formatting, vet, three Linux
+application cross-builds and all eight postchecks passed. The selected native
+Linux amd64/386 cohort passed 4,580 named outcomes in 16 suites, covering 836
+root executions. Each architecture passed exactly 2,290 required names and 418
+roots, with no failures, skips or extra names. The 15 source-declared groups
+per architecture and all 252 direct-child ordering relationships were checked;
+literal slash labels were not treated as extra groups. All 43 selected
+Linux-only names and four names skipped on Windows passed on each native
+architecture. This includes the real Linux broker and owner fixtures.
+
+Nine ownership cases, 32 archive cases and six postchecks passed, with cleanup
+confirmed. These are fixture suites, including retained regressions; they are
+not installed-command or race runs. Other-platform console behavior, rebuilt
+images, physical inspection, actual media access, kernel-close/fsync fault
+injection and output durability remain outside this evidence. See
+[requirements validation](requirements-validation.md#bounded-exterior-inspection).
 
 ## Evidence contract
 

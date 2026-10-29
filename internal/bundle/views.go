@@ -22,7 +22,7 @@ func validateViews(encoded, html, pdf []byte, productName, version string) error
 }
 
 func validateViewsWithPrevious(encoded, html, pdf []byte, productName, version string, previous *report.PreviousReport) error {
-	if html == nil && pdf == nil && !hasCoverageMetadata(encoded) && !app.HasSessionThermalClaim(encoded) && !app.HasKeyboardClaim(encoded) && !app.HasPointerClaim(encoded) && !app.HasCPUScalarClaim(encoded) && !app.HasMemoryClaim(encoded) && !app.HasStorageClaim(encoded) {
+	if html == nil && pdf == nil && !hasCoverageMetadata(encoded) && !app.HasSessionThermalClaim(encoded) && !app.HasKeyboardClaim(encoded) && !app.HasPointerClaim(encoded) && !app.HasCPUScalarClaim(encoded) && !app.HasMemoryClaim(encoded) && !app.HasStorageClaim(encoded) && !app.HasExteriorInspectionClaim(encoded) {
 		return nil
 	}
 	if productName != product.Name || len(encoded) == 0 || len(encoded) > maxInventoryBytes ||

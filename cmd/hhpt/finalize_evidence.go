@@ -11,6 +11,7 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/app"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/audio"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/evidencejson"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/exteriorinspection"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/graphics"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inputtest"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/keyboardevidence"
@@ -34,6 +35,13 @@ var errInvalidQuickSafety = quickevidence.ErrInvalid
 // worker's status. It does not infer health, performance, or physical coverage
 // from a node-readiness result. Partial non-pass observations remain reportable.
 func testEvidenceStatus(encoded []byte, expectedSchema string) (string, error) {
+	if expectedSchema == exteriorinspection.Schema {
+		value, err := exteriorinspection.Decode(encoded)
+		if err != nil {
+			return "", err
+		}
+		return value.Status, nil
+	}
 	if expectedSchema == inputtest.PointerSchema || expectedSchema == inputtest.PointerSchemaV1 {
 		value, err := pointerevidence.Decode(encoded)
 		if err != nil || value.Schema != expectedSchema {
@@ -117,7 +125,7 @@ func testEvidenceStatus(encoded []byte, expectedSchema string) (string, error) {
 }
 
 func newValidatedQuickTestResult(id string, version int, status app.TestStatus, evidence any) (app.TestResult, error) {
-	if (id == "cpu.quick" || id == "memory.quick") && version != 2 {
+	if (id == "cpu.quick" || id == "memory.quick") && version != 2 || id == exteriorinspection.TestID && version != 1 {
 		return app.TestResult{}, errUnsupportedEvidence
 	}
 	encoded, err := json.Marshal(evidence)

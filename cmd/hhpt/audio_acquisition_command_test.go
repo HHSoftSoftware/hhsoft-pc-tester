@@ -200,6 +200,9 @@ func prepareAudioAcquisitionFinalization(t *testing.T, evidence audio.Result, ou
 	arguments := []string{"-fingerprint-key", keyPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "audio-fixture", "-output", output}
 	for _, definition := range quickResultDefinitions {
 		status := "not_present"
+		if definition.id == "inspection.exterior.quick" {
+			status = "excluded"
+		}
 		if definition.id == "audio.readiness.quick" {
 			status = outcome
 			writeSessionFixture(t, filepath.Join(directory, definition.filename), evidence)

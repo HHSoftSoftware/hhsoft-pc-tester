@@ -18,7 +18,9 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
 )
 
-const SchemaVersion = 2
+const SchemaVersion = 3
+
+const WholeDeviceOperator = "whole_device_operator"
 
 const fingerprintKeyBytes = 32
 
@@ -82,9 +84,10 @@ type HardwareDelta struct {
 }
 
 type Capability struct {
-	ID           string           `json:"id"`
-	Status       CapabilityStatus `json:"status"`
-	ComponentIDs []string         `json:"component_ids,omitempty"`
+	ID            string           `json:"id"`
+	Status        CapabilityStatus `json:"status"`
+	Applicability string           `json:"applicability,omitempty"`
+	ComponentIDs  []string         `json:"component_ids,omitempty"`
 }
 
 type Test struct {
@@ -92,6 +95,7 @@ type Test struct {
 	Version          int        `json:"version"`
 	Status           TestStatus `json:"status"`
 	Capability       string     `json:"capability"`
+	Applicability    string     `json:"applicability,omitempty"`
 	ComponentIDs     []string   `json:"component_ids,omitempty"`
 	Destructive      bool       `json:"destructive,omitempty"`
 	EstimatedSeconds int        `json:"estimated_seconds"`
@@ -117,9 +121,10 @@ type definitions struct {
 }
 
 type capabilityDefinition struct {
-	ID        string           `json:"id"`
-	Hardware  []componentMatch `json:"hardware"`
-	Providers []componentMatch `json:"providers"`
+	ID            string           `json:"id"`
+	Applicability string           `json:"applicability,omitempty"`
+	Hardware      []componentMatch `json:"hardware"`
+	Providers     []componentMatch `json:"providers"`
 }
 
 type componentMatch struct {
@@ -193,7 +198,7 @@ func BuildWithSelection(snapshot inventory.Snapshot, profile Profile, architectu
 	for _, definition := range definitions.Tests {
 		capability := capabilityByID[definition.Capability]
 		test := Test{
-			ID: definition.ID, Version: definition.Version, Capability: definition.Capability,
+			ID: definition.ID, Version: definition.Version, Capability: definition.Capability, Applicability: capability.Applicability,
 			ComponentIDs: append([]string(nil), capability.ComponentIDs...), Destructive: definition.Destructive,
 			EstimatedSeconds: definition.EstimatedSeconds, TimeoutSeconds: definition.TimeoutSeconds,
 		}
@@ -320,6 +325,13 @@ func validatePlanJSONMembers(decoder *json.Decoder, depth int) error {
 				}
 			}
 			seen[key] = true
+			if key == "applicability" {
+				var applicability *string
+				if decoder.Decode(&applicability) != nil || applicability == nil {
+					return errors.New("decode plan: applicability must be a string")
+				}
+				continue
+			}
 			if key == "excluded_tests" {
 				var selected *[]string
 				if err := decoder.Decode(&selected); err != nil || selected == nil {
@@ -411,7 +423,7 @@ func validateCatalog(result Plan, componentByID map[string]int) error {
 		test := result.Tests[index]
 		capability := capabilityByID[definition.Capability]
 		if test.ID != definition.ID || test.Version != definition.Version || test.Capability != definition.Capability ||
-			test.Destructive != definition.Destructive || test.EstimatedSeconds != definition.EstimatedSeconds ||
+			test.Applicability != capability.Applicability || test.Destructive != definition.Destructive || test.EstimatedSeconds != definition.EstimatedSeconds ||
 			test.TimeoutSeconds != definition.TimeoutSeconds || !slices.Equal(test.ComponentIDs, capability.ComponentIDs) ||
 			test.Status != testStatus(definition, capability.Status, result.Profile, result.Architecture, result.ExcludedTests) {
 			return fmt.Errorf("frozen plan test %q does not match its catalog definition or capability", test.ID)
@@ -421,6 +433,15 @@ func validateCatalog(result Plan, componentByID map[string]int) error {
 }
 
 func validateCapability(capability Capability, definition capabilityDefinition, components []HardwareComponent, componentByID map[string]int) error {
+	if capability.Applicability != definition.Applicability {
+		return errors.New("capability applicability does not match its definition")
+	}
+	if definition.Applicability == WholeDeviceOperator {
+		if capability.ID != "operator.exterior" || capability.Status != CapabilityPresent || len(capability.ComponentIDs) != 0 {
+			return errors.New("invalid whole-device operator capability")
+		}
+		return nil
+	}
 	var matches []componentMatch
 	switch capability.Status {
 	case CapabilityAbsent:
@@ -559,7 +580,11 @@ func loadDefinitions(data []byte) (definitions, string, error) {
 	sort.Slice(result.Tests, func(left, right int) bool { return result.Tests[left].ID < result.Tests[right].ID })
 	capabilityIDs := make(map[string]struct{}, len(result.Capabilities))
 	for _, definition := range result.Capabilities {
-		if definition.ID == "" || len(definition.Providers) == 0 {
+		if definition.ID == "operator.exterior" {
+			if definition.Applicability != WholeDeviceOperator || len(definition.Hardware) != 0 || len(definition.Providers) != 0 {
+				return definitions{}, "", errors.New("invalid operator capability definition")
+			}
+		} else if definition.ID == "" || definition.Applicability != "" || len(definition.Providers) == 0 {
 			return definitions{}, "", errors.New("invalid capability definition")
 		}
 		if _, exists := capabilityIDs[definition.ID]; exists {
@@ -571,6 +596,14 @@ func loadDefinitions(data []byte) (definitions, string, error) {
 	for _, definition := range result.Tests {
 		if definition.ID == "" || definition.Version < 1 || definition.EstimatedSeconds < 1 || definition.TimeoutSeconds < definition.EstimatedSeconds {
 			return definitions{}, "", fmt.Errorf("invalid test definition %q", definition.ID)
+		}
+		if (definition.ID == "inspection.exterior.quick") != (definition.Capability == "operator.exterior") {
+			return definitions{}, "", errors.New("invalid operator test identity")
+		}
+		if definition.Capability == "operator.exterior" && (definition.Version != 1 || !definition.Implemented || definition.Destructive ||
+			definition.EstimatedSeconds != 20 || definition.TimeoutSeconds != 45 ||
+			!slices.Equal(definition.Profiles, []Profile{ProfileQuick, ProfileStandard, ProfileExtended, ProfileDestructive})) {
+			return definitions{}, "", errors.New("invalid operator test definition")
 		}
 		if _, exists := testIDs[definition.ID]; exists {
 			return definitions{}, "", fmt.Errorf("duplicate test %q", definition.ID)
@@ -588,6 +621,11 @@ func loadDefinitions(data []byte) (definitions, string, error) {
 			}
 		}
 	}
+	if _, present := capabilityIDs["operator.exterior"]; present {
+		if _, present := testIDs["inspection.exterior.quick"]; !present {
+			return definitions{}, "", errors.New("operator capability has no inspection definition")
+		}
+	}
 	canonical, err := json.Marshal(result)
 	if err != nil {
 		return definitions{}, "", fmt.Errorf("encode test definitions: %w", err)
@@ -597,6 +635,9 @@ func loadDefinitions(data []byte) (definitions, string, error) {
 }
 
 func resolveCapability(components []inventory.Component, definition capabilityDefinition) Capability {
+	if definition.Applicability == WholeDeviceOperator {
+		return Capability{ID: definition.ID, Status: CapabilityPresent, Applicability: WholeDeviceOperator}
+	}
 	providerIDs := matchingComponentIDs(components, definition.Providers)
 	if len(providerIDs) > 0 {
 		return Capability{ID: definition.ID, Status: CapabilityPresent, ComponentIDs: providerIDs}

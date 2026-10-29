@@ -38,7 +38,7 @@ func TestSessionKeyboardIncompleteActionsRemainVisibleAndAllowLaterWorkers(t *te
 		writeSessionFixture(t, worker.OutputPath, value)
 		return 0
 	}
-	if code := h.run(t.Context()); code != 0 || !h.finalized || len(h.calls) != 11 || h.journal.Workers[4].ID != "input.keyboard.quick" || h.journal.Workers[4].Outcome != "inconclusive" {
+	if code := h.run(t.Context()); code != 0 || !h.finalized || len(h.calls) != 12 || h.journal.Workers[4].ID != "input.keyboard.quick" || h.journal.Workers[4].Outcome != "inconclusive" {
 		t.Fatalf("incomplete keyboard blocked unrelated work: %d %s", code, h.stderr.String())
 	}
 	if !strings.Contains(h.stdout.String(), "HHPT_KEYBOARD status=inconclusive") {
@@ -124,7 +124,7 @@ func TestSessionKeyboardCancellationRetainsTypedPartialAndStopsLaterWorkers(t *t
 		t.Fatal(err)
 	}
 	var payload app.InventoryPayload
-	if json.Unmarshal(artifact.InventoryJSON, &payload) != nil || len(payload.TestResults) != 22 {
+	if json.Unmarshal(artifact.InventoryJSON, &payload) != nil || len(payload.TestResults) != 23 {
 		t.Fatal("keyboard changed complete frozen row coverage")
 	}
 	found := false
@@ -141,15 +141,15 @@ func TestSessionKeyboardCancellationRetainsTypedPartialAndStopsLaterWorkers(t *t
 	}
 }
 
-func TestSessionAllOffStillRecordsElevenWorkersAndRejectsStaleKeyboard(t *testing.T) {
+func TestSessionAllOffStillRecordsTwelveWorkersAndRejectsStaleKeyboard(t *testing.T) {
 	for _, architecture := range []string{"x86_64", "legacy-x86"} {
 		excluded, err := plan.SelectableQuickTests(architecture)
 		if err != nil {
 			t.Fatal(err)
 		}
 		h := newSessionHarness(t, architecture, excluded)
-		if code := h.run(t.Context()); code != 0 || len(h.calls) != 0 || len(h.journal.Workers) != 11 {
-			t.Fatal("all-off v5 omitted worker records or started work")
+		if code := h.run(t.Context()); code != 0 || len(h.calls) != 0 || len(h.journal.Workers) != 12 {
+			t.Fatal("all-off v7 omitted worker records or started work")
 		}
 		h = newSessionHarness(t, architecture, excluded)
 		writeSessionFixture(t, filepath.Join(h.directory, "keyboard.json"), completeKeyboardEvidence())
@@ -175,14 +175,14 @@ func TestSessionFinalizerCannotUseHistoricalV4AsCurrentLiveEvidence(t *testing.T
 			value.Schema = sessionevidence.SchemaV4
 			workers := value.Workers[:0]
 			for _, worker := range value.Workers {
-				if worker.ID != "input.keyboard.quick" {
+				if worker.ID != "input.keyboard.quick" && worker.ID != "inspection.exterior.quick" {
 					workers = append(workers, worker)
 				}
 			}
 			value.Workers = workers
 			safety := value.Safety[:0]
 			for _, record := range value.Safety {
-				if record.Phase != "before-input.keyboard.quick" {
+				if record.Phase != "before-input.keyboard.quick" && record.Phase != "before-inspection.exterior.quick" {
 					safety = append(safety, record)
 				}
 			}

@@ -97,8 +97,9 @@ After the HHSoft splash appears, a 15-second inactivity timer begins.
 The quick profile is offline and uses read-only device discovery. It runs a
 short CPU known-answer load, bounded RAM patterns and inversions, device-node
 readiness checks, guided keyboard and relative-pointer actions, and modern-image
-graphics/display checks where applicable. The choices cover eleven tests on modern
-images and nine on legacy x86, subject to hardware applicability.
+graphics/display checks where applicable, and the bounded exterior observation.
+The choices cover twelve tests on modern images and ten on legacy x86, subject
+to each check's applicability rules.
 Storage readiness opens eligible block devices read-only and issues no sector
 read. USB readiness issues no application USB transfers. Network readiness configures
 nothing and sends no traffic. An active non-loopback interface or writable
@@ -302,7 +303,7 @@ and physical qualification remain open. Historical pointer v1 reports retain
 their movement/button scope.
 
 Press Ctrl-C to request a stop. One owned console reader handles cancellation
-and display findings, so those inputs do not compete. Linux SIGINT and SIGTERM
+and display/exterior findings, so those inputs do not compete. Linux SIGINT and SIGTERM
 also request cancellation. New scheduled work stops, completed failures remain
 failures, and unfinished work is recorded as incomplete. The console reader is
 joined and its input flags and terminal mode are restored before signing or
@@ -318,6 +319,49 @@ override a failed or incomplete pattern on another; partial findings remain in
 the result. A readiness result only proves that the associated kernel interface
 could be accessed, not that every key, button, port, pixel, cell, link, or
 media sector works.
+
+## Observe the Visible Exterior
+
+The quick-test menu includes an operator-reported exterior-enclosure check.
+Look only at safely visible surfaces, without moving or opening the device.
+The check covers only the surfaces you actually inspect. It does not certify
+the whole chassis, hinges, port function, cooling noise, battery condition or
+repairs.
+
+At the prompt, type one letter and press Enter:
+
+- `D`: you observed cracks, broken or missing enclosure pieces, or deformation.
+- `N`: you observed none of those defects on the inspected surfaces.
+- `I`: you did not inspect, or are uncertain. Enter without a letter also
+  records no observation.
+
+There is no free-text, name or photograph field. Incomplete or invalid input
+cannot pass. A completed defect response remains adverse after a stop; an
+input fault remains an error.
+
+For a standalone development check on Linux:
+
+```sh
+hhpt inspect-exterior -timeout 45s -output exterior-inspection.json
+```
+
+The default timeout is 45 seconds; accepted values are `10ms` through `45s`.
+A shorter parent deadline also applies. The JSON file is a bounded observation
+record, not a signed hardware report. Exit 0 means the record was emitted,
+not that the device passed inspection. An existing output file is not replaced.
+The real console path is Linux-only; Windows companion report verification
+does not provide a Windows console-inspection implementation.
+
+Reports label the value **Bounded observation time (ms)**. It covers prompt
+attempt through the response or stop decision, capped at the effective
+deadline. Preparation and cleanup are excluded. A decision at or after the
+deadline cannot pass; this is not a promise that input or cleanup returns by
+that instant. Unconfirmed input cleanup prevents output or signing and retains
+exit 12.
+
+Full host validation and selected native Linux fixtures passed. See
+[validation details](requirements-validation.md#bounded-exterior-inspection).
+The physical-PC pilot, rebuilt images and release approval remain open.
 
 ## Save the Signed Report
 
@@ -511,7 +555,8 @@ checks before started workers, final observations, and a fresh check before
 signing. The periodic-monitor increment introduced a journal v3 summary while retaining
 the same ten worker outcomes. It samples read-only mount and network metadata
 once per second, allows one second per observation and at most 2,500 milliseconds
-between observations. In v4 and the current v5 workflow it remains active through
+between observations. As in the qualified v4/v5 workflows, current v7 monitoring
+remains active through
 final inventory and the final gate. Its first unsafe,
 unknown, timed-out, or excessively delayed observation stops active work and
 blocks signing; a later safe result cannot erase it. The monitor must join
@@ -535,7 +580,7 @@ before session launch and after report creation remain separate operational gate
 capture and direct finalization without a session journal retain their older
 limited scope and do not claim this session history.
 
-Reports using v4, v5 or v6 also show run-wide thermal coverage and any observed limit.
+Reports using v4, v5, v6 or v7 also show run-wide thermal coverage and any observed limit.
 The initial and final thermal readings are required even in a sub-second or all-off
 session. `thermal_finding=limit_reached` means a valid global or local CPU/RAM
 observation reached the limit; `no_limit_observed` means no such observation was
@@ -554,7 +599,7 @@ physical sensors and the beta pilot remain open.
 
 | Status | Operator meaning | Required action |
 | --- | --- | --- |
-| `scheduled` / supported | Compatible hardware and an implemented provider were present, so the plan selected the test | Check the final test result; this alone is not a pass |
+| `scheduled` / supported | The implemented check met its applicability rules and the plan selected it; operator-only checks do not require detected hardware | Check the final test result; this alone is not a pass |
 | `pass` | The bounded implemented check completed without its defined failure | Confirm the check's stated scope before certifying the device |
 | `fail` | The test observed a defined wrong result, unsafe condition, or changed run-integrity graph | Investigate, stabilize the setup, and retest; do not convert it to `inconclusive` |
 | `not_present` | The relevant hardware was not detected | Confirm it is truly absent; if it should be present, check firmware, connection, and driver state |
@@ -595,7 +640,7 @@ Supported functional claims also pass shared schema and binding checks, even
 when views are omitted. This includes explicit v6 storage evidence read support;
 accepted work stays distinct from diagnostics, and unconfirmed cleanup rejects
 the report. The utility does not rerun hardware tests or reconstruct original
-collection events. Current appliance commands still emit v5 sessions with eleven
+collection events. Current appliance commands emit v7 sessions with twelve
 workers and do not perform sampled storage reads.
 
 Compare two sessions made with the same deployment-key token:

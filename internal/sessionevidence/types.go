@@ -10,23 +10,24 @@ import (
 const SchemaV4 = "hhsoft.pc-tester.quick-session/v4"
 const SchemaV5 = "hhsoft.pc-tester.quick-session/v5"
 const SchemaV6 = "hhsoft.pc-tester.quick-session/v6"
+const SchemaV7 = "hhsoft.pc-tester.quick-session/v7"
 
-// Schema remains the active producer schema until storage execution is complete.
-const Schema = SchemaV5
+// Schema activates the bounded operator inspection; storage execution remains inactive.
+const Schema = SchemaV7
 const IntegritySchema = "hhsoft.pc-tester.run-integrity/v1"
 const MaximumBytes = 64 << 10
 const Scope = "Quick-session execution, cleanup, final inventory and final safety gate; report encoding, output and saving are outside this monitoring window."
 
 func IsStrictSchema(schema string) bool {
-	return schema == SchemaV4 || schema == SchemaV5 || schema == SchemaV6
+	return schema == SchemaV4 || schema == SchemaV5 || schema == SchemaV6 || schema == SchemaV7
 }
 
 func supportsCurrentWorkerEvidence(schema string) bool {
-	return schema == SchemaV5 || schema == SchemaV6
+	return schema == SchemaV5 || schema == SchemaV6 || schema == SchemaV7
 }
 
-func WorkerIDs() [11]string {
-	return [11]string{"cpu.quick", "memory.quick", "audio.readiness.quick", "input.readiness.quick", "input.keyboard.quick", "input.pointer.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick", "graphics.quick", "display.operator.quick"}
+func WorkerIDs() [12]string {
+	return [12]string{"cpu.quick", "memory.quick", "audio.readiness.quick", "input.readiness.quick", "input.keyboard.quick", "input.pointer.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick", "graphics.quick", "display.operator.quick", "inspection.exterior.quick"}
 }
 
 func workerIDs(schema string) []string {
@@ -34,6 +35,8 @@ func workerIDs(schema string) []string {
 	case SchemaV4:
 		return []string{"cpu.quick", "memory.quick", "audio.readiness.quick", "input.readiness.quick", "input.pointer.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick", "graphics.quick", "display.operator.quick"}
 	case SchemaV5:
+		return []string{"cpu.quick", "memory.quick", "audio.readiness.quick", "input.readiness.quick", "input.keyboard.quick", "input.pointer.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick", "graphics.quick", "display.operator.quick"}
+	case SchemaV7:
 		ids := WorkerIDs()
 		return ids[:]
 	case SchemaV6:
@@ -107,8 +110,8 @@ type ThermalView struct {
 	LocalSources                         []LocalThermalSource
 }
 
-// IntegrityEvidence preserves the graph-integrity v1 envelope. Only v4, v5
-// and v6 claims use its strict decoder; earlier evidence remains opaque.
+// IntegrityEvidence preserves the graph-integrity v1 envelope. Strict v4-v7
+// claims use its decoder; earlier evidence remains opaque.
 type IntegrityEvidence struct {
 	Schema                string                      `json:"schema"`
 	Status                string                      `json:"status"`

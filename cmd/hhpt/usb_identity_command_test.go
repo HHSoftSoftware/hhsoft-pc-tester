@@ -82,6 +82,9 @@ func prepareUSBFinalization(t *testing.T, evidence usbtest.Result, outcome strin
 	arguments := []string{"-fingerprint-key", keyPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "usb-fixture", "-output", output}
 	for _, definition := range quickResultDefinitions {
 		status := "not_present"
+		if definition.id == "inspection.exterior.quick" {
+			status = "excluded"
+		}
 		if definition.id == "usb.readiness.quick" {
 			status = outcome
 			writeSessionFixture(t, filepath.Join(directory, definition.filename), evidence)

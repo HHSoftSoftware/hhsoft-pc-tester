@@ -61,7 +61,7 @@ func TestFinalizeBuildsSelfIssuedReportFromExistingEvidence(t *testing.T) {
 	planPath := writeFinalizeTestPlan(t, directory, snapshot, fingerprintKey)
 	arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "session-1", "-output", reportPath,
 		"-outcome", "audio.readiness.quick=not_present", "-outcome", "cpu.quick=pass", "-outcome", "display.operator.quick=not_present", "-outcome", "graphics.quick=not_present", "-outcome", "input.keyboard.quick=not_present", "-outcome", "input.pointer.quick=not_present", "-outcome", "input.readiness.quick=not_present",
-		"-outcome", "memory.quick=not_present", "-outcome", "network.readiness.quick=not_present", "-outcome", "storage.readiness.quick=not_present", "-outcome", "usb.readiness.quick=not_present"}
+		"-outcome", "memory.quick=not_present", "-outcome", "network.readiness.quick=not_present", "-outcome", "storage.readiness.quick=not_present", "-outcome", "usb.readiness.quick=not_present", "-outcome", "inspection.exterior.quick=excluded"}
 	collect := func(context.Context) (inventory.Snapshot, error) { return snapshot, nil }
 	random := bytes.NewReader(bytes.Repeat([]byte{0x31}, sessionIDLength+32))
 	var stdout, stderr bytes.Buffer
@@ -92,7 +92,7 @@ func TestFinalizeBuildsSelfIssuedReportFromExistingEvidence(t *testing.T) {
 	for _, result := range payload.TestResults {
 		results[result.ID] = result
 	}
-	if len(payload.TestResults) != 22 || payload.CoverageScope != app.CoverageFrozenPlan || results["audio.readiness.quick"].Status != app.TestSkip || results["cpu.quick"].Status != app.TestPass || results["display.operator.quick"].Status != app.TestSkip || results["run.integrity.quick"].Status != app.TestPass || results["usb.readiness.quick"].Status != app.TestSkip {
+	if len(payload.TestResults) != 23 || payload.CoverageScope != app.CoverageFrozenPlan || results["audio.readiness.quick"].Status != app.TestSkip || results["cpu.quick"].Status != app.TestPass || results["display.operator.quick"].Status != app.TestSkip || results["run.integrity.quick"].Status != app.TestPass || results["usb.readiness.quick"].Status != app.TestSkip {
 		t.Fatalf("unexpected results: %+v", payload.TestResults)
 	}
 	if !bytes.Equal(results["cpu.quick"].Evidence, cpuEvidence) || results["cpu.quick"].PlanID == "" || results["cpu.quick"].HardwareGraph == "" || results["cpu.quick"].PlannedStatus != app.PlannedScheduled || !bytes.Contains(results["graphics.quick"].Evidence, []byte(`"source_status":"not_present"`)) || bytes.Contains(artifact.InventoryJSON, []byte("private-value")) {
@@ -122,7 +122,7 @@ func TestFinalizeRejectsEvidenceOutcomeMismatch(t *testing.T) {
 	planPath := writeFinalizeTestPlan(t, directory, snapshot, fingerprintKey)
 	arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory, "-output", reportPath,
 		"-outcome", "audio.readiness.quick=not_present", "-outcome", "cpu.quick=pass", "-outcome", "display.operator.quick=not_present", "-outcome", "graphics.quick=not_present", "-outcome", "input.keyboard.quick=not_present", "-outcome", "input.pointer.quick=not_present", "-outcome", "input.readiness.quick=not_present", "-outcome", "memory.quick=not_present",
-		"-outcome", "network.readiness.quick=not_present", "-outcome", "storage.readiness.quick=not_present", "-outcome", "usb.readiness.quick=not_present"}
+		"-outcome", "network.readiness.quick=not_present", "-outcome", "storage.readiness.quick=not_present", "-outcome", "usb.readiness.quick=not_present", "-outcome", "inspection.exterior.quick=excluded"}
 	called := false
 	collect := func(context.Context) (inventory.Snapshot, error) { called = true; return inventory.Snapshot{}, nil }
 	if result := runFinalizeTestWith(t, context.Background(), arguments, bytes.NewBuffer(nil), bytes.NewBuffer(nil), collect, bytes.NewReader(bytes.Repeat([]byte{1}, 48)), time.Now); result != 1 {
@@ -170,6 +170,9 @@ func TestFinalizeWillNotSignUnsupportedPassEvidence(t *testing.T) {
 			arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "fixture", "-output", reportPath}
 			for _, definition := range quickResultDefinitions {
 				status := "not_present"
+				if definition.id == "inspection.exterior.quick" {
+					status = "excluded"
+				}
 				if definition.id == "cpu.quick" || definition.id == "storage.readiness.quick" {
 					status = "pass"
 				}
@@ -208,7 +211,7 @@ func TestFinalizeRecordsHotPlugAgainstFrozenPlan(t *testing.T) {
 	reportPath := filepath.Join(directory, "session.hhpcr")
 	arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "session-2", "-output", reportPath,
 		"-outcome", "audio.readiness.quick=not_present", "-outcome", "cpu.quick=not_present", "-outcome", "display.operator.quick=not_present", "-outcome", "graphics.quick=not_present", "-outcome", "input.keyboard.quick=not_present", "-outcome", "input.pointer.quick=not_present", "-outcome", "input.readiness.quick=not_present", "-outcome", "memory.quick=not_present",
-		"-outcome", "network.readiness.quick=not_present", "-outcome", "storage.readiness.quick=pass", "-outcome", "usb.readiness.quick=not_present"}
+		"-outcome", "network.readiness.quick=not_present", "-outcome", "storage.readiness.quick=pass", "-outcome", "usb.readiness.quick=not_present", "-outcome", "inspection.exterior.quick=excluded"}
 	collect := func(context.Context) (inventory.Snapshot, error) { return final, nil }
 	var stdout, stderr bytes.Buffer
 	if result := runFinalizeTestWith(t, context.Background(), arguments, &stdout, &stderr, collect, bytes.NewReader(bytes.Repeat([]byte{0x51}, 48)), time.Now); result != 0 {
@@ -243,7 +246,7 @@ func TestFinalizeRejectsPassForNonScheduledTest(t *testing.T) {
 	reportPath := filepath.Join(directory, "session.hhpcr")
 	arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory, "-output", reportPath,
 		"-outcome", "audio.readiness.quick=pass", "-outcome", "cpu.quick=not_present", "-outcome", "display.operator.quick=not_present", "-outcome", "graphics.quick=not_present", "-outcome", "input.keyboard.quick=not_present", "-outcome", "input.pointer.quick=not_present", "-outcome", "input.readiness.quick=not_present",
-		"-outcome", "memory.quick=not_present", "-outcome", "network.readiness.quick=not_present", "-outcome", "storage.readiness.quick=not_present", "-outcome", "usb.readiness.quick=not_present"}
+		"-outcome", "memory.quick=not_present", "-outcome", "network.readiness.quick=not_present", "-outcome", "storage.readiness.quick=not_present", "-outcome", "usb.readiness.quick=not_present", "-outcome", "inspection.exterior.quick=excluded"}
 	if result := runFinalizeTestWith(t, context.Background(), arguments, bytes.NewBuffer(nil), bytes.NewBuffer(nil), func(context.Context) (inventory.Snapshot, error) { return inventory.Snapshot{}, nil }, bytes.NewReader(bytes.Repeat([]byte{1}, 48)), time.Now); result != 1 {
 		t.Fatalf("finalize returned %d", result)
 	}
@@ -261,7 +264,7 @@ func TestFinalizeRecordsWorkerErrorWhenEvidenceIsIncomplete(t *testing.T) {
 	reportPath := filepath.Join(directory, "session.hhpcr")
 	arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory, "-output", reportPath,
 		"-outcome", "audio.readiness.quick=error", "-outcome", "cpu.quick=not_present", "-outcome", "display.operator.quick=not_present", "-outcome", "graphics.quick=not_present", "-outcome", "input.keyboard.quick=not_present", "-outcome", "input.pointer.quick=not_present", "-outcome", "input.readiness.quick=not_present",
-		"-outcome", "memory.quick=not_present", "-outcome", "network.readiness.quick=not_present", "-outcome", "storage.readiness.quick=not_present", "-outcome", "usb.readiness.quick=not_present"}
+		"-outcome", "memory.quick=not_present", "-outcome", "network.readiness.quick=not_present", "-outcome", "storage.readiness.quick=not_present", "-outcome", "usb.readiness.quick=not_present", "-outcome", "inspection.exterior.quick=excluded"}
 	if result := runFinalizeTestWith(t, context.Background(), arguments, bytes.NewBuffer(nil), bytes.NewBuffer(nil), func(context.Context) (inventory.Snapshot, error) { return snapshot, nil }, bytes.NewReader(bytes.Repeat([]byte{1}, 48)), time.Now); result != 0 {
 		t.Fatalf("finalize returned %d", result)
 	}
@@ -282,7 +285,7 @@ func TestFinalizeRecordsWorkerErrorWhenEvidenceIsIncomplete(t *testing.T) {
 
 func writeFinalizeTestPlan(t *testing.T, directory string, snapshot inventory.Snapshot, fingerprintKey []byte) string {
 	t.Helper()
-	frozenPlan, err := plan.Build(snapshot, plan.ProfileQuick, "x86_64", fingerprintKey, "ephemeral-session")
+	frozenPlan, err := plan.BuildWithSelection(snapshot, plan.ProfileQuick, "x86_64", fingerprintKey, "ephemeral-session", []string{"inspection.exterior.quick"})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -379,6 +382,9 @@ func prepareDisplayFinalization(t *testing.T, display graphics.VisualResult, out
 	arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "display-fixture", "-output", reportPath}
 	for _, definition := range quickResultDefinitions {
 		status := "not_present"
+		if definition.id == "inspection.exterior.quick" {
+			status = "excluded"
+		}
 		if definition.id == "display.operator.quick" {
 			status = outcome
 		}

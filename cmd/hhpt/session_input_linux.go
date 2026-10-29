@@ -136,7 +136,11 @@ func (console *sessionConsole) ReadFindingLine(ctx context.Context, limit int) (
 		// input or a line completed by input arriving after the request ended.
 		select {
 		case result := <-request.result:
-			return result.line, ctx.Err()
+			stop := ctx.Err()
+			if result.err == nil || result.err == stop {
+				return result.line, stop
+			}
+			return result.line, errors.Join(result.err, stop)
 		default:
 			return "", ctx.Err()
 		}

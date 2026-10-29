@@ -491,6 +491,24 @@ separate work. It adds no unsupported-platform, installed-CLI, physical-media,
 deadline, rollback or durability qualification. Existing image, physical-PC and
 release gates remain open.
 
+The persistence key-input increment is implemented and qualified with host and
+selected native Linux fixtures. It applies the owned reader to the fingerprint
+key and, in trusted mode,
+the public key. Authorization-file reading and shape decoding remain first;
+report opening still precedes the trusted-key read. Error and length rejection
+precede post-read cancellation, without save's clean-cancellation exception.
+Current report/trust, authorization/HMAC, persistence, receipt and output policies
+remain unchanged. The [validation record](requirements-validation.md#persistence-key-input-ownership)
+records 5,374 host test/subtest passes and 444 native passes in two suites, with
+28 roots and 222 required names passing on each native architecture.
+
+This increment reduces the three legacy raw-key calls recorded at the save stage
+to one in deployment discovery. Authorization-file, audit, frozen-plan/evidence
+and live report-source ownership remain separate work, alongside the broader
+feature roadmap. It adds no unsupported-platform, installed-CLI, physical-media,
+deadline, rollback or durability qualification. Existing image, physical-PC and
+release gates remain open.
+
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.
 - Add CPU, partial memory, SMART/NVMe health, read-only storage, complete

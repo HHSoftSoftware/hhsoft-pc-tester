@@ -86,7 +86,7 @@ func TestPersistCommandRequiresVerifiedAndSyncedReceipt(t *testing.T) {
 					FileSynced: failure != "file-unsynced", ReadBackVerified: failure != "unverified", DirectorySynced: failure != "directory-unsynced"}, nil
 			}
 			var stdout, stderr bytes.Buffer
-			code := runPersistWith(t.Context(), []string{"-authorization", authorizationPath, "-fingerprint-key", keyPath, "-self-issued", sourcePath}, &stdout, &stderr, persist)
+			code := runPersistWith(t.Context(), []string{"-authorization", authorizationPath, "-fingerprint-key", keyPath, "-self-issued", sourcePath}, &stdout, &stderr, saveFixtureInput(t), persist)
 			if calls != 1 {
 				t.Fatalf("valid fixture did not reach persistence: %s", stderr.String())
 			}

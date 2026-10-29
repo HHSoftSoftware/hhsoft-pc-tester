@@ -270,6 +270,39 @@ This change adds no rollback, secure-erasure, blocked-call deadline, durability,
 installed-CLI, unsupported-platform or physical-media qualification. Existing
 image, physical-PC and release gates remain open.
 
+The persistence key-input implementation replaces its two legacy raw-key calls
+with the finite fingerprint32 and public32 owned-reader roles. Existing usage
+validation and authorization-file read/decode run first. `DecodeAuthorization`
+validates schema, binding, lifetime and policy shape; it does not authenticate the
+MAC or establish current boot/device authorization. Those checks remain in the
+existing persistence policy.
+
+After decoding, nil or typed-nil contexts, a missing reader, a nil persister or a
+stopped context reject before key acquisition. Each role receives the original
+context and literal path. A returned error or a successful result of any length
+other than 32 rejects before the post-read context check. This includes an exact
+context error: save's nil-byte/exact-sentinel clean-cancellation exception does
+not apply to persist. A valid closed result followed by cancellation uses the
+persist admission failure. Both keys require checked readable and metadata
+closure; same-path keys remain two distinct role-specific acquisitions.
+
+Fingerprint admission precedes report opening. Trusted public-key acquisition
+retains its position after report opening and before verification; self-issued
+mode performs no public-key read. Fixed diagnostics cover only the two new input
+boundaries. Existing authorization, source-open, verifier, persister and output
+diagnostics are unchanged. Current v1/v2 bundle verification, linked-reference
+semantics, trust choice, authorization/HMAC, naming and synchronized-receipt
+policy are preserved; no parent is reopened or granted new trust.
+
+Host and selected native Linux fixture qualification passed; see the
+[measured evidence](requirements-validation.md#persistence-key-input-ownership).
+The earlier save-stage three-call count becomes one deployment-discovery call.
+Authorization-file, audit, frozen-plan/evidence and live report-source ownership
+remain separate work. This input change adds no late cancellation policy,
+rollback, secure-erasure, blocked-call deadline, durability, installed-CLI,
+unsupported-platform or physical-media qualification. Existing image, physical-PC
+and release gates remain open.
+
 Quick-session reports additionally bind a `session` object inside the existing
 run-integrity evidence. It records the stop reason, session budget, elapsed time,
 all worker states/outcomes, independent safety observations, and bounded

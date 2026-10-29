@@ -272,6 +272,58 @@ unsupported-platform acquisition, installed-CLI execution, physical media,
 kernel-close faults, blocked-call deadlines, secure key erasure, rollback or
 durability. Existing image, physical-PC and release gates remain open.
 
+## Persistence Key Input Ownership
+
+The persistence fingerprint/public-key input change is implemented and qualified
+by its own consumer fixtures and selected native runs. Host validation passed
+5,374 test/subtest outcomes across 29 packages, with 17 test skips and one package
+skip. All eight validation commands and eight postchecks passed. The selected
+28 roots produced 222 named passes: 134 from the new consumer cases and 88 from
+retained linked-report and persistence-receipt regressions.
+
+Native Linux amd64 and 386 runs each passed all 222 required names under 28 roots.
+Together they produced 444 passed test/subtest outcomes in two suites and 56 root
+executions, with zero failures or skips. Ownership and archive rejection checks
+passed, all six postchecks passed, and cleanup was confirmed. The other-OS
+rejection root was not executed by this qualification.
+
+Usage validation and the existing authorization-file read/decode precede the new
+guard for nil or typed-nil context, missing reader, nil persister and stopped
+context. `DecodeAuthorization` checks authorization shape, including its schema,
+binding, lifetime and policy fields. MAC and current boot/device authorization
+remain separate checks in persistence policy.
+
+The original context/path and exact finite role reach each key read. Any returned
+error or non-32-byte successful result rejects before post-read cancellation:
+`read fingerprint key: input acquisition failed` for the first key and
+`verify source report: input acquisition failed` for the trusted public key.
+This includes pure context errors; persist does not adopt save's clean-reader-
+cancellation exception. Local admission or cancellation after a valid closed
+result uses `persist input acquisition failed`. These failures return 1. Fixed
+diagnostics are limited to the new boundaries.
+
+Fingerprint acceptance requires checked input closure before report opening.
+Trusted public-key acquisition still follows report opening; self-issued mode
+performs no public-key read. Same-path keys are acquired separately. Existing
+Boolean-value trust grammar, trimmed key-ID lookup, v1/v2 current-bundle
+verification, linked references, report naming, persister arguments, required
+receipt flags and output behavior remain unchanged. Decoding authorization is
+not evidence that its MAC or a physical target was validated.
+
+The exercised [consumer cases](test-strategy.md#persistence-key-input-ownership-validation)
+cover exact forwarding, owner closure, error/shape precedence, cancellation,
+trust branches and downstream behavior. Source ordering and paired missing-report
+precedence witnesses remain distinct from a counted report-open seam.
+Ordinary-file fixtures require an injected media persister for successful command
+paths; such fixtures do not establish actual media writes.
+
+This implementation reduces the save-stage three legacy raw-key calls to one in
+deployment discovery. Authorization-file closure, audit, frozen-plan/evidence
+readers and the live verified-report owner remain separate work. Unsupported-OS
+acquisition, installed-CLI execution, physical media, kernel-close faults,
+blocked-call deadlines, secure erasure, rollback and durability receive no new
+qualification. Existing image, physical-PC and release gates remain open.
+
 ## Current review boundaries
 
 The initial requirements review found no implementation TODO/FIXME placeholders

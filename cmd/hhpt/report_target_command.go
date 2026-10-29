@@ -64,12 +64,12 @@ func runReportTargetWith(ctx context.Context, arguments []string, stdout, stderr
 }
 
 func runPersist(ctx context.Context, arguments []string, stdout, stderr io.Writer) int {
-	return runPersistWith(ctx, arguments, stdout, stderr, reporttarget.Persist)
+	return runPersistWith(ctx, arguments, stdout, stderr, readRetestInput, reporttarget.Persist)
 }
 
 type reportPersister func(context.Context, reporttarget.Options, reporttarget.Authorization, *os.File, int64, string, [sha256.Size]byte) (reporttarget.Receipt, error)
 
-func runPersistWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, persist reportPersister) int {
+func runPersistWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, readInput retestInputReader, persist reportPersister) int {
 	flags := flag.NewFlagSet("persist", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	authorizationPath := flags.String("authorization", "", "current RAM-only report-target authorization")
@@ -96,9 +96,17 @@ func runPersistWith(ctx context.Context, arguments []string, stdout, stderr io.W
 		fmt.Fprintf(stderr, "validate report-target authorization: %v\n", err)
 		return 1
 	}
-	fingerprintKey, err := readRawKey(*fingerprintKeyPath, 32)
-	if err != nil {
-		fmt.Fprintf(stderr, "read fingerprint key: %v\n", err)
+	if nilRetestInputValue(ctx) || readInput == nil || persist == nil || ctx.Err() != nil {
+		fmt.Fprintln(stderr, "persist input acquisition failed")
+		return 1
+	}
+	fingerprintKey, err := readInput(ctx, *fingerprintKeyPath, retestFingerprintKeyInput)
+	if err != nil || len(fingerprintKey) != 32 {
+		fmt.Fprintln(stderr, "read fingerprint key: input acquisition failed")
+		return 1
+	}
+	if ctx.Err() != nil {
+		fmt.Fprintln(stderr, "persist input acquisition failed")
 		return 1
 	}
 	source, metadata, err := openRegularNoSymlink(flags.Arg(0), reporttarget.MaximumReportBytes)
@@ -111,11 +119,20 @@ func runPersistWith(ctx context.Context, arguments []string, stdout, stderr io.W
 	if *selfIssued {
 		artifact, err = bundle.VerifySelfIssued(source, metadata.Size())
 	} else {
-		var publicKey []byte
-		publicKey, err = readRawKey(*publicKeyPath, ed25519.PublicKeySize)
-		if err == nil {
-			artifact, err = bundle.Verify(source, metadata.Size(), report.Keyring{strings.TrimSpace(*keyID): ed25519.PublicKey(publicKey)})
+		if ctx.Err() != nil {
+			fmt.Fprintln(stderr, "persist input acquisition failed")
+			return 1
 		}
+		publicKey, readErr := readInput(ctx, *publicKeyPath, retestPublicKeyInput)
+		if readErr != nil || len(publicKey) != ed25519.PublicKeySize {
+			fmt.Fprintln(stderr, "verify source report: input acquisition failed")
+			return 1
+		}
+		if ctx.Err() != nil {
+			fmt.Fprintln(stderr, "persist input acquisition failed")
+			return 1
+		}
+		artifact, err = bundle.Verify(source, metadata.Size(), report.Keyring{strings.TrimSpace(*keyID): ed25519.PublicKey(publicKey)})
 	}
 	if err != nil {
 		fmt.Fprintf(stderr, "verify source report: %v\n", err)

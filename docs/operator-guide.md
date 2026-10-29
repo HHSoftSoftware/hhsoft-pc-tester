@@ -454,6 +454,26 @@ fixtures do not qualify installed-CLI execution, unsupported-platform acquisitio
 physical media, blocked-call deadlines, secure erasure or durability. Existing
 image, physical-PC and release gates remain open.
 
+### Persistence key inputs
+
+Persist accepts each required 32-byte key only after checking its input
+and successfully closing the key's handles. Usage checks and authorization-file
+reading and decoding still happen first. Decoding alone does not authorize a
+write to the target.
+
+Fingerprint-key failure stops before the report is opened. Trusted verification
+still opens the report before reading its public key; self-issued verification
+does not read a public key. Key-input and cleanup failures use fixed diagnostics
+and return status 1. Cancellation cannot hide those failures. Existing report
+verification, target authorization, receipt and output behavior remain unchanged;
+see the [validation record](requirements-validation.md#persistence-key-input-ownership).
+
+The preceding three-call count describes the save stage. This update leaves one
+legacy raw-key call in deployment discovery. Authorization-file and live report
+ownership still need separate work. It adds no installed-CLI, unsupported-platform,
+physical-media or durability qualification; existing image, physical-PC and
+release gates remain open.
+
 ## Interpret Results
 
 Read both the frozen plan status and the final result. They answer different

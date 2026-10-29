@@ -1455,6 +1455,54 @@ secure erasure, rollback or durability. Three legacy raw-key calls remain after
 this source change; audit, frozen-plan/evidence and live report ownership remain
 separate work. Existing image, physical-PC and release gates stay open.
 
+## Persistence Key Input Ownership Validation
+
+The completed consumer cases and retained regressions were qualified on the host
+and native Linux amd64 and 386. The host recorded 5,374 test/subtest passes across
+29 packages, with 17 test skips and one package skip; all eight commands and eight
+postchecks passed. All 28 selected roots and 222 required names passed. The two
+native suites recorded 444 passes and 56 root executions, with zero failures or
+skips. Each architecture passed 134 new consumer names and 88 retained names.
+Selection was derived from the completed source and host outcomes; it contains
+no nested groups. Ownership/archive checks and all six native postchecks passed,
+and cleanup was confirmed. The other-OS rejection root remains unexecuted.
+
+Positive cases must first establish valid authorization and independently verified
+current v1/v2 report fixtures in both self-issued and trusted modes. Compare the
+exact original context, literal paths, finite roles, complete authorization and
+fingerprint bytes, still-open source bytes/size/digest, explicit/default name and
+one complete receipt. Use an independent authorization HMAC vector; a permissive
+injected persister proves forwarding, not MAC or physical-target enforcement.
+Same-path trusted keys still require two acquisitions. Keep the original linked-
+report and receipt/durability-rejection caller assertions.
+
+Exercise both key positions through the actual owned-input core with injected
+owners: readable and metadata Close faults, acquired-owner-plus-error returns,
+malformed owners, hard read/probe failures and cancellation. Exact ledgers must
+establish completion prerequisites, each owner's single closure and readable-
+before-metadata order. At the command boundary, returned errors and wrong lengths
+must win over later cancellation, including pure or joined context errors and
+bytes-plus-error results. Persist has no save-style clean-cancellation exception.
+Also distinguish pre-stopped/invalid context and missing reader/persister admission
+from earlier malformed authorization, and from cancellation after valid closure.
+
+Retain source-order review and paired valid/missing-report precedence witnesses
+for first-key rejection, plus observed reader, persister and receipt effects.
+There is no dedicated report-open counter: trusted second-key rejection follows
+an already-open report. Wrong trusted keys/IDs/signatures must reach the real
+verifier with otherwise valid prerequisites. Preserve downstream error and
+incomplete-receipt rejection, exclusive-output collision and caller-owned stdout
+failure behavior; output failure after persistence does not imply rollback.
+
+Supported Linux/Windows ordinary-file fixtures must isolate the real key loader
+from media persistence with an injected persister. Any real-dispatch negative
+needs barriers that prevent a media write. Other-OS rejection or a test-only
+forwarding adapter gives no supported acquisition credit. The remaining deployment
+raw-key call and authorization/audit/frozen-plan/evidence/live-source owners stay
+separate. These tests add no installed-CLI, physical-media, kernel-close,
+blocked-call deadline, secure-erasure or durability claim; existing image,
+physical-PC and release gates remain open.
+
 ## Evidence contract
 
 Each case emits a structured result containing:

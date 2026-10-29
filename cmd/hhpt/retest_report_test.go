@@ -974,7 +974,7 @@ func TestRetestComparisonAndPersistenceConsumeVerifiedCurrentBundle(t *testing.T
 	}
 	out.Reset()
 	errOut.Reset()
-	if code := runPersistWith(t.Context(), []string{"-authorization", path, "-fingerprint-key", args[1], "-self-issued", output}, &out, &errOut, persist); code != 0 || calls != 1 {
+	if code := runPersistWith(t.Context(), []string{"-authorization", path, "-fingerprint-key", args[1], "-self-issued", output}, &out, &errOut, readRetestInput, persist); code != 0 || calls != 1 {
 		t.Fatalf("verified v2 persistence bridge failed: %d %s", code, &errOut)
 	}
 }

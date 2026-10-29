@@ -193,6 +193,16 @@ the alpha still requires the separate documented release gates.
   This implementation reduces the four legacy calls recorded at the report-target
   stage to three: deployment discovery and two persistence inputs. Audit owners,
   frozen-plan/evidence readers and persistence's live source remain separate work.
+- [x] Implement checked 32-byte fingerprint and trusted public-key inputs for
+  persistence, with fixed input diagnostics and error/shape checks before
+  post-read cancellation. Preserve authorization decoding, report verification
+  and persistence policy.
+- [x] Qualify the persistence key-input boundary with 5,374 host test/subtest
+  passes and 444 selected native passes across Linux amd64 and 386; see the
+  [scoped validation evidence](docs/requirements-validation.md#persistence-key-input-ownership).
+  This implementation reduces the three legacy calls recorded at the save stage
+  to one in deployment discovery. Authorization-file, audit, frozen-plan/evidence
+  and live report-source ownership remain separate work.
 - [ ] Implement privacy-preserving enrollment and key-rotation service flows.
 
 ## Functional tests

@@ -231,6 +231,21 @@ and [validation scope](docs/requirements-validation.md#bounded-exterior-inspecti
 Broader inspection, rebuilt images, physical testing and release approval remain
 separate gates.
 
+The Linux power-supply inventory implementation reports eleven finite fields
+with explicit value states. It enumerates every reported supply without assuming
+a particular battery name. Public rows use nonpersistent `power_supply:1`,
+`power_supply:2`, and subsequent ordinals; raw kernel names and serials are not
+exported, and these rows do not establish component identity. No rows means no
+reported supply data, not proof that a battery or adapter is absent.
+
+These are separate driver observations, not battery-health or AC/battery
+transition tests. The feature adds no worker or catalog row and leaves current
+v7 sessions and historical report contracts unchanged. The full host suite and
+selected native Linux amd64/386 fixtures passed; see the [operator interpretation](docs/operator-guide.md#read-power-supply-inventory)
+and [validation contract](docs/requirements-validation.md#power-supply-inventory).
+Physical testing, the ten-PC pilot, rebuilt images and release approval remain
+open.
+
 The periodic-monitor milestone introduced read-only mount/network sampling
 and a v3 session journal, without changing the catalog or ten worker outcomes.
 The v4 increment retained that monitor summary and added thermal evidence;

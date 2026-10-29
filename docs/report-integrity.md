@@ -535,6 +535,37 @@ truth or tested physical condition. Full host validation and the selected
 native Linux fixture suites passed. Broader limits remain in
 [requirements validation](requirements-validation.md#bounded-exterior-inspection).
 
+## Power-Supply Inventory Assertions
+
+The implemented `power_supply` producer emits eleven finite value fields and
+their companion `<field>_state` attributes. Only `reported` includes a value;
+the other states are `unavailable`, `unsupported`, `malformed` and
+`out_of_range`. A reported `Unknown` enum is distinct from unavailable data.
+The [field contract](requirements-validation.md#power-supply-inventory) fixes
+units, ranges and parsing. Rejected text and partial bytes returned with an
+ordinary read error are not included in a reported value.
+
+Public IDs are one-based, nonpersistent ordinals. Raw kernel entry names and
+serials never become public IDs, attributes or identity material. Identity
+confidence remains `unavailable`, with no identity value or source; the existing
+algorithm and key epoch metadata are retained. Neither a repeated ordinal nor
+equal telemetry establishes component continuity, and a same-count replacement
+can be invisible. Existing identified components and comparison trust policy
+are unchanged.
+
+Missing and empty supply enumeration both produce no rows, preserving previous
+no-supply payloads. Signed reports authenticate the recorded bytes; they do not
+prove physical hardware absence, accuracy, battery health or power-transition
+behavior. Each field is a separate driver observation, not an atomic snapshot.
+
+This is a finite producer contract within existing inventory payloads, not a
+new strict evidence schema or a generic validator for arbitrary attributes.
+Bundle signatures, no-view verification, linked parent references, independent
+trust choices and semantic view verification retain their existing rules.
+Current v7, its twelve workers, the 22-row catalog and historical v4/v5/v6
+contracts remain unchanged. The full host suite and selected native Linux
+amd64/386 fixtures passed; broader physical, image, durability and release gates remain open.
+
 ## Inactive Storage Evidence Reader
 
 Explicit v6 read support adds a twelfth worker record, `storage.quick`, after

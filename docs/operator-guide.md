@@ -363,6 +363,33 @@ Full host validation and selected native Linux fixtures passed. See
 [validation details](requirements-validation.md#bounded-exterior-inspection).
 The physical-PC pilot, rebuilt images and release approval remain open.
 
+## Read Power-Supply Inventory
+
+The implemented Linux inventory shows driver-reported power supplies as
+`power_supply:1`, `power_supply:2`, and subsequent rows. These labels are local
+to a collection and may change; they are not serial numbers or evidence that
+the same battery or adapter was seen again. Raw supply names and serials are
+not exported. No supply rows means no reported data, not proof of absent hardware
+or operation on AC power.
+
+Every field has a state. `reported` provides an admitted driver value, including
+the literal enum value `Unknown`. `unavailable` provides no value;
+`unsupported`, `malformed` and `out_of_range` also omit the rejected value.
+None of these states supplies a health verdict. Missing `present` does not
+mean present. `online` distinguishes 0 (offline), 1 (fixed supply online) and
+2 (programmable supply online); it is not a Boolean.
+
+Capacity is a reported percentage. Energy values are in micro-watt-hours and
+charge values in micro-amp-hours; these units are not interchangeable. A zero
+cycle count is shown as unavailable, not zero wear. Full and design values are
+preserved without computing a health ratio or remaining runtime. Fields are
+read separately and do not establish a power transition or simultaneous state.
+
+The full host suite and selected native Linux amd64/386 fixtures passed; see
+[validation details](requirements-validation.md#power-supply-inventory).
+Battery-health assessment, AC/battery transition tests, physical-PC testing and
+rebuilt-image qualification remain separate work.
+
 ## Save the Signed Report
 
 The only authoritative artifact is the `.hhpcr` bundle. Its HTML and PDF views

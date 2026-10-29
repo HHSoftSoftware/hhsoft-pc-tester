@@ -560,6 +560,9 @@ func stableHardwareGraph(components []inventory.Component) inventory.Snapshot {
 	for _, component := range components {
 		attributes := make(map[string]string, len(component.Attributes))
 		for _, attribute := range component.Attributes {
+			if component.Type == inventory.ComponentPowerSupply && inventory.IsPowerSupplyObservationAttribute(attribute.Name) {
+				continue
+			}
 			if _, excluded := volatile[attribute.Name]; !excluded {
 				attributes[attribute.Name] = attribute.Value
 			}

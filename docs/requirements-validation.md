@@ -77,6 +77,81 @@ durability or broad hardware coverage. The required ten-PC pilot, all four
 bootable images, release safety checks and release approval remain open.
 This bounded implementation does not close the broader inspection checklist.
 
+## Power-Supply Inventory
+
+The implemented Linux collector enumerates every validated supply entry and
+assigns one-based, nonpersistent `power_supply:N` IDs. It exports no raw entry
+name, serial or derived stable identifier. A missing class and a successfully
+empty class both mean no reported rows, not proof of absent hardware. Every
+enumerated entry retains a row even when all fields are unavailable.
+
+Each field has a `<field>_state` attribute. The finite states are `reported`,
+`unavailable`, `unsupported`, `malformed` and `out_of_range`; only `reported`
+has a value. Exact documented `Unknown` labels are reported values.
+
+| Public field | Admitted reported value |
+| --- | --- |
+| `supply_type` | `Unknown`, `Battery`, `UPS`, `Mains`, `USB`, `USB_DCP`, `USB_CDP`, `USB_ACA`, `USB_C`, `USB_PD`, `USB_PD_DRP`, `BrickID`, `Wireless` |
+| `scope` | `Unknown`, `System`, `Device` |
+| `present` | 0 or 1; unavailable does not imply 1 |
+| `online` | 0 offline, 1 fixed supply online, 2 programmable supply online |
+| `status` | `Unknown`, `Charging`, `Discharging`, `Not charging`, `Full` |
+| `capacity_percent` | Integer from 0 through 100 |
+| `cycle_count` | Integer from 1 through 2,147,483,647; zero is unavailable |
+| `energy_full_uwh` | Signed 32-bit integer, micro-watt-hours |
+| `energy_full_design_uwh` | Signed 32-bit integer, micro-watt-hours |
+| `charge_full_uah` | Signed 32-bit integer, micro-amp-hours |
+| `charge_full_design_uah` | Signed 32-bit integer, micro-amp-hours |
+
+Successful complete scalar reads are parsed before whitespace normalization.
+At most one terminal LF is removed. Enum text must be nonempty printable ASCII
+without edge spaces; exact labels are reported, while every other clean label
+is unsupported without being echoed. Numeric fallback, case variants and repeated
+internal spaces therefore do not become accepted enum values. Empty text,
+controls, CRLF and non-ASCII bytes are malformed. Integers use canonical decimal
+syntax without `+`, leading zeroes or `-0`; syntax errors are malformed, and
+signed-32-bit overflow or a field-domain violation is out of range. Negative,
+zero and full-greater-than-design energy or charge observations are retained
+within that integer range, without a health ratio or unit conversion.
+
+Ordinary scalar open/read errors discard all returned bytes and become
+unavailable. This does not distinguish missing attributes, unavailable driver
+data, hotplug or I/O failure. Existing bounds, malformed-protocol, checked-close,
+cancellation and directory-error handling remain mandatory. The scalar byte
+limit remains 65,536; this adds no total collection deadline or guarantee that
+a blocked kernel call returns promptly. Sysfs reads may trigger driver hardware
+queries. The observations are separate samples, not an atomic power state.
+
+The new power-specific volatility rule covers only the eleven values and their
+eleven states. Existing shared exclusions and other types retain their prior
+rules; unknown attributes do not gain a blanket exclusion. Power identity stays unavailable; ordinals
+can shift and same-count replacement can be undetectable. No-supply payload bytes,
+identified-component fingerprints, catalog 22, current v7 with twelve workers,
+historical session contracts and inactive storage sampling remain unchanged.
+
+**Qualification completed for the bounded software scope:** the complete
+collector, plan and downstream composition passed 6,239 host test/subtest
+outcomes across 30 packages, with 17 platform test skips and one skipped
+package. Formatting checks, vet, Linux amd64/386/arm64 application builds,
+all eight commands and all eight postchecks passed. All 30 changed-file roots
+and 297 required names passed once.
+
+Selected native Linux amd64/386 fixtures passed 3,100 named outcomes across
+14 suites and 582 root executions. Each architecture passed all 1,550 names
+and 291 roots, with no failures, skips, extra names or duplicates. The four
+Linux-only descriptor, normal-link and FIFO roots and the collector fixture
+skipped on the Windows host passed on both architectures. All nine ownership
+cases, 32 archive cases and six postchecks passed, with confirmed cleanup.
+These results qualify the selected software fixtures, not installed commands
+or physical power hardware. Fixture tests must cover real collection through signing, no/both views,
+linked verification and comparison, including private-name canaries and
+correctly re-signed forged identities after valid prerequisites.
+
+This inventory does not test battery health, wear, capacity accuracy, AC/battery
+transitions or physical continuity. Unsupported-platform execution, installed
+commands, rebuilt images, output durability, the ten-PC pilot and release
+approval retain their separate gates.
+
 ## Linked Retest Contract
 
 The linked retest implementation is an opt-in report relationship, not a

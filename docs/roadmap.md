@@ -566,6 +566,29 @@ ports, cooling-noise or battery-swelling work. The ten-PC pilot, all four
 bootable images, installed-command qualification and release approval remain
 open. It adds no prerequisite to the already defined alpha gates.
 
+### Finite power-supply inventory
+
+The Linux inventory implementation adds eleven finite driver-observation fields
+and five explicit value states. It enumerates all reported supplies, using
+nonpersistent ordinal rows and unavailable identity instead of exporting raw
+kernel names or serials. Missing or empty enumeration reports no data, not
+hardware absence. Ordinary scalar observation failures discard returned bytes;
+existing ownership, bounds, protocol and cancellation policy remains in force.
+
+The new-type-only volatility policy preserves the existing graph and comparison
+rules for other components. It adds no worker or catalog entry: current v7 has
+twelve workers and the catalog remains at 22 rows, with historical contracts
+unchanged. The complete host suite passed 6,239 test/subtest outcomes across
+30 packages, with 17 test skips and one skipped package. Selected native Linux
+amd64/386 fixtures passed 3,100 named outcomes across 14 suites and 582 root
+executions, with no failures or skips and confirmed cleanup;
+see [requirements and limits](requirements-validation.md#power-supply-inventory).
+
+These independent observations do not establish battery health, physical
+continuity or AC/battery transitions. Those broader features, the ten-PC pilot,
+installed-command and rebuilt-image qualification, durability and release
+approval remain open. This increment does not expand the approved alpha gates.
+
 ## Phase 3 — complete profiles
 
 - Add Memtest86+ boot integration, standard, extended, and burn-in profiles,

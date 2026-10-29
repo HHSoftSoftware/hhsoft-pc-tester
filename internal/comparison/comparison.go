@@ -328,7 +328,7 @@ func validateReport(report Report) error {
 
 func validComponentType(componentType inventory.ComponentType) bool {
 	switch componentType {
-	case inventory.ComponentCPU, inventory.ComponentMemory, inventory.ComponentSystem, inventory.ComponentBaseboard, inventory.ComponentBlock, inventory.ComponentPCI, inventory.ComponentNetwork, inventory.ComponentInput, inventory.ComponentSound, inventory.ComponentVideo, inventory.ComponentUSB:
+	case inventory.ComponentCPU, inventory.ComponentMemory, inventory.ComponentSystem, inventory.ComponentBaseboard, inventory.ComponentBlock, inventory.ComponentPCI, inventory.ComponentNetwork, inventory.ComponentInput, inventory.ComponentSound, inventory.ComponentVideo, inventory.ComponentUSB, inventory.ComponentPowerSupply:
 		return true
 	default:
 		return false
@@ -571,6 +571,10 @@ func observationKeyFor(component Component) observationKey {
 
 func volatileObservationAttribute(componentType inventory.ComponentType, name string) bool {
 	switch componentType {
+	case inventory.ComponentPowerSupply:
+		if inventory.IsPowerSupplyObservationAttribute(name) {
+			return true
+		}
 	case inventory.ComponentBlock:
 		if name == "device_number" || name == "name" || name == "read_only" {
 			return true

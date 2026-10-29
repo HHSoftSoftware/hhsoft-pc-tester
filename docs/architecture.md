@@ -430,6 +430,37 @@ Full host validation and the selected native Linux amd64/386 fixture suites
 passed. Signed bytes authenticate an operator assertion, not the physical truth
 or completeness of the inspection.
 
+## Finite power-supply inventory
+
+The Linux collector enumerates the complete validated supply directory and assigns
+one-based `power_supply:N` IDs before constructing public components. Raw entry
+names remain acquisition paths only; they are not report locations, identity
+material or hashed aliases. Each enumerated supply retains a row even when all
+eleven fields are unavailable. A missing class and an empty class both produce
+no rows and preserve the prior no-supply payload bytes.
+
+Each finite field has a companion state, with a value only for `reported`.
+Completed raw bytes are parsed before generic attribute normalization. Ordinary
+scalar observation errors discard returned bytes and yield `unavailable`; the
+existing directory, bounds, protocol, checked-close and cancellation rules remain
+in force. Acquisition reads sysfs, but a driver may perform hardware queries in
+response. Separate field reads are not an atomic sample or a transition test.
+
+The power-specific exclusion covers exactly eleven values and their eleven
+states in the stable plan graph and comparison attribute projection. Existing
+shared exclusions and other component types retain their prior policy; unknown
+attributes do not gain a blanket exclusion. Ordinals can shift between collections, and a
+same-count replacement can be invisible. Power-supply identity remains
+unavailable, so comparison cannot promote an ordinal match to physical
+continuity. Existing identified components retain their fingerprint rules.
+
+The implementation uses the existing inventory, signing and view contracts. It
+adds no catalog row, worker, session schema or generic arbitrary-metadata
+validator: the catalog remains at 22 rows and current v7 retains twelve workers.
+Historical v4/v5/v6 rules and inactive storage sampling remain unchanged.
+The full host suite and selected native Linux amd64/386 fixtures passed; see
+[the validation contract](requirements-validation.md#power-supply-inventory).
+
 ## Privilege and process model
 
 The target privilege separation remains unimplemented. Run the UI as a

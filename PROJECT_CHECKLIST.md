@@ -575,6 +575,17 @@ the alpha still requires the separate documented release gates.
 - [ ] Test Bluetooth discovery, pairing, services, data exchange, and temporary
   pairing cleanup with known-good fixtures.
 - [ ] Test cameras, microphones, rotation/other sensors, and supported modems.
+- [x] Implement finite Linux power-supply inventory: eleven fields with explicit
+  reported, unavailable, unsupported, malformed or out-of-range states. Use
+  nonpersistent ordinal rows with unavailable identity and no raw supply names
+  or serial export; missing or empty supply enumeration reports no data.
+- [x] Qualify the integrated power-supply collector, graph policy, signed reports,
+  views and comparison: the full host suite passed 6,239 test/subtest outcomes
+  across 30 packages; selected native Linux amd64/386 fixtures passed 3,100
+  named outcomes across 14 suites and 582 root executions, with no failures
+  or skips and confirmed cleanup. The implementation
+  adds no test worker and does not qualify battery health or power transitions.
+  See [the bounded contract](docs/requirements-validation.md#power-supply-inventory).
 - [ ] Collect adapter/battery health and charge telemetry and test AC/battery
   transitions where supported.
 - [ ] Monitor temperatures, fans, clocks, power, and throttling throughout a run

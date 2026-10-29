@@ -434,6 +434,26 @@ Four legacy raw-key calls remain: deployment discovery, two persistence inputs
 and save. Those inputs and persistence's live report owner remain separate work.
 Existing image, physical-PC and release gates remain open.
 
+### Save fingerprint input
+
+Save accepts the 32-byte fingerprint key only after checking the input file and
+successfully closing its input handles. Usage checks and audit initialization
+still happen first. Key-input or cleanup failures stop before report access and
+later save operations, with a fixed diagnostic that omits the key path and
+provider details. Cancellation cannot hide an input or cleanup failure.
+
+Key-input failure and cancellation retain save's failure exit status 1. Report
+verification, menu and confirmation, retry, write-attempt, unmount and receipt
+behavior remain unchanged. Host and native fixture results are recorded in the
+[validation record](requirements-validation.md#save-fingerprint-input-ownership).
+
+The four-call count above describes the report-target stage. This implementation
+leaves three legacy raw-key calls: deployment discovery and two persistence
+inputs. Audit and live report-source ownership still need separate work. These
+fixtures do not qualify installed-CLI execution, unsupported-platform acquisition,
+physical media, blocked-call deadlines, secure erasure or durability. Existing
+image, physical-PC and release gates remain open.
+
 ## Interpret Results
 
 Read both the frozen plan status and the final result. They answer different

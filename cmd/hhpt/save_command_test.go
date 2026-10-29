@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -241,6 +242,31 @@ func TestSaveCustomNamesWorkWithAndWithoutAudit(t *testing.T) {
 	}
 }
 
+// Supported systems keep the production reader. The other-platform branch
+// forwards only ordinary test files through the same owned-input core; it does
+// not qualify the unsupported production adapter.
+func saveFixtureInput(t *testing.T) retestInputReader {
+	t.Helper()
+	return func(ctx context.Context, path string, kind retestInputKind) ([]byte, error) {
+		if runtime.GOOS == "linux" || runtime.GOOS == "windows" {
+			return readRetestInput(ctx, path, kind)
+		}
+		return readRetestInputWithOperations(ctx, path, kind, retestInputOperations{
+			openMetadata: func(path string) (retestInputMetadata, error) {
+				info, err := os.Lstat(path)
+				if err != nil || !info.Mode().IsRegular() {
+					return nil, errRetestInput
+				}
+				return os.Open(path)
+			},
+			openReadable: func(path string, _ retestInputMetadata) (retestInputReadable, error) {
+				return os.Open(path)
+			},
+			sameFile: os.SameFile,
+		})
+	}
+}
+
 func saveTestArguments(t *testing.T) []string {
 	t.Helper()
 	directory := t.TempDir()
@@ -261,6 +287,7 @@ func saveTestArguments(t *testing.T) []string {
 func saveTestOperations(t *testing.T, audit io.Writer) saveOperations {
 	t.Helper()
 	return saveOperations{
+		readInput: saveFixtureInput(t),
 		discover: func(context.Context, reporttarget.Options) reporttarget.Catalog {
 			return reporttarget.Catalog{Status: reporttarget.StatusPass, Candidates: []reporttarget.Candidate{{Eligible: true,
 				Device: "/dev/sda1", ConfirmationCode: "RPT-ABC123", MediaIdentity: "private-media-fixture", FingerprintKeyID: "private-key-fixture"}}}

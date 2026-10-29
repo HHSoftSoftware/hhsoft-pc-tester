@@ -245,6 +245,31 @@ Other readers and persistence's live verified-report owner remain separate work.
 Other-OS acquisition and installed-CLI execution remain unqualified; existing
 image, physical-PC and release gates remain open.
 
+The save fingerprint-input implementation reuses the finite 32-byte owned
+reader after existing usage and audit initialization. Metadata eligibility
+precedes readable acquisition; matching descriptor identity and checked closure
+of both owners precede key acceptance. Nil or typed-nil contexts and a missing
+reader are rejected locally at this boundary. Key errors and malformed successful
+lengths take precedence over the post-read cancellation check, with fixed
+acquisition diagnostics that omit input paths and provider errors.
+
+The clean reader-cancellation exception requires a nil byte slice and an exact
+`context.Canceled` or `context.DeadlineExceeded` equal to `ctx.Err()`. A wrapped
+or joined error, a non-nil byte result with an error, or cleanup uncertainty stays
+an input fault even when cancellation also occurs. Neither outcome enters the
+live report-source path. Audit initialization remains earlier and its closure
+contract is unchanged. The report verification, authorization/HMAC, confirmation,
+retry, mount/persistence/unmount and receipt policies are preserved.
+
+Host and native save fixtures passed with the
+[recorded evidence](requirements-validation.md#save-fingerprint-input-ownership).
+Removing the save call leaves three legacy raw-key consumers after the historical
+four-call report-target stage: deployment discovery and two persistence inputs.
+Frozen-plan/evidence, audit and live report-source owners remain separate work.
+This change adds no rollback, secure-erasure, blocked-call deadline, durability,
+installed-CLI, unsupported-platform or physical-media qualification. Existing
+image, physical-PC and release gates remain open.
+
 Quick-session reports additionally bind a `session` object inside the existing
 run-integrity evidence. It records the stop reason, session budget, elapsed time,
 all worker states/outcomes, independent safety observations, and bounded

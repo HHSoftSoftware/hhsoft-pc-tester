@@ -183,6 +183,16 @@ the alpha still requires the separate documented release gates.
   [validation record](docs/requirements-validation.md#report-target-fingerprint-input-ownership).
   Four legacy raw-key calls remain after this implementation: deployment
   discovery, two persistence inputs and save.
+- [x] Implement checked save fingerprint-key acquisition after existing usage and
+  audit initialization. Require exactly 32 bytes after checked input closure,
+  use fixed key-input diagnostics and preserve the report-saving policy.
+- [x] Qualify this boundary with 5,240 host test/subtest passes and 260 native
+  outcomes across two Linux suites and 56 root executions. All 130 selected
+  save names passed on the host and on each native architecture; see the
+  [validation record](docs/requirements-validation.md#save-fingerprint-input-ownership).
+  This implementation reduces the four legacy calls recorded at the report-target
+  stage to three: deployment discovery and two persistence inputs. Audit owners,
+  frozen-plan/evidence readers and persistence's live source remain separate work.
 - [ ] Implement privacy-preserving enrollment and key-rotation service flows.
 
 ## Functional tests

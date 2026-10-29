@@ -1412,6 +1412,49 @@ The other-OS rejection fixture remains unexecuted. This evidence does not
 qualify installed-CLI execution, physical-media operations or persistence/mount
 validation. Existing image, physical-PC and release gates remain open.
 
+## Save Fingerprint Input Ownership Validation
+
+The host run passed 5,240 test/subtest outcomes across 29 packages, with 17 test
+skips and one package skip outside the selected save set. All 130 selected save
+names passed, including 81 new and 49 retained names. Native Linux `amd64` and
+`386` each passed the same 130 names and 28 roots: 260 outcomes, two suites and
+56 root executions, with no failures or skips and cleanup confirmed. Slash-rich
+labels are direct `t.Run` names; this selection has no nested groups. The
+other-platform-only rejection root was not executed in this qualification.
+
+Consumer cases satisfy usage and audit preconditions before testing the key
+boundary, pass the original context/path and exact fingerprint role, and compare
+complete positive save outcomes. They use the real owned-input core with
+injected owners for readable and metadata Close failures, acquired-owner-plus-
+error returns, malformed providers, hard read/probe faults and cancellation.
+Exact ledgers verify acquisition and that the readable handle closes before its
+metadata handle. Source-order review plus paired valid-report/missing-report
+precedence cases establish rejection before report access. Observed console
+input, menu and discovery/authorization/mount/persistence effects remain absent
+on key failure; there is no direct counter for every internal report open.
+
+Only nil bytes plus the exact cancellation/deadline error equal to the context
+error use the clean stop. Non-nil bytes with errors, wrapped/joined errors,
+invalid successful lengths and uncertain closure retain fixed input-failure
+diagnostics even with cancellation. Cases cover malformed contexts, required-
+reader admission, pre-read cancellation and cancellation after successful closed
+capture. Earlier audit initialization and its deferred closer remain observable;
+input rejection does not prevent all earlier effects or improve audit closure.
+
+The tests retain report verification, confirmation/menu, retry, write-attempt,
+unmount and receipt oracles, including exact legacy and linked report bytes.
+Real regular-file size cases run on supported platforms with downstream media
+operations injected; production dispatch rejects a non-regular key before a
+missing report. Key/path/provider-marker disclosure is rejected in new input
+diagnostics. A test-only owned-input adapter provides no production-platform
+credit.
+
+These fixtures do not establish installed-CLI execution, unsupported-platform
+acquisition, physical media, kernel-close failures, blocked-call deadlines,
+secure erasure, rollback or durability. Three legacy raw-key calls remain after
+this source change; audit, frozen-plan/evidence and live report ownership remain
+separate work. Existing image, physical-PC and release gates stay open.
+
 ## Evidence contract
 
 Each case emits a structured result containing:

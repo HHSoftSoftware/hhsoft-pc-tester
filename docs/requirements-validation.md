@@ -224,6 +224,54 @@ remain separate work. Physical-media, image, physical-PC and release gates
 remain open. These software fixtures do not establish installed-CLI execution,
 kernel-close faults, blocked-call deadlines, secure key erasure or durability.
 
+## Save Fingerprint Input Ownership
+
+The save fingerprint-key boundary is implemented and qualified by the selected
+software fixtures. The host run passed 5,240 test/subtest outcomes across 29
+packages, with 17 test skips and one package skip outside the selected save set.
+All 130 selected save names passed, including 81 names from the new tests and
+49 retained names. All eight host commands and eight postchecks passed.
+
+Native Linux `amd64` and `386` test-suite invocations passed 260 outcomes and
+56 root executions: 130 names and 28 roots per architecture, with no failures or
+skips. The selection contains 11 new supported roots and 17 retained save roots;
+its slash-bearing labels are direct subtest names, with no intermediate groups.
+Native fixture cleanup completed. Earlier capture, finalizer and report-target
+results retain their original scope and counts.
+
+Existing usage validation and audit initialization precede the new input gate.
+It passes the original context and key path to the finite 32-byte owned reader,
+checks successful length independently and accepts bytes only after checked
+readable and metadata closure. Invalid contexts and a missing reader fail
+locally after audit initialization. Fixed key-input diagnostics omit the path
+and provider error. Input failure prevents report opening and all later
+save/discovery/authorization/mount/persistence effects, without undoing the
+already completed audit initialization.
+
+Only nil bytes with an exact cancellation/deadline error equal to the context's
+current error use the clean cancellation diagnostic. Hard, wrapped or joined
+errors, malformed successful lengths and input cleanup faults retain failure
+priority over concurrent cancellation. Successful closed capture is followed
+by a context check. These stops retain save's ordinary failure exit status 1;
+the original later report-source, interactive confirmation, retry, write-attempt,
+unmount and receipt behavior is unchanged.
+
+Consumer tests exercise the real owned-input core with injected owner faults,
+exact closure ledgers and checks that no later input, menu or save consumer
+runs. Static source-order review and paired valid-report/missing-report rejection
+cases establish key-failure precedence; they do not directly count every
+internal report open. Real regular-file size cases and non-regular-input dispatch
+rejection run on the supported host and native platforms. The other-platform
+rejection test was not selected and provides no runtime credit here.
+
+The source change leaves three legacy raw-key calls: one in deployment media
+discovery and two in persistence. Earlier remaining-call counts describe their
+respective stages. Audit closure, frozen-plan/evidence readers and the live
+verified-report owner remain separate work. These fixtures do not establish
+unsupported-platform acquisition, installed-CLI execution, physical media,
+kernel-close faults, blocked-call deadlines, secure key erasure, rollback or
+durability. Existing image, physical-PC and release gates remain open.
+
 ## Current review boundaries
 
 The initial requirements review found no implementation TODO/FIXME placeholders

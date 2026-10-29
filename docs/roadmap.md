@@ -474,6 +474,23 @@ Persistence's live source ownership and the broader feature roadmap remain
 separate work. Other-OS acquisition, installed-CLI and physical-media execution
 remain unqualified. Existing image, physical-PC and release gates remain open.
 
+The save fingerprint-input increment is implemented and qualified by host and
+selected native fixtures. It checks the exact 32-byte owned input after existing
+usage and audit initialization, contains key-input diagnostics and separates
+exact clean context cancellation from input/closure faults. The report source,
+verification, menu, confirmation, retry, mount/persistence/unmount and receipt
+policies are unchanged. The host passed 5,240 test/subtest outcomes across 29
+packages; two native Linux suites passed 260 outcomes with 56 root executions.
+The [validation record](requirements-validation.md#save-fingerprint-input-ownership)
+keeps selected coverage, host skips and platform limits explicit.
+
+This implementation reduces the four legacy calls recorded at the report-target
+stage to three in deployment discovery and persistence. Audit and live report
+owners, frozen-plan/evidence closure and the broader feature roadmap remain
+separate work. It adds no unsupported-platform, installed-CLI, physical-media,
+deadline, rollback or durability qualification. Existing image, physical-PC and
+release gates remain open.
+
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.
 - Add CPU, partial memory, SMART/NVMe health, read-only storage, complete

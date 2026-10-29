@@ -17,6 +17,7 @@ import (
 )
 
 type saveOperations struct {
+	readInput retestInputReader
 	discover  func(context.Context, reporttarget.Options) reporttarget.Catalog
 	authorize func(context.Context, reporttarget.Options, reporttarget.AuthorizationRequest) (reporttarget.Authorization, error)
 	mount     func(context.Context, reporttarget.Options, reporttarget.Authorization) (func() error, error)
@@ -28,7 +29,8 @@ var errReportMountCleanup = errors.New("report target cleanup could not be confi
 
 func runSave(ctx context.Context, arguments []string, input io.Reader, stdout, stderr io.Writer) int {
 	return runSaveWith(ctx, arguments, input, stdout, stderr, saveOperations{
-		discover: reporttarget.Discover, authorize: reporttarget.Authorize,
+		readInput: readRetestInput,
+		discover:  reporttarget.Discover, authorize: reporttarget.Authorize,
 		mount: mountAuthorizedReportTarget, persist: reporttarget.Persist, openAudit: openSaveAudit,
 	})
 }
@@ -52,9 +54,29 @@ func runSaveWith(ctx context.Context, arguments []string, input io.Reader, stdou
 		return 1
 	}
 	defer closeAudit()
-	fingerprintKey, err := readRawKey(*fingerprintKeyPath, 32)
+	if nilRetestInputValue(ctx) || operations.readInput == nil {
+		fmt.Fprintln(stderr, "save input acquisition failed")
+		return 1
+	}
+	if ctx.Err() != nil {
+		fmt.Fprintln(stderr, "Report saving cancelled; the report remains in volatile memory.")
+		return 1
+	}
+	fingerprintKey, err := operations.readInput(ctx, *fingerprintKeyPath, retestFingerprintKeyInput)
 	if err != nil {
-		fmt.Fprintf(stderr, "read fingerprint key: %v\n", err)
+		if fingerprintKey == nil && (err == context.Canceled || err == context.DeadlineExceeded) && ctx.Err() == err {
+			fmt.Fprintln(stderr, "Report saving cancelled; the report remains in volatile memory.")
+		} else {
+			fmt.Fprintln(stderr, "read fingerprint key: input acquisition failed")
+		}
+		return 1
+	}
+	if len(fingerprintKey) != 32 {
+		fmt.Fprintln(stderr, "read fingerprint key: input acquisition failed")
+		return 1
+	}
+	if ctx.Err() != nil {
+		fmt.Fprintln(stderr, "Report saving cancelled; the report remains in volatile memory.")
 		return 1
 	}
 	source, metadata, err := openRegularNoSymlink(flags.Arg(0), reporttarget.MaximumReportBytes)

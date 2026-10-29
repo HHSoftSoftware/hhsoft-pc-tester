@@ -303,6 +303,38 @@ rollback, secure-erasure, blocked-call deadline, durability, installed-CLI,
 unsupported-platform or physical-media qualification. Existing image, physical-PC
 and release gates remain open.
 
+The deployment discovery-key input uses the finite fingerprint32 owned-reader
+role. Usage validation precedes audit acquisition. A missing audit operation
+rejects locally; after a successful audit open, context and the remaining required
+operations are admitted before reading the key. Nil or typed-nil context, a
+missing operation or an already stopped context rejects with
+`deployment-key input acquisition failed` and exit 1. The existing audit closer
+remains outside the checked key-owner boundary.
+
+The reader receives the original context and literal discovery-key path. Any
+returned error or successful result whose length is not 32 rejects with
+`read media discovery key: input acquisition failed` before the post-read context
+check. This includes exact or joined context errors and bytes returned with an
+error; save's clean-reader-cancellation exception does not apply. Cancellation
+after a valid closed result uses the local admission diagnostic. Readable and
+metadata owners must close successfully before activation availability, media
+selection or token loading can consume the key.
+
+The discovery key remains an input to media discovery. It does not replace the
+selected token's key/epoch or bypass token validation. Media eligibility,
+confirmation, fixture exclusions, activation fields, failure-unmount behavior and
+the successful read-only mount policy are unchanged. Fixed diagnostics cover the
+new input boundary only; downstream diagnostics and audit/output policy remain
+unchanged. No later cancellation, rollback or output-completion guarantee is added.
+
+Host and selected native software fixtures passed within the documented
+[validation scope](requirements-validation.md#deployment-discovery-key-input-ownership).
+The final legacy raw-key caller and the now-unused reader are removed; this does
+not close audit/token/mount/activation owners, frozen-plan/evidence readers or the
+live report-source lifetime. Unsupported-platform acquisition, installed CLI,
+physical media, blocked-call deadlines, secure erasure and durability receive no
+new credit. Existing image, physical-PC and release gates remain open.
+
 Quick-session reports additionally bind a `session` object inside the existing
 run-integrity evidence. It records the stop reason, session budget, elapsed time,
 all worker states/outcomes, independent safety observations, and bounded

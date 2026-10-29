@@ -12,7 +12,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"os"
 	"strings"
 	"time"
 
@@ -359,22 +358,6 @@ func randomSessionID(random io.Reader) (string, error) {
 		return "", err
 	}
 	return hex.EncodeToString(value), nil
-}
-
-func readRawKey(path string, size int) ([]byte, error) {
-	source, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer source.Close()
-	contents, err := io.ReadAll(io.LimitReader(source, int64(size+1)))
-	if err != nil {
-		return nil, err
-	}
-	if len(contents) != size {
-		return nil, fmt.Errorf("must contain exactly %d raw bytes", size)
-	}
-	return contents, nil
 }
 
 func writeAll(destination io.Writer, contents []byte) error {

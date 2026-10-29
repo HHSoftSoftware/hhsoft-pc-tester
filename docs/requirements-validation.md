@@ -324,6 +324,63 @@ acquisition, installed-CLI execution, physical media, kernel-close faults,
 blocked-call deadlines, secure erasure, rollback and durability receive no new
 qualification. Existing image, physical-PC and release gates remain open.
 
+## Deployment Discovery Key Input Ownership
+
+The final legacy raw-key consumer has been migrated to the checked input reader,
+and the unused helper has been removed. This increment has its own host and
+selected native software-fixture evidence; preceding persistence results remain
+historical evidence for that earlier scope.
+
+Usage errors precede the audit-output attempt. A missing audit operation fails
+locally; other required operations and nil, typed-nil or stopped context are
+checked after a successful audit open. The reader receives the original context,
+literal path and finite fingerprint32 role. Every returned error or successful
+result of a length other than 32 rejects before post-read cancellation. The fixed
+key diagnostic is `read media discovery key: input acquisition failed`; local
+admission or cancellation after a valid closed result uses
+`deployment-key input acquisition failed`. Both return 1. There is no save-style
+clean-reader-cancellation exception.
+
+Key-owner closure is required before activation availability, media selection,
+confirmation input, token loading or activation writes. The existing audit owner
+is already acquired and retains its existing closer. No token, mount or output
+lifetime is newly qualified by closing the discovery-key handles.
+
+The six explicit operations preserve the real production path while allowing
+consumer fixtures to isolate audit, media and activation effects. Discovery uses
+the accepted key, while the selected token supplies the deployment key and epoch.
+Existing eligibility, confirmation grammar, token checks, fixture exclusions,
+activation-record fields, downstream diagnostics and successful read-only mount
+policy remain unchanged. Failed post-load paths retain their existing unmount
+calls; this increment does not add confirmation of their success or audit closure.
+
+The executed [consumer cases](test-strategy.md#deployment-discovery-key-input-ownership-validation)
+cover independent successful token-record/activation oracles, exact forwarding,
+real owned-reader failure ledgers, error/shape precedence and downstream policy. Real
+ordinary-file key fixtures require injected media/activation effects; a public
+wrapper or dispatcher rejection must stop before device access. Other-platform
+rejection source does not itself establish runtime qualification.
+
+Windows host validation passed 5,473 test/subtest outcomes across 29 packages,
+with 17 test skips and one package skip. All eight commands and eight postchecks
+passed. The selected 12 roots and 101 named outcomes passed, including 99 names
+from the ten changed-file roots and two retained policy roots.
+
+Native Linux amd64 and 386 test binaries passed 202 named outcomes in two suites
+and 24 root executions: 101 names and 12 roots per architecture, with no failures
+or skips. Each selection contains the same 99 changed names and two retained
+policy names. Nine ownership cases, 32 archive cases and six root postchecks
+passed, with cleanup confirmed. The other-OS-only rejection root was not executed.
+These fixture results do not demonstrate actual token-media discovery, mounting
+or activation-file writes.
+
+No legacy `readRawKey` definition or caller remains in this implementation. Audit,
+encoded-token, mount and activation-output ownership, authorization-file closure,
+frozen-plan/evidence readers and live report owners remain separate. No new
+physical-media, installed-CLI, unsupported-OS, kernel-close, deadline, rollback,
+secure-erasure or durability claim is made. Existing image, physical-PC and
+release gates remain open.
+
 ## Current review boundaries
 
 The initial requirements review found no implementation TODO/FIXME placeholders

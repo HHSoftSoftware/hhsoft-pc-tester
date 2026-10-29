@@ -474,6 +474,26 @@ ownership still need separate work. It adds no installed-CLI, unsupported-platfo
 physical-media or durability qualification; existing image, physical-PC and
 release gates remain open.
 
+### Deployment discovery-key input
+
+`deployment-key load-media` accepts the required 32-byte session discovery key
+only after its input checks and key-handle closure succeed. Usage checks and
+the audit-output attempt still happen first. Key-input or cleanup failure stops
+before activation availability, media discovery, confirmation or token loading;
+cancellation cannot turn that failure into success.
+
+The existing choice and confirmation flow is unchanged. The selected token still
+supplies the activated deployment key and epoch, and successful activation leaves
+its media mounted read-only. Input failures return 1 with a fixed diagnostic;
+existing downstream diagnostics and activation/output behavior are unchanged.
+Host and selected native software fixtures passed; see the
+[validation record](requirements-validation.md#deployment-discovery-key-input-ownership).
+
+This removes the final legacy raw-key call recorded at the persistence stage.
+It does not finish audit, token, mount, activation-output or live report ownership
+work. It adds no installed-CLI, unsupported-platform, physical-media or durability
+qualification; existing image, physical-PC and release gates remain open.
+
 ## Interpret Results
 
 Read both the frozen plan status and the final result. They answer different

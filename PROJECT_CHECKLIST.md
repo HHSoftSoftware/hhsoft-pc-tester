@@ -203,6 +203,17 @@ the alpha still requires the separate documented release gates.
   This implementation reduces the three legacy calls recorded at the save stage
   to one in deployment discovery. Authorization-file, audit, frozen-plan/evidence
   and live report-source ownership remain separate work.
+- [x] Replace the final legacy raw-key input with checked 32-byte discovery-key
+  acquisition for deployment-key media loading. Preserve usage/audit precedence,
+  media selection, confirmation, token and activation policies; remove the unused
+  raw-key reader after its final caller is migrated.
+- [x] Validate the deployment discovery-key input boundary with host and selected
+  native software fixtures: 5,473 host test/subtest passes and 202 native named
+  passes across two suites and 24 root executions. See the
+  [validation scope](docs/requirements-validation.md#deployment-discovery-key-input-ownership).
+  The one legacy call recorded at the persistence stage is now removed. Audit,
+  token/mount and activation-output ownership, frozen-plan/evidence readers and
+  live report-source ownership remain separate work.
 - [ ] Implement privacy-preserving enrollment and key-rotation service flows.
 
 ## Functional tests

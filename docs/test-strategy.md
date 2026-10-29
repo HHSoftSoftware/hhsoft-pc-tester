@@ -1503,6 +1503,52 @@ separate. These tests add no installed-CLI, physical-media, kernel-close,
 blocked-call deadline, secure-erasure or durability claim; existing image,
 physical-PC and release gates remain open.
 
+## Deployment Discovery Key Input Ownership Validation
+
+Host validation passed 5,473 test/subtest outcomes across 29 packages, with 17
+test skips and one package skip; all eight commands and eight postchecks passed.
+The selected 12 roots and 101 named outcomes passed. Native Linux amd64 and 386
+binaries then passed the same 101 names and 12 roots each: 202 named outcomes,
+two suites and 24 root executions, with no failures or skips. Nine ownership
+cases, 32 archive cases and six root postchecks passed, with cleanup confirmed.
+
+The source-derived selection includes 99 changed-file names and two directly
+relevant retained policy names per architecture. There are no declared nested
+groups; slash characters in literal labels do not invent intermediate parents.
+These are this increment's outcomes, not borrowed persistence results.
+
+Establish successful prerequisites independently: a token record with a literal
+HMAC expectation, complete deployment record, exact activation fields, fixture
+exclusions, shared confirmation reader, success audit and stdout. Verify original
+context/path/finite role and the accepted key forwarded to discovery. Inject audit,
+media and activation operations so a successful command fixture cannot touch real
+media or write activation files. Keep eligibility and fixture-ID regression checks.
+
+Exercise key acquisition through the real owned-input core with explicit metadata
+and readable owners. Require ledgers proving each owner closes once, readable
+before metadata, with read and terminal-probe prerequisites reached before their
+faults. Cover malformed owners, handle-plus-error, read/probe and Close errors,
+wrong successful lengths and cancellation. Hard or shape faults must precede
+post-read cancellation; exact context errors are also input failures. Distinguish
+pre-stopped/invalid context, missing operations and cancellation after valid
+closure from earlier usage or audit failure.
+
+Observe that failed key admission prevents activation availability, selection,
+confirmation reads, token loading and activation writes. Preserve the existing
+post-key order and downstream error text. Test confirmation rejection, token and
+fixture failures, activation failure and retained unmount calls without claiming
+that ignored unmount or audit-close errors have become checked. Success still
+leaves the token media mounted read-only. This is not an output-fault fix.
+
+Linux/Windows ordinary-file cases must exercise exact key length through the real
+loader while injecting later effects. Real wrapper/dispatcher negatives must fail
+before device access; the other-OS rejection root remains unexecuted. The final raw-key caller/definition removal needs an
+exact source census, not a keyword-only claim of complete ownership. Audit/token,
+mount, activation-output, authorization, frozen-plan/evidence and live-source
+owners remain separate. No installed-CLI, physical-media, kernel-close, deadline,
+secure-erasure, rollback or durability credit is implied; existing image,
+physical-PC and release gates remain open.
+
 ## Evidence contract
 
 Each case emits a structured result containing:

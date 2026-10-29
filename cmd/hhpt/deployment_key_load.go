@@ -34,7 +34,24 @@ type deploymentActivation struct {
 	ExcludedComponents []string `json:"excluded_components"`
 }
 
+type deploymentKeyLoadOperations struct {
+	readInput           retestInputReader
+	openAudit           func(string) (io.Writer, func(), error)
+	activationAvailable func() error
+	selectMedia         func(context.Context, reporttarget.Options, *bufio.Reader, io.Writer, io.Writer) (reporttarget.Candidate, error)
+	loadMedia           func(context.Context, reporttarget.Options, reporttarget.Candidate) (deploymentkey.Record, func() error, error)
+	writeActivation     func(deploymentkey.Record, deploymentActivation) error
+}
+
 func runDeploymentKeyLoadMedia(ctx context.Context, arguments []string, input io.Reader, stdout, stderr io.Writer) int {
+	return runDeploymentKeyLoadMediaWithOperations(ctx, arguments, input, stdout, stderr, deploymentKeyLoadOperations{
+		readInput: readRetestInput, openAudit: openDeploymentKeyAudit,
+		activationAvailable: deploymentActivationAvailable, selectMedia: selectDeploymentKeyMedia,
+		loadMedia: loadDeploymentKeyMediaPlatform, writeActivation: writeDeploymentActivation,
+	})
+}
+
+func runDeploymentKeyLoadMediaWithOperations(ctx context.Context, arguments []string, input io.Reader, stdout, stderr io.Writer, ops deploymentKeyLoadOperations) int {
 	flags := flag.NewFlagSet("deployment-key load-media", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	discoveryKeyPath := flags.String("discovery-key", "", "session-only media discovery key")
@@ -46,24 +63,40 @@ func runDeploymentKeyLoadMedia(ctx context.Context, arguments []string, input io
 		fmt.Fprintln(stderr, "deployment-key load-media requires -discovery-key and no positional arguments")
 		return 2
 	}
-	audit, closeAudit, err := openDeploymentKeyAudit(*auditOutput)
+	if ops.openAudit == nil {
+		fmt.Fprintln(stderr, "deployment-key input acquisition failed")
+		return 1
+	}
+	audit, closeAudit, err := ops.openAudit(*auditOutput)
 	if err != nil {
 		fmt.Fprintf(stderr, "open deployment-key audit output: %v\n", err)
 		return 1
 	}
 	defer closeAudit()
-	discoveryKey, err := readRawKey(*discoveryKeyPath, 32)
-	if err != nil {
-		fmt.Fprintf(stderr, "read media discovery key: %v\n", err)
+	if nilRetestInputValue(ctx) || ops.readInput == nil || ops.activationAvailable == nil || ops.selectMedia == nil || ops.loadMedia == nil || ops.writeActivation == nil {
+		fmt.Fprintln(stderr, "deployment-key input acquisition failed")
 		return 1
 	}
-	if err := deploymentActivationAvailable(); err != nil {
+	if ctx.Err() != nil {
+		fmt.Fprintln(stderr, "deployment-key input acquisition failed")
+		return 1
+	}
+	discoveryKey, err := ops.readInput(ctx, *discoveryKeyPath, retestFingerprintKeyInput)
+	if err != nil || len(discoveryKey) != 32 {
+		fmt.Fprintln(stderr, "read media discovery key: input acquisition failed")
+		return 1
+	}
+	if ctx.Err() != nil {
+		fmt.Fprintln(stderr, "deployment-key input acquisition failed")
+		return 1
+	}
+	if err := ops.activationAvailable(); err != nil {
 		fmt.Fprintf(stderr, "prepare deployment-key activation: %v\n", err)
 		return 1
 	}
 	options := reporttarget.Options{Root: "/", FingerprintKey: discoveryKey}
 	reader := bufio.NewReader(input)
-	candidate, err := selectDeploymentKeyMedia(ctx, options, reader, stdout, audit)
+	candidate, err := ops.selectMedia(ctx, options, reader, stdout, audit)
 	if err != nil {
 		fmt.Fprintf(audit, "HHPT_KEY_MEDIA_ERROR detail=%s\n", err)
 		fmt.Fprintf(stderr, "select deployment-key media: %v\n", err)
@@ -78,7 +111,7 @@ func runDeploymentKeyLoadMedia(ctx context.Context, arguments []string, input io
 		return 1
 	}
 	fmt.Fprintln(audit, "HHPT_KEY_MEDIA_CONFIRMED policy=read-only")
-	record, unmount, err := loadDeploymentKeyMediaPlatform(ctx, options, candidate)
+	record, unmount, err := ops.loadMedia(ctx, options, candidate)
 	if err != nil {
 		fmt.Fprintf(audit, "HHPT_KEY_MEDIA_ERROR detail=%s\n", err)
 		fmt.Fprintf(stderr, "load deployment-key media: %v\n", err)
@@ -98,7 +131,7 @@ func runDeploymentKeyLoadMedia(ctx context.Context, arguments []string, input io
 		return 1
 	}
 	activation := deploymentActivation{Schema: deploymentActivationSchema, Mode: "deployment", Epoch: record.Epoch, KeyID: keyID, Device: candidate.Device, ReadOnly: true, ExcludedComponents: fixtures}
-	if err := writeDeploymentActivation(record, activation); err != nil {
+	if err := ops.writeActivation(record, activation); err != nil {
 		_ = unmount()
 		fmt.Fprintf(stderr, "activate deployment key: %v\n", err)
 		return 1

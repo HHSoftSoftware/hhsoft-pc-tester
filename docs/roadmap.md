@@ -509,6 +509,24 @@ feature roadmap. It adds no unsupported-platform, installed-CLI, physical-media,
 deadline, rollback or durability qualification. Existing image, physical-PC and
 release gates remain open.
 
+The deployment discovery-key input increment passed host and selected native
+software-fixture validation. It closes the final legacy raw-key consumer using the
+owned 32-byte input role, retaining usage/audit precedence and rejecting input
+errors or wrong lengths before post-read cancellation. Activation availability,
+media selection, confirmation, token loading and activation follow successful
+key closure. Existing token/activation, downstream error and read-only mount
+policies are unchanged. Host validation passed 5,473 test/subtest outcomes; two
+native suites passed 202 named outcomes and 24 root executions without failures
+or skips. The [validation record](requirements-validation.md#deployment-discovery-key-input-ownership)
+separates these results from the historical persistence evidence.
+
+The preceding one-call count describes the persistence stage; this increment
+removes that final caller and the unused reader. Audit, token/mount and activation
+ownership, authorization-file closure, frozen-plan/evidence and live report
+lifetimes remain distinct work alongside the broader feature roadmap. This adds
+no unsupported-platform, installed-CLI, physical-media, rollback, deadline or
+durability qualification. Existing image, physical-PC and release gates stay open.
+
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.
 - Add CPU, partial memory, SMART/NVMe health, read-only storage, complete

@@ -320,6 +320,51 @@ the result. A readiness result only proves that the associated kernel interface
 could be accessed, not that every key, button, port, pixel, cell, link, or
 media sector works.
 
+## Optional Standard CPU Stress
+
+This development path is opt-in. Host, selected native and real elapsed-window
+fixtures have passed; image and physical qualification remain open.
+The boot menu and an omitted session profile continue to select quick. A standard
+plan does not by itself authorize the longer load; select the same profile in
+both commands:
+
+```sh
+hhpt plan -profile standard -fingerprint-key fingerprint.key -key-epoch local-1 -output standard-plan.json
+hhpt session -profile standard -plan standard-plan.json -fingerprint-key fingerprint.key -key-epoch local-1 -output standard.hhpcr
+```
+
+Standard defaults to a 900-second session budget, the existing maximum. It adds
+one worker after a passing CPU quick check, for thirteen workers instead of the
+quick profile's twelve. CPU stress requests 600 seconds of shared elapsed load
+following preparation, within a 660-second local watchdog that starts at invocation.
+A shorter remaining session budget may prevent load or leave an incomplete result;
+the command does not silently shorten the requested window into a pass.
+
+Before load, exposed temperature observations must have available accepted
+coverage. Partial or unavailable initial coverage ordinarily prevents load and
+produces an inconclusive result; observed heat at or above 90°C or an observer
+fault takes precedence. Later coverage loss stops work. Accepted readings do
+not prove that all CPU temperatures are measured. Cancellation retains prior
+failures, and unconfirmed cleanup prevents signing. Review the outcome and stop
+reason even when a diagnostic command exits successfully.
+
+`hhpt cpu-stress -workers 0 -output cpu-stress.json` emits standalone diagnostic
+JSON, not signed standard-session coverage. Zero workers chooses the detected
+CPU count up to 64; explicit counts are 1 through 64. Duration, watchdog and
+thermal limits have no command-line override. Exit 0 means a validated diagnostic
+was emitted, including a non-pass outcome; 2 indicates invalid arguments/options,
+1 indicates failed accounting, validation or output, and 12 indicates uncertain
+cleanup. The signed session requires its own frozen plan and fresh safety gate.
+
+The bounded check is not a benchmark, utilization measurement, burn-in certificate
+or proof of physical CPU health. The full host suite and selected native fixtures
+on Linux amd64 and 386 passed. Separate API-level runs completed the real shared
+600-second window on both architectures with two workers and fixed synthetic
+temperature observations of 35 degrees C. All-core saturation and physical
+thermal behavior remain unqualified. Rebuilt images and physical validation
+remain open; see [the validation record](requirements-validation.md#bounded-standard-cpu-stress).
+
+
 ## Observe the Visible Exterior
 
 The quick-test menu includes an operator-reported exterior-enclosure check.

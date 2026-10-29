@@ -32,6 +32,7 @@ type inventoryDocument struct {
 	Memory              *memoryDocument
 	Pointer             *pointerDocument
 	Storage             *storageDocument
+	CPUStress           *cpuStressDocument
 	Inspection          *inspectionDocument
 }
 
@@ -106,7 +107,21 @@ table{background:var(--panel);border-collapse:collapse;border:1px solid var(--li
 </tbody>
 </table>
 </section>
-{{if .Inspection}}<section class="section" aria-labelledby="exterior-inspection-heading">
+{{if .CPUStress}}<section class="section" aria-labelledby="cpu-stress-heading">
+<h2 id="cpu-stress-heading">CPU STRESS (STANDARD PROFILE)</h2>
+<p>{{.CPUStress.Scope}}</p>
+<table><tbody>
+<tr><th class="label" scope="row">Outcome</th><td>{{.CPUStress.Outcome}}</td></tr>
+<tr><th class="label" scope="row">Stop reason</th><td>{{.CPUStress.StopReason}}</td></tr>
+<tr><th class="label" scope="row">Requested load (ms)</th><td>{{.CPUStress.Requested}}</td></tr>
+<tr><th class="label" scope="row">Observed load window (ms)</th><td>{{.CPUStress.Observed}}</td></tr>
+<tr><th class="label" scope="row">Ready workers</th><td>{{.CPUStress.Ready}}/{{.CPUStress.RequestedWorkers}}</td></tr>
+<tr><th class="label" scope="row">Load scalar checks</th><td>{{.CPUStress.LoadChecks}}</td></tr>
+<tr><th class="label" scope="row">Cleanup confirmed</th><td>{{.CPUStress.Cleanup}}</td></tr>
+</tbody></table>
+<table><thead><tr><th>Worker</th><th>Load entry (ms)</th><th>Stop (ms)</th><th>Load iterations</th><th>Load checks</th><th>Stop reason</th></tr></thead><tbody>
+{{range .CPUStress.Workers}}<tr><td>{{.Index}}</td><td>{{.Entry}}</td><td>{{.Stop}}</td><td>{{.Iterations}}</td><td>{{.Checks}}</td><td>{{.Reason}}</td></tr>{{end}}
+</tbody></table></section>{{end}}{{if .Inspection}}<section class="section" aria-labelledby="exterior-inspection-heading">
 <h2 id="exterior-inspection-heading">Operator-reported exterior inspection</h2>
 <p>{{.Inspection.Scope}}</p>
 <table><tbody>
@@ -291,6 +306,10 @@ func renderInventoryHTMLWithPrevious(output io.Writer, payload app.InventoryPayl
 	if err := validateVersion(version); err != nil {
 		return err
 	}
+	stress, err := cpuStressReportDocument(payload)
+	if err != nil {
+		return err
+	}
 	inspection, err := inspectionReportDocument(payload)
 	if err != nil {
 		return err
@@ -354,6 +373,7 @@ func renderInventoryHTMLWithPrevious(output io.Writer, payload app.InventoryPayl
 		CPUScalar:           cpuScalar,
 		Memory:              memory,
 		Storage:             storage,
+		CPUStress:           stress,
 		Inspection:          inspection,
 	}
 	return inventoryTemplate.Execute(&limitedWriter{destination: output}, document)

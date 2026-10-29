@@ -152,6 +152,84 @@ transitions or physical continuity. Unsupported-platform execution, installed
 commands, rebuilt images, output durability, the ten-PC pilot and release
 approval retain their separate gates.
 
+## Bounded Standard CPU Stress
+
+Implementation is present across the standard coordinator, strict evidence,
+finalization, signed bundles, canonical views and comparison. Host, selected
+native and bounded real elapsed-window qualification have passed; remaining
+gates are listed below. Quick remains the default with twelve workers
+and v7; explicit `session -profile standard` requires a matching frozen standard
+plan and uses thirteen workers with v8. Its default and maximum session budget
+are 900 seconds. The existing 22-row catalog now has thirteen implemented
+families and nine inactive families: `audio.quick`, `camera.quick`,
+`input.touchpad.quick`, `input.touchscreen.quick`, `memory.stress`,
+`network.quick`, `storage.quick`, `storage.destructive` and `usb.quick`.
+Standard-only CPU stress does not activate them or complete the broader matrix.
+
+The fixed request is a 600-second shared elapsed load window after all launched
+workers have completed initial integer/SHA-256/scalar work and reached readiness.
+The invocation-anchored 660-second watchdog includes preparation. Worker count
+is bounded to 64. Admission requires strict real-time headroom and conservative
+serialized millisecond headroom; a shorter parent deadline never becomes a
+shorter passing request. A pass requires every worker to enter the window,
+retain valid ordered accounting and complete further iterations plus at least
+one twelve-vector scalar sweep during load. A completed scalar sweep followed
+by a late recurrence must retain its checks without inventing an iteration.
+
+Initial partial or unavailable accepted temperature coverage prevents load.
+Later loss of accepted coverage stops work without a pass. Valid late heat is
+retained independently of the monitor's first failure. Arithmetic mismatch
+remains fail; observer faults remain error, coverage and incomplete work remain
+inconclusive, and cancellation/deadline/thermal stops remain non-pass according
+to finite precedence. Unconfirmed cleanup and invalid clock/counter/accounting
+cannot produce signable evidence. Sample availability does not identify CPU
+sensor coverage or detect every same-count sensor substitution.
+
+Every dispatched v8 stress row requires strict persisted bytes, file and typed
+digests and a bound worker interval, including valid no-load or non-pass results.
+Null source is limited to undispatched rows. Current standard finalization needs
+the actual fresh v8 gate even when stress never starts. Historical quick contracts
+and exact old supervisor notes remain readable, but opaque observed error/aborted
+objects and re-signed no-view forgeries must fail semantic admission.
+
+Independent acceptance covers readiness-or-terminal barrier liveness, nonzero
+worker faults, fixed scalar-bit oracles, late work, stop precedence, partial
+coverage and late heat, checked aggregate overflow, conservative deadline
+rounding, source cloning, profile/plan mismatches, strict source/null relations,
+legacy byte compatibility and identified-component comparison. Real coordinator,
+finalizer, linked/unlinked signatures and canonical/no-view paths are required;
+a hand-constructed verifier fixture alone does not establish that execution path.
+
+The complete source passed the host suite: 6,732 test/subtest passes across
+30 packages, with 17 test skips and one package skip. All 493 required named
+outcomes across 69 selected roots passed. Selected native tests passed on Linux
+amd64 and 386: 6,040 test/subtest outcomes across 18 package executions, covering
+517 roots and 3,020 names per architecture, with no failures or skips.
+All 15 names skipped on Windows and all 23 Linux-only names passed on both
+architectures. Fifteen genuine subtest groups per architecture retained all 252
+group-child orderings across the two runs. Nine owned-process cases, 32 archive
+cases and six postchecks passed with cleanup confirmed.
+
+A separate API-level qualification completed a real shared 600-second load
+window on Linux amd64 and 386, using two workers and fixed synthetic temperature
+observations of 35 degrees C. Both runs passed with cleanup confirmed. This
+establishes elapsed-window completion and checked worker participation within
+that fixture. CPU time, utilization, all-core saturation and physical thermal
+behavior remain unqualified.
+
+One additional test/root passed per architecture, with no failures or skips.
+Each worker retained its
+preparation accounting and completed additional load work and scalar checks.
+The real-duration qualification also passed nine owned-process cases, 32 archive
+cases and six postchecks with cleanup confirmed.
+Race checks, installed CLI/image execution, representative physical CPUs and
+sensors, the ten-PC pilot, durability and release approval remain separate gates.
+The alpha candidate `b1a5fb9` and its required four-ISO release set are unchanged.
+This result does not claim CPU utilization, scheduling continuity, complete
+instruction coverage, performance, throttling, cooling qualification or future
+hardware reliability.
+
+
 ## Linked Retest Contract
 
 The linked retest implementation is an opt-in report relationship, not a

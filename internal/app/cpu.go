@@ -33,6 +33,15 @@ func validateCPUReport(payload InventoryPayload) error {
 	for _, row := range payload.TestResults {
 		anySession = anySession || hasReportClaim(row.Evidence, anySessionClaim)
 		strictSession = strictSession || HasSessionThermalClaim(row.Evidence)
+		if row.ID == "cpu.stress" && HasCPUStressClaim(row.Evidence) {
+			if row.Version != 1 {
+				return errors.New("invalid CPU stress definition")
+			}
+			if _, _, err := quickevidence.DecodeCPUStress(row.Evidence); err != nil {
+				return err
+			}
+			continue
+		}
 		if row.ID == "run.integrity.quick" && HasCPUScalarClaim(row.Evidence) && HasSessionThermalClaim(row.Evidence) {
 			claimed = true
 			continue

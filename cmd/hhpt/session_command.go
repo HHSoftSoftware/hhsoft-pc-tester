@@ -27,6 +27,7 @@ type sessionWorker struct {
 }
 
 type sessionFinalization struct {
+	Profile                                                   plan.Profile
 	Previous                                                  *verifiedPreviousReport
 	PlanPath, EvidenceDirectory, FingerprintKeyPath, KeyEpoch string
 	FixtureComponents, OutputPath                             string
@@ -95,13 +96,14 @@ func runSessionWithInput(ctx context.Context, arguments []string, input io.Reade
 func runSessionWith(ctx context.Context, arguments []string, input io.Reader, stdout, stderr io.Writer, dependencies sessionDependencies) (exitCode int) {
 	flags := flag.NewFlagSet("session", flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
-	planPath := flags.String("plan", "", "frozen quick-test plan")
+	planPath := flags.String("plan", "", "frozen test plan matching the selected profile")
 	keyPath := flags.String("fingerprint-key", "", "session fingerprint key")
 	keyEpoch := flags.String("key-epoch", "ephemeral-session", "fingerprint-key epoch")
 	fixture := flags.String("fixture-components", "", "selected deployment fixture component IDs")
 	directory := flags.String("evidence-dir", "/run/hhpt", "direct directory for fresh worker evidence")
 	output := flags.String("output", "", "new signed report file")
-	budget := flags.Duration("timeout", 5*time.Minute, "immutable cooperative quick-session budget")
+	profile := flags.String("profile", "quick", "quick or standard session")
+	budget := flags.Duration("timeout", 5*time.Minute, "immutable cooperative session budget")
 	var parentOptions previousReportFlags
 	parentOptions.register(flags)
 	if flags.Parse(arguments) != nil {
@@ -109,6 +111,28 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 		return 2
 	}
 	parentOptions.recordPresence(flags)
+	executionProfile := plan.Profile(*profile)
+	if executionProfile != plan.ProfileQuick && executionProfile != plan.ProfileStandard {
+		fmt.Fprintln(stderr, "session: unsupported execution profile")
+		return 2
+	}
+	timeoutSet := false
+	flags.Visit(func(value *flag.Flag) { timeoutSet = timeoutSet || value.Name == "timeout" })
+	if executionProfile == plan.ProfileStandard && !timeoutSet {
+		*budget = 15 * time.Minute
+	}
+	resultDefinitions, definitionsErr := executionResultDefinitions(executionProfile)
+	if definitionsErr != nil {
+		fmt.Fprintln(stderr, "session: unsupported execution profile")
+		return 2
+	}
+	workerIDs := sessionWorkerIDs[:]
+	journalSchema := sessionJournalSchema
+	if executionProfile == plan.ProfileStandard {
+		ids := sessionevidence.StandardWorkerIDs()
+		workerIDs = ids[:]
+		journalSchema = sessionevidence.SchemaV8
+	}
 	if !parentOptions.valid() {
 		fmt.Fprintln(stderr, "session: invalid predecessor options")
 		return 2
@@ -140,12 +164,12 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 		return 1
 	}
 	frozen, err := plan.Decode(encoded)
-	if err != nil || frozen.Profile != plan.ProfileQuick || frozen.HardwareGraph.KeyEpoch != *keyEpoch {
-		fmt.Fprintln(stderr, "session requires a valid quick plan with the matching key epoch")
+	if err != nil || frozen.Profile != executionProfile || frozen.HardwareGraph.KeyEpoch != *keyEpoch {
+		fmt.Fprintln(stderr, "session requires a matching explicit profile, valid plan and key epoch")
 		return 1
 	}
-	definitions := make(map[string]quickResultDefinition, len(quickResultDefinitions))
-	for _, definition := range quickResultDefinitions {
+	definitions := make(map[string]quickResultDefinition, len(resultDefinitions))
+	for _, definition := range resultDefinitions {
 		definitions[definition.id] = definition
 	}
 	planned := make(map[string]plan.Test, len(frozen.Tests))
@@ -158,18 +182,28 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 		}
 		planned[test.ID] = test
 	}
+	// Current plan validation already makes these CPU prerequisites inseparable.
+	// Keep the execution boundary explicit if future catalogs permit selection.
+	if executionProfile == plan.ProfileStandard && planned["cpu.stress"].Status == plan.TestScheduled &&
+		planned["cpu.quick"].Status != plan.TestScheduled {
+		fmt.Fprintln(stderr, "scheduled CPU stress requires scheduled CPU quick checks")
+		return 1
+	}
 	journalPath := filepath.Join(*directory, "session-journal.json")
 	monitorPath := filepath.Join(*directory, "session-safety-monitor.json")
 	thermalPath := filepath.Join(*directory, "session-thermal-monitor.json")
 	readyPath := filepath.Join(*directory, "session-ready.txt")
 	freshPaths := []string{journalPath, monitorPath, thermalPath, readyPath, filepath.Join(*directory, "session-safety-pre-sign.json"), *output, filepath.Join(*directory, "session-safety-preflight.json"), filepath.Join(*directory, "session-safety-final.json")}
-	journal := sessionJournal{Schema: sessionJournalSchema, PlanID: frozen.ID,
+	journal := sessionJournal{Schema: journalSchema, PlanID: frozen.ID,
 		StopReason: "completed", BudgetMilliseconds: budget.Milliseconds(), LocalThermalSources: []sessionevidence.LocalThermalSource{}}
+	if executionProfile == plan.ProfileStandard {
+		journal.Profile = "standard"
+	}
 	scheduled := 0
-	for _, id := range sessionWorkerIDs {
+	for _, id := range workerIDs {
 		test, exists := planned[id]
 		if !exists {
-			fmt.Fprintln(stderr, "session plan omits a required quick worker")
+			fmt.Fprintln(stderr, "session plan omits a required worker")
 			return 1
 		}
 		record := sessionWorkerRecord{ID: id, State: "not_scheduled", Outcome: string(test.Status)}
@@ -368,7 +402,7 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 		outcome, state, evidenceErr := sessionWorkerOutcomeEvidence(workerEvidence, workerReadErr, definitions[record.ID].schema, code, reason != "")
 		if evidenceErr != nil {
 			fmt.Fprintf(stderr, "session worker evidence: %v\n", evidenceErr)
-			if errors.Is(evidenceErr, errQuickCleanupUnconfirmed) || errors.Is(evidenceErr, keyboardevidence.ErrCleanupUnconfirmed) {
+			if errors.Is(evidenceErr, errQuickCleanupUnconfirmed) || errors.Is(evidenceErr, keyboardevidence.ErrCleanupUnconfirmed) || errors.Is(evidenceErr, quick.ErrCPUStressCleanupUnconfirmed) {
 				fmt.Fprintf(stderr, "HHPT_SESSION_FAILED worker=%s reason=cleanup_unconfirmed\n", record.ID)
 				return workerCleanupUncertainExitCode
 			}
@@ -406,7 +440,7 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 			journal.StopReason = reason
 			break
 		}
-		if outcome == "fail" || outcome == "aborted" || (record.ID == "cpu.quick" || record.ID == "memory.quick") && outcome != "pass" {
+		if outcome == "fail" || outcome == "aborted" || (record.ID == "cpu.quick" || record.ID == "cpu.stress" || record.ID == "memory.quick") && outcome != "pass" {
 			journal.StopReason = "worker_stop"
 			break
 		}
@@ -437,6 +471,9 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 	journal.PreparationStartedMilliseconds = dependencies.Now().Sub(started).Milliseconds()
 	gateCalled, gatePassed := false, false
 	request := sessionFinalization{Previous: previous, PlanPath: *planPath, EvidenceDirectory: *directory, FingerprintKeyPath: *keyPath, KeyEpoch: *keyEpoch, FixtureComponents: *fixture, OutputPath: *output}
+	if executionProfile == plan.ProfileStandard {
+		request.Profile = plan.ProfileStandard
+	}
 	request.Gate = func(gateContext context.Context) (sessionJournal, error) {
 		if gateCalled {
 			gatePassed = false
@@ -496,7 +533,7 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 }
 
 func printSessionWorkerResult(output io.Writer, record sessionWorkerRecord) {
-	labels := map[string]string{"cpu.quick": "CPU", "memory.quick": "MEMORY", "audio.readiness.quick": "AUDIO_READINESS",
+	labels := map[string]string{"cpu.quick": "CPU", "cpu.stress": "CPU_STRESS", "memory.quick": "MEMORY", "audio.readiness.quick": "AUDIO_READINESS",
 		"input.readiness.quick": "INPUT_READINESS", "input.keyboard.quick": "KEYBOARD", "input.pointer.quick": "POINTER", "network.readiness.quick": "NETWORK_READINESS", "storage.readiness.quick": "STORAGE_READINESS",
 		"usb.readiness.quick": "USB_READINESS", "graphics.quick": "GRAPHICS", "display.operator.quick": "DISPLAY", "inspection.exterior.quick": "EXTERIOR_INSPECTION"}
 	fmt.Fprintf(output, "HHPT_%s status=%s\n", labels[record.ID], record.Outcome)
@@ -519,6 +556,23 @@ func sessionStopReason(parent, run, worker context.Context, now, runDeadline, wo
 }
 
 func sessionWorkerOutcomeEvidence(encoded []byte, readErr error, schema string, code int, interrupted bool) (string, string, error) {
+	if schema == quick.CPUStressSchema {
+		if code == workerCleanupUncertainExitCode {
+			return "", "", quick.ErrCPUStressCleanupUnconfirmed
+		}
+		if readErr != nil || code != 0 {
+			return "", "", errors.New("dispatched CPU stress requires valid emitted evidence")
+		}
+		status, err := testEvidenceStatus(encoded, schema)
+		if err != nil {
+			return "", "", err
+		}
+		state := "completed"
+		if interrupted && (status == "aborted" || status == "error") {
+			state = "interrupted"
+		}
+		return status, state, nil
+	}
 	if schema == exteriorinspection.Schema {
 		if readErr != nil {
 			if readErr != os.ErrNotExist {

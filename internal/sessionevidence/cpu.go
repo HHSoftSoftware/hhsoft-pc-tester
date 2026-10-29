@@ -69,7 +69,7 @@ func hasNewCPUClaim(raw []byte) bool {
 // ValidateCPUExecutionNote checks current nonfunctional CPU outcomes without
 // permitting a scalar or thermal observation hidden inside an execution note.
 func ValidateCPUExecutionNote(binding ResultBinding) error {
-	if binding.ID != "cpu.quick" || binding.Version != 2 || hasNewCPUClaim(binding.Evidence) {
+	if binding.ID != "cpu.quick" || binding.Version != 2 || hasNewCPUClaim(binding.Evidence) || HasCPUStressClaim(binding.Evidence) {
 		return ErrInvalid
 	}
 	var note executionNote

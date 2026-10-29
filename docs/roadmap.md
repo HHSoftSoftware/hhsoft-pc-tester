@@ -368,8 +368,9 @@ definition and typed hash. Focused tests cover arithmetic, stop boundaries and
 signed consumers. Full host and native Linux validation passed, including race
 checks and standalone/session CLI paths. Rebuilt images and physical CPU checks
 for this increment remain open. Legacy soft-float coverage is software
-arithmetic only. Wider ISA, compression, sustained stress, performance, power and
-throttling checks remain planned.
+arithmetic only. At that milestone, wider ISA, compression, sustained stress,
+performance, power and throttling checks remained planned. The bounded standard
+CPU-stress increment below addresses only its named load and evidence contract.
 
 The RAM worker adds a fixed moving-inversion sequence after its three existing
 patterns. Memory v3 records completed phases and passes, accepted and uncredited
@@ -588,6 +589,40 @@ These independent observations do not establish battery health, physical
 continuity or AC/battery transitions. Those broader features, the ten-PC pilot,
 installed-command and rebuilt-image qualification, durability and release
 approval remain open. This increment does not expand the approved alpha gates.
+
+### Bounded standard CPU stress
+
+The consumed standard path is implemented and has passed host, selected native
+and bounded real elapsed-window fixtures. Broader qualification remains open.
+It requires explicit matching profile consent, defaults to a 900-second session,
+and inserts CPU stress immediately after a passing CPU quick result. The shared
+600-second elapsed load request and 660-second local watchdog retain checked
+work, strict initial and ongoing accepted thermal coverage, finite non-pass
+outcomes and confirmed cleanup. Standard uses thirteen workers and v8; automatic
+quick keeps twelve workers and v7. Newly generated plans reflect the changed
+catalog digest, while historical signed reports retain their original rules.
+
+The complete source passed the host suite: 6,732 test/subtest passes across
+30 packages, with 17 test skips and one package skip. All 493 required named
+outcomes across 69 selected roots passed. Selected native tests passed on Linux
+amd64 and 386: 6,040 test/subtest outcomes across 18 package executions, covering
+517 roots and 3,020 names per architecture, with no failures or skips.
+
+A separate API-level qualification completed a real shared 600-second load
+window on Linux amd64 and 386, using two workers and fixed synthetic temperature
+observations of 35 degrees C. Both runs passed with cleanup confirmed. This
+establishes elapsed-window completion and checked worker participation within
+that fixture. CPU time, utilization, all-core saturation and physical thermal
+behavior remain unqualified.
+The 22-row catalog still has nine inactive families: audio functionality, camera,
+touchpad, touchscreen, memory stress, network functionality, storage sampling,
+destructive storage and USB functionality. Their readiness or offline evidence
+readers do not constitute active functional implementations. Full standard,
+extended and burn-in coverage, sensor/clock/power/throttling instrumentation,
+physical cooling behavior and performance grading remain open. This bounded
+increment does not alter the alpha candidate, four-image release, physical pilot
+or publication gates. See [the exact requirements](requirements-validation.md#bounded-standard-cpu-stress).
+
 
 ## Phase 3 — complete profiles
 

@@ -34,6 +34,8 @@ func run(ctx context.Context, arguments []string, stdin io.Reader, stdout, stder
 		return runCapture(ctx, arguments[1:], stdout, stderr)
 	case "compare":
 		return runCompare(ctx, arguments[1:], stdout, stderr)
+	case "cpu-stress":
+		return runCPUStress(ctx, arguments[1:], stdout, stderr)
 	case "cpu":
 		return runCPU(ctx, arguments[1:], stdout, stderr)
 	case "deployment-key":
@@ -150,6 +152,7 @@ func usage(destination io.Writer) {
 	fmt.Fprintln(destination, "       hhpt finalize -fingerprint-key FILE -plan PLAN.json -outcome TEST=STATUS... [-evidence-dir DIR] -output REPORT.hhpcr")
 	fmt.Fprintln(destination, "usage: hhpt inventory -fingerprint-key FILE [-key-epoch LABEL] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt plan -fingerprint-key FILE [-key-epoch LABEL] [-profile quick|standard|extended|destructive] [-selection-file FILE] [-output FILE]")
+	fmt.Fprintln(destination, "       hhpt cpu-stress [-workers N] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt cpu [-duration 3s] [-timeout 20s] [-workers N] [-thermal-limit-c 90] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt deployment-key init -epoch LABEL -output PATH/hhpt-deployment-key.v1")
 	fmt.Fprintln(destination, "       hhpt deployment-key inspect PATH/hhpt-deployment-key.v1")
@@ -166,7 +169,7 @@ func usage(destination io.Writer) {
 	fmt.Fprintln(destination, "       hhpt graphics [-pattern-frames N] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt storage [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt safety [-output FILE] [-summary]")
-	fmt.Fprintln(destination, "       hhpt session -fingerprint-key FILE -plan PLAN.json [-evidence-dir DIR] [-timeout 5m] -output REPORT.hhpcr")
+	fmt.Fprintln(destination, "       hhpt session -fingerprint-key FILE -plan PLAN.json [-evidence-dir DIR] [-profile quick|standard] [-timeout DURATION] -output REPORT.hhpcr")
 	fmt.Fprintln(destination, "       hhpt usb [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt save -fingerprint-key FILE REPORT.hhpcr")
 	fmt.Fprintln(destination, "       hhpt verify (-self-issued | -public-key FILE -key-id ID) REPORT.hhpcr")

@@ -45,7 +45,9 @@ tests become `excluded`, reported as `skip` with the exclusion reason. Absent
 and missing-driver states retain their applicability reason, and unsupported
 or destructive work cannot be enabled through selection. Reports retain explicit
 selection reasons and the frozen exclusion intent. The broader profile budgets
-and coverage below remain targets, not completed workflows.
+and coverage below remain targets, not completed workflows. The implemented
+bounded standard CPU path uses a 15-minute session budget; it does not claim
+the complete standard matrix or the target budget below.
 The [validation milestones](requirements-validation.md) distinguish each
 qualified catalog, including the current keyboard increment. Software
 qualification does not close rebuilt-image or physical gates.
@@ -1151,7 +1153,9 @@ no native skips. All 30 CLI scenarios passed, including six standalone/session
 CPU capture and signed-finalization cases on amd64, x86 SSE2 and legacy
 soft-float. Rebuilt-image checks and physical CPU coverage remain open. Legacy soft-float results establish software arithmetic
 coverage only; cross-compilation does not establish native AArch64 execution.
-Broader CPU stress, instruction coverage and performance grading remain planned.
+At that milestone, broader CPU stress, instruction coverage and performance
+grading remained planned. The bounded standard CPU-stress increment below has
+its own implementation and qualification requirements.
 
 The RAM moving-inversion acceptance cases include:
 
@@ -1651,6 +1655,63 @@ power transitions. They do not imply installed-CLI, unsupported-platform,
 physical-PC, rebuilt-image, kernel-close/fsync or durability qualification.
 Existing release gates remain open; see
 [the field and validation contract](requirements-validation.md#power-supply-inventory).
+
+## Bounded Standard CPU Stress Validation
+
+The new standard path must be qualified as a consumed workflow, separately from
+retained quick-worker tests and synthetic evidence fixtures. Default quick and
+explicit standard need independent profile/plan admission cases. Standard alone
+uses thirteen workers and v8; historical quick v7, v4/v5/v6 wire bytes, old exact
+supervisor notes and absent report sections must retain their prior meaning.
+
+Core acceptance needs independent known-answer bits and a controlled nonzero
+worker at the readiness barrier. Each launched worker reports readiness or
+termination; failure/cancellation must wake parked peers and join every owner.
+Check lifetime cadence separately from preparation and accepted load deltas.
+One ready iteration and twelve checks do not establish sustained participation;
+each worker needs additional load iterations and twelve further scalar checks.
+The valid iteration-256/check-24 boundary must survive a late recurrence without
+being rounded into an extra iteration.
+
+Test initial unavailable/partial coverage before load, later coverage loss,
+timeout followed by valid heat, mismatch followed by cancellation, failed cleanup
+and overflow. Exercise exact and fractional deadline boundaries against both
+real monotonic time and serialized offsets. No shortened parent budget or
+599,999.999 ms observation may become a 600-second pass. A real-duration run is
+separate from injected-clock tests and still does not prove CPU utilization or
+physical sensor coverage.
+
+Consumer cases require valid strict prerequisites before changing one relation:
+worker timestamps/counts, finite facts/status, journal order, source hashes,
+source-null/dispatched state, deep copies and matching profile/plan. Independently
+re-signed no-view bundles must reject opaque pass/fail/error/aborted rows; exact
+historical failure notes remain positive controls. Real standard coordinator and
+finalizer paths must preserve adverse facts through unlinked/linked signing and
+canonical HTML/PDF. Identified hardware and literal HMAC/classification controls
+keep comparison acceptance independent of the implementation under test.
+
+The complete source passed the host suite: 6,732 test/subtest passes across
+30 packages, with 17 test skips and one package skip. All 493 required named
+outcomes across 69 selected roots passed. Selected native tests passed on Linux
+amd64 and 386: 6,040 test/subtest outcomes across 18 package executions, covering
+517 roots and 3,020 names per architecture, with no failures or skips.
+The native selection covered 124 whole test files across nine packages, including
+all changed test files and relevant retained compatibility files. Every required
+name ran and passed once per architecture, including 15 Windows-skipped and 23
+Linux-only names. All genuine parent-group orderings were retained.
+
+A separate API-level qualification completed a real shared 600-second load
+window on Linux amd64 and 386, using two workers and fixed synthetic temperature
+observations of 35 degrees C. Both runs passed with cleanup confirmed. This
+establishes elapsed-window completion and checked worker participation within
+that fixture. CPU time, utilization, all-core saturation and physical thermal
+behavior remain unqualified.
+
+The duration test calls the production stress API and strict decoder directly. Its two executions are
+separate from the ordinary native fixture totals above. Race, installed-CLI, rebuilt
+image, physical-PC/sensor, durability and release evidence remain separate.
+See [the bounded requirements](requirements-validation.md#bounded-standard-cpu-stress).
+
 
 ## Evidence contract
 

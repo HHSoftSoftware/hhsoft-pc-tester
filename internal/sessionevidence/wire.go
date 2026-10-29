@@ -18,9 +18,18 @@ type journalV6Wire struct {
 	StorageSource *StorageSource `json:"storage_source"`
 }
 
+type journalV8Wire struct {
+	legacyJournalWire
+	Profile         string        `json:"profile"`
+	CPUStressSource *StressSource `json:"cpu_stress_source"`
+}
+
 // MarshalJSON preserves the exact legacy field order and omission behavior.
 // A source cannot be silently discarded by changing the declared schema.
 func (j Journal) MarshalJSON() ([]byte, error) {
+	if j.Schema != SchemaV8 && (j.Profile != "" || j.CPUStressSource != nil) {
+		return nil, ErrInvalid
+	}
 	switch j.Schema {
 	case SchemaV4, SchemaV5, SchemaV7:
 		if j.StorageSource != nil {
@@ -29,6 +38,11 @@ func (j Journal) MarshalJSON() ([]byte, error) {
 		return json.Marshal(legacyJournalWire(j))
 	case SchemaV6:
 		return json.Marshal(journalV6Wire{legacyJournalWire: legacyJournalWire(j), StorageSource: j.StorageSource})
+	case SchemaV8:
+		if j.StorageSource != nil || j.Profile != "standard" {
+			return nil, ErrInvalid
+		}
+		return json.Marshal(journalV8Wire{legacyJournalWire: legacyJournalWire(j), Profile: j.Profile, CPUStressSource: j.CPUStressSource})
 	default:
 		return nil, ErrInvalid
 	}
@@ -81,6 +95,27 @@ func decodeJournalWire(raw []byte) (Journal, error) {
 	}
 	legacyRaw := raw
 	var source *StorageSource
+	var stressSource *StressSource
+	profile := ""
+	if schema == SchemaV8 {
+		encoded, present := fields["cpu_stress_source"]
+		if !present || json.Unmarshal(fields["profile"], &profile) != nil || profile != "standard" {
+			return Journal{}, ErrInvalid
+		}
+		if !bytes.Equal(bytes.TrimSpace(encoded), []byte("null")) {
+			var value StressSource
+			if evidencejson.ValidateShape(encoded, reflect.TypeOf(value)) != nil || json.Unmarshal(encoded, &value) != nil {
+				return Journal{}, ErrInvalid
+			}
+			stressSource = &value
+		}
+		delete(fields, "profile")
+		delete(fields, "cpu_stress_source")
+		legacyRaw, err = json.Marshal(fields)
+		if err != nil {
+			return Journal{}, ErrInvalid
+		}
+	}
 	if schema == SchemaV6 {
 		encoded, present := fields["storage_source"]
 		if !present {
@@ -105,6 +140,8 @@ func decodeJournalWire(raw []byte) (Journal, error) {
 	}
 	value := Journal(legacy)
 	value.StorageSource = source
+	value.Profile = profile
+	value.CPUStressSource = stressSource
 	return value, nil
 }
 

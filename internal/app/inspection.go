@@ -73,8 +73,8 @@ func validateInspectionReport(payload InventoryPayload) error {
 				continue
 			}
 			value, err := sessionevidence.DecodeIntegrity(row.Evidence)
-			if found || err != nil || value.Session == nil || value.Session.Schema != sessionevidence.SchemaV7 {
-				return errors.New("inspection evidence requires a strict v7 session")
+			if found || err != nil || value.Session == nil || (value.Session.Schema != sessionevidence.SchemaV7 && value.Session.Schema != sessionevidence.SchemaV8) {
+				return errors.New("inspection evidence requires a strict inspection session")
 			}
 			found = true
 		}

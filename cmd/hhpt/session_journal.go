@@ -9,6 +9,7 @@ import (
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/networktest"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/plan"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quickevidence"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/safemode"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/sessionevidence"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/storage"
@@ -79,14 +80,29 @@ func validateSessionMonitor(result safemode.MonitorResult, elapsed int64) error 
 }
 
 func validateSessionJournal(journal sessionJournal, frozen plan.Plan, outcomes map[string]string, stopReason, evidenceDirectory string) error {
-	if journal.Schema != sessionJournalSchema {
+	return validateSessionJournalForProfile(journal, frozen, outcomes, stopReason, evidenceDirectory, plan.ProfileQuick)
+}
+
+func currentSessionProfile(journal sessionJournal, profile plan.Profile) bool {
+	if profile == plan.ProfileStandard {
+		return journal.Schema == sessionevidence.SchemaV8 && journal.Profile == "standard"
+	}
+	return (profile == "" || profile == plan.ProfileQuick) && journal.Schema == sessionJournalSchema && journal.Profile == "" && journal.CPUStressSource == nil
+}
+
+func validateSessionJournalForProfile(journal sessionJournal, frozen plan.Plan, outcomes map[string]string, stopReason, evidenceDirectory string, profile plan.Profile) error {
+	definitions, err := executionResultDefinitions(profile)
+	if err != nil || !currentSessionProfile(journal, profile) {
 		return errors.New("current session requires the current journal schema")
 	}
 	if err := validateSessionJournalStructure(journal); err != nil {
 		return err
 	}
-	if frozen.Profile != plan.ProfileQuick || journal.PlanID != frozen.ID || journal.StopReason != stopReason {
-		return errors.New("session journal does not match the frozen quick plan or stop reason")
+	if profile == "" {
+		profile = plan.ProfileQuick
+	}
+	if frozen.Profile != profile || journal.PlanID != frozen.ID || journal.StopReason != stopReason {
+		return errors.New("session journal does not match the frozen profile, plan or stop reason")
 	}
 	planned := make(map[string]plan.TestStatus, len(frozen.Tests))
 	for _, test := range frozen.Tests {
@@ -101,7 +117,7 @@ func validateSessionJournal(journal sessionJournal, frozen plan.Plan, outcomes m
 			return errors.New("session journal changed a non-scheduled disposition")
 		}
 		if worker.State == "not_started" || worker.State == "not_scheduled" {
-			for _, definition := range quickResultDefinitions {
+			for _, definition := range definitions {
 				if definition.id != worker.ID {
 					continue
 				}
@@ -136,6 +152,21 @@ func validateSessionWorkerEvidence(journal *sessionJournal, id string, encoded [
 		if worker.State == "not_started" || worker.State == "not_scheduled" {
 			if !errors.Is(readErr, os.ErrNotExist) {
 				return errors.New("evidence appeared for an unstarted session worker")
+			}
+			return nil
+		}
+		if id == "cpu.stress" {
+			if journal.Schema != sessionevidence.SchemaV8 || readErr != nil || statusErr != nil || sourceStatus != worker.Outcome ||
+				worker.Timing == nil || journal.CPUStressSource == nil {
+				return errors.New("dispatched CPU stress lacks its persisted source")
+			}
+			value, digest, err := quickevidence.DecodeCPUStress(encoded)
+			source := journal.CPUStressSource
+			if err != nil || source.WorkerID != id || source.EvidenceSchema != value.Schema ||
+				source.EvidenceTypedSHA256 != digest || source.EvidenceFileSHA256 != sourceFileDigest(encoded) ||
+				worker.Timing.StartedMilliseconds < 0 || worker.Timing.FinishedMilliseconds < worker.Timing.StartedMilliseconds ||
+				value.FinishedMilliseconds > worker.Timing.FinishedMilliseconds-worker.Timing.StartedMilliseconds {
+				return errors.New("CPU stress source or elapsed time changed")
 			}
 			return nil
 		}

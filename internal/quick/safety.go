@@ -13,6 +13,8 @@ var (
 	errThermalPanic       = errors.New("thermal observer panicked")
 	errThermalInvalid     = errors.New("invalid thermal observation")
 	errThermalCleanup     = errors.New("thermal observer cleanup unconfirmed")
+	errStressCoverage     = errors.New("thermal coverage unavailable for CPU stress")
+	errStressCounter      = errors.New("CPU stress thermal counter overflow")
 )
 
 const (
@@ -60,6 +62,7 @@ type safetyMonitor struct {
 	failureErr, finalCause     error
 	frozen                     bool
 	joinedAt                   time.Time
+	stress                     *CPUStressStopFacts
 }
 
 func newSafetyMonitor(parent context.Context, root string, timeout time.Duration, limit int) *safetyMonitor {
@@ -69,12 +72,19 @@ func newSafetyMonitor(parent context.Context, root string, timeout time.Duration
 // The initial observation is supervised too. A blocked kernel read can outlive
 // its deadline, but cannot start load or make the caller wait indefinitely.
 func startSafetyMonitor(parent context.Context, root string, timeout time.Duration, limit int, observe thermalObserver, interval, observationTimeout, stopTimeout time.Duration) *safetyMonitor {
+	return startSafetyMonitorWithPolicy(parent, root, timeout, limit, observe, interval, observationTimeout, stopTimeout, false)
+}
+
+func startSafetyMonitorWithPolicy(parent context.Context, root string, timeout time.Duration, limit int, observe thermalObserver, interval, observationTimeout, stopTimeout time.Duration, strictStress bool) *safetyMonitor {
 	timed, timerCancel := context.WithTimeout(parent, timeout)
 	guarded, cancel := context.WithCancelCause(timed)
 	monitor := &safetyMonitor{context: guarded, cancel: cancel, timerCancel: timerCancel,
 		done: make(chan struct{}), ready: make(chan struct{}), stopRequested: make(chan struct{}), stopTimeout: stopTimeout,
 		result: SafetyEvidence{GlobalTimeoutMilliseconds: timeout.Milliseconds(), ThermalLimitMilliCelsius: limit,
 			MonitorStatus: "running", ThermalCoverage: ThermalUnavailable}}
+	if strictStress {
+		monitor.stress = &CPUStressStopFacts{}
+	}
 	go monitor.run(root, observe, interval, observationTimeout)
 	select {
 	case <-monitor.ready:
@@ -202,6 +212,11 @@ func (monitor *safetyMonitor) complete(completion thermalCompletion, deadline ti
 		return
 	}
 	evidence := &monitor.result
+	if monitor.stress != nil && !monitor.acceptStressSample(sample) {
+		monitor.mutex.Unlock()
+		monitor.fail(errStressCounter)
+		return
+	}
 	if evidence.ThermalObservations == 0 {
 		evidence.ThermalCoverage = sample.Coverage
 	} else if evidence.ThermalCoverage != sample.Coverage {
@@ -218,6 +233,9 @@ func (monitor *safetyMonitor) complete(completion thermalCompletion, deadline ti
 	monitor.mutex.Unlock()
 	if limitReached {
 		monitor.fail(ErrThermalLimit)
+	}
+	if monitor.stress != nil && sample.Coverage != ThermalAvailable {
+		monitor.fail(errStressCoverage)
 	}
 }
 
@@ -242,6 +260,20 @@ func ValidThermalSnapshot(sample ThermalSnapshot) bool {
 }
 func (monitor *safetyMonitor) fail(err error) {
 	monitor.mutex.Lock()
+	if !monitor.frozen && monitor.stress != nil {
+		switch err {
+		case ErrThermalLimit:
+			monitor.stress.ThermalLimit = true
+		case errThermalObservation:
+			monitor.stress.ObservationTimeout = true
+		case errThermalPanic:
+			monitor.stress.ObserverPanic = true
+		case errThermalInvalid:
+			monitor.stress.InvalidObservation = true
+		case errStressCounter:
+			monitor.stress.CounterOverflow = true
+		}
+	}
 	if !monitor.frozen && monitor.failureErr == nil {
 		monitor.failureErr = err
 	}
@@ -267,6 +299,9 @@ func (monitor *safetyMonitor) stop() {
 		monitor.result.CleanupConfirmed = joined
 		if !joined {
 			monitor.failureErr = errThermalCleanup
+			if monitor.stress != nil {
+				monitor.stress.CleanupUnconfirmed = true
+			}
 		}
 		monitor.finalCause = monitor.failureErr
 		if monitor.finalCause == nil {
@@ -301,6 +336,10 @@ func thermalFailureReason(err error) string {
 		return "invalid_observation"
 	case errThermalCleanup:
 		return "cleanup_unconfirmed"
+	case errStressCoverage:
+		return "coverage_loss"
+	case errStressCounter:
+		return "counter_overflow"
 	default:
 		return ""
 	}
@@ -327,4 +366,61 @@ func finishSafety(monitor *safetyMonitor, status *Status, detail *string, eviden
 	if err := monitor.failure(); err != nil && *status != StatusFail {
 		*status, *detail = safetyStatus(err), safetyDetail(err)
 	}
+}
+
+// acceptStressSample runs under the monitor lock before any aggregate write.
+// All source counts and sums fit the same bound on both supported word sizes.
+func (monitor *safetyMonitor) acceptStressSample(sample ThermalSnapshot) bool {
+	const maximum = 2147483647
+	facts, evidence := monitor.stress, &monitor.result
+	if sample.Sensors > 0 && sample.PeakMilliCelsius >= evidence.ThermalLimitMilliCelsius {
+		facts.ThermalLimit = true
+	}
+	if evidence.ThermalObservations == 0 {
+		facts.InitialCoveragePartial = sample.Coverage == ThermalPartial
+		facts.InitialCoverageUnavailable = sample.Coverage == ThermalUnavailable
+	} else if sample.Coverage != ThermalAvailable {
+		facts.CoverageLost = true
+	}
+	pairs := [][2]int{
+		{evidence.ThermalObservations, 1},
+		{evidence.ThermalSamples, sample.Sensors},
+		{evidence.ThermalRejectedReadings, sample.RejectedReadings},
+		{evidence.ThermalUnavailableReadings, sample.UnavailableReadings},
+		{evidence.ThermalEnumerationErrors, sample.EnumerationErrors},
+	}
+	if evidence.ThermalSensors < 0 || evidence.ThermalSensors > maximum || sample.Sensors > maximum {
+		return false
+	}
+	for _, pair := range pairs {
+		if pair[0] < 0 || pair[1] < 0 || pair[0] > maximum || pair[1] > maximum-pair[0] {
+			return false
+		}
+	}
+	return true
+}
+
+func (monitor *safetyMonitor) stressFacts() CPUStressStopFacts {
+	monitor.mutex.Lock()
+	defer monitor.mutex.Unlock()
+	if monitor.stress == nil {
+		return CPUStressStopFacts{}
+	}
+	return *monitor.stress
+}
+
+// admitCPUStress observes evidence, independent facts and first failure together.
+// A valid adverse sample is a reportable stop, never an accounting defect.
+func (monitor *safetyMonitor) admitCPUStress() bool {
+	monitor.mutex.Lock()
+	defer monitor.mutex.Unlock()
+	if monitor.stress == nil || monitor.frozen || monitor.failureErr != nil || monitor.context.Err() != nil {
+		return false
+	}
+	facts, evidence := monitor.stress, monitor.result
+	return !facts.ThermalLimit && !facts.InitialCoveragePartial && !facts.InitialCoverageUnavailable &&
+		!facts.CoverageLost && !facts.ObservationTimeout && !facts.ObserverPanic &&
+		!facts.InvalidObservation && !facts.CounterOverflow &&
+		evidence.ThermalObservations > 0 && evidence.ThermalCoverage == ThermalAvailable &&
+		evidence.PeakMilliCelsius < evidence.ThermalLimitMilliCelsius
 }

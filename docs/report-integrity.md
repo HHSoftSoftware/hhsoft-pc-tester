@@ -566,6 +566,58 @@ Current v7, its twelve workers, the 22-row catalog and historical v4/v5/v6
 contracts remain unchanged. The full host suite and selected native Linux
 amd64/386 fixtures passed; broader physical, image, durability and release gates remain open.
 
+## Standard CPU Stress Evidence
+
+The new observed result is `hhsoft.pc-tester.cpu-stress/v1` for scheduled
+`cpu.stress` definition 1. It records a requested 600,000 ms load window,
+660,000 ms local watchdog, ordered worker readiness/entry/stop offsets, separate
+preparation and load accounting, lifetime checks, finite stop facts and thermal
+coverage. Counts establish completed checked operations, not CPU time or
+utilization. Ready workers resume their existing arithmetic state and cadence;
+readiness checks cannot satisfy the further load-check requirement.
+
+Current standard reports require the thirteen-worker v8 journal with
+`profile: standard`, the retained run-integrity row and a fresh in-process final
+gate. Every dispatched stress outcome has strict evidence plus an exact-file
+SHA-256 and a domain-separated canonical typed digest in `cpu_stress_source`.
+A null source is valid only for an undispatched row. An error note cannot replace
+malformed, adverse, cleanup-uncertain or missing dispatched evidence. The raw
+command's exit 0 denotes accepted diagnostic emission, not a passing outcome;
+output/encoding/accounting failures block signing and cleanup uncertainty retains
+exit 12 priority.
+
+Validation checks exact JSON shape, types and schema, arithmetic cadence and
+checked sums, readiness/load relationships, conservative elapsed-time/deadline
+bounds, thermal aggregates, status and independent adverse facts. Known mismatch
+remains a failure through cancellation or late heat. Hard monitoring faults and
+coverage loss remain visible even when another cause determines the primary stop
+reason. Absent or partial telemetry cannot authorize a passing load.
+
+Quick v7 and historical v4/v5/v6 evidence retain their own wire and note rules;
+v6 storage reading does not activate storage in v8. Exact historical stress
+supervisor notes remain admissible. Observed statuses, decoded stress identities
+and schema claims route opaque or forged evidence through strict validation,
+including re-signed bundles without views. Both linked and unlinked manifests
+retain the same report-envelope v1. Canonical HTML/PDF displays and hardware
+comparison consume the validated report; signatures authenticate assertions,
+not the physical truth of the test.
+
+The complete source passed the host suite: 6,732 test/subtest passes across
+30 packages, with 17 test skips and one package skip. All 493 required named
+outcomes across 69 selected roots passed. Selected native tests passed on Linux
+amd64 and 386: 6,040 test/subtest outcomes across 18 package executions, covering
+517 roots and 3,020 names per architecture, with no failures or skips.
+
+A separate API-level qualification completed a real shared 600-second load
+window on Linux amd64 and 386, using two workers and fixed synthetic temperature
+observations of 35 degrees C. Both runs passed with cleanup confirmed. This
+establishes elapsed-window completion and checked worker participation within
+that fixture. CPU time, utilization, all-core saturation and physical thermal
+behavior remain unqualified.
+See [the acceptance contract](requirements-validation.md#bounded-standard-cpu-stress)
+for the remaining software and physical qualification gates.
+
+
 ## Inactive Storage Evidence Reader
 
 Explicit v6 read support adds a twelfth worker record, `storage.quick`, after

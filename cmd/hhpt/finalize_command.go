@@ -55,6 +55,21 @@ var quickResultDefinitions = []quickResultDefinition{
 	{id: "usb.readiness.quick", filename: "usb.json", schema: "hhsoft.pc-tester.usb-readiness/v1"},
 }
 
+// Return a fresh definition slice so selecting standard cannot mutate quick.
+func executionResultDefinitions(profile plan.Profile) ([]quickResultDefinition, error) {
+	if profile != "" && profile != plan.ProfileQuick && profile != plan.ProfileStandard {
+		return nil, errors.New("unsupported execution profile")
+	}
+	definitions := make([]quickResultDefinition, 0, len(quickResultDefinitions)+1)
+	for _, definition := range quickResultDefinitions {
+		definitions = append(definitions, definition)
+		if profile == plan.ProfileStandard && definition.id == "cpu.quick" {
+			definitions = append(definitions, quickResultDefinition{id: "cpu.stress", filename: "cpu-stress.json", schema: quick.CPUStressSchema})
+		}
+	}
+	return definitions, nil
+}
+
 func runFinalize(ctx context.Context, arguments []string, stdout, stderr io.Writer) int {
 	collector := inventory.NewLinuxCollector("/")
 	return runFinalizeWith(ctx, arguments, stdout, stderr, collector.Collect, cryptorand.Reader, time.Now)
@@ -73,6 +88,16 @@ func runFinalizeOwnedDestination(ctx context.Context, arguments []string, stdout
 }
 
 func runFinalizeOwnedDestinationWithPrevious(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, random io.Reader, now func() time.Time, gate sessionFinalGate, writeOutput destinationWriter, previous *verifiedPreviousReport, readInput retestInputReader) (result sessionFinalizationResult) {
+	return runFinalizeOwnedDestinationWithPreviousForProfile(ctx, arguments, stdout, stderr, collect, random, now, gate, writeOutput, previous, readInput, "")
+}
+
+func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, random io.Reader, now func() time.Time, gate sessionFinalGate, writeOutput destinationWriter, previous *verifiedPreviousReport, readInput retestInputReader, executionProfile plan.Profile) (result sessionFinalizationResult) {
+	resultDefinitions, profileErr := executionResultDefinitions(executionProfile)
+	if profileErr != nil || executionProfile == plan.ProfileStandard && gate == nil {
+		fmt.Fprintln(stderr, "finalize: execution profile requires its live coordinator")
+		return sessionFinalizationResult{Code: 1}
+	}
+
 	if previous != nil {
 		copy := *previous
 		previous = &copy
@@ -136,7 +161,7 @@ func runFinalizeOwnedDestinationWithPrevious(ctx context.Context, arguments []st
 			fmt.Fprintln(stderr, "finalize: linked retest cancelled")
 			return 1
 		}
-		outcomeValues, err := parseOutcomes(outcomes)
+		outcomeValues, err := parseOutcomesWithDefinitions(outcomes, resultDefinitions)
 		if err != nil {
 			fmt.Fprintf(stderr, "validate outcomes: %v\n", err)
 			return 2
@@ -172,11 +197,16 @@ func runFinalizeOwnedDestinationWithPrevious(ctx context.Context, arguments []st
 			fmt.Fprintf(stderr, "validate frozen plan: %v\n", err)
 			return 1
 		}
+		if executionProfile == "" && frozenPlan.Profile == plan.ProfileStandard ||
+			executionProfile != "" && frozenPlan.Profile != executionProfile {
+			fmt.Fprintln(stderr, "finalize: plan does not match its execution profile")
+			return 1
+		}
 		if frozenPlan.HardwareGraph.KeyEpoch != strings.TrimSpace(*keyEpoch) {
 			fmt.Fprintln(stderr, "validate frozen plan: fingerprint-key epoch changed")
 			return 1
 		}
-		if err := validatePlanOutcomes(frozenPlan, outcomeValues); err != nil {
+		if err := validatePlanOutcomesWithDefinitions(frozenPlan, outcomeValues, resultDefinitions); err != nil {
 			fmt.Fprintf(stderr, "validate frozen plan outcomes: %v\n", err)
 			return 1
 		}
@@ -212,9 +242,9 @@ func runFinalizeOwnedDestinationWithPrevious(ctx context.Context, arguments []st
 			relation = &copy
 		}
 		testResults := make([]app.TestResult, 0, len(frozenPlan.Tests)+1)
-		covered := make(map[string]bool, len(quickResultDefinitions))
-		retainedEvidence := make(map[string][]byte, len(quickResultDefinitions))
-		for _, definition := range quickResultDefinitions {
+		covered := make(map[string]bool, len(resultDefinitions))
+		retainedEvidence := make(map[string][]byte, len(resultDefinitions))
+		for _, definition := range resultDefinitions {
 			plannedTest := plannedTests[definition.id]
 			covered[definition.id] = true
 			sourceStatus := outcomeValues[definition.id]
@@ -229,6 +259,10 @@ func runFinalizeOwnedDestinationWithPrevious(ctx context.Context, arguments []st
 				retainedEvidence[definition.id] = append([]byte(nil), encoded...)
 			}
 			if readErr != nil {
+				if definition.schema == quick.CPUStressSchema && readErr != os.ErrNotExist {
+					fmt.Fprintln(stderr, "validate CPU stress evidence: existing evidence is unreadable")
+					return 1
+				}
 				if definition.schema == exteriorinspection.Schema && readErr != os.ErrNotExist {
 					fmt.Fprintln(stderr, "validate inspection evidence: existing evidence is unreadable")
 					return 1
@@ -257,6 +291,16 @@ func runFinalizeOwnedDestinationWithPrevious(ctx context.Context, arguments []st
 					return 1
 				}
 				evidenceSourceStatus, statusErr := testEvidenceStatus(encoded, definition.schema)
+				if definition.schema == quick.CPUStressSchema {
+					if errors.Is(statusErr, quick.ErrCPUStressCleanupUnconfirmed) {
+						fmt.Fprintln(stderr, "validate CPU stress evidence: cleanup unconfirmed")
+						return workerCleanupUncertainExitCode
+					}
+					if statusErr != nil || evidenceSourceStatus != sourceStatus || gate == nil || executionProfile != plan.ProfileStandard {
+						fmt.Fprintln(stderr, "validate CPU stress evidence: invalid observations or session binding")
+						return 1
+					}
+				}
 				if errors.Is(statusErr, pointerevidence.ErrInvalid) {
 					fmt.Fprintln(stderr, "validate pointer evidence: malformed observations")
 					return 1
@@ -402,12 +446,12 @@ func runFinalizeOwnedDestinationWithPrevious(ctx context.Context, arguments []st
 				return 1
 			}
 			value = sessionevidence.CloneJournal(value)
-			if value.Schema != sessionJournalSchema {
+			if !currentSessionProfile(value, executionProfile) {
 				fmt.Fprintln(stderr, "live finalization requires the current session journal schema")
 				return 1
 			}
 			journal = &value
-			if err := validateSessionJournal(value, frozenPlan, outcomeValues, value.StopReason, *evidenceDirectory); err != nil {
+			if err := validateSessionJournalForProfile(value, frozenPlan, outcomeValues, value.StopReason, *evidenceDirectory, executionProfile); err != nil {
 				fmt.Fprintf(stderr, "validate live session journal: %v\n", err)
 				return 1
 			}
@@ -419,7 +463,7 @@ func runFinalizeOwnedDestinationWithPrevious(ctx context.Context, arguments []st
 				readErr := error(os.ErrNotExist)
 				if present {
 					readErr = nil
-					for _, definition := range quickResultDefinitions {
+					for _, definition := range resultDefinitions {
 						if definition.id == row.ID {
 							sourceStatus, statusErr = testEvidenceStatus(raw, definition.schema)
 							break
@@ -439,6 +483,13 @@ func runFinalizeOwnedDestinationWithPrevious(ctx context.Context, arguments []st
 				raw, present := retainedEvidence[source.WorkerID]
 				if !present || sourceFileDigest(raw) != source.EvidenceFileSHA256 {
 					fmt.Fprintln(stderr, "local thermal evidence file binding changed")
+					return 1
+				}
+			}
+			if value.CPUStressSource != nil {
+				raw, present := retainedEvidence["cpu.stress"]
+				if !present || sourceFileDigest(raw) != value.CPUStressSource.EvidenceFileSHA256 {
+					fmt.Fprintln(stderr, "CPU stress evidence file binding changed")
 					return 1
 				}
 			}
@@ -496,8 +547,12 @@ func runFinalizeOwnedDestinationWithPrevious(ctx context.Context, arguments []st
 }
 
 func validatePlanOutcomes(frozenPlan plan.Plan, outcomes map[string]string) error {
-	implemented := make(map[string]bool, len(quickResultDefinitions))
-	for _, definition := range quickResultDefinitions {
+	return validatePlanOutcomesWithDefinitions(frozenPlan, outcomes, quickResultDefinitions)
+}
+
+func validatePlanOutcomesWithDefinitions(frozenPlan plan.Plan, outcomes map[string]string, definitions []quickResultDefinition) error {
+	implemented := make(map[string]bool, len(definitions))
+	for _, definition := range definitions {
 		implemented[definition.id] = true
 	}
 	planned := make(map[string]plan.TestStatus, len(frozenPlan.Tests))
@@ -510,7 +565,7 @@ func validatePlanOutcomes(frozenPlan plan.Plan, outcomes map[string]string) erro
 		}
 		planned[test.ID] = test.Status
 	}
-	for _, definition := range quickResultDefinitions {
+	for _, definition := range definitions {
 		plannedStatus, exists := planned[definition.id]
 		if !exists {
 			return fmt.Errorf("required test %s is absent", definition.id)
@@ -536,8 +591,12 @@ func newExecutionNote(test plan.Test, status app.TestStatus, sourceStatus string
 }
 
 func parseOutcomes(values []string) (map[string]string, error) {
-	known := make(map[string]bool, len(quickResultDefinitions))
-	for _, definition := range quickResultDefinitions {
+	return parseOutcomesWithDefinitions(values, quickResultDefinitions)
+}
+
+func parseOutcomesWithDefinitions(values []string, definitions []quickResultDefinition) (map[string]string, error) {
+	known := make(map[string]bool, len(definitions))
+	for _, definition := range definitions {
 		known[definition.id] = true
 	}
 	parsed := make(map[string]string, len(values))

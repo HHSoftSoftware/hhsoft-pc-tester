@@ -115,59 +115,67 @@ func runCPUWorker(ctx context.Context, deadline time.Time, index int, failed *at
 	result.row.Index = index
 	result.state = uint64(index) + 0x0123456789abcdef
 	vectors := scalarVectors()
-	for !cpuStopped(ctx, deadline, failed, operations.now) {
-		if result.row.Iterations&0xff == 0 {
-			result.failures.Integer = operations.integer(0x0123456789abcdef) != expectedIntegerRound
-			if result.failures.Integer {
-				failed.Store(true)
-				return result
-			}
-			if cpuStopped(ctx, deadline, failed, operations.now) {
-				return result
-			}
-			result.failures.SHA256 = operations.sha(knownAnswerInput) != expectedKnownAnswer
-			if result.failures.SHA256 {
-				failed.Store(true)
-				return result
-			}
-			for slot, vector := range vectors {
-				if cpuStopped(ctx, deadline, failed, operations.now) {
-					return result
-				}
-				actual := math.Float64bits(operations.scalar(index, slot, vector.operation, math.Float64frombits(vector.left), math.Float64frombits(vector.right)))
-				if actual != vector.expected {
-					result.row.Mismatch = &CPUScalarMismatch{vector.id, hexBits(vector.expected), hexBits(actual)}
-					result.failures.Scalar = true
-					failed.Store(true)
-					return result
-				}
-				if cpuStopped(ctx, deadline, failed, operations.now) {
-					return result
-				}
-				if result.row.ChecksPassed == math.MaxUint64 {
-					result.overflow = true
-					failed.Store(true)
-					return result
-				}
-				result.row.ChecksPassed++
-			}
-		}
-		if cpuStopped(ctx, deadline, failed, operations.now) {
-			return result
-		}
-		state := operations.integer(result.state)
-		if cpuStopped(ctx, deadline, failed, operations.now) {
-			return result
-		}
-		if result.row.Iterations == math.MaxUint64 {
-			result.overflow = true
-			failed.Store(true)
-			return result
-		}
-		result.state = state
-		result.row.Iterations++
+	for stepCPUWorker(ctx, deadline, failed, operations, &vectors, &result) {
 	}
 	return result
+}
+
+// stepCPUWorker commits at most one iteration; mismatches survive a concurrent stop.
+func stepCPUWorker(ctx context.Context, deadline time.Time, failed *atomic.Bool, operations cpuOperations, vectors *[CPUScalarVectorCount]scalarVector, result *cpuWorkerResult) bool {
+	if cpuStopped(ctx, deadline, failed, operations.now) {
+		return false
+	}
+	if result.row.Iterations&0xff == 0 {
+		result.failures.Integer = operations.integer(0x0123456789abcdef) != expectedIntegerRound
+		if result.failures.Integer {
+			failed.Store(true)
+			return false
+		}
+		if cpuStopped(ctx, deadline, failed, operations.now) {
+			return false
+		}
+		result.failures.SHA256 = operations.sha(knownAnswerInput) != expectedKnownAnswer
+		if result.failures.SHA256 {
+			failed.Store(true)
+			return false
+		}
+		for slot, vector := range vectors {
+			if cpuStopped(ctx, deadline, failed, operations.now) {
+				return false
+			}
+			actual := math.Float64bits(operations.scalar(result.row.Index, slot, vector.operation, math.Float64frombits(vector.left), math.Float64frombits(vector.right)))
+			if actual != vector.expected {
+				result.row.Mismatch = &CPUScalarMismatch{vector.id, hexBits(vector.expected), hexBits(actual)}
+				result.failures.Scalar = true
+				failed.Store(true)
+				return false
+			}
+			if cpuStopped(ctx, deadline, failed, operations.now) {
+				return false
+			}
+			if result.row.ChecksPassed == math.MaxUint64 {
+				result.overflow = true
+				failed.Store(true)
+				return false
+			}
+			result.row.ChecksPassed++
+		}
+	}
+	if cpuStopped(ctx, deadline, failed, operations.now) {
+		return false
+	}
+	state := operations.integer(result.state)
+	if cpuStopped(ctx, deadline, failed, operations.now) {
+		return false
+	}
+	if result.row.Iterations == math.MaxUint64 {
+		result.overflow = true
+		failed.Store(true)
+		return false
+	}
+	result.state = state
+	result.row.Iterations++
+	return true
 }
 
 func RunCPU(ctx context.Context, options CPUOptions) CPUResult {

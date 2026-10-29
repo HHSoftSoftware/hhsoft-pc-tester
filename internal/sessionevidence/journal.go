@@ -59,7 +59,11 @@ func ValidateStructure(j Journal) error {
 		return ErrInvalid
 	}
 	ids := workerIDs(j.Schema)
-	if len(j.Workers) != len(ids) || j.Safety == nil || j.LocalThermalSources == nil || len(j.LocalThermalSources) > 2 {
+	maximumSources := 2
+	if j.Schema == SchemaV8 {
+		maximumSources = 3
+	}
+	if len(j.Workers) != len(ids) || j.Safety == nil || j.LocalThermalSources == nil || len(j.LocalThermalSources) > maximumSources {
 		return ErrInvalid
 	}
 	phases := []string{"preflight"}
@@ -107,7 +111,7 @@ func ValidateStructure(j Journal) error {
 				default:
 					return ErrInvalid
 				}
-				if worker.Outcome == "fail" || worker.Outcome == "aborted" || (worker.ID == "cpu.quick" || worker.ID == "memory.quick") && worker.Outcome != "pass" {
+				if worker.Outcome == "fail" || worker.Outcome == "aborted" || (worker.ID == "cpu.quick" || worker.ID == "memory.quick" || j.Schema == SchemaV8 && worker.ID == "cpu.stress") && worker.Outcome != "pass" {
 					if j.StopReason == "completed" {
 						return ErrInvalid
 					}
@@ -131,7 +135,7 @@ func ValidateStructure(j Journal) error {
 			return ErrInvalid
 		}
 	}
-	if !validStorageSourceStructure(j) {
+	if !validStorageSourceStructure(j) || !validStressSourceStructure(j) {
 		return ErrInvalid
 	}
 	previousSource := -1
@@ -145,10 +149,18 @@ func ValidateStructure(j Journal) error {
 			}
 		case "memory.quick":
 			index = 1
+			if j.Schema == SchemaV8 {
+				index = 2
+			}
 			schema = quick.MemorySchemaV2
 			if supportsCurrentWorkerEvidence(j.Schema) && source.EvidenceSchema == quick.MemorySchema {
 				schema = quick.MemorySchema
 			}
+		case "cpu.stress":
+			if j.Schema != SchemaV8 {
+				return ErrInvalid
+			}
+			index, schema = 1, quick.CPUStressSchema
 		default:
 			return ErrInvalid
 		}
@@ -162,6 +174,10 @@ func ValidateStructure(j Journal) error {
 }
 
 func CloneJournal(j Journal) Journal {
+	if j.CPUStressSource != nil {
+		value := *j.CPUStressSource
+		j.CPUStressSource = &value
+	}
 	if j.StorageSource != nil {
 		value := *j.StorageSource
 		j.StorageSource = &value
@@ -195,11 +211,15 @@ func CloneJournal(j Journal) Journal {
 
 // ThermalViewOf consumes a validated journal. It returns independent storage.
 func ThermalViewOf(j Journal) ThermalView {
+	scope := Scope
+	if j.Schema == SchemaV8 {
+		scope = StandardScope
+	}
 	finding := "no_limit_observed"
 	if HasHeat(j) {
 		finding = "limit_reached"
 	}
-	return ThermalView{Scope: Scope, Finding: finding, Coverage: j.Thermal.Aggregate.Coverage, StopReason: j.StopReason,
+	return ThermalView{Scope: scope, Finding: finding, Coverage: j.Thermal.Aggregate.Coverage, StopReason: j.StopReason,
 		PeakObserved: j.Thermal.Aggregate.ValidReadings > 0, PeakMilliCelsius: j.Thermal.Aggregate.PeakMilliCelsius,
 		LimitMilliCelsius: j.Thermal.LimitMilliCelsius, AcceptedObservations: j.Thermal.Aggregate.AcceptedObservations,
 		MaximumGapMilliseconds: j.Thermal.MaximumGapMilliseconds, CleanupConfirmed: j.Thermal.CleanupConfirmed,

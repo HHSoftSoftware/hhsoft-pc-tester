@@ -62,7 +62,7 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 			return ErrInvalid
 		}
 		if HasInspectionClaim(binding.Evidence) || strings.EqualFold(binding.ID, "inspection.exterior.quick") {
-			if j.Schema != SchemaV7 || binding.ID != "inspection.exterior.quick" || binding.Version != 1 {
+			if (j.Schema != SchemaV7 && j.Schema != SchemaV8) || binding.ID != "inspection.exterior.quick" || binding.Version != 1 {
 				return ErrInvalid
 			}
 		}
@@ -79,7 +79,16 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 			j.Schema == SchemaV4 && binding.ID == "input.pointer.quick" && binding.Version != 1 {
 			return ErrInvalid
 		}
-		if hasNewCPUClaim(binding.Evidence) && (binding.ID != "cpu.quick" || binding.Version != 2 || !supportsCurrentWorkerEvidence(j.Schema)) ||
+		stressObservation := HasCPUStressClaim(binding.Evidence)
+		if stressObservation {
+			if j.Schema != SchemaV8 || binding.ID != "cpu.stress" || binding.Version != 1 {
+				return ErrInvalid
+			}
+			if _, _, err := quickevidence.DecodeCPUStress(binding.Evidence); err != nil {
+				return err
+			}
+		}
+		if !stressObservation && hasNewCPUClaim(binding.Evidence) && (binding.ID != "cpu.quick" || binding.Version != 2 || !supportsCurrentWorkerEvidence(j.Schema)) ||
 			binding.ID == "cpu.quick" && (binding.Version < 0 || binding.Version > 2 || j.Schema == SchemaV4 && binding.Version == 2) {
 			return ErrInvalid
 		}
@@ -101,6 +110,16 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 		}
 		if len(binding.Evidence) == 0 || len(binding.Evidence) > 1<<20 || !json.Valid(binding.Evidence) {
 			return ErrInvalid
+		}
+		if worker.ID == "cpu.stress" {
+			hot, err := validateStressBinding(j, worker, binding, localSources)
+			if err != nil {
+				return err
+			}
+			if hot {
+				wanted++
+			}
+			continue
 		}
 		if worker.ID == "inspection.exterior.quick" {
 			if validateInspectionBinding(worker, binding) != nil {

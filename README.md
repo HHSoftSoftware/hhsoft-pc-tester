@@ -139,6 +139,36 @@ and physical CPU checks for this increment remain open. These
 bounded checks are not a benchmark or comprehensive instruction test; legacy
 x86 soft-float exercises software arithmetic rather than the hardware FPU.
 
+The development standard profile now adds an explicit bounded CPU stress step.
+Select `session -profile standard` with a matching frozen standard plan; the
+normal boot menu and default session remain quick. Standard defaults to a
+900-second session budget and has thirteen workers, with stress immediately
+after a passing CPU quick check. The existing quick v7 path retains twelve
+workers. The catalog still contains 22 rows; nine families remain inactive.
+
+The stress worker requests a shared 600-second elapsed load window after every
+worker has completed its initial checked arithmetic. Its 660-second local
+watchdog starts at invocation, including preparation. It requires available
+accepted temperature observations before load and stops if that coverage is
+lost. A pass also requires further checked work from every worker; elapsed time
+alone is insufficient. Counters do not measure CPU time, utilization, core
+coverage, performance or physical CPU health.
+
+The complete source passed the host suite: 6,732 test/subtest passes across
+30 packages, with 17 test skips and one package skip. All 493 required named
+outcomes across 69 selected roots passed. Selected native tests passed on Linux
+amd64 and 386: 6,040 test/subtest outcomes across 18 package executions, covering
+517 roots and 3,020 names per architecture, with no failures or skips.
+
+A separate API-level qualification completed a real shared 600-second load
+window on Linux amd64 and 386, using two workers and fixed synthetic temperature
+observations of 35 degrees C. Both runs passed with cleanup confirmed. This
+establishes elapsed-window completion and checked worker participation within
+that fixture. CPU time, utilization, all-core saturation and physical thermal
+behavior remain unqualified.
+See [the standard-profile contract](docs/requirements-validation.md#bounded-standard-cpu-stress)
+for finite outcomes, strict signing and the remaining validation gates.
+
 The RAM worker follows its three original patterns with `0xaa` initialization,
 ascending verification and inversion to `0x55`, descending verification and
 inversion back to `0xaa`, and final ascending verification. Memory v3 distinguishes
@@ -271,8 +301,8 @@ readiness result.
 Offline report reading additionally supports the finite storage sampling evidence
 and explicit v6 session format through verification, HTML/PDF views and
 comparison. This checks signed assertions and separates accepted work from
-diagnostics; it does not perform media reads. Current commands emit v7 sessions
-with twelve workers; the sampling catalog entry remains inactive. See
+diagnostics; it does not perform media reads. Current quick sessions use v7 with twelve workers; explicit standard sessions
+use v8 with thirteen. The sampling catalog entry remains inactive. See
 [report integrity](docs/report-integrity.md) for the evidence and cleanup limits.
 
 `hhpt network` inventories only hardware-backed Ethernet and Wi-Fi interfaces,

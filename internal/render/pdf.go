@@ -110,6 +110,10 @@ func inventoryPDFLines(payload app.InventoryPayload, version string) ([]string, 
 }
 
 func inventoryPDFLinesWithPrevious(payload app.InventoryPayload, version string, previous *report.PreviousReport) ([]string, error) {
+	stress, err := cpuStressReportDocument(payload)
+	if err != nil {
+		return nil, err
+	}
 	inspection, err := inspectionReportDocument(payload)
 	if err != nil {
 		return nil, err
@@ -175,6 +179,7 @@ func inventoryPDFLinesWithPrevious(payload app.InventoryPayload, version string,
 		lines.field("Previous manifest", previous.ManifestDigest, "  ")
 		lines.field("Previous canonical bundle", previous.BundleSHA256, "  ")
 	}
+	appendCPUStressPDF(&lines, stress)
 	appendInspectionPDF(&lines, inspection)
 	appendCPUScalarPDF(&lines, cpuScalar)
 	appendMemoryPDF(&lines, memory)

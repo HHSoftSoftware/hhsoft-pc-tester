@@ -13,6 +13,8 @@ import (
 func runSessionWorker(ctx context.Context, worker sessionWorker, input io.Reader, stdout, stderr io.Writer) int {
 	arguments := []string{"-output", worker.OutputPath}
 	switch worker.ID {
+	case "cpu.stress":
+		return runCPUStress(ctx, arguments, stdout, stderr)
 	case "cpu.quick":
 		return runCPU(ctx, append(arguments, "-duration", "3s", "-timeout", worker.Timeout.String(), "-thermal-limit-c", "90"), stdout, stderr)
 	case "memory.quick":
@@ -62,5 +64,5 @@ func finalizeSessionWith(ctx context.Context, request sessionFinalization, stdou
 	for _, outcome := range request.Outcomes {
 		arguments = append(arguments, "-outcome", outcome)
 	}
-	return runFinalizeOwnedDestinationWithPrevious(ctx, arguments, stdout, stderr, collect, random, now, request.Gate, writeDestination, request.Previous, readRetestInput)
+	return runFinalizeOwnedDestinationWithPreviousForProfile(ctx, arguments, stdout, stderr, collect, random, now, request.Gate, writeDestination, request.Previous, readRetestInput, request.Profile)
 }

@@ -15,7 +15,8 @@ The pointer movement/button and wheel-direction increments passed automated
 and native Linux software validation. Guided keyboard software qualification
 also passed; rebuilt-image and physical gates remain open for both. The planner
 also accepts standard, extended, and destructive profile names, but
-their complete execution workflows remain unfinished. Burn-in is a planned
+the new bounded standard CPU path awaits full qualification and their complete
+functional workflows remain unfinished. Burn-in is a planned
 profile. The unchecked requirements below include those broader matrix items;
 the alpha still requires the separate documented release gates.
 
@@ -235,6 +236,25 @@ the alpha still requires the separate documented release gates.
 - [ ] Qualify the scalar CPU increment in rebuilt images and on representative
   physical CPUs. Legacy soft-float execution establishes software arithmetic
   coverage; hardware floating-point coverage remains separate.
+- [x] Validate the implemented opt-in standard CPU stress path with host and
+  native fixtures, including a real shared elapsed window on both selected
+  Linux architectures:
+  explicit matching `session -profile standard`, a 900-second default session,
+  a shared 600-second load window and an origin-anchored 660-second watchdog.
+  Standard v8 has thirteen workers; quick v7 and its twelve workers remain the
+  default. Strict stress v1 evidence reaches finalization, signed verification,
+  HTML/PDF and comparison; a raw command's zero exit means a valid diagnostic,
+  not a passing CPU. The full host suite passed, including all 493 required named
+  outcomes across 69 selected roots. Selected native fixtures passed 6,040 named
+  outcomes across 18 package executions on Linux amd64 and 386, with no failures
+  or skips. Separate API-level runs completed a real shared 600-second window on
+  both architectures with two workers and fixed synthetic temperature input;
+  cleanup was confirmed. Physical, all-core and utilization claims remain open. See [the contract](docs/requirements-validation.md#bounded-standard-cpu-stress).
+- [ ] Qualify this bounded stress path on representative physical CPUs and
+  sensors, in rebuilt images and the ten-PC pilot. CPU utilization, instruction
+  completeness, performance, throttling and physical-health claims remain outside
+  this implementation; complete standard, extended and burn-in profiles remain open.
+
 - [x] Include Linux hwmon temperature readings in the CPU/RAM thermal guard,
   filtering unavailable, disabled, faulted, uncalibrated, and known threshold
   channels. The earlier hwmon milestone passed native amd64 and 386 soft-float

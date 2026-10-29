@@ -456,10 +456,59 @@ continuity. Existing identified components retain their fingerprint rules.
 
 The implementation uses the existing inventory, signing and view contracts. It
 adds no catalog row, worker, session schema or generic arbitrary-metadata
-validator: the catalog remains at 22 rows and current v7 retains twelve workers.
+validator: the catalog remains at 22 rows and the quick v7 path retains twelve workers.
 Historical v4/v5/v6 rules and inactive storage sampling remain unchanged.
 The full host suite and selected native Linux amd64/386 fixtures passed; see
 [the validation contract](requirements-validation.md#power-supply-inventory).
+
+## Bounded standard CPU stress
+
+The explicit `standard` coordinator inserts `cpu.stress` after a passing
+`cpu.quick`. The profile flag must match the frozen plan; a standard plan alone
+cannot select sustained load. Automatic quick execution, its twelve-worker v7
+journal and historical worker encodings remain unchanged. Standard uses thirteen
+workers and `hhsoft.pc-tester.quick-session/v8`, while retaining the existing
+`run.integrity.quick` row and report envelope. The catalog still has 22 rows;
+activation changes its digest and new plan IDs. Old execution plans fail the
+current-catalog gate; historical signed verification remains catalog-independent.
+
+Each of at most 64 workers first commits checked integer, SHA-256 and twelve
+scalar operations, then waits at a shared readiness barrier. Every started worker
+must either become ready or report termination, so cancellation or an early fault
+can release and join waiting peers. One common release starts the fixed 600-second
+elapsed load window. Preparation is outside that window but inside the
+invocation-anchored 660-second watchdog. Lifetime arithmetic cadence is retained;
+separate preparation and load counts prevent readiness work from being credited
+as sustained participation. Each worker needs additional load iterations and a
+complete twelve-check load sweep for a pass.
+
+Stress uses an opt-in strict thermal policy without changing quick CPU/RAM policy.
+Initially partial or unavailable accepted telemetry prevents load; loss of accepted
+coverage stops the run. Late heat and arithmetic mismatches survive an earlier
+stop reason. Coverage refers to accepted exposed readings, not proof of CPU sensor
+coverage or detection of same-count sensor replacement. Cleanup uncertainty,
+invalid accounting or untrusted evidence blocks signing.
+
+V8 binds every dispatched stress result, including no-load and non-pass results,
+to strict typed evidence, exact-file and typed digests, and its worker interval.
+Only undispatched rows have a null stress source. The finalizer requires the real
+fresh standard-session gate; supplied journal files cannot authorize signing.
+Views and no-view bundle verification share strict admission. Historical exact
+supervisor notes remain readable, while opaque error/aborted objects do not gain
+that exemption. Comparison retains its existing identity policy.
+
+The complete source passed the host suite: 6,732 test/subtest passes across
+30 packages, with 17 test skips and one package skip. All 493 required named
+outcomes across 69 selected roots passed. Selected native tests passed on Linux
+amd64 and 386: 6,040 test/subtest outcomes across 18 package executions, covering
+517 roots and 3,020 names per architecture, with no failures or skips.
+
+A separate API-level qualification completed a real shared 600-second load
+window on Linux amd64 and 386, using two workers and fixed synthetic temperature
+observations of 35 degrees C. Both runs passed with cleanup confirmed. This
+establishes elapsed-window completion and checked worker participation within
+that fixture. CPU time, utilization, all-core saturation and physical thermal
+behavior remain unqualified.
 
 ## Privilege and process model
 

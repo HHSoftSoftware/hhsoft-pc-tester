@@ -152,6 +152,78 @@ transitions or physical continuity. Unsupported-platform execution, installed
 commands, rebuilt images, output durability, the ten-PC pilot and release
 approval retain their separate gates.
 
+## Firmware and TPM Inventory
+
+The finite Linux producer reads three fixed EFI metadata roles and only
+`tpm_version_major` for every validated TPM class entry. It adds no worker,
+catalog row, profile, evidence schema or identity algorithm.
+
+| Component and field | Admitted reported value |
+| --- | --- |
+| `firmware_security`: `uefi_platform_bits` | 32 or 64 bits |
+| `firmware_security`: `secure_boot` | 0 or 1, preserved as the reported flag |
+| `firmware_security`: `setup_mode_flag` | 0 or 1, independent of SecureBoot |
+| `tpm`: `version_major` | 1 or 2, the exposed interface's major version |
+
+Every field has a `<field>_state`: `reported`, `unavailable`, `malformed` or
+`unsupported`. Only `reported` includes a value. Width and version use canonical
+unsigned ASCII decimal, with at most one terminal LF. Empty input, leading zeroes
+on a multi-digit value, signs, spaces, CRLF, controls and non-ASCII bytes are
+malformed. Other canonical numeric tokens are unsupported and are not echoed.
+There is no whitespace trimming or case folding before validation.
+
+Each EFI flag must be exactly five bytes: a four-byte little-endian attribute
+word equal to 6 followed by one byte equal to 0 or 1. A different length is
+malformed; another attribute word or flag byte is unsupported. These are the
+product's finite admission rules, not an assertion that every firmware exposes
+these files. SecureBoot 1 is a reported firmware flag, not proof of an effective
+trust chain. SetupMode 1 alone is not a complete firmware-mode classification;
+the literal SecureBoot 1/SetupMode 1 pair is retained without reconciliation.
+
+The `firmware_security:uefi` row appears if at least one EFI read completes,
+including a completed malformed or unsupported value. All three unavailable
+reads produce no row. Every enumerated TPM entry produces a row even if its
+version is unavailable. Missing and empty enumeration both mean no reported
+data, not physical absence. One-based `tpm:N` IDs follow validated sorted
+enumeration and are nonpersistent; no raw entry name, serial, endorsement
+identity, PCR, certificate/key contents or provider error string is exported.
+Both types retain unavailable identity. Ordinals can shift and an
+indistinguishable same-count replacement can remain undetectable.
+
+Ordinary scalar open/read errors discard all returned bytes, including favorable
+bytes returned with an error, and become unavailable. They do not distinguish
+missing attributes, permission denial, hotplug or other ordinary read failures.
+Existing malformed-protocol, 65,536-byte bound, checked-close, cancellation and
+directory-error rules remain mandatory. This adds no total collection deadline
+or guarantee that a blocked call returns promptly. Fields are separate samples,
+not an atomic firmware state, and metadata collection issues no TPM commands.
+
+All finite attributes/states and rows remain in the frozen configuration graph
+and normal comparison. There is no power-style volatility exclusion for these
+types. Changes require a new plan for future execution; existing finalization
+retains a signed failed-integrity diagnostic with exact component changes.
+Unavailable identities are not upgraded by matching ordinals. No-observation
+payload/view compatibility, existing identified components, quick v7, explicit
+standard v8, historical v4/v5/v6 and inactive storage sampling remain unchanged.
+
+**Qualification completed for the bounded software scope:** the complete host
+suite passed 6,948 test/subtest outcomes across 30 packages, with 17 platform
+test skips and one skipped package. All 31 new roots and 216 required names
+passed once, with run/pass membership and parent ordering checked. Formatting,
+vet, Linux amd64/386/arm64 application builds, all eight commands and all eight
+postchecks passed.
+
+Selected native Linux amd64/386 fixtures passed 3,886 named outcomes across
+14 suites and 736 root executions. Each architecture passed all 1,943 selected
+names and 368 roots, with no failures or skips. Nine ownership cases, 32 archive
+cases and six root postchecks passed, with confirmed cleanup.
+
+These are software-fixture results, not physical firmware, TPM-health or
+measured-boot evidence. The portable source subset does not establish execution
+on unsupported operating systems. Broader firmware-lock, attestation, Secure
+Boot image, physical-PC, installed-CLI, image, race/durability and release gates
+remain open where documented.
+
 ## Bounded Standard CPU Stress
 
 Implementation is present across the standard coordinator, strict evidence,

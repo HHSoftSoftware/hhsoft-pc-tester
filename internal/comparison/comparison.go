@@ -328,7 +328,7 @@ func validateReport(report Report) error {
 
 func validComponentType(componentType inventory.ComponentType) bool {
 	switch componentType {
-	case inventory.ComponentCPU, inventory.ComponentMemory, inventory.ComponentSystem, inventory.ComponentBaseboard, inventory.ComponentBlock, inventory.ComponentPCI, inventory.ComponentNetwork, inventory.ComponentInput, inventory.ComponentSound, inventory.ComponentVideo, inventory.ComponentUSB, inventory.ComponentPowerSupply:
+	case inventory.ComponentCPU, inventory.ComponentMemory, inventory.ComponentSystem, inventory.ComponentBaseboard, inventory.ComponentBlock, inventory.ComponentPCI, inventory.ComponentNetwork, inventory.ComponentInput, inventory.ComponentSound, inventory.ComponentVideo, inventory.ComponentUSB, inventory.ComponentPowerSupply, inventory.ComponentFirmwareSecurity, inventory.ComponentTPM:
 		return true
 	default:
 		return false

@@ -461,6 +461,46 @@ Historical v4/v5/v6 rules and inactive storage sampling remain unchanged.
 The full host suite and selected native Linux amd64/386 fixtures passed; see
 [the validation contract](requirements-validation.md#power-supply-inventory).
 
+## Finite firmware and TPM inventory
+
+The existing Linux collector reads three fixed EFI metadata paths and only the
+`tpm_version_major` attribute beneath each validated TPM class entry. It emits
+`firmware_security:uefi` when at least one EFI field read completes, even if that
+completed value is malformed or unsupported. If all three reads are unavailable,
+there is no firmware row. Every enumerated TPM entry retains a `tpm:N` row,
+including entries with an unavailable version. Missing and empty enumeration
+both mean no reported data, not proven hardware absence.
+
+The four public value fields are `uefi_platform_bits`, `secure_boot`,
+`setup_mode_flag` and TPM `version_major`. Each has a companion `_state` field;
+only `reported` includes a value. The finite alternatives are `unavailable`,
+`malformed` and `unsupported`. Parsing consumes completed raw bytes before
+generic attribute normalization. The EFI flags are independent observations;
+the literal 1/1 combination remains visible rather than becoming an inferred
+firmware mode. See [the parser contract](requirements-validation.md#firmware-and-tpm-inventory).
+
+The producer reuses the existing owned scalar and directory acquisitions.
+Ordinary scalar open/read errors discard all returned bytes and become
+unavailable. Protocol, size-bound, checked-close, cancellation and directory
+failures retain their stricter collection policy. This adds no total collection
+deadline or guarantee of a prompt return from a blocked kernel call.
+
+TPM ordinals are one-based locations assigned after validated sorted enumeration.
+Raw entry names remain acquisition paths and never become public IDs, attributes,
+hashed aliases or identity material. Both new component types retain unavailable
+identity. Ordinals may shift, and indistinguishable same-count replacement may
+remain undetectable.
+
+All new finite values, states and rows participate in the existing configuration
+graph and ordinary comparison. A changed graph requires a new plan for future
+execution; finalization preserves a signed failed-integrity diagnostic identifying
+the changed components. Generic payload, signature, view and parent-trust rules
+remain in force. The new types add no worker, catalog entry, capability, schema
+or identity algorithm. Quick v7, explicit standard v8, historical session rules
+and inactive storage sampling are unchanged. The full host suite and selected
+native Linux amd64/386 fixtures passed; no measured-boot, attestation, TPM-health
+or physical firmware claim follows from metadata collection.
+
 ## Bounded standard CPU stress
 
 The explicit `standard` coordinator inserts `cpu.stress` after a passing

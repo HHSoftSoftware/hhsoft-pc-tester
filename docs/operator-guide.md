@@ -435,6 +435,43 @@ The full host suite and selected native Linux amd64/386 fixtures passed; see
 Battery-health assessment, AC/battery transition tests, physical-PC testing and
 rebuilt-image qualification remain separate work.
 
+## Read Firmware and TPM Inventory
+
+The Linux inventory reports a finite set of firmware observations:
+
+| Field | Meaning of a reported value |
+| --- | --- |
+| UEFI platform bits | The exposed firmware interface reports 32 or 64 bits. |
+| SecureBoot | The firmware reports the flag as 0 or 1. |
+| SetupMode flag | The firmware reports this separate flag as 0 or 1. |
+| TPM major version | An enumerated interface reports version 1 or 2. |
+
+Every field also has a state. `reported` includes an admitted value;
+`unavailable` has no value because the observation was unavailable. `malformed`
+and `unsupported` omit rejected input. Unavailable does not mean disabled or
+absent, and a reported TPM version does not prove that the TPM works or is trusted.
+SecureBoot and SetupMode are separate samples, not a complete firmware-mode or
+security assessment. Even the 1/1 combination is retained literally.
+
+The `firmware_security:uefi` row appears when any of its three reads completes.
+TPM rows use `tpm:1`, `tpm:2` and subsequent labels local to the collection.
+These labels may change and do not identify the same physical component across
+reports. Raw names and stable identifiers are not exported; identity remains
+unavailable. No rows means no reported data, not proof that a capability or
+device is absent.
+
+These fields belong to the frozen configuration. If they change before
+finalization, the signed report retains a failed-integrity diagnostic and the
+changed component references; prepare a new plan before future execution on the
+new configuration. Comparison preserves both observations without inventing
+component continuity or a security verdict.
+
+The full host suite and selected native Linux amd64/386 fixtures passed. The
+producer performs no measured-boot verification, TPM command, provisioning or firmware-policy
+change. It does not add Secure Boot image support: current images still require
+Secure Boot disabled. Keep the existing firmware setup instructions and physical
+qualification limits. See [the field contract](requirements-validation.md#firmware-and-tpm-inventory).
+
 ## Save the Signed Report
 
 The only authoritative artifact is the `.hhpcr` bundle. Its HTML and PDF views
@@ -933,7 +970,7 @@ contract; their existing authorization and output rules remain in force.
   full keyboard/mouse/touchpad/touchscreen interaction, card readers as media,
   rotation sensors, modems, storage functional/health, full-network, and full
   USB-port tests are not yet implemented end-to-end.
-- Secure Boot is not implemented. AArch64 remains beta and real Snapdragon/X
+- Secure Boot boot-image support is not implemented. AArch64 remains beta and real Snapdragon/X
   Elite systems are not yet qualified.
 - Self-issued reports prove byte integrity only. Trusted report signers,
   custody timestamps, TPM/HSM key protection, revocation, append-only database

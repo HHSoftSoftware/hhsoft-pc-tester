@@ -276,6 +276,22 @@ and [validation contract](docs/requirements-validation.md#power-supply-inventory
 Physical testing, the ten-PC pilot, rebuilt images and release approval remain
 open.
 
+The finite Linux firmware inventory reports UEFI platform width, the separate
+SecureBoot and SetupMode flags, and each exposed TPM interface's major version.
+Each field has an explicit reported, unavailable, malformed or unsupported state.
+No reported rows means no data, not proof that firmware support or hardware is
+absent. TPM labels are nonpersistent ordinals, and both firmware and TPM rows
+retain unavailable identity without exporting raw names or stable identifiers.
+
+These configuration observations remain bound to the plan and signed report;
+they do not establish a security verdict, measured boot, TPM health or physical
+continuity. The producer changes no firmware policy, provisions no keys and adds
+no test worker. The full host suite and selected native Linux amd64/386 fixtures
+passed. See
+the [operator interpretation](docs/operator-guide.md#read-firmware-and-tpm-inventory)
+and [finite contract](docs/requirements-validation.md#firmware-and-tpm-inventory).
+Secure Boot image support, physical qualification and release gates remain open.
+
 The periodic-monitor milestone introduced read-only mount/network sampling
 and a v3 session journal, without changing the catalog or ten worker outcomes.
 The v4 increment retained that monitor summary and added thermal evidence;

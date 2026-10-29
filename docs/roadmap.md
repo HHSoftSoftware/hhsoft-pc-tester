@@ -590,6 +590,35 @@ continuity or AC/battery transitions. Those broader features, the ten-PC pilot,
 installed-command and rebuilt-image qualification, durability and release
 approval remain open. This increment does not expand the approved alpha gates.
 
+### Finite firmware and TPM inventory
+
+The finite metadata producer and consumed report path are implemented. Linux
+collection reports UEFI platform width, separate SecureBoot/SetupMode flags and
+each enumerated TPM interface's major version, with four explicit field states.
+Raw names and stable identifiers stay out of public rows; identity is unavailable
+and TPM IDs are nonpersistent ordinals. Missing or empty observations report no
+data, not proven absence. Ordinary scalar observation errors discard returned
+bytes while existing ownership, bounds, protocol and cancellation failures remain
+mandatory.
+
+Unlike volatile power telemetry, these configuration observations stay in the
+frozen graph and ordinary comparison. A changed final configuration retains the
+signed failed-integrity diagnostic and exact changed component references.
+No-observation bytes, generic signed/linked/view behavior and independent parent
+trust remain unchanged. The full host suite passed 6,948 test/subtest outcomes
+across 30 packages, including all 31 new roots and 216 required names. Selected
+native Linux amd64/386 fixtures passed 3,886 named outcomes across 14 suites and
+736 root executions, with no failures or skips and confirmed cleanup. See
+[the finite contract](requirements-validation.md#firmware-and-tpm-inventory).
+
+This inventory-only slice adds no worker or catalog row and does not reduce the
+nine inactive functional families listed below. It establishes no security
+verdict, TPM health, measured-boot verification, attestation, firmware-lock
+assessment or physical continuity. Those broader features, optional Secure Boot
+image support, physical-PC pilot, installed-command/image qualification and
+release approval remain open. Quick v7, standard v8 and their budgets are
+unchanged.
+
 ### Bounded standard CPU stress
 
 The consumed standard path is implemented and has passed host, selected native

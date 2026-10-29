@@ -566,6 +566,36 @@ Current v7, its twelve workers, the 22-row catalog and historical v4/v5/v6
 contracts remain unchanged. The full host suite and selected native Linux
 amd64/386 fixtures passed; broader physical, image, durability and release gates remain open.
 
+## Firmware and TPM Inventory Assertions
+
+The finite producer records UEFI platform width, two independent firmware flags
+and enumerated TPM interface versions inside existing inventory payloads. Only
+`reported` fields carry values; `unavailable`, `malformed` and `unsupported`
+carry state alone. Raw names, scalar bytes, rejected input and provider error
+strings are not public attributes. The [finite contract](requirements-validation.md#firmware-and-tpm-inventory)
+defines the exact admitted values and row policy.
+
+Both `firmware_security` and `tpm` retain unavailable identity, without identity
+values or sources. A repeated ordinal, equal version or equal flag set cannot
+establish physical continuity; ordinal shifts and indistinguishable same-count
+replacement remain possible. Missing data does not prove absent hardware.
+
+All finite values/states and rows remain in the configuration graph. A changed
+configuration therefore requires a new plan for later execution. If final
+collection differs from the frozen graph, the existing finalizer retains the
+signed failed-integrity diagnostic and exact changed component references. It
+does not silently accept the old graph or discard the diagnostic. Ordinary
+comparison retains both configurations and unresolved continuity.
+
+Signatures authenticate the recorded bytes and signer relationship, not firmware
+truth, device health, measured boot or attestation. This producer is not a new
+strict evidence schema or a generic semantic validator for arbitrary inventory
+attributes. Existing no-view and semantic-view rules, linked parent references,
+and independently selected parent/child trust policies remain unchanged.
+The full host suite and selected native Linux amd64/386 fixtures passed. Quick
+v7, standard v8 and historical report behavior are retained; physical, image,
+durability and release gates remain separate.
+
 ## Standard CPU Stress Evidence
 
 The new observed result is `hhsoft.pc-tester.cpu-stress/v1` for scheduled

@@ -55,7 +55,7 @@ func (collector *LinuxCollector) Collect(ctx context.Context) (Snapshot, error) 
 		collection.collectCPU, collection.collectMemory, collection.collectDMI,
 		collection.collectBlock, collection.collectPCI, collection.collectNetwork,
 		collection.collectInput, collection.collectSound, collection.collectVideo,
-		collection.collectUSB, collection.collectPowerSupplies,
+		collection.collectUSB, collection.collectPowerSupplies, collection.collectFirmwareSecurity,
 	}
 	var components []Component
 	for _, collect := range groups {

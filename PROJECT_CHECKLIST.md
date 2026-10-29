@@ -610,8 +610,22 @@ the alpha still requires the separate documented release gates.
   transitions where supported.
 - [ ] Monitor temperatures, fans, clocks, power, and throttling throughout a run
   and test cooling response under sustained load.
-- [ ] Report Secure Boot, TPM, measured-boot, and firmware-lock capabilities
-  without changing firmware state or provisioning keys.
+- [x] Implement finite Linux firmware/TPM inventory: UEFI platform width,
+  independent SecureBoot and SetupMode flags, and enumerated TPM interface major
+  versions, with reported, unavailable, malformed or unsupported states. Keep
+  raw names private, identity unavailable and finite observations bound to the
+  configuration graph; no firmware changes or key provisioning.
+- [x] Qualify the integrated firmware collector, graph, signed reports, views
+  and comparison: 6,948 host test/subtest passes across 30 packages, including
+  all 31 new roots and 216 names. Selected native Linux amd64/386 fixtures
+  passed 3,886 named outcomes across 14 suites and 736 root executions, with
+  no failures or skips and confirmed cleanup. Physical firmware behavior and
+  broader security features remain unqualified; see
+  [the finite contract](docs/requirements-validation.md#firmware-and-tpm-inventory).
+- [ ] Implement measured-boot verification, firmware-lock capability reporting
+  and broader firmware-security assessment without changing firmware state or
+  provisioning keys. Finite inventory does not establish a security verdict,
+  attestation, TPM health or physical firmware qualification.
 - [ ] Test PCIe, Thunderbolt, and dock topology, link properties, and controlled
   hot-plug behavior with appropriate fixtures.
 - [ ] Measure RTC/monotonic discontinuities and drift against a trusted reference

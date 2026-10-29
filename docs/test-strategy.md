@@ -1656,6 +1656,58 @@ physical-PC, rebuilt-image, kernel-close/fsync or durability qualification.
 Existing release gates remain open; see
 [the field and validation contract](requirements-validation.md#power-supply-inventory).
 
+## Firmware and TPM Inventory Validation
+
+The complete feature passed 6,948 host test/subtest outcomes across 30 packages,
+with 17 platform test skips and one skipped package. All 31 new roots and
+216 required names passed once with parent ordering checked. Formatting, vet,
+Linux amd64/386/arm64 application builds, eight commands and eight postchecks
+passed.
+
+Selected native Linux amd64/386 fixtures passed 3,886 named outcomes across
+14 suites and 736 root executions: all 1,943 selected names and 368 roots per
+architecture, with no failures or skips. Nine ownership cases, 32 archive cases
+and six root postchecks passed, with confirmed cleanup. These runs qualify
+selected software fixtures; they do not establish physical firmware behavior,
+unsupported-platform execution, installed-CLI, race or durability coverage.
+
+Literal parser and collector oracles cover every finite field/state, raw ASCII
+before normalization, explicit non-ASCII input, EFI little-endian attributes,
+malformed lengths, unsupported values and conflicting 1/1 flags. No-data fixtures
+preserve literal earlier payloads and unchanged-renderer views. Completed invalid
+observations retain state-only rows, every enumerated TPM interface retains an
+ordinal, and all-unavailable EFI observations produce no row. Private-name and
+rejected-byte canaries must not appear in public results.
+
+Authentic scalar fixtures reach read/probe and checked-close failures for each
+role, including favorable data-plus-error discard. Directory batches, cached
+names, terminal probes, final-field cancellation and concurrent collectors have
+separate witnesses. Owned-core fault ledgers establish the acquired resources
+and exact operations reached; aggregate PathSource failures establish a narrower
+consumer boundary. Neither is a claim that every hidden owner fault is injected
+at every consumer.
+
+Independent graph/identity HMAC literals and exact comparison rows bind each
+new finite value/state and retain an identified control alongside unavailable
+firmware/TPM identity. Ordinal shifts and same-count replacement must not be
+upgraded to physical identity. Every new field remains in the graph rather than
+inheriting power telemetry's volatility policy.
+
+Consumer fixtures use the real collector with independently encoded signed
+legacy and linked reports, valid trusted/self-issued prerequisites, absent or
+both views, and re-signed semantic-view failures. Actual finalization preserves
+an unchanged-configuration positive and a signed failed-integrity configuration
+delta; real signed comparison checks exact references and rejects forged
+identities. Ordinary-file nonregular and oversized scalar failures reach the
+finalizer before entropy or output, with explicit tripwires. Signature success
+alone is not a generic finite-attribute semantic validator.
+
+The broader firmware-security matrix row still requires measured-boot and
+firmware-lock coverage and policy grading. Its worker budgets are not fulfilled
+by these four inventory fields. This slice adds no TPM commands, provisioning,
+firmware-policy changes, physical-device, installed-CLI, image, race or durability
+qualification. See [requirements and limits](requirements-validation.md#firmware-and-tpm-inventory).
+
 ## Bounded Standard CPU Stress Validation
 
 The new standard path must be qualified as a consumed workflow, separately from

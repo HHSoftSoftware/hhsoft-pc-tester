@@ -12,18 +12,20 @@ const SnapshotSchemaVersion = 1
 type ComponentType string
 
 const (
-	ComponentCPU         ComponentType = "cpu"
-	ComponentMemory      ComponentType = "memory"
-	ComponentSystem      ComponentType = "system"
-	ComponentBaseboard   ComponentType = "baseboard"
-	ComponentBlock       ComponentType = "block"
-	ComponentPCI         ComponentType = "pci"
-	ComponentNetwork     ComponentType = "network"
-	ComponentInput       ComponentType = "input"
-	ComponentSound       ComponentType = "sound"
-	ComponentVideo       ComponentType = "video"
-	ComponentUSB         ComponentType = "usb"
-	ComponentPowerSupply ComponentType = "power_supply"
+	ComponentCPU              ComponentType = "cpu"
+	ComponentMemory           ComponentType = "memory"
+	ComponentSystem           ComponentType = "system"
+	ComponentBaseboard        ComponentType = "baseboard"
+	ComponentBlock            ComponentType = "block"
+	ComponentPCI              ComponentType = "pci"
+	ComponentNetwork          ComponentType = "network"
+	ComponentInput            ComponentType = "input"
+	ComponentSound            ComponentType = "sound"
+	ComponentVideo            ComponentType = "video"
+	ComponentUSB              ComponentType = "usb"
+	ComponentPowerSupply      ComponentType = "power_supply"
+	ComponentFirmwareSecurity ComponentType = "firmware_security"
+	ComponentTPM              ComponentType = "tpm"
 )
 
 type Attribute struct {

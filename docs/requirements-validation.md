@@ -1557,6 +1557,59 @@ fixtures create no evdev nodes and collect no real keys. Physical input, full
 layout/rollover coverage, persistent device identity, total or peak allocation,
 blocked-kernel deadlines, rebuilt images and release approval remain open.
 
+The subsequent keyboard query-phase and report-value correction passed host
+and selected native Linux software qualification with Go 1.27.2. A key-state
+query can remove queued key events from the same evdev client. The correction
+retains the initial neutral/queue-flush boundary before fresh action credit,
+then makes no active post-baseline key-state query. A keyboard with complete
+actions stays in the read loop while another keyboard is unfinished, so its
+later malformed or lost events are not hidden by tentative completion.
+
+Event completion does not establish final neutrality. A surviving candidate
+must pass the bounded terminal identity, idle-read, complete-state, neutral and
+identity proof, followed by checked closure. Terminal bytes supply no new action
+credit. Queued input, a retry, nonneutral controls or a failed proof can revoke
+completion without restarting the observation window. Hard faults and cleanup
+uncertainty retain precedence over cancellation; cancellation or another
+device's failure cannot become an aggregate pass merely because one device
+retains diagnostic completion.
+
+`SYN_REPORT` values are ignored at both baseline and active frame boundaries.
+Positive, negative and signed-limit values are compatibility cases, not action
+evidence. `SYN_DROPPED`, unknown synchronization codes, malformed key transitions,
+partial frames and existing bounds retain their rejection rules. The six-control
+criteria, evidence schema, acquisition ownership and session policy are
+unchanged.
+
+The same two new test files were run against the predecessor on Windows amd64.
+All 80 required names completed: 48 passed and exactly the predicted 25 child
+tests and seven parent roots failed. Each failed child reported its expected
+assertion. With the corrected source, both focused Windows amd64 and 386 suites
+passed 345 test/subtest outcomes across 69 roots. Each included all 150 selected
+keyboard names across 25 roots and 125 parent intervals, including all 80 new
+regression names, with no failures, skips, missing names or duplicates.
+
+The full Windows amd64 suite passed 8,952 test/subtest outcomes with 18 permitted
+skips. Its 32 packages included 31 passing packages and one package with no test
+files. All 1,360 source roots and the separate 720-name storage-plus-keyboard
+selection completed, including 619 selected parent intervals, 23 fuzz seed
+children and 13 parallel children. This is seed-corpus execution, not a fuzzing
+campaign. Whole-module vet passed. All nine validation commands and seven
+postchecks passed; formatting preserved code tokens, literals and comments.
+
+Linux amd64 and 386 each passed all 150 selected names across 25 roots and
+125 direct-parent intervals. Each package completed with no failures, skips,
+missing names, duplicates or extra outcomes. Nine runtime ownership fixtures,
+32 archive cases and all six root postchecks passed. Source and transfer
+closure, archive contents, EOF and cleanup checks reconciled. The three Linux
+compile targets produced test artifacts; AArch64 was compiled but not executed.
+
+The earlier host, native, race and CLI results above retain their historical
+scope. This qualification exercises the injected queue model and software
+contracts; it does not reproduce a deployed-kernel race or qualify physical
+keyboards. Rebuilt images and the existing physical-PC pilot/release gates
+remain open.
+
 The pointer wheel-direction extension passed Windows and native Linux amd64/386
 software qualification on 2026-10-26. Definition 2 and functional evidence v2 require
 both directions of every advertised vertical/horizontal axis on each supported

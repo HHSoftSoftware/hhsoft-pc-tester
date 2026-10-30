@@ -46,10 +46,7 @@ func (state *keyboardState) consume(event keyboardEvent) {
 	if event.typeCode == 0 {
 		switch event.code {
 		case 0:
-			if event.value != 0 {
-				state.reject("malformed_events", false)
-				return
-			}
+			// SYN_REPORT values are undefined; only type and code frame events.
 			state.commit()
 		case 3:
 			state.reject("event_loss", true)

@@ -409,6 +409,31 @@ Physical key actions, broader layouts and rollover, aggregate allocation,
 blocked-kernel deadlines, rebuilt images, the ten-PC pilot and release gates
 remain open; see [requirements validation](requirements-validation.md).
 
+A source-reviewed keyboard correction separates key-state queries by phase.
+The initial neutral check may flush stale queued keys before action credit
+starts. After that baseline, completed keyboards remain observed while another
+is unfinished, with no active key-state query that could remove queued events.
+Final neutrality is established only during the bounded terminal proof, followed
+by checked closure. Racing input can revoke completion and return inconclusive
+without restarting the remaining observation window. Undefined `SYN_REPORT`
+values do not alter frame boundaries; event loss and malformed transitions
+still reject.
+
+With Go 1.27.2, the focused Windows amd64 and 386 suites each passed 345
+test/subtest outcomes, including all 150 selected keyboard names. The full
+Windows amd64 suite passed 8,952 outcomes with 18 permitted skips; whole-module
+vet also passed. The same new regression tests expose the predicted failures in
+the predecessor and pass with the corrected source.
+
+Native Linux amd64 and 386 each passed the 150-name correction selection across
+25 roots and 125 parent intervals, with no failures or skips. Nine ownership
+fixtures, 32 archive cases and all six root postchecks passed with confirmed
+cleanup. Linux amd64, 386 and AArch64 test artifacts compiled; AArch64 remains
+compile-only. Earlier keyboard results above retain their original scope. This
+injected queue-model regression is not a deployed-kernel race reproduction. The six controls,
+evidence schema and session policy are unchanged, and rebuilt-image,
+physical-device, pilot and release gates remain open.
+
 The CPU worker now adds twelve fixed scalar binary64 operations per suite, with
 per-worker counts and exact mismatch bits. Definition 2 uses CPU v3 evidence in
 that increment's eleven-worker v5 session; CPU v2 evidence keeps its historical

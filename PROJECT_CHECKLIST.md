@@ -397,6 +397,19 @@ the alpha still requires the separate documented release gates.
 - [x] Validate selected keyboard acquisition fixtures on Linux amd64/386:
   1,196 test/subtest outcomes across four suites, all 238 required root
   executions, no failures or skips, and confirmed cleanup.
+- [x] Validate the keyboard query-phase and report-value correction with
+  Go 1.27.2 on Windows amd64 and 386. Keep the initial neutral/queue-flush
+  boundary and continue reading completed keyboards while another is
+  unfinished. Post-baseline neutral queries belong only to final proof and
+  checked closure; racing terminal input may return inconclusive without
+  restarting the window. Ignore undefined `SYN_REPORT` values while retaining
+  loss and malformed-transition rejection. Each focused suite passed 345
+  test/subtest outcomes, including all 150 selected names.
+- [x] Qualify the selected correction fixtures on native Linux amd64 and 386:
+  each passed all 150 names across 25 roots and 125 parent intervals, with no
+  failures or skips and confirmed cleanup. Nine ownership and 32 archive cases
+  also passed. The injected queue model does not establish a deployed-kernel
+  race reproduction or physical-keyboard qualification.
 - [ ] Qualify the six-control keyboard check in rebuilt images and on physical
   keyboards, including multiple devices, held keys, incomplete actions,
   disconnects and cancellation. Full layouts and rollover remain separate.

@@ -180,6 +180,62 @@ counts, socket type and registry metadata-close failure. No real evdev nodes or
 key capture, standalone CLI or race run, physical-input qualification, or
 blocked-kernel deadline guarantee is claimed by this acquisition cohort.
 
+The query-phase correction's following regressions were exercised with
+Go 1.27.2 on Windows amd64 and 386 and in the selected native Linux amd64/386
+component cohort:
+
+- `TestKeyboardActiveQueryCannotEraseMalformedPacket` keeps keyboard A under
+  observation after its actions complete while keyboard B remains unfinished.
+  Inject a malformed complete key frame after A reports idle; no active
+  same-client key-state query may erase it. The next active read must reject it.
+- `TestKeyboardBaselineQueryStillExcludesRacingOldActions` retains the initial
+  neutral/queue-flush boundary. Stale or initially held actions cannot become
+  fresh pairs.
+- `TestKeyboardTerminalProofAloneSetsFinalNeutral` directly checks final proof.
+  Final neutrality is assigned only after that proof succeeds. Queued/partial
+  input, retry, nonneutral state and query/identity faults revoke the candidate.
+  Terminal events never add action credit; this test does not close owners.
+- `TestKeyboardTerminalTrafficDoesNotResumeObservation` permits earlier
+  conservative inconclusive after all event criteria are complete. It starts no
+  replacement observation window.
+- `TestKeyboardCandidateStopPreservesFinalProofAndCleanup` checks cancellation,
+  later-device read errors or event loss, and cancellation combined with Close
+  failure. Every acquired owner gets one Close attempt, and cleanup uncertainty
+  retains precedence. An individually retained diagnostic completion cannot turn
+  an interrupted or failed run into aggregate success.
+- `TestKeyboardReportValuesPreserveBaselineAndActiveFrames` treats zero,
+  positive, negative and signed-limit `SYN_REPORT` values identically on both
+  event layouts. The accompanying report-value tests require that empty reports
+  grant no pairs and that event loss, unknown sync codes, malformed transitions
+  and unfinished frames still reject.
+
+The same two new test files produced the exact predecessor witness on Windows
+amd64: 48 passing names and 32 expected failed outcomes, comprising 25 children
+and seven parent roots. Each failed child had exactly its expected assertion,
+bound to the actual test source line. All 80 new regression names passed in each
+corrected focused suite. The focused suites each passed 345 outcomes across 69
+roots, including the full 150-name, 25-root keyboard selection and all 125
+selected parent intervals, with no skips or failures.
+
+The full Windows amd64 suite passed 8,952 outcomes with 18 permitted skips
+across 1,360 roots and 32 packages; 31 packages passed and one had no test files.
+The 720-name storage-plus-keyboard selection, all 619 selected parent intervals,
+23 fuzz seed children and 13 parallel children reconciled. The seed cases are
+not a fuzzing campaign. Whole-module vet passed. All nine commands and seven
+postchecks passed, and the five formatted candidates preserved every code
+token, literal and comment. The predecessor retained all original source bytes
+and received only the same two formatted new test files.
+
+Each native Linux amd64/386 binary passed the exact 150-name selection across
+25 roots and 125 direct-parent intervals. Package and test lifecycles closed
+with no failures, skips, missing or extra names, or duplicates. Nine ownership
+fixtures, 32 archive cases and six root postchecks passed, including transfer,
+archive, EOF and cleanup reconciliation. Linux AArch64 has compile-only evidence.
+
+These are injected software regressions, not a deployed-kernel race
+reproduction or real-key capture. Earlier evidence keeps its original scope.
+Physical keyboards, rebuilt images, pilot and release qualification remain open.
+
 The separate guided `input.pointer.quick` worker observes relative `EV_REL`
 interfaces with both X and Y axes. During a default 30-second window, every
 supported interface must show left/right and up/down movement, a primary-button

@@ -59,8 +59,8 @@ func TestKeyboardStateRejectsImpossibleAndLostPackets(t *testing.T) {
 		"two transitions in packet": {{1, 42, 1}, {1, 42, 0}, {0, 0, 0}},
 		"invalid value":             {{1, 42, 3}, {0, 0, 0}},
 		"negative value":            {{1, 42, -1}, {0, 0, 0}},
-		"bad report":                {{0, 0, 1}}, "unknown sync": {{0, 2, 0}},
-		"drop": {{0, 3, 0}},
+		"unknown sync":              {{0, 2, 0}},
+		"drop":                      {{0, 3, 0}},
 	}
 	for name, events := range cases {
 		t.Run(name, func(t *testing.T) {

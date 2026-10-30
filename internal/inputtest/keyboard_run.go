@@ -264,11 +264,12 @@ func runKeyboardWith(ctx context.Context, options KeyboardOptions, backend keybo
 					if event.typeCode == 0 {
 						if event.code == 3 {
 							device.state.reject("event_loss", true)
-						} else if event.code != 0 || event.value != 0 {
+						} else if event.code != 0 {
 							device.state.reject("malformed_events", false)
 						}
 					}
-					device.baselineFrame = event.typeCode != 0 || event.code != 0 || event.value != 0
+					// SYN_REPORT delimits a frame regardless of its undefined value.
+					device.baselineFrame = event.typeCode != 0 || event.code != 0
 				}
 				device.pending = device.pending[device.source.eventSize:]
 			}
@@ -296,19 +297,15 @@ func runKeyboardWith(ctx context.Context, options KeyboardOptions, backend keybo
 			if !device.state.failed {
 				device.state.result.Status, device.state.result.Detail, device.state.result.FinalNeutral = StatusInconclusive, "incomplete_actions", false
 				if idle && len(device.pending) == 0 && device.state.complete() {
-					neutral, err := device.source.neutral()
-					if err != nil {
+					// A key-state query can discard queued key events on this client.
+					// Keep observing candidates while another device is unfinished;
+					// neutral state is proved only by the terminal recheck.
+					if err := device.source.validate(); err != nil {
 						device.state.reject("identity_changed", false)
 						observeError(err, "identity_changed")
 						return
-					} else if neutral {
-						if err := device.source.validate(); err != nil {
-							device.state.reject("identity_changed", false)
-							observeError(err, "identity_changed")
-							return
-						} else if !stop() {
-							device.state.result.Status, device.state.result.Detail, device.state.result.FinalNeutral = StatusPass, "", true
-						}
+					} else if !stop() {
+						device.state.result.Status, device.state.result.Detail = StatusPass, ""
 					}
 				}
 				if !device.state.failed && device.state.result.Status != StatusPass {
@@ -360,6 +357,7 @@ func runKeyboardWith(ctx context.Context, options KeyboardOptions, backend keybo
 // An earlier completion is only a candidate until its descriptor is closed.
 // This last bounded observation also runs on cancellation. It never interprets
 // or credits queued post-stop events, and starts no additional time window.
+// Racing input can revoke completion without resuming the observation loop.
 func recheckKeyboardPass(device *observedKeyboard) error {
 	validate := device.source.finalValidate
 	if validate == nil {
@@ -391,5 +389,6 @@ func recheckKeyboardPass(device *observedKeyboard) error {
 		device.state.reject("identity_changed", false)
 		return err
 	}
+	device.state.result.FinalNeutral = true
 	return nil
 }

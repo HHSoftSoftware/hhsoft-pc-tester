@@ -140,8 +140,9 @@ bounded checks are not a benchmark or comprehensive instruction test; legacy
 x86 soft-float exercises software arithmetic rather than the hardware FPU.
 
 The development standard profile now adds an explicit bounded CPU stress step.
-Select `session -profile standard` with a matching frozen standard plan; the
-normal boot menu and default session remain quick. Standard defaults to a
+Select `session -profile standard` with a matching frozen standard plan. Automatic
+boot and an omitted session profile remain quick; the development console requires
+explicit `S` to choose standard. Standard defaults to a
 900-second session budget and has thirteen workers, with stress immediately
 after a passing CPU quick check. The existing quick v7 path retains twelve
 workers. The catalog still contains 22 rows; nine families remain inactive.
@@ -168,6 +169,26 @@ that fixture. CPU time, utilization, all-core saturation and physical thermal
 behavior remain unqualified.
 See [the standard-profile contract](docs/requirements-validation.md#bounded-standard-cpu-stress)
 for finite outcomes, strict signing and the remaining validation gates.
+
+The development console now offers an explicit `S` choice for standard with
+session-local identity. Automatic start, Enter and `1` keep quick; the modern
+`K` deployment-key choice also stays quick. If quick tests were excluded, restore
+the defaults in `C` before selecting standard. Both startup scripts bind the
+chosen profile to the frozen plan and session. Standard uses a 15-minute session
+budget; its 950-second outer supervisor deadline is a policy, not a guarantee of
+complete process cleanup.
+
+This console increment passed the host suite, including 325 selected named
+outcomes; one Windows symlink fixture was skipped. Native Linux amd64 and 386
+validation passed all 652 selected named outcomes, and all 18 startup-shell
+fixture methods passed using owned command stubs. Native Linux amd64 and 386 VM
+runs also exercised explicit `S` input through a matching plan, session and CLI
+verification of a self-issued report, with cancellation smoke and a full
+600-second CPU load on each architecture. Thermal observations were synthetic at
+35 C. The earlier CPU API qualification remains separate. All four rebuilt
+bootable images, physical validation, the ten-PC pilot and release approval
+remain open. See the
+[console workflow contract](docs/requirements-validation.md#standard-console-launch).
 
 The RAM worker follows its three original patterns with `0xaa` initialization,
 ascending verification and inversion to `0x55`, descending verification and

@@ -7,6 +7,8 @@ import (
 	"os"
 	"reflect"
 	"time"
+
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/plan"
 )
 
 type retestInputKind uint8
@@ -16,6 +18,7 @@ const (
 	retestPublicKeyInput
 	retestFingerprintKeyInput
 	retestSigningKeyInput
+	retestLaunchSelectionInput
 )
 
 var (
@@ -60,6 +63,8 @@ func readRetestInputWithOperations(ctx context.Context, path string, kind retest
 		minimum, maximum = 32, 32
 	case retestSigningKeyInput:
 		minimum, maximum = 64, 64
+	case retestLaunchSelectionInput:
+		minimum, maximum = 1, plan.MaximumLaunchSelectionBytes
 	default:
 		return nil, errRetestInput
 	}

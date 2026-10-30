@@ -36,6 +36,7 @@ func runPlanWithInput(ctx context.Context, arguments []string, stdout, stderr io
 	keyEpoch := flags.String("key-epoch", "local-1", "non-secret deployment key epoch label")
 	fixtureComponents := flags.String("fixture-components", "", "internal file binding selected test-fixture component IDs")
 	selectionPath := flags.String("selection-file", "", "bounded JSON file listing safe quick-test exclusions")
+	launchSelectionPath := flags.String("launch-selection-file", "", "checked JSON file binding the launch profile and architecture")
 	if err := flags.Parse(arguments); err != nil {
 		return 2
 	}
@@ -45,6 +46,23 @@ func runPlanWithInput(ctx context.Context, arguments []string, stdout, stderr io
 	}
 	if *keyPath == "" {
 		fmt.Fprintln(stderr, "plan requires -fingerprint-key; the hardware graph is never exported with an unkeyed digest")
+		return 2
+	}
+	selectionSet, launchSelectionSet := false, false
+	flags.Visit(func(value *flag.Flag) {
+		if value.Name == "selection-file" {
+			selectionSet = true
+		}
+		if value.Name == "launch-selection-file" {
+			launchSelectionSet = true
+		}
+	})
+	if selectionSet && launchSelectionSet {
+		fmt.Fprintln(stderr, "plan selection modes are mutually exclusive")
+		return 2
+	}
+	if launchSelectionSet && *launchSelectionPath == "" {
+		fmt.Fprintln(stderr, "plan requires a nonempty -launch-selection-file")
 		return 2
 	}
 	var excludedTests []string
@@ -63,6 +81,22 @@ func runPlanWithInput(ctx context.Context, arguments []string, stdout, stderr io
 	if nilRetestInputValue(ctx) || readInput == nil || collect == nil || writeOutput == nil || ctx.Err() != nil {
 		fmt.Fprintln(stderr, "plan input acquisition failed")
 		return 1
+	}
+	if *launchSelectionPath != "" {
+		encoded, err := readInput(ctx, *launchSelectionPath, retestLaunchSelectionInput)
+		if err != nil {
+			fmt.Fprintln(stderr, "read launch selection: input acquisition failed")
+			return 1
+		}
+		excludedTests, err = plan.DecodeLaunchSelection(encoded, plan.Profile(strings.ToLower(strings.TrimSpace(*profile))), strings.TrimSpace(*architecture))
+		if err != nil {
+			fmt.Fprintln(stderr, "read launch selection: input acquisition failed")
+			return 1
+		}
+		if ctx.Err() != nil {
+			fmt.Fprintln(stderr, "plan input acquisition failed")
+			return 1
+		}
 	}
 	fingerprintKey, err := readInput(ctx, *keyPath, retestFingerprintKeyInput)
 	if err != nil || len(fingerprintKey) != 32 {

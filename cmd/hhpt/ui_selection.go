@@ -18,11 +18,24 @@ const maximumMenuLineBytes = 4096
 
 var errMenuLineTooLong = errors.New("menu selection exceeds the input limit")
 
+type uiSelectionFile interface {
+	io.Writer
+	io.Closer
+}
+
+type uiSelectionCreator func(string, int, os.FileMode) (uiSelectionFile, error)
+
+func createUISelectionFile(path string, flags int, mode os.FileMode) (uiSelectionFile, error) {
+	return os.OpenFile(path, flags, mode)
+}
+
 type quickMenuSelection struct {
-	outputPath   string
-	architecture string
-	tests        []string
-	excluded     map[string]bool
+	launchSelection bool
+	create          uiSelectionCreator
+	outputPath      string
+	architecture    string
+	tests           []string
+	excluded        map[string]bool
 }
 
 func newQuickMenuSelection(path, architecture string) (*quickMenuSelection, error) {
@@ -34,7 +47,7 @@ func newQuickMenuSelection(path, architecture string) (*quickMenuSelection, erro
 		return nil, err
 	}
 	return &quickMenuSelection{
-		outputPath: path, architecture: architecture, tests: tests,
+		outputPath: path, architecture: architecture, tests: tests, create: createUISelectionFile,
 		excluded: make(map[string]bool),
 	}, nil
 }
@@ -94,7 +107,19 @@ func (selection *quickMenuSelection) configure(ctx context.Context, reader *bufi
 	}
 }
 
-func (selection *quickMenuSelection) write() error {
+func (selection *quickMenuSelection) hasExclusions() bool {
+	for _, excluded := range selection.excluded {
+		if excluded {
+			return true
+		}
+	}
+	return false
+}
+
+func (selection *quickMenuSelection) write(ctx context.Context, profile plan.Profile) (failure error) {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
 	if selection == nil {
 		return nil
 	}
@@ -104,26 +129,63 @@ func (selection *quickMenuSelection) write() error {
 			excluded = append(excluded, id)
 		}
 	}
-	payload := struct {
-		ExcludedTests []string `json:"excluded_tests"`
-	}{excluded}
-	encoded, err := json.Marshal(payload)
+	var encoded []byte
+	var err error
+	if selection.launchSelection {
+		encoded, err = plan.EncodeLaunchSelection(profile, selection.architecture, excluded)
+	} else {
+		if profile != plan.ProfileQuick {
+			return errors.New("standard profile requires a launch selection")
+		}
+		payload := struct {
+			ExcludedTests []string `json:"excluded_tests"`
+		}{excluded}
+		encoded, err = json.Marshal(payload)
+		if err == nil {
+			_, err = plan.DecodeSelection(encoded, selection.architecture)
+		}
+		encoded = append(encoded, '\n')
+	}
 	if err != nil {
 		return err
 	}
-	if _, err := plan.DecodeSelection(encoded, selection.architecture); err != nil {
+	if err := ctx.Err(); err != nil {
 		return err
 	}
-	file, err := os.OpenFile(selection.outputPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	file, err := selection.create(selection.outputPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if nilRetestInputValue(file) {
+		if err != nil {
+			return err
+		}
+		return errors.New("selection output owner unavailable")
+	}
+	// Every acquired owner, including one returned alongside an error, closes
+	// once. Retain created bytes on every failure; publication is never retried.
+	defer func() {
+		closeErr := file.Close()
+		cancelErr := ctx.Err()
+		if failure == nil {
+			failure = closeErr
+		}
+		if failure == nil {
+			failure = cancelErr
+		}
+	}()
 	if err != nil {
 		return err
 	}
-	_, writeErr := file.Write(append(encoded, '\n'))
-	closeErr := file.Close()
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	n, writeErr := file.Write(encoded)
+	cancelErr := ctx.Err()
 	if writeErr != nil {
 		return writeErr
 	}
-	return closeErr
+	if n != len(encoded) {
+		return io.ErrShortWrite
+	}
+	return cancelErr
 }
 
 func readMenuLine(ctx context.Context, reader *bufio.Reader) (string, error) {

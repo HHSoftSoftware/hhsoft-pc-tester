@@ -80,23 +80,27 @@ if ! test -c "\$ui_console"; then
 fi
 printf '\n=== HHSoft PC Tester ===\nOffline hardware inspection and qualification\n\n' > /dev/console
 printf 'HHPT_UI_WAIT timeout=15s architecture=$target_architecture\n' > /dev/console
-if /usr/bin/hhpt ui -auto-start 15s -deployment-key-media -selection-output /run/hhpt/selection.json <"\$ui_console" >"\$ui_console" 2>&1; then
+if /usr/bin/hhpt ui -auto-start 15s -deployment-key-media -launch-selection-output /run/hhpt/launch-selection.json <"\$ui_console" >"\$ui_console" 2>&1; then
 	ui_status=0
 else
 	ui_status=\$?
 fi
-if test "\$ui_status" -eq 0 || test "\$ui_status" -eq 10; then
-	if ! test -f /run/hhpt/selection.json || test -L /run/hhpt/selection.json || ! chmod 0400 /run/hhpt/selection.json; then
-		printf 'HHPT_FAILED freeze-test-selection\n' > /dev/console
-		exit 1
-	fi
+# Outer deadlines are supervisor policy, not a proof of complete process cleanup.
+case \$ui_status in
+	0|10) profile=quick; session_timeout=5m; session_outer_timeout=350 ;;
+	11) profile=standard; session_timeout=15m; session_outer_timeout=950 ;;
+	*) printf 'HHPT_FAILED user-interface\n' > /dev/console; exit 1 ;;
+esac
+if ! test -f /run/hhpt/launch-selection.json || test -L /run/hhpt/launch-selection.json || ! chmod 0400 /run/hhpt/launch-selection.json; then
+	printf 'HHPT_FAILED freeze-test-selection\n' > /dev/console
+	exit 1
 fi
 key_epoch=ephemeral-session
 key_mode=ephemeral
 key_id=ephemeral-session
 fixture_flag=
 case \$ui_status in
-	0)
+	0|11)
 		head -c 32 /dev/urandom > /run/hhpt/fingerprint.key
 		;;
 	10)
@@ -122,7 +126,7 @@ case \$ui_status in
 		exit 1
 		;;
 esac
-printf 'HHPT_BOOT architecture=$target_architecture mode=safe-quick fingerprint_mode=%s key_epoch=%s key_id=%s output=tmpfs\n' "\$key_mode" "\$key_epoch" "\$key_id" > /dev/console
+printf 'HHPT_BOOT architecture=$target_architecture mode=safe-%s fingerprint_mode=%s key_epoch=%s key_id=%s output=tmpfs\n' "\$profile" "\$key_mode" "\$key_epoch" "\$key_id" > /dev/console
 if /usr/bin/hhpt inventory -fingerprint-key /run/hhpt/fingerprint.key -key-epoch "\$key_epoch" \$fixture_flag -output /run/hhpt/inventory.json; then
 		system_fingerprint=\$(awk '/"system_fingerprint":/ { wanted=1 } wanted && /"value":/ { gsub(/[,\"]/, ""); sub(/^[[:space:]]*value:[[:space:]]*/, ""); print; exit }' /run/hhpt/inventory.json)
 		test -n "\$system_fingerprint" || system_fingerprint=unavailable
@@ -133,17 +137,17 @@ if /usr/bin/hhpt inventory -fingerprint-key /run/hhpt/fingerprint.key -key-epoch
 			exit 1
 		fi
 		check_safety preflight
-		if /usr/bin/hhpt plan -fingerprint-key /run/hhpt/fingerprint.key -key-epoch "\$key_epoch" \$fixture_flag -profile quick -architecture $target_architecture -selection-file /run/hhpt/selection.json -output /run/hhpt/plan.json; then
+		if /usr/bin/hhpt plan -fingerprint-key /run/hhpt/fingerprint.key -key-epoch "\$key_epoch" \$fixture_flag -profile "\$profile" -architecture $target_architecture -launch-selection-file /run/hhpt/launch-selection.json -output /run/hhpt/plan.json; then
 			chmod 0400 /run/hhpt/plan.json || { printf 'HHPT_FAILED freeze-test-plan\n' > /dev/console; exit 1; }
 			plan_id=\$(sed -n 's/^[[:space:]]*"id": "\(sha256:[^"]*\)",*$/\1/p' /run/hhpt/plan.json | head -n 1)
 			scheduled_count=\$(grep -c '"status": "scheduled"' /run/hhpt/plan.json || true)
 			unsupported_count=\$(grep -c '"status": "unsupported"' /run/hhpt/plan.json || true)
-			printf 'HHPT_PLAN id=%s profile=quick scheduled=%s unsupported=%s output=/run/hhpt/plan.json\n' "\$plan_id" "\$scheduled_count" "\$unsupported_count" > /dev/console
+			printf 'HHPT_PLAN id=%s profile=%s scheduled=%s unsupported=%s output=/run/hhpt/plan.json\n' "\$plan_id" "\$profile" "\$scheduled_count" "\$unsupported_count" > /dev/console
 		else
 			printf 'HHPT_FAILED test-plan\n' > /dev/console
 			exit 1
 		fi
-		if /usr/bin/timeout -s KILL 350 /usr/bin/hhpt session -fingerprint-key /run/hhpt/fingerprint.key -key-epoch "\$key_epoch" \$fixture_flag -plan /run/hhpt/plan.json -evidence-dir /run/hhpt -timeout 5m -output /run/hhpt/session.hhpcr <"\$ui_console" >"\$ui_console" 2>&1; then
+		if /usr/bin/timeout -s KILL "\$session_outer_timeout" /usr/bin/hhpt session -fingerprint-key /run/hhpt/fingerprint.key -key-epoch "\$key_epoch" \$fixture_flag -profile "\$profile" -plan /run/hhpt/plan.json -evidence-dir /run/hhpt -timeout "\$session_timeout" -output /run/hhpt/session.hhpcr <"\$ui_console" >"\$ui_console" 2>&1; then
 			check_safety final
 			if ! test -s /run/hhpt/session-ready.txt || test -L /run/hhpt/session-ready.txt || ! test -f /run/hhpt/session-ready.txt; then
 				printf 'HHPT_FAILED session-ready-metadata\n' > /dev/console
@@ -153,7 +157,7 @@ if /usr/bin/hhpt inventory -fingerprint-key /run/hhpt/fingerprint.key -key-epoch
 			/usr/bin/hhpt save -fingerprint-key /run/hhpt/fingerprint.key -audit-output /dev/console /run/hhpt/session.hhpcr <"\$ui_console" >"\$ui_console" 2>&1 || printf 'HHPT_SAVE_FAILED report-retained-in-ram\n' > /dev/console
 		else
 			session_status=\$?
-			printf 'HHPT_FAILED quick-session exit=%s cleanup=unconfirmed evidence=/run/hhpt\n' "\$session_status" > /dev/console
+			printf 'HHPT_FAILED %s-session exit=%s cleanup=unconfirmed evidence=/run/hhpt\n' "\$profile" "\$session_status" > /dev/console
 			exit 1
 		fi
 		while :; do sleep 3600; done

@@ -320,11 +320,49 @@ the result. A readiness result only proves that the associated kernel interface
 could be accessed, not that every key, button, port, pixel, cell, link, or
 media sector works.
 
+## Start Standard from the Development Console
+
+The updated startup scripts offer `S` followed by Enter to request standard.
+The menu discloses the 600-second CPU load and 15-minute session budget before
+you choose it. Automatic start, Enter and `1` still select quick. On modern
+images, `K` remains a quick run with deployment-key media; `S` uses session-local
+identity on both modern and legacy paths.
+
+Standard requires the default test set. If you excluded quick tests, enter `C`,
+choose `A` to restore the defaults, return to the main menu, then select `S`.
+A refused standard choice leaves your quick selections intact. No selection is
+silently discarded to start the longer profile.
+
+The console exposes this choice when `ui -launch-selection-output` names the
+new handoff file. `plan -launch-selection-file` consumes that file with the same
+profile and architecture. The new UI flag cannot be combined with
+`-selection-output`, and the new planner flag cannot be combined with
+`-selection-file`. An explicitly empty new path is rejected; existing quick
+selection flags remain supported.
+
+The updated scripts freeze the launch selection and plan and pass the same
+profile to planning and the session. Quick keeps a five-minute session budget
+and 350-second outer supervisor policy; standard uses 15 minutes and 950 seconds.
+The outer deadlines do not establish complete process cleanup. Invalid handoffs
+and failed planning prevent the session; session or final safety failures prevent
+ready/save progression and retain available diagnostics.
+
+Host validation and selected native Linux amd64/386 tests have passed, along
+with all 18 startup-shell fixture methods using owned command stubs. Native
+Linux amd64 and 386 VM runs also exercised the explicit `S` path through a
+matching frozen plan, session and CLI verification of a self-issued report.
+Cancellation smoke and one full 600-second CPU load per architecture completed
+with confirmed cleanup. Those runs used synthetic 35 C thermal observations.
+Qualification of the four rebuilt bootable images, physical hardware, the
+ten-PC pilot and release approval remains separate; see the
+[console validation record](requirements-validation.md#standard-console-launch).
+
 ## Optional Standard CPU Stress
 
 This development path is opt-in. Host, selected native and real elapsed-window
 fixtures have passed; image and physical qualification remain open.
-The boot menu and an omitted session profile continue to select quick. A standard
+Automatic boot and an omitted session profile continue to select quick; the
+updated development console requires explicit `S` to choose standard. A standard
 plan does not by itself authorize the longer load; select the same profile in
 both commands:
 
@@ -973,9 +1011,10 @@ contract; their existing authorization and output rules remain in force.
   memory qualification. Full-media memory testing remains a separate future
   boot path.
 - Cancellation and deadlines rely on synchronous collectors cooperating;
-  they cannot preempt a blocked kernel operation. The boot script has a final
-  350-second KILL guard around the session command. A nonzero session exit
-  blocks `HHPT_READY` and save, even if report files already exist, and does
+  they cannot preempt a blocked kernel operation. The boot script's final KILL
+  guard is 350 seconds for quick and 950 seconds for standard. These are supervisor
+  policies, not universal cleanup deadlines. A nonzero session exit blocks
+  `HHPT_READY` and save, even if report files already exist, and does
   not confirm that nested workers were cleaned up. Do not manually resume that
   workflow. Periodic mount/network sampling cannot establish continuous safety
   or stop an uninterruptible kernel call. Run-wide thermal sampling passed host

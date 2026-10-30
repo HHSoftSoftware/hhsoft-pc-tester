@@ -667,8 +667,10 @@ reconciliation, RAM correctness, extended testing and pre-boot Memtest86+
 requirements remain open. Selected firmware observations establish neither
 usable OS RAM nor module health or physical continuity. Image/sysfs availability,
 the physical-PC pilot, all four release images, installed-command/image behavior,
-actual 600-second standard sessions, race/durability and release approval still
-require their documented qualification.
+race/durability and release approval still require their documented qualification.
+The later [Standard console qualification](requirements-validation.md#standard-console-launch)
+records completed native VM 600-second CPU loads with synthetic thermal
+observations; that evidence is separate from this inventory slice.
 
 ### Bounded standard CPU stress
 
@@ -702,6 +704,37 @@ extended and burn-in coverage, sensor/clock/power/throttling instrumentation,
 physical cooling behavior and performance grading remain open. This bounded
 increment does not alter the alpha candidate, four-image release, physical pilot
 or publication gates. See [the exact requirements](requirements-validation.md#bounded-standard-cpu-stress).
+
+
+### Explicit standard console launch
+
+The development console implements explicit standard selection while automatic
+start and the ordinary quick choices remain quick. Modern deployment-key entry
+also remains quick; standard uses session-local identity and requires the user
+to restore any actual quick exclusions. A strict versioned launch record binds
+profile, architecture and exclusions. Both startup scripts freeze that record
+and the plan and pass matching profiles to planning and the session. Standard
+uses a 900-second session budget and 950-second outer supervisor policy; quick
+keeps 300 and 350 seconds. The outer policies do not prove whole-process cleanup.
+
+The host suite passed 8,236 test/subtest outcomes across 30 packages, with 18 test
+skips and one package skip. The selected contract contains 326 names: 325 passed,
+and one permitted Windows symlink fixture skipped. Native Linux amd64 and 386
+validation then passed all 652 named outcomes across 92 roots and four package
+executions, with all 560 direct-parent relations checked and no missing, extra,
+duplicate, skipped or failed outcomes. All 18 startup-shell fixture methods
+passed using owned command stubs; the ownership, archive and final host checks
+also passed.
+
+The native Linux amd64 and 386 VM console-to-signed-report workflow is now
+validated with cancellation smoke and a full 600-second CPU load on each
+architecture, verified self-issued reports and confirmed cleanup. These runs
+used synthetic 35 C thermal observations. The earlier CPU API evidence retains
+its original scope. Complete profiles, physical sensors and CPUs, installed
+boot images and all four rebuilt images, the ten-PC pilot, race/durability and
+release approval remain open. The 950-second Standard supervisor remains a
+policy limit. See
+[the console requirements](requirements-validation.md#standard-console-launch).
 
 
 ## Phase 3 — complete profiles

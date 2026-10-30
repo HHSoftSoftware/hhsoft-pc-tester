@@ -401,9 +401,11 @@ SPD, ECC deltas, topology and slot locations, speed/rate/voltage/rank,
 firmware/OS capacity reconciliation, RAM correctness, broader working sets,
 extended stress and pre-boot Memtest86+ remain open. Image/sysfs exposure and
 permissions, physical-PC observations, installed-command/image behavior,
-race/durability qualification, actual 600-second standard sessions, all four
-release images, the physical pilot and
-required release approval remain separate gates. No memory-health,
+race/durability qualification, all four release images, the physical pilot and
+required release approval remain separate gates. Actual 600-second Standard
+workflow evidence belongs to the later
+[Standard console qualification](#standard-console-launch), which is limited to
+native VM runs with synthetic thermal observations. No memory-health,
 attestation or physical-continuity conclusion follows from this inventory.
 
 ## Bounded Standard CPU Stress
@@ -482,6 +484,98 @@ The alpha candidate `b1a5fb9` and its required four-ISO release set are unchange
 This result does not claim CPU utilization, scheduling continuity, complete
 instruction coverage, performance, throttling, cooling qualification or future
 hardware reliability.
+
+
+## Standard Console Launch
+
+This increment implements an explicit `S` console choice for standard. Automatic
+start, Enter and `1` remain quick; modern `K` remains quick with deployment-key
+media. Standard is offered only when `ui -launch-selection-output` names the new
+handoff file and uses session-local identity. Any actual true exclusion blocks
+standard until the operator restores the defaults; a refused choice preserves
+the quick selection. Legacy quick JSON and no-output behavior remain supported.
+
+The version-1 launch record has exactly `schema_version`, `profile`,
+`architecture` and `excluded_tests`. It binds quick or standard to the requested
+image architecture. Standard requires an explicit empty exclusion array; quick
+retains its finite safe selection rules. The decoder rejects missing, null,
+duplicate, aliased or unknown members, unsupported values and target mismatches.
+The planner accepts this record through `-launch-selection-file`, using the
+checked regular-file reader with a 16 KiB bound. Invalid launch selection stops
+before key acquisition, inventory collection or plan output. The startup scripts
+retain their existing earlier key/inventory work, so their downstream failure
+requirement is no session, ready marker or save.
+
+UI publication creates one exclusive file with mode 0600, checks the complete
+write count and write/close errors, and closes every acquired owner exactly once.
+It observes cancellation before creation and after creation, writing and closing;
+observed cancellation prevents a launch status and preserves the created file.
+The launch encoder's one final newline is retained. The UI rejects combining
+`-launch-selection-output` with `-selection-output`; the planner rejects combining
+`-launch-selection-file` with `-selection-file`. An explicitly empty new flag also
+fails before waiting, creating a file or acquiring planner inputs. The old-only
+empty flag retains its prior behavior.
+
+Both startup scripts map only admitted UI statuses to literal profile and timing
+choices, freeze the handoff and plan, and use matching plan/session profiles.
+Quick retains five minutes and a 350-second outer supervisor policy; standard
+uses 15 minutes and 950 seconds. These policies do not establish a universal
+process deadline or independently confirmed cleanup. Unknown statuses and
+invalid handoffs cannot fall back to quick. Failed session or final safety checks
+prevent ready/save progression and retain available diagnostics.
+
+The complete host suite passed 8,236 test/subtest outcomes across 30 packages,
+with 18 test skips and one package skip. Across the two selected packages,
+325 of 326 required names passed; the sole permitted Windows skip was
+`TestUILaunchSelectionExistingLinkIsPreserved` when the owned symlink fixture
+could not be created. The selected contract has 46 roots, no intermediate test
+groups and 280 direct-parent relations. Independent recount and formatting
+review preserved code tokens, literals and comments in all 12 candidate Go files.
+AArch64 and FreeBSD compilation do not establish native execution.
+
+Selected native Linux amd64 and 386 qualification passed all 652 named
+test/subtest outcomes across 92 roots and four package executions. The independent
+recount confirmed all 560 direct-parent relations and complete source-required
+lifecycles, with no missing, extra, duplicate, skipped or failed outcomes.
+All 18 startup-shell fixture methods passed using the real shell and owned
+command stubs. The nine process-ownership cases, 32 archive cases and six final
+host checks also passed. The shortened watchdog fixtures establish bounded
+fixture behavior; they do not establish an actual 950-second wait or CPU load.
+Relevant acceptance sources include the
+[UI ownership tests](../cmd/hhpt/ui_launch_selection_test.go) and
+[launch record tests](../internal/plan/launch_selection_test.go).
+
+Actual native Linux amd64 and 386 VM runs exercised `S` input through a matching
+frozen Standard plan, session and verified self-issued report. Each architecture
+completed a cancellation smoke before its full run, using two CPU workers.
+The measured session wall time and observed CPU load were recorded separately:
+
+| Architecture | Run | Session elapsed (ms) | CPU load observed (ms) | CPU evidence |
+| --- | --- | ---: | ---: | --- |
+| amd64 | Cancellation smoke | 5,521 | 2,024 | Aborted |
+| amd64 | Full | 711,388 | 600,000 | Pass |
+| 386 | Cancellation smoke | 5,900 | 2,012 | Aborted |
+| 386 | Full | 709,775 | 600,000 | Pass |
+
+Both full sessions exceeded 600,000 ms and each retained exactly 600,000 ms of
+CPU load evidence. The smoke records retained `operator_cancelled`; their short
+load windows provide cancellation evidence only. Full-session journals recorded
+`test_deadline`; this qualification covers the launch/report workflow and the
+recorded CPU windows, with individual hardware outcomes retained separately.
+All four calls passed CLI
+verification of report contents and the self-issued signature, with source,
+plan, ready-record and report bindings checked. This verification does not
+establish operator identity or a second independent cryptographic implementation.
+Owned process cleanup, unchanged inputs and fixture boundaries, archive closure
+and all six final host checks passed.
+
+The runs used read-only synthetic 35 C thermal observations and an empty hwmon
+view. The 950-second Standard supervisor remains a policy limit; these successful
+runs do not qualify an actual 950-second timeout event or a universal deadline
+for kernel or descendant cleanup. The earlier CPU API elapsed-window runs retain
+their original scope. Physical sensor/CPU validation, utilization or all-core
+claims, installed boot images and all four rebuilt images, the ten-PC pilot,
+complete-profile coverage, race/durability and release approval remain open.
 
 
 ## Linked Retest Contract

@@ -1,4 +1,4 @@
-"""Exercise real startup scripts with an inert quick-session boundary.
+"""Exercise real startup scripts with an inert quick/standard session boundary.
 
 The fixture checks arguments and files. It does not schedule workers, inspect
 hardware, sign reports, or reproduce Go coordinator safety decisions. No VM,
@@ -19,7 +19,7 @@ ALPINE = ROOT / "platform/alpine/mkimage/genapkovl-hhpt.sh"
 LEGACY = ROOT / "platform/buildroot/board/legacy-x86/rootfs-overlay/etc/init.d/S50hhpt"
 SELECTABLE_IDS = (
     "audio.readiness.quick", "cpu.quick", "display.operator.quick", "graphics.quick",
-    "input.keyboard.quick", "input.pointer.quick", "input.readiness.quick", "memory.quick", "network.readiness.quick",
+    "input.keyboard.quick", "input.pointer.quick", "input.readiness.quick", "inspection.exterior.quick", "memory.quick", "network.readiness.quick",
     "storage.readiness.quick", "usb.readiness.quick",
 )
 LEGACY_UNSUPPORTED = {"graphics.quick", "display.operator.quick"}
@@ -40,6 +40,8 @@ output = Path(arguments[arguments.index("-output") + 1]) if "-output" in argumen
 with (root / "events").open("a") as events:
     events.write(command + (" " + output.stem if command == "safety" else "") + "\n")
 (root / (command + "-arguments.json")).write_text(json.dumps(arguments))
+profile = configuration.get("profile", "quick")
+architecture = "legacy-x86" if configuration["legacy"] else configuration.get("architecture", "x86_64")
 epoch = "fixture-deployment" if configuration.get("deployment_key") else "ephemeral-session"
 common = ["-fingerprint-key", str(run / "fingerprint.key"), "-key-epoch", epoch]
 if configuration.get("deployment_key"):
@@ -70,8 +72,8 @@ if command == "ui":
     expected = (["-legacy"] if configuration["legacy"] else []) + ["-auto-start", "15s"]
     if not configuration["legacy"]:
         expected += ["-deployment-key-media"]
-    assert arguments == expected + ["-selection-output", str(run / "selection.json")]
-    selection = run / "selection.json"
+    assert arguments == expected + ["-launch-selection-output", str(run / "launch-selection.json")]
+    selection = run / "launch-selection.json"
     if configuration.get("ui_failure") or selection.exists() or selection.is_symlink():
         sys.exit(2)
     kind = configuration.get("selection_kind", "regular")
@@ -89,13 +91,16 @@ if command == "ui":
             if kind == "malformed":
                 stream.write('{"excluded_tests":')
             else:
-                json.dump({"excluded_tests": configuration.get("excluded_tests", [])}, stream)
-    sys.exit(10 if configuration.get("deployment_key") else 0)
+                json.dump({"schema_version": configuration.get("document_version", 1),
+                           "profile": configuration.get("document_profile", profile),
+                           "architecture": configuration.get("document_architecture", architecture),
+                           "excluded_tests": configuration.get("excluded_tests", [])}, stream)
+    sys.exit(configuration.get("ui_status", 10 if configuration.get("deployment_key") else (11 if profile == "standard" else 0)))
 elif command == "deployment-key":
     assert not configuration["legacy"]
     assert arguments == ["load-media", "-discovery-key", str(run / "media-discovery.key"),
                          "-audit-output", str(root / "console")]
-    assert stat.S_IMODE((run / "selection.json").stat().st_mode) == 0o400
+    assert stat.S_IMODE((run / "launch-selection.json").stat().st_mode) == 0o400
     if configuration.get("deployment_failure"):
         sys.exit(1)
     (run / "deployment-key.json").write_text(json.dumps(
@@ -111,16 +116,22 @@ elif command == "inventory":
                    "system_fingerprint": {"value": "hmac-sha256:" + "a" * 64}})
 elif command == "plan":
     architecture = "legacy-x86" if configuration["legacy"] else configuration.get("architecture", "x86_64")
-    assert arguments == common + ["-profile", "quick", "-architecture", architecture,
-                                 "-selection-file", str(run / "selection.json"), "-output", str(run / "plan.json")]
-    selection = run / "selection.json"
+    assert arguments == common + ["-profile", profile, "-architecture", architecture,
+                                 "-launch-selection-file", str(run / "launch-selection.json"), "-output", str(run / "plan.json")]
+    selection = run / "launch-selection.json"
     assert not selection.is_symlink() and selection.is_file()
     assert stat.S_IMODE(selection.stat().st_mode) == 0o400, "selection must be frozen before planning"
     try:
         decoded = json.loads(selection.read_text())
     except ValueError:
         sys.exit(2)
+    if not isinstance(decoded, dict) or set(decoded) != {"schema_version", "profile", "architecture", "excluded_tests"}:
+        sys.exit(2)
+    if type(decoded["schema_version"]) is not int or decoded["schema_version"] != 1 or decoded["profile"] != profile or decoded["architecture"] != architecture:
+        sys.exit(2)
     exclusions = decoded["excluded_tests"]
+    if profile == "standard" and exclusions != []:
+        sys.exit(2)
     if not isinstance(exclusions, list) or any(not isinstance(name, str) or name not in SELECTABLE_IDS for name in exclusions):
         sys.exit(2)
     if len(set(exclusions)) != len(exclusions):
@@ -132,7 +143,7 @@ elif command == "plan":
     # Deliberately not a production plan. Go tests own catalog validation and
     # scheduling; this marker proves the exact frozen file is handed on.
     write(output, {"id": "sha256:" + "b" * 64, "fixture": "inert handoff only",
-                   "excluded_tests": sorted(exclusions), "tests": []})
+                   "profile": profile, "architecture": architecture, "excluded_tests": sorted(exclusions), "tests": []})
     (root / "frozen-plan-bytes").write_bytes(output.read_bytes())
 elif command == "safety":
     phase = output.stem.removeprefix("safety-")
@@ -153,13 +164,15 @@ elif command == "safety":
     print("writable_block_mounts=0 active_non_loop_interfaces=0" +
           (" writable_block_mounts=1" if failure else ""))
 elif command == "session":
-    assert arguments == common + ["-plan", str(run / "plan.json"), "-evidence-dir", str(run),
-                                 "-timeout", "5m", "-output", str(run / "session.hhpcr")]
+    assert arguments == common + ["-profile", profile, "-plan", str(run / "plan.json"), "-evidence-dir", str(run),
+                                 "-timeout", "15m" if profile == "standard" else "5m", "-output", str(run / "session.hhpcr")]
     frozen = run / "plan.json"
     assert frozen.is_file() and not frozen.is_symlink()
     assert stat.S_IMODE(frozen.stat().st_mode) == 0o400, "plan must be frozen before session entry"
     assert frozen.read_bytes() == (root / "frozen-plan-bytes").read_bytes(), "frozen plan changed in transit"
     assert json.loads(frozen.read_text())["excluded_tests"] == sorted(configuration.get("excluded_tests", []))
+    assert json.loads(frozen.read_text())["profile"] == profile
+    assert json.loads(frozen.read_text())["architecture"] == architecture
     assert (root / "events").read_text().splitlines()[-3:] == ["safety safety-preflight", "plan", "session"]
     exit_code = configuration.get("session_exit", 0)
     write(run / "session-diagnostic.json", {"fixture": "session-boundary", "exit": exit_code})
@@ -183,9 +196,32 @@ else:
 '''
 
 
+TIMEOUT_STUB = r'''import json
+import os
+from pathlib import Path
+import sys
+root = Path(__file__).resolve().parent.parent
+configuration = json.loads((root / "configuration.json").read_text())
+arguments = sys.argv[1:]
+assert len(arguments) >= 5 and arguments[:2] == ["-s", "KILL"]
+assert arguments[3] == str(root / "tools/hhpt")
+command = arguments[4]
+expected = "950" if configuration.get("profile") == "standard" else "350"
+assert arguments[2] == (expected if command == "session" else "5")
+assert command in ("safety", "session")
+effective = list(arguments)
+if command == "session" and configuration.get("outer_timeout"):
+    effective[2] = "1"
+with (root / "timeout-arguments.jsonl").open("a") as events:
+    events.write(json.dumps({"requested": arguments, "effective": effective}) + "\n")
+os.execv("/usr/bin/timeout", ["/usr/bin/timeout"] + effective)
+'''
+
+
 class SupervisorFixtureSyntaxTests(unittest.TestCase):
     def test_embedded_session_fixture_compiles(self):
         compile(STUB, "runtime-session-boundary-fixture", "exec")
+        compile(TIMEOUT_STUB, "runtime-timeout-argument-fixture", "exec")
 
 
 @unittest.skipUnless(sys.platform.startswith("linux") and Path("/bin/sh").is_file(),
@@ -202,10 +238,13 @@ class RuntimeSafetySupervisorTests(unittest.TestCase):
         (root / "configuration.json").write_text(json.dumps({"legacy": legacy, **configuration}))
         if configuration.get("selection_kind") == "existing":
             (root / "run").mkdir()
-            (root / "run/selection.json").write_text("existing selection must not be replaced\n")
+            (root / "run/launch-selection.json").write_text("existing selection must not be replaced\n")
         executable = root / "tools/hhpt"
         executable.write_text("#!" + sys.executable + "\n" + STUB)
         executable.chmod(0o700)
+        timeout = root / "tools/timeout"
+        timeout.write_text("#!" + sys.executable + "\n" + TIMEOUT_STUB)
+        timeout.chmod(0o700)
         if legacy:
             script = LEGACY.read_text()
         else:
@@ -219,12 +258,9 @@ class RuntimeSafetySupervisorTests(unittest.TestCase):
             generated = subprocess.run(["/bin/sh", "-c", "target_architecture=" + architecture + "\ncat <<EOF\n" + body + "\nEOF\n"],
                                        capture_output=True, text=True, timeout=5, check=True)
             script = generated.stdout
-        if configuration.get("outer_timeout"):
-            guard = "/usr/bin/timeout -s KILL 350 /usr/bin/hhpt session "
-            self.assertEqual(script.count(guard), 1, "expected one terminal session watchdog")
-            script = script.replace(guard, "/usr/bin/timeout -s KILL 1 /usr/bin/hhpt session ")
         substitutions = {
             "/run/hhpt": str(root / "run"), "/usr/bin/hhpt": str(executable),
+            "/usr/bin/timeout": str(timeout),
             "/dev/console": str(root / "console"), "/dev/tty0": str(root / "console"),
             "/dev/tty1": str(root / "console"), "/dev/urandom": str(root / "entropy"),
             "/etc/shadow": str(root / "shadow"),
@@ -243,6 +279,12 @@ class RuntimeSafetySupervisorTests(unittest.TestCase):
         events = (root / "events").read_text().splitlines()
         return root, result, events, (root / "console").read_text()
 
+    @staticmethod
+    def expected_launch(legacy, exclusions=None, profile="quick", architecture="x86_64"):
+        return {"schema_version": 1, "profile": profile,
+                "architecture": "legacy-x86" if legacy else architecture,
+                "excluded_tests": [] if exclusions is None else exclusions}
+
     def assert_ready(self, root, result, events, console, save_failed=False):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr + console)
         expected = ["ui"] + (["deployment-key"] if "deployment-key" in events else [])
@@ -250,16 +292,23 @@ class RuntimeSafetySupervisorTests(unittest.TestCase):
         self.assertEqual(console.count("HHPT_READY fixture=inert-session-handoff"), 1)
         self.assertEqual("HHPT_SAVE_FAILED" in console, save_failed)
         self.assertEqual((root / "run/session.hhpcr").read_bytes(), REPORT_FIXTURE)
-        for name in ("plan.json", "selection.json"):
+        for name in ("plan.json", "launch-selection.json"):
             self.assertEqual(stat.S_IMODE((root / "run" / name).stat().st_mode), 0o400)
         self.assertEqual((root / "run/plan.json").read_bytes(), (root / "frozen-plan-bytes").read_bytes())
+        profile = json.loads((root / "configuration.json").read_text()).get("profile", "quick")
+        timing = [json.loads(line) for line in (root / "timeout-arguments.jsonl").read_text().splitlines()]
+        self.assertEqual([(row["requested"][2], row["requested"][4]) for row in timing],
+                         [("5", "safety"), ("950" if profile == "standard" else "350", "session"), ("5", "safety")])
+        self.assertTrue(all(row["requested"] == row["effective"] for row in timing))
+        self.assertIn("mode=safe-" + profile, console)
+        self.assertIn("profile=" + profile, console)
 
     def test_default_selection_hands_frozen_plan_to_one_session(self):
         for legacy, architecture in ((False, "x86_64"), (False, "x86"), (False, "aarch64"), (True, "legacy-x86")):
             with self.subTest(legacy=legacy, architecture=architecture):
                 root, result, events, console = self.run_supervisor(legacy, architecture=architecture)
                 self.assert_ready(root, result, events, console)
-                self.assertEqual(json.loads((root / "run/selection.json").read_text()), {"excluded_tests": []})
+                self.assertEqual(json.loads((root / "run/launch-selection.json").read_text()), self.expected_launch(legacy, architecture=architecture))
                 self.assertEqual(json.loads((root / "run/plan.json").read_text())["excluded_tests"], [])
                 self.assertIn("architecture=" + architecture, console)
 
@@ -270,7 +319,7 @@ class RuntimeSafetySupervisorTests(unittest.TestCase):
                 with self.subTest(legacy=legacy, exclusions=exclusions):
                     root, result, events, console = self.run_supervisor(legacy, excluded_tests=exclusions)
                     self.assert_ready(root, result, events, console)
-                    self.assertEqual(json.loads((root / "run/selection.json").read_text()), {"excluded_tests": exclusions})
+                    self.assertEqual(json.loads((root / "run/launch-selection.json").read_text()), self.expected_launch(legacy, exclusions))
                     self.assertEqual(json.loads((root / "run/plan.json").read_text())["excluded_tests"], sorted(exclusions))
 
     def test_deployment_start_preserves_identity_and_selection_arguments(self):
@@ -308,7 +357,7 @@ class RuntimeSafetySupervisorTests(unittest.TestCase):
                     elif kind == "existing":
                         self.assertEqual(events, ["ui"])
                         self.assertIn("HHPT_FAILED user-interface", console)
-                        self.assertEqual((root / "run/selection.json").read_text(), "existing selection must not be replaced\n")
+                        self.assertEqual((root / "run/launch-selection.json").read_text(), "existing selection must not be replaced\n")
                     else:
                         self.assertEqual(events, ["ui"])
                         self.assertIn("HHPT_FAILED freeze-test-selection", console)
@@ -353,7 +402,7 @@ class RuntimeSafetySupervisorTests(unittest.TestCase):
                     self.assertIn("HHPT_FAILED quick-session exit=" + str(exit_code), console)
                     self.assertNotIn("HHPT_READY", console)
                     self.assertEqual(json.loads((root / "run/session-diagnostic.json").read_text())["exit"], exit_code)
-                    for name in ("inventory.json", "selection.json", "plan.json", "safety-preflight.json"):
+                    for name in ("inventory.json", "launch-selection.json", "plan.json", "safety-preflight.json"):
                         self.assertTrue((root / "run" / name).is_file(), name)
                     self.assertEqual((root / "run/session.hhpcr").exists(), artifacts)
                     self.assertEqual((root / "run/session-ready.txt").exists(), artifacts)
@@ -403,6 +452,69 @@ class RuntimeSafetySupervisorTests(unittest.TestCase):
                         self.assertEqual((root / "run/session-ready.txt").exists(), phase == "final")
                         if phase == "final":
                             self.assertEqual((root / "run/session.hhpcr").read_bytes(), REPORT_FIXTURE)
+
+    def test_standard_handoff_uses_matching_profile_and_real_timeout_arguments(self):
+        for legacy, architecture in ((False, "x86_64"), (False, "x86"), (False, "aarch64"), (True, "legacy-x86")):
+            with self.subTest(legacy=legacy, architecture=architecture):
+                root, result, events, console = self.run_supervisor(legacy, profile="standard", architecture=architecture)
+                self.assert_ready(root, result, events, console)
+                self.assertEqual(json.loads((root / "run/launch-selection.json").read_text()), self.expected_launch(legacy, profile="standard", architecture=architecture))
+                for command in ("plan", "session"):
+                    arguments = json.loads((root / (command + "-arguments.json")).read_text())
+                    self.assertEqual(arguments[arguments.index("-profile") + 1], "standard")
+                self.assertNotIn("deployment-key", events)
+
+    def test_unknown_status_never_reaches_inventory_or_session(self):
+        for legacy in (False, True):
+            for status in (2, 12, 99, 255):
+                with self.subTest(legacy=legacy, status=status):
+                    _, result, events, console = self.run_supervisor(legacy, ui_status=status)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertEqual(events, ["ui"])
+                    self.assertIn("HHPT_FAILED user-interface", console)
+                    self.assertNotIn("HHPT_READY", console)
+
+    def test_profile_architecture_or_standard_exclusion_mismatch_stops_before_session(self):
+        cases = ({"document_profile": "standard"},
+                 {"profile": "standard", "document_profile": "quick"},
+                 {"profile": "standard", "document_architecture": "not-the-image"},
+                 {"profile": "standard", "document_version": 2},
+                 {"profile": "standard", "excluded_tests": ["cpu.quick"]})
+        for legacy in (False, True):
+            for configuration in cases:
+                with self.subTest(legacy=legacy, configuration=configuration):
+                    _, result, events, console = self.run_supervisor(legacy, **configuration)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertEqual(events, ["ui", "inventory", "safety safety-preflight", "plan"])
+                    self.assertIn("HHPT_FAILED test-plan", console)
+                    self.assertNotIn("HHPT_READY", console)
+
+    def test_standard_failure_paths_prevent_ready_and_save(self):
+        cases = ({"selection_kind": "malformed"}, {"session_exit": 12},
+                 {"phase": "final", "kind": "mount"}, {"ready_kind": "missing"})
+        for legacy in (False, True):
+            for configuration in cases:
+                with self.subTest(legacy=legacy, configuration=configuration):
+                    _, result, events, console = self.run_supervisor(legacy, profile="standard", **configuration)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertNotIn("save", events)
+                    self.assertNotIn("HHPT_READY", console)
+                    if "session_exit" in configuration:
+                        self.assertIn("HHPT_FAILED standard-session exit=12", console)
+
+    def test_standard_terminal_watchdog_preserves_diagnostics_without_ready(self):
+        for legacy in (False, True):
+            with self.subTest(legacy=legacy):
+                root, result, events, console = self.run_supervisor(legacy, profile="standard", outer_timeout=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(events, ["ui", "inventory", "safety safety-preflight", "plan", "session"])
+                self.assertIn("HHPT_FAILED standard-session", console)
+                self.assertNotIn("HHPT_READY", console)
+                self.assertTrue((root / "run/session-diagnostic.json").is_file())
+                self.assertEqual((root / "run/session.hhpcr").read_bytes(), REPORT_FIXTURE)
+                calls = [json.loads(line) for line in (root / "timeout-arguments.jsonl").read_text().splitlines()]
+                self.assertEqual(calls[-1]["requested"][2], "950")
+                self.assertEqual(calls[-1]["effective"][2], "1")
 
     def test_save_failure_preserves_completed_report(self):
         for legacy in (False, True):

@@ -84,6 +84,7 @@ func TestUISelectionNeverStartsOnIncompleteInput(t *testing.T) {
 	for name, input := range map[string]string{
 		"empty": "", "customized": "c\n2\n", "back": "c\n2\n\n", "partial start": "1",
 		"partial key": "k", "partial test": "c\n2", "invalid": "unknown\n",
+		"partial standard": "s", "unavailable standard": "s\n",
 		"oversized start": strings.Repeat(" ", maximumMenuLineBytes+1) + "1\n",
 		"oversized test":  "c\n" + strings.Repeat(" ", maximumMenuLineBytes+1) + "2\n",
 	} {

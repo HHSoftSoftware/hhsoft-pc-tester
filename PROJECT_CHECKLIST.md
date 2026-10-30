@@ -134,6 +134,26 @@ the alpha still requires the separate documented release gates.
   startup supervisors retain independent safety checks, architecture limits,
   and unavailable-hardware reasons. Application menu-to-report verification
   passes for modern x64/x86 and legacy x86; rebuilt-image gates remain separate.
+- [x] Implement and host-validate explicit standard console selection with
+  matching frozen profile/architecture handoff and plan/session profiles.
+  Automatic quick, modern quick deployment-key selection and legacy quick
+  behavior remain available; standard requires explicit restoration of actual
+  exclusions. The host suite passed 8,236 test/subtest outcomes across 30 packages,
+  with 18 test skips and one package skip. Of 326 selected names, 325 passed and
+  the permitted Windows symlink fixture skipped.
+- [x] Qualify the selected standard-console source on Linux amd64 and 386:
+  652 named outcomes across 92 roots and four package executions passed, with
+  560 direct-parent relations checked and no missing, extra, duplicate, skipped
+  or failed outcomes. All 18 startup-shell fixture methods, nine process-ownership
+  cases, 32 archive cases and six final host checks passed. The shell fixtures use
+  owned command stubs; they do not establish the actual Standard workflow.
+- [x] Qualify the Standard console-to-plan-to-session-to-signed-report workflow
+  in native Linux amd64 and 386 VM runs, including cancellation smoke, a full
+  600-second CPU load on each architecture, verified self-issued reports and
+  confirmed cleanup. Thermal observations were synthetic at 35 C. Qualification
+  of all four rebuilt bootable images, physical hardware, the ten-PC pilot and
+  release approval remains open.
+  See [the console contract](docs/requirements-validation.md#standard-console-launch).
 - [ ] Provide complete quick, standard, extended, burn-in, and destructive
   profiles, including burn-in scheduling and its adapter-contract support.
 - [x] Report the active quick worker, elapsed time, and remaining shared budget;

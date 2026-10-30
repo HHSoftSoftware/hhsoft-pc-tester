@@ -27,6 +27,10 @@ func runPlanWithDestination(ctx context.Context, arguments []string, stdout, std
 }
 
 func runPlanWithInput(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, writeOutput destinationWriter, readInput retestInputReader) int {
+	return runPlanWithDocumentInput(ctx, arguments, stdout, stderr, collect, writeOutput, readInput, readSmallRegularFile)
+}
+
+func runPlanWithDocumentInput(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, writeOutput destinationWriter, readInput retestInputReader, readDocument smallRegularReader) int {
 	flags := flag.NewFlagSet("plan", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	profile := flags.String("profile", string(plan.ProfileQuick), "quick, standard, extended, or destructive")
@@ -67,7 +71,11 @@ func runPlanWithInput(ctx context.Context, arguments []string, stdout, stderr io
 	}
 	var excludedTests []string
 	if *selectionPath != "" {
-		encoded, err := readSmallRegularFile(*selectionPath, plan.MaximumSelectionBytes)
+		if readDocument == nil {
+			fmt.Fprintln(stderr, "read quick-test selection: input acquisition failed")
+			return 1
+		}
+		encoded, err := readDocument(*selectionPath, plan.MaximumSelectionBytes)
 		if err != nil {
 			fmt.Fprintf(stderr, "read quick-test selection: %v\n", err)
 			return 1

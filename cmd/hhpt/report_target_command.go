@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/ed25519"
 	"crypto/sha256"
-	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -152,19 +151,6 @@ func runPersistWith(ctx context.Context, arguments []string, stdout, stderr io.W
 		return 1
 	}
 	return writeQuickResult(receipt, *outputPath, stdout, stderr, "persistence receipt")
-}
-
-func readSmallRegularFile(path string, maximum int64) ([]byte, error) {
-	file, metadata, err := openRegularNoSymlink(path, maximum)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	encoded, err := io.ReadAll(io.LimitReader(file, maximum+1))
-	if err != nil || int64(len(encoded)) != metadata.Size() {
-		return nil, errors.New("file changed while reading")
-	}
-	return encoded, nil
 }
 
 func defaultReportName(sessionID, manifestDigest string) string {

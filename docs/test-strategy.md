@@ -1455,9 +1455,11 @@ credit.
 
 These fixtures do not establish installed-CLI execution, unsupported-platform
 acquisition, physical media, kernel-close failures, blocked-call deadlines,
-secure erasure, rollback or durability. Three legacy raw-key calls remain after
-this source change; audit, frozen-plan/evidence and live report ownership remain
-separate work. Existing image, physical-PC and release gates stay open.
+secure erasure, rollback or durability. Three legacy raw-key calls remained after
+that source change. Frozen-plan/evidence closure was outside its key-input scope;
+see the later [small-document reader validation](#small-regular-file-input-closure-validation).
+Audit and live report ownership remain separate work. Existing image, physical-PC
+and release gates stay open.
 
 ## Persistence Key Input Ownership Validation
 
@@ -1501,9 +1503,11 @@ failure behavior; output failure after persistence does not imply rollback.
 Supported Linux/Windows ordinary-file fixtures must isolate the real key loader
 from media persistence with an injected persister. Any real-dispatch negative
 needs barriers that prevent a media write. Other-OS rejection or a test-only
-forwarding adapter gives no supported acquisition credit. The remaining deployment
-raw-key call and authorization/audit/frozen-plan/evidence/live-source owners stay
-separate. These tests add no installed-CLI, physical-media, kernel-close,
+forwarding adapter gives no supported acquisition credit. The deployment raw-key
+call remained at that stage. Authorization-file and frozen-plan/evidence closure
+were outside that key-input scope; see the later
+[small-document reader validation](#small-regular-file-input-closure-validation).
+Audit and live-source owners remain separate. These tests add no installed-CLI, physical-media, kernel-close,
 blocked-call deadline, secure-erasure or durability claim; existing image,
 physical-PC and release gates remain open.
 
@@ -1547,11 +1551,62 @@ leaves the token media mounted read-only. This is not an output-fault fix.
 Linux/Windows ordinary-file cases must exercise exact key length through the real
 loader while injecting later effects. Real wrapper/dispatcher negatives must fail
 before device access; the other-OS rejection root remains unexecuted. The final raw-key caller/definition removal needs an
-exact source census, not a keyword-only claim of complete ownership. Audit/token,
-mount, activation-output, authorization, frozen-plan/evidence and live-source
-owners remain separate. No installed-CLI, physical-media, kernel-close, deadline,
+exact source census, not a keyword-only claim of complete ownership.
+Authorization-file and frozen-plan/evidence closure were outside that discovery-key
+scope; see the later [small-document reader validation](#small-regular-file-input-closure-validation).
+Audit/token, mount, activation-output and live-source owners remain separate.
+No installed-CLI, physical-media, kernel-close, deadline,
 secure-erasure, rollback or durability credit is implied; existing image,
 physical-PC and release gates remain open.
+
+## Small Regular-file Input Closure Validation
+
+The [shared-reader contract](requirements-validation.md#small-regular-file-input-closure)
+requires nil returned bytes on acquisition, read, length or close failure.
+Independent fixtures cover exact and multi-chunk bytes, short and excess input,
+errors with returned bytes, read-plus-close faults, invalid limits, missing or
+typed-nil owners, malformed metadata and owners returned with errors. Operation
+ledgers distinguish metadata closure from readable closure, check one close
+attempt per acquired owner and reject same-owner transfer.
+
+Linux-specific fixtures use owned regular files, a symbolic link and a FIFO.
+They check pinned-object behavior when the pathname is replaced and wrap real
+owners to inject metadata/readable Close errors. Those injected errors qualify
+propagation and byte rejection, not a kernel close failure. The non-Linux
+adapter's fixtures preserve its `lstat`/open/identity/size behavior without
+claiming Linux's stronger acquisition policy.
+
+Planner cases require selection failure before key acquisition, collection or
+output, and preserve usage precedence and successful selection. Six routing
+cases exercise quick and standard launch records, explicit empty launch paths,
+mutually supplied modes (including empty legacy selection) and malformed launch
+records. A legacy-reader tripwire keeps the launch-record path separate.
+
+The Windows amd64 full suite passed 8,303 test/subtest outcomes and 30 packages,
+with 18 test skips and one package skip. Actual Windows 386 command tests passed
+3,207 names and one package, with six test skips. Each architecture ran and
+passed exactly the 67 selected names under eight roots, with all 59 direct
+parent lifetimes satisfied. No selected name was skipped, missing, duplicated
+or extra. The empty Windows 386 support probe contributed no test names.
+
+All 11 commands and seven postchecks passed, including full host vet and four
+test-binary cross-builds. The seven formatted Go files retained every code
+token, literal and comment. Linux arm64 and FreeBSD amd64 remain compilation-only.
+
+Linux amd64 and 386 each executed the exact 76 selected names and 11 roots in
+a VM, with all 65 direct parent intervals satisfied: 152 named passes, 22 root
+executions and 130 parent intervals across two passing packages. There were no
+failures, skips, missing, extra or duplicate names and no intermediate groups.
+This includes the Linux symbolic-link/FIFO, pathname-replacement and real-owner
+fixtures. Nine runtime ownership fixtures, 32 archive fixtures and all six
+boundary postchecks passed, with cleanup confirmed. Two expected cleanup-uncertainty
+rejections had confirmed fixture teardown, separately from the confirmed cleanup
+of this qualification run.
+
+Existing authorization, finalization, session, journal and Standard launch
+regressions remain required alongside the new fixtures. Kernel-close faults,
+blocked-call preemption, file-content immutability, `fsync`, durability,
+installed-image behavior and physical media remain outside this increment.
 
 ## Bounded Exterior Inspection Validation
 

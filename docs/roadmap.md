@@ -456,9 +456,11 @@ current evidence and the session's fresh finalization context. The host suite
 passed 5,053 test/subtest outcomes and all 121 required host roots. Selected
 Linux amd64/386 fixtures passed 1,934 outcomes across eight suites and 256 root
 executions, with zero failures or skips and confirmed cleanup. Five legacy
-raw-key calls in discovery, persistence and save remain. Frozen-plan/evidence
-closure, persistence's live source owner and the broader feature roadmap remain
-separate work; existing image, physical-PC and release gates are unchanged.
+raw-key calls in discovery, persistence and save remained at that stage.
+Frozen-plan/evidence closure is addressed by the later
+[small-document reader increment](requirements-validation.md#small-regular-file-input-closure).
+Persistence's live source owner and the broader feature roadmap remain separate
+work; existing image, physical-PC and release gates are unchanged.
 
 The report-target fingerprint input implementation now uses the existing
 bounded 32-byte owned reader before either discovery or authorization. Fixed
@@ -487,9 +489,11 @@ The [validation record](requirements-validation.md#save-fingerprint-input-owners
 keeps selected coverage, host skips and platform limits explicit.
 
 This implementation reduces the four legacy calls recorded at the report-target
-stage to three in deployment discovery and persistence. Audit and live report
-owners, frozen-plan/evidence closure and the broader feature roadmap remain
-separate work. It adds no unsupported-platform, installed-CLI, physical-media,
+stage to three in deployment discovery and persistence. Frozen-plan/evidence
+closure was outside that key-input scope; see the later
+[small-document reader increment](requirements-validation.md#small-regular-file-input-closure).
+Audit and live report owners and the broader feature roadmap remain separate
+work. It adds no unsupported-platform, installed-CLI, physical-media,
 deadline, rollback or durability qualification. Existing image, physical-PC and
 release gates remain open.
 
@@ -505,9 +509,11 @@ records 5,374 host test/subtest passes and 444 native passes in two suites, with
 28 roots and 222 required names passing on each native architecture.
 
 This increment reduces the three legacy raw-key calls recorded at the save stage
-to one in deployment discovery. Authorization-file, audit, frozen-plan/evidence
-and live report-source ownership remain separate work, alongside the broader
-feature roadmap. It adds no unsupported-platform, installed-CLI, physical-media,
+to one in deployment discovery. Authorization-file and frozen-plan/evidence
+closure were outside that key-input scope; see the later
+[small-document reader increment](requirements-validation.md#small-regular-file-input-closure).
+Audit and live report-source ownership remain separate work, alongside the
+broader feature roadmap. It adds no unsupported-platform, installed-CLI, physical-media,
 deadline, rollback or durability qualification. Existing image, physical-PC and
 release gates remain open.
 
@@ -523,9 +529,11 @@ or skips. The [validation record](requirements-validation.md#deployment-discover
 separates these results from the historical persistence evidence.
 
 The preceding one-call count describes the persistence stage; this increment
-removes that final caller and the unused reader. Audit, token/mount and activation
-ownership, authorization-file closure, frozen-plan/evidence and live report
-lifetimes remain distinct work alongside the broader feature roadmap. This adds
+removes that final caller and the unused reader. Authorization-file and
+frozen-plan/evidence closure were outside that discovery-key scope; see the later
+[small-document reader increment](requirements-validation.md#small-regular-file-input-closure).
+Audit, token/mount, activation and live report lifetimes remain distinct work
+alongside the broader feature roadmap. This adds
 no unsupported-platform, installed-CLI, physical-media, rollback, deadline or
 durability qualification. Existing image, physical-PC and release gates stay open.
 
@@ -549,11 +557,27 @@ extra or duplicate names and confirmed cleanup. The
 separates host/native execution from arm64 and FreeBSD compilation-only evidence.
 
 This closes the two identified command key reads, without establishing complete
-ownership coverage for every CLI input. Audit, authorization-file,
-frozen-plan/evidence and live report-source lifetimes remain separate work.
+ownership coverage for every CLI input. Authorization-file and frozen-plan/evidence
+closure were outside this key-input increment; see the later
+[small-document reader increment](requirements-validation.md#small-regular-file-input-closure).
+Audit and live report-source lifetimes remain separate work.
 Unsupported-OS runtime, installed-command/image behavior, kernel-call preemption,
 race/durability checks, physical-PC qualification, the beta pilot and all four
 release-image gates remain open for this increment.
+
+The shared small-document reader now requires successful metadata/readable
+closure before returning bytes to its six existing consumer sites. Read or
+cleanup failure returns no bytes. It preserves document limits and decoding,
+the Linux pinned-object policy, the existing non-Linux acquisition policy and
+the separate Standard launch-record reader. Windows amd64 full-suite validation
+passed 8,303 named outcomes; the Windows 386 command package passed 3,207.
+Both architectures passed all 67 selected reader names and 59 parent
+relationships. Linux amd64/386 software fixtures in a VM passed 152 named
+outcomes across two suites and 22 roots, with no failures or skips. The
+[validation record](requirements-validation.md#small-regular-file-input-closure)
+separates host/native execution, arm64/FreeBSD compilation and remaining ownership work.
+Audit, token/mount, activation-output and live report owners remain open, as do
+kernel-call preemption, durability, installed images, physical PCs and release gates.
 
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.

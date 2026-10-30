@@ -213,8 +213,10 @@ the alpha still requires the separate documented release gates.
   save names passed on the host and on each native architecture; see the
   [validation record](docs/requirements-validation.md#save-fingerprint-input-ownership).
   This implementation reduces the four legacy calls recorded at the report-target
-  stage to three: deployment discovery and two persistence inputs. Audit owners,
-  frozen-plan/evidence readers and persistence's live source remain separate work.
+  stage to three: deployment discovery and two persistence inputs. That key-input
+  work did not cover frozen-plan/evidence readers; see the later
+  [small-document reader increment](docs/requirements-validation.md#small-regular-file-input-closure).
+  Audit owners and persistence's live source remain separate work.
 - [x] Implement checked 32-byte fingerprint and trusted public-key inputs for
   persistence, with fixed input diagnostics and error/shape checks before
   post-read cancellation. Preserve authorization decoding, report verification
@@ -223,8 +225,10 @@ the alpha still requires the separate documented release gates.
   passes and 444 selected native passes across Linux amd64 and 386; see the
   [scoped validation evidence](docs/requirements-validation.md#persistence-key-input-ownership).
   This implementation reduces the three legacy calls recorded at the save stage
-  to one in deployment discovery. Authorization-file, audit, frozen-plan/evidence
-  and live report-source ownership remain separate work.
+  to one in deployment discovery. Authorization-file and frozen-plan/evidence
+  closure were outside that key-input scope and are covered by the later
+  [small-document reader increment](docs/requirements-validation.md#small-regular-file-input-closure).
+  Audit and live report-source ownership remain separate work.
 - [x] Replace the final legacy raw-key input with checked 32-byte discovery-key
   acquisition for deployment-key media loading. Preserve usage/audit precedence,
   media selection, confirmation, token and activation policies; remove the unused
@@ -233,9 +237,11 @@ the alpha still requires the separate documented release gates.
   native software fixtures: 5,473 host test/subtest passes and 202 native named
   passes across two suites and 24 root executions. See the
   [validation scope](docs/requirements-validation.md#deployment-discovery-key-input-ownership).
-  The one legacy call recorded at the persistence stage is now removed. Audit,
-  token/mount and activation-output ownership, frozen-plan/evidence readers and
-  live report-source ownership remain separate work.
+  The one legacy call recorded at the persistence stage is now removed.
+  Frozen-plan/evidence reader closure is covered by the later
+  [small-document reader increment](docs/requirements-validation.md#small-regular-file-input-closure).
+  Audit, token/mount, activation-output and live report-source ownership remain
+  separate work.
 - [x] Close the separate direct fingerprint-key reads in `inventory` and `plan`
   with checked, exact 32-byte regular-file acquisition and owner closure before
   collection. Preserve usage and plan-selection precedence, opaque key errors,
@@ -251,6 +257,17 @@ the alpha still requires the separate documented release gates.
   1,071 named outcomes under 112 roots, including eight actual intermediate
   groups, with no failures, skips, extra or duplicate names and confirmed cleanup.
   See the [implementation, host/native evidence and remaining gates](docs/requirements-validation.md#inventory-plan-fingerprint-input-ownership).
+- [x] Require successful input closure before the shared small-document reader
+  returns bytes. Cover quick selection, persistence authorization, finalizer and
+  session plans, optional evidence, and session journals. Reject read or cleanup
+  faults with no returned bytes; preserve the separate Standard launch reader.
+- [x] Validate the reader increment on Windows amd64 and 386: 8,303 full-suite
+  passes and 3,207 command-package passes respectively. All 67 selected names
+  and 59 parent relationships passed on each architecture, with no selected skips.
+- [x] Qualify the selected reader fixtures on Linux amd64 and 386 in a VM:
+  152 named passes across two suites and 22 test roots, with no failures or skips.
+  See the [implementation and limits](docs/requirements-validation.md#small-regular-file-input-closure);
+  physical media, kernel-close faults, preemption and durability remain separate.
 - [ ] Implement privacy-preserving enrollment and key-rotation service flows.
 
 ## Functional tests

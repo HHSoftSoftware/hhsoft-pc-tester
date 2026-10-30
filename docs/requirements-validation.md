@@ -826,8 +826,9 @@ rejection test was not selected and provides no runtime credit here.
 
 The source change leaves three legacy raw-key calls: one in deployment media
 discovery and two in persistence. Earlier remaining-call counts describe their
-respective stages. Audit closure, frozen-plan/evidence readers and the live
-verified-report owner remain separate work. These fixtures do not establish
+respective stages. Frozen-plan/evidence readers were outside that key-input
+scope; see the later [small-document reader increment](#small-regular-file-input-closure).
+Audit closure and the live verified-report owner remain separate work. These fixtures do not establish
 unsupported-platform acquisition, installed-CLI execution, physical media,
 kernel-close faults, blocked-call deadlines, secure key erasure, rollback or
 durability. Existing image, physical-PC and release gates remain open.
@@ -878,8 +879,9 @@ Ordinary-file fixtures require an injected media persister for successful comman
 paths; such fixtures do not establish actual media writes.
 
 This implementation reduces the save-stage three legacy raw-key calls to one in
-deployment discovery. Authorization-file closure, audit, frozen-plan/evidence
-readers and the live verified-report owner remain separate work. Unsupported-OS
+deployment discovery. Authorization-file and frozen-plan/evidence closure were
+outside that key-input scope; see the later [small-document reader increment](#small-regular-file-input-closure).
+Audit and the live verified-report owner remain separate work. Unsupported-OS
 acquisition, installed-CLI execution, physical media, kernel-close faults,
 blocked-call deadlines, secure erasure, rollback and durability receive no new
 qualification. Existing image, physical-PC and release gates remain open.
@@ -934,9 +936,11 @@ passed, with cleanup confirmed. The other-OS-only rejection root was not execute
 These fixture results do not demonstrate actual token-media discovery, mounting
 or activation-file writes.
 
-No legacy `readRawKey` definition or caller remains in this implementation. Audit,
-encoded-token, mount and activation-output ownership, authorization-file closure,
-frozen-plan/evidence readers and live report owners remain separate. No new
+No legacy `readRawKey` definition or caller remains in this implementation.
+Authorization-file and frozen-plan/evidence closure were outside this discovery-key
+scope; see the later [small-document reader increment](#small-regular-file-input-closure).
+Audit, encoded-token, mount, activation-output and live report ownership remain
+separate. No new
 physical-media, installed-CLI, unsupported-OS, kernel-close, deadline, rollback,
 secure-erasure or durability claim is made. Existing image, physical-PC and
 release gates remain open.
@@ -1007,12 +1011,84 @@ architectures. Native cleanup, input stability and VM boundary checks passed.
 
 The scoped source review retained existing assertions and found no abandoned
 key-reader helper, import or stub in the 12 changed files. This is not a claim
-that every CLI input has checked ownership. Audit, authorization-file,
-frozen-plan/evidence and live report-source lifetimes remain separate work.
+that every CLI input has checked ownership. Authorization-file and
+frozen-plan/evidence closure were outside this key-input increment and are
+covered by the later [small-document reader increment](#small-regular-file-input-closure).
+Audit and live report-source lifetimes remain separate work.
 Unsupported-OS runtime, installed-command/image behavior, kernel-call preemption,
 race/durability, physical-PC qualification, the ten-PC beta pilot and all four
 release-image gates remain open for this increment. The initial alpha retains
 its separate release requirements.
+
+## Small Regular-file Input Closure
+
+The shared small-document reader returns bytes only after successful readable
+handle closure. Linux also requires successful metadata-handle closure before
+transferring the readable handle. Acquisition, metadata, read, length or cleanup
+failure returns an error and no bytes. Fixed input/read/cleanup categories retain
+combined read and cleanup failures without exposing provider diagnostics.
+
+The existing size limits and document decoders remain in place at six production
+call sites:
+
+| Input | Consumer |
+| --- | --- |
+| Quick selection file | `plan -selection-file` |
+| Persistence authorization | Report-target persistence |
+| Frozen finalizer plan | Signed finalization |
+| Optional evidence | Finalizer and session evidence loading |
+| Frozen session plan | Session startup |
+| Session journal | Journal loading and post-write readback |
+
+Inputs must be nonempty regular files within the caller's limit. Reading is
+bounded by that limit plus one byte and must match the admitted size. Every
+acquired owner receives one close attempt, including owners returned with an
+error; a failed close rejects the result. The planner's selection failure stops
+key acquisition, collection and output. Its usage precedence remains intact.
+The separate `-launch-selection-file` path retains the checked launch-record
+reader and its quick/standard routing.
+
+On Linux, metadata acquisition and readable reopening use the existing pinned
+object operations, reject symbolic links and special files, and compare object
+identity and size. The metadata owner closes before byte reading; the readable
+owner closes before success. Other platforms retain the existing
+`lstat`/open/identity/size policy. They do not gain Linux's pinned-reopen or
+nonblocking-open guarantee. Neither policy freezes file contents or adds
+post-read metadata checks or cancellation preemption.
+
+Windows amd64 validation passed 8,303 test/subtest outcomes across 30 passing
+packages, with 18 test skips and one package skip. The Windows 386 command
+package passed 3,207 test/subtest outcomes, with six skips. Each architecture
+passed all 67 selected names under eight roots and satisfied all 59 direct
+parent relationships, with no selected failures, skips, missing, extra or
+duplicate outcomes.
+
+All 11 commands and seven boundary postchecks passed. This includes full
+Windows amd64 tests and vet, actual Windows 386 command tests, and Linux
+amd64/386/arm64 plus FreeBSD amd64 test-binary compilation. Compilation alone
+gives no runtime qualification; arm64 and FreeBSD remain compilation-only for this
+increment. All seven raw/formatted Go files preserved code
+tokens, literals and comments; the formatted source projection contains 594
+files, including 578 Go files.
+
+Linux amd64 and 386 test binaries each passed 76 selected names under 11 roots:
+152 named passes, 22 root executions and two package passes in total. All 65
+direct parent relationships per architecture passed, with no failures, skips,
+missing, extra or duplicate names. These software fixtures ran in a VM and do
+not establish installed-CLI or physical-media behavior.
+
+Nine runtime ownership fixtures and 32 archive fixtures passed, along with all
+six boundary postchecks; cleanup was confirmed. The
+[fixture coverage](test-strategy.md#small-regular-file-input-closure-validation)
+distinguishes injected cleanup faults, real owned-file behavior and platform
+coverage. Earlier key-input and Standard workflow results remain evidence for
+their own source scopes.
+
+This increment does not close audit, encoded-token, mount, activation-output or
+live report-source ownership. It does not establish actual kernel-close failures,
+`fsync`, durability, rollback, blocked-call deadlines or physical-media behavior.
+Installed images, the four release-image checks, physical-PC qualification and
+the beta pilot retain their separate gates.
 
 ## Current review boundaries
 

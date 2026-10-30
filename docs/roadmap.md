@@ -529,6 +529,32 @@ lifetimes remain distinct work alongside the broader feature roadmap. This adds
 no unsupported-platform, installed-CLI, physical-media, rollback, deadline or
 durability qualification. Existing image, physical-PC and release gates stay open.
 
+The inventory/plan fingerprint-key increment closes two separate direct key
+reads that remained outside the completed `readRawKey` helper migration.
+Incorrect key lengths were already rejected downstream. Both commands now
+require checked, exact 32-byte regular-file acquisition and successful owner
+closure before collection, with fixed key diagnostics and cancellation checks
+before later effects. Existing usage, plan-selection and collection-error
+precedence, profiles, schemas and successful output semantics are preserved.
+
+Windows host validation passed 7,943 test/subtest outcomes across 30 packages,
+with 17 test skips and one package skip. Focused and full-suite selections each
+passed 1,101 of 1,102 required named outcomes; the retained selection-symlink case
+was explicitly skipped. Five output artifacts matched the captured pre-change
+bytes, whose semantics and HMAC expectations had been independently checked.
+Native Linux amd64/386 qualification passed 1,071 named outcomes under 112 roots
+and eight actual intermediate groups per architecture, with no failures, skips,
+extra or duplicate names and confirmed cleanup. The
+[validation record](requirements-validation.md#inventory-plan-fingerprint-input-ownership)
+separates host/native execution from arm64 and FreeBSD compilation-only evidence.
+
+This closes the two identified command key reads, without establishing complete
+ownership coverage for every CLI input. Audit, authorization-file,
+frozen-plan/evidence and live report-source lifetimes remain separate work.
+Unsupported-OS runtime, installed-command/image behavior, kernel-call preemption,
+race/durability checks, physical-PC qualification, the beta pilot and all four
+release-image gates remain open for this increment.
+
 - Expand the embedded capability graph beyond the initial graphics, CPU,
   memory, storage, input, USB, network, audio, and camera families.
 - Add CPU, partial memory, SMART/NVMe health, read-only storage, complete

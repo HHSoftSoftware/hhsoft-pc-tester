@@ -216,6 +216,21 @@ the alpha still requires the separate documented release gates.
   The one legacy call recorded at the persistence stage is now removed. Audit,
   token/mount and activation-output ownership, frozen-plan/evidence readers and
   live report-source ownership remain separate work.
+- [x] Close the separate direct fingerprint-key reads in `inventory` and `plan`
+  with checked, exact 32-byte regular-file acquisition and owner closure before
+  collection. Preserve usage and plan-selection precedence, opaque key errors,
+  cancellation boundaries and existing successful output. These two direct reads
+  were outside the completed `readRawKey` migration; incorrect lengths were
+  already rejected downstream.
+- [x] Validate the inventory/plan increment on Windows: 7,943 test/subtest passes
+  across 30 passing packages, with 17 test skips and one package skip. The focused
+  and full-suite selections each passed 1,101 named outcomes; the retained
+  selection-symlink case was the sole permitted skip. Five candidate outputs
+  exactly matched independently checked pre-change inventory/plan bytes.
+- [x] Qualify this increment on native Linux amd64/386: each architecture passed
+  1,071 named outcomes under 112 roots, including eight actual intermediate
+  groups, with no failures, skips, extra or duplicate names and confirmed cleanup.
+  See the [implementation, host/native evidence and remaining gates](docs/requirements-validation.md#inventory-plan-fingerprint-input-ownership).
 - [ ] Implement privacy-preserving enrollment and key-rotation service flows.
 
 ## Functional tests

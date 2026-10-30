@@ -847,6 +847,79 @@ physical-media, installed-CLI, unsupported-OS, kernel-close, deadline, rollback,
 secure-erasure or durability claim is made. Existing image, physical-PC and
 release gates remain open.
 
+## Inventory-plan Fingerprint Input Ownership
+
+The `inventory` and `plan` fingerprint-key inputs now use checked regular-file
+acquisition with an exact 32-byte result. These were two direct `os.ReadFile`
+calls outside the completed legacy `readRawKey` helper migration described
+above. Incorrect key lengths were already rejected downstream; the new behavior
+adds bounded acquisition, identity/stability checks and confirmed owner closure
+before collection consumes the key.
+
+Both commands preserve the original context, literal input path and fingerprint
+input role. Any read error or returned length other than 32 produces
+`read fingerprint key: input acquisition failed` before post-read cancellation
+is considered. Local dependency/context admission and cancellation after a valid
+closed result use the command's fixed input-acquisition diagnostic. Key errors
+do not disclose key bytes, paths or provider details. Nil or typed-nil contexts,
+missing operations and observed cancellation stop later collection or output.
+Cancellation remains cooperative; these checks do not preempt a blocked kernel
+operation or prove a hard deadline for it.
+
+Usage and plan-selection validation retain their existing precedence over key
+acquisition. Inventory retains its existing positional-tail policy. Collection
+errors retain their original diagnostics and precedence. Profiles, validated
+selection contents, schemas, plan IDs and output destination policy are
+unchanged. The [consumer and ownership fixtures](../cmd/hhpt/inventory_plan_fingerprint_input_test.go)
+exercise acquired-owner failures, metadata/identity changes, bounded reads and
+the terminal EOF probe, closure errors, cancellation/deadline observations and
+downstream output failures. Platform-specific source additionally exercises
+ordinary files and Windows path spellings, Linux links/FIFOs and descriptor
+replacement, and rejection on unsupported operating systems. Source coverage
+and execution evidence are distinct.
+
+Windows host validation passed 7,943 test/subtest outcomes and 30 package
+outcomes, with 17 test skips and one package skip. Focused and full-suite
+selections each completed exactly 1,102 named lifecycles under 107 roots:
+1,101 names and 106 roots passed; `TestPlanCommandRejectsSelectionSymlink` was
+the sole permitted selected skip. All 304 names from the 20 new host roots
+passed. Retained coverage contributed 797 passes and that one skip. The eight
+actual intermediate groups and all 995 source-derived parent relationships
+satisfied lifecycle ordering; slash-containing flat labels were not treated as
+additional groups.
+
+Five deterministic pre-change artifacts were captured before this source
+change: default and filtered inventory, plus default, selected and standard
+plans. Independent semantic expectations and 17 HMAC reference vectors supported
+the baseline review. The unchanged probe then produced five candidate artifacts
+with exactly the same original bytes, with all six named tests and one package
+passing. This compares the candidate with a captured pre-change baseline, not
+with a second candidate build. All 12 raw/formatted source files preserved
+tokens, literals and comments; the full product source remained unchanged when
+the temporary probe was added.
+
+All 11 host commands and nine boundary postchecks completed successfully,
+including vet, Linux amd64/386/arm64 application builds and a FreeBSD amd64 test
+binary compilation. Linux arm64 and FreeBSD remain compilation-only evidence
+for this increment.
+
+Native Linux amd64 and 386 each passed exactly 1,071 named outcomes under 112
+roots, including eight actual intermediate groups: 2,142 named passes in total.
+Each required name ran and passed once, with no failures, skips, extra or
+duplicate names. All 959 source-derived parent relationships per architecture
+satisfied lifecycle ordering. The 22 Linux-only required names and the
+host-skipped `TestPlanCommandRejectsSelectionSymlink` case passed on both
+architectures. Native cleanup, input stability and VM boundary checks passed.
+
+The scoped source review retained existing assertions and found no abandoned
+key-reader helper, import or stub in the 12 changed files. This is not a claim
+that every CLI input has checked ownership. Audit, authorization-file,
+frozen-plan/evidence and live report-source lifetimes remain separate work.
+Unsupported-OS runtime, installed-command/image behavior, kernel-call preemption,
+race/durability, physical-PC qualification, the ten-PC beta pilot and all four
+release-image gates remain open for this increment. The initial alpha retains
+its separate release requirements.
+
 ## Current review boundaries
 
 The initial requirements review found no implementation TODO/FIXME placeholders

@@ -44,7 +44,7 @@ func TestInventoryDRMTopologyFeedsRealPlanCommand(t *testing.T) {
 	root := newDRMCommandFixture(t)
 	key := writeTestKey(t, root, "drm.key", bytes.Repeat([]byte{0x44}, 32))
 	var stdout, stderr bytes.Buffer
-	code := runPlanWith(t.Context(), []string{"-fingerprint-key", key, "-key-epoch", "drm", "-architecture", "x86_64", "-output", "-"}, &stdout, &stderr, inventory.NewLinuxCollector(root).Collect)
+	code := runPlanWithInput(t.Context(), []string{"-fingerprint-key", key, "-key-epoch", "drm", "-architecture", "x86_64", "-output", "-"}, &stdout, &stderr, inventory.NewLinuxCollector(root).Collect, writeDestination, captureFixtureInput(t))
 	if code != 0 || stderr.Len() != 0 {
 		t.Fatal("real inventory-to-plan command failed", code, stderr.String())
 	}
@@ -90,7 +90,7 @@ func TestInventoryDRMDeclaredFailureStopsPlanOutput(t *testing.T) {
 				key := writeTestKey(t, root, "drm.key", bytes.Repeat([]byte{0x44}, 32))
 				collect := inventory.NewLinuxCollector(root).Collect
 				var positive, positiveError bytes.Buffer
-				if code := runPlanWith(t.Context(), []string{"-fingerprint-key", key, "-output", "-"}, &positive, &positiveError, collect); code != 0 || positive.Len() == 0 {
+				if code := runPlanWithInput(t.Context(), []string{"-fingerprint-key", key, "-output", "-"}, &positive, &positiveError, collect, writeDestination, captureFixtureInput(t)); code != 0 || positive.Len() == 0 {
 					t.Fatal("plan positive control failed", code, positiveError.String())
 				}
 				name := filepath.Join(root, "sys/class/drm", filepath.FromSlash(target))
@@ -108,7 +108,7 @@ func TestInventoryDRMDeclaredFailureStopsPlanOutput(t *testing.T) {
 				}
 				output := filepath.Join(root, "plan.json")
 				var stdout, stderr bytes.Buffer
-				code := runPlanWith(t.Context(), []string{"-fingerprint-key", key, "-output", output}, &stdout, &stderr, collect)
+				code := runPlanWithInput(t.Context(), []string{"-fingerprint-key", key, "-output", output}, &stdout, &stderr, collect, writeDestination, captureFixtureInput(t))
 				if code != 1 || stdout.Len() != 0 || !strings.Contains(stderr.String(), want.Error()) {
 					t.Fatal("declared scalar failure became plan output", code)
 				}

@@ -99,6 +99,10 @@ func runInventoryWith(ctx context.Context, arguments []string, stdout, stderr io
 }
 
 func runInventoryWithDestination(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, writeOutput destinationWriter) int {
+	return runInventoryWithInput(ctx, arguments, stdout, stderr, collect, writeOutput, readRetestInput)
+}
+
+func runInventoryWithInput(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, writeOutput destinationWriter, readInput retestInputReader) int {
 	flags := flag.NewFlagSet("inventory", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	outputPath := flags.String("output", "-", "new JSON output file, or - for stdout")
@@ -112,14 +116,26 @@ func runInventoryWithDestination(ctx context.Context, arguments []string, stdout
 		fmt.Fprintln(stderr, "inventory requires -fingerprint-key; portable unkeyed component IDs are intentionally not exported")
 		return 2
 	}
-	fingerprintKey, err := os.ReadFile(*keyPath)
-	if err != nil {
-		fmt.Fprintf(stderr, "read fingerprint key: %v\n", err)
+	if nilRetestInputValue(ctx) || readInput == nil || collect == nil || writeOutput == nil || ctx.Err() != nil {
+		fmt.Fprintln(stderr, "inventory input acquisition failed")
+		return 1
+	}
+	fingerprintKey, err := readInput(ctx, *keyPath, retestFingerprintKeyInput)
+	if err != nil || len(fingerprintKey) != 32 {
+		fmt.Fprintln(stderr, "read fingerprint key: input acquisition failed")
+		return 1
+	}
+	if ctx.Err() != nil {
+		fmt.Fprintln(stderr, "inventory input acquisition failed")
 		return 1
 	}
 	snapshot, err := collect(ctx)
 	if err != nil {
 		fmt.Fprintf(stderr, "collect inventory: %v\n", err)
+		return 1
+	}
+	if ctx.Err() != nil {
+		fmt.Fprintln(stderr, "inventory input acquisition failed")
 		return 1
 	}
 	if *fixtureComponents != "" {
@@ -132,6 +148,10 @@ func runInventoryWithDestination(ctx context.Context, arguments []string, stdout
 	payload, err := app.BuildInventoryPayload(snapshot, fingerprintKey, *keyEpoch)
 	if err != nil {
 		fmt.Fprintf(stderr, "build inventory payload: %v\n", err)
+		return 1
+	}
+	if ctx.Err() != nil {
+		fmt.Fprintln(stderr, "inventory input acquisition failed")
 		return 1
 	}
 	if err := writeOutput(*outputPath, stdout, func(destination io.Writer) error {

@@ -6,7 +6,6 @@ import (
 	"flag"
 	"fmt"
 	"io"
-	"os"
 	"runtime"
 	"strings"
 
@@ -24,6 +23,10 @@ func runPlanWith(ctx context.Context, arguments []string, stdout, stderr io.Writ
 }
 
 func runPlanWithDestination(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, writeOutput destinationWriter) int {
+	return runPlanWithInput(ctx, arguments, stdout, stderr, collect, writeOutput, readRetestInput)
+}
+
+func runPlanWithInput(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, writeOutput destinationWriter, readInput retestInputReader) int {
 	flags := flag.NewFlagSet("plan", flag.ContinueOnError)
 	flags.SetOutput(stderr)
 	profile := flags.String("profile", string(plan.ProfileQuick), "quick, standard, extended, or destructive")
@@ -57,14 +60,26 @@ func runPlanWithDestination(ctx context.Context, arguments []string, stdout, std
 			return 1
 		}
 	}
-	fingerprintKey, err := os.ReadFile(*keyPath)
-	if err != nil {
-		fmt.Fprintf(stderr, "read fingerprint key: %v\n", err)
+	if nilRetestInputValue(ctx) || readInput == nil || collect == nil || writeOutput == nil || ctx.Err() != nil {
+		fmt.Fprintln(stderr, "plan input acquisition failed")
+		return 1
+	}
+	fingerprintKey, err := readInput(ctx, *keyPath, retestFingerprintKeyInput)
+	if err != nil || len(fingerprintKey) != 32 {
+		fmt.Fprintln(stderr, "read fingerprint key: input acquisition failed")
+		return 1
+	}
+	if ctx.Err() != nil {
+		fmt.Fprintln(stderr, "plan input acquisition failed")
 		return 1
 	}
 	snapshot, err := collect(ctx)
 	if err != nil {
 		fmt.Fprintf(stderr, "collect inventory: %v\n", err)
+		return 1
+	}
+	if ctx.Err() != nil {
+		fmt.Fprintln(stderr, "plan input acquisition failed")
 		return 1
 	}
 	if *fixtureComponents != "" {
@@ -82,6 +97,10 @@ func runPlanWithDestination(ctx context.Context, arguments []string, stdout, std
 	encoded, err := json.MarshalIndent(result, "", "  ")
 	if err != nil {
 		fmt.Fprintf(stderr, "encode test plan: %v\n", err)
+		return 1
+	}
+	if ctx.Err() != nil {
+		fmt.Fprintln(stderr, "plan input acquisition failed")
 		return 1
 	}
 	if err := writeOutput(*outputPath, stdout, func(destination io.Writer) error {

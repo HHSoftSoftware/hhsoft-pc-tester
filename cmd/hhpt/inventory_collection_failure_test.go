@@ -42,10 +42,10 @@ func TestInventoryAndPlanRejectFailedCollectionBeforeOutput(t *testing.T) {
 				var stdout, stderr bytes.Buffer
 				var code int
 				if command == "inventory" {
-					code = runInventoryWith(t.Context(), args, &stdout, &stderr, collect)
+					code = runInventoryWithInput(t.Context(), args, &stdout, &stderr, collect, writeDestination, captureFixtureInput(t))
 				} else {
 					args = append(args, "-architecture", "x86_64")
-					code = runPlanWith(t.Context(), args, &stdout, &stderr, collect)
+					code = runPlanWithInput(t.Context(), args, &stdout, &stderr, collect, writeDestination, captureFixtureInput(t))
 				}
 				if calls != 1 {
 					t.Fatalf("valid prerequisites did not reach collection: %d %s", calls, &stderr)

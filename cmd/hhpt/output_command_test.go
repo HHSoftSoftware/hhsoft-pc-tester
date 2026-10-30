@@ -54,7 +54,7 @@ func outputCommandCases(t *testing.T) []outputCommandCase {
 	now := func() time.Time { return time.Unix(10, 20) }
 	return []outputCommandCase{
 		{"inventory", func(write destinationWriter, stdout, stderr io.Writer) int {
-			return runInventoryWithDestination(t.Context(), []string{"-fingerprint-key", keyPath, "-output", "owned-output"}, stdout, stderr, collect, write)
+			return runInventoryWithInput(t.Context(), []string{"-fingerprint-key", keyPath, "-output", "owned-output"}, stdout, stderr, collect, write, captureFixtureInput(t))
 		}},
 		{"comparison", func(write destinationWriter, stdout, stderr io.Writer) int {
 			return runCompareDestination(t.Context(), []string{"-public-key", publicPath, "-key-id", "fixture-signer", "-output", "owned-output", reportPath, reportPath}, stdout, stderr, write, readRetestInput)
@@ -70,7 +70,7 @@ func outputCommandCases(t *testing.T) []outputCommandCase {
 				bytes.NewReader(bytes.Repeat([]byte{0x34}, 64)), now, nil, write).Code
 		}},
 		{"plan", func(write destinationWriter, stdout, stderr io.Writer) int {
-			return runPlanWithDestination(t.Context(), []string{"-fingerprint-key", keyPath, "-output", "owned-output"}, stdout, stderr, collect, write)
+			return runPlanWithInput(t.Context(), []string{"-fingerprint-key", keyPath, "-output", "owned-output"}, stdout, stderr, collect, write, captureFixtureInput(t))
 		}},
 		{"quick-result", func(write destinationWriter, stdout, stderr io.Writer) int {
 			return writeQuickResultDestination(completeCPUEvidence(), "owned-output", stdout, stderr, "CPU", write)

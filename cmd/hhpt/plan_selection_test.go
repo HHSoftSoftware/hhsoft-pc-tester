@@ -26,7 +26,7 @@ func TestPlanCommandFreezesValidatedSelection(t *testing.T) {
 	collect := func(context.Context) (inventory.Snapshot, error) { return snapshot, nil }
 	arguments := []string{"-fingerprint-key", keyPath, "-architecture", "x86_64", "-selection-file", selectionPath}
 	var stdout, stderr bytes.Buffer
-	if code := runPlanWith(t.Context(), arguments, &stdout, &stderr, collect); code != 0 {
+	if code := runPlanWithInput(t.Context(), arguments, &stdout, &stderr, collect, writeDestination, captureFixtureInput(t)); code != 0 {
 		t.Fatalf("planner rejected selection: %d %s", code, stderr.String())
 	}
 	actual, err := plan.Decode(stdout.Bytes())
@@ -57,11 +57,11 @@ func TestPlanCommandEmptySelectionPreservesDefaultBytes(t *testing.T) {
 	collect := func(context.Context) (inventory.Snapshot, error) { return inventory.NewSnapshot(nil), nil }
 	arguments := []string{"-fingerprint-key", keyPath, "-architecture", "x86_64"}
 	var defaults, selected, stderr bytes.Buffer
-	if code := runPlanWith(t.Context(), arguments, &defaults, &stderr, collect); code != 0 {
+	if code := runPlanWithInput(t.Context(), arguments, &defaults, &stderr, collect, writeDestination, captureFixtureInput(t)); code != 0 {
 		t.Fatal(stderr.String())
 	}
 	arguments = append(arguments, "-selection-file", selectionPath)
-	if code := runPlanWith(t.Context(), arguments, &selected, &stderr, collect); code != 0 {
+	if code := runPlanWithInput(t.Context(), arguments, &selected, &stderr, collect, writeDestination, captureFixtureInput(t)); code != 0 {
 		t.Fatal(stderr.String())
 	}
 	if !bytes.Equal(defaults.Bytes(), selected.Bytes()) || bytes.Contains(selected.Bytes(), []byte("excluded_tests")) {
@@ -91,7 +91,7 @@ func TestPlanCommandRejectsInvalidSelectionBeforeInventory(t *testing.T) {
 			}
 			var stdout, stderr bytes.Buffer
 			arguments := []string{"-fingerprint-key", filepath.Join(directory, "unread.key"), "-selection-file", selectionPath, "-output", outputPath}
-			if code := runPlanWith(t.Context(), arguments, &stdout, &stderr, collect); code != 1 || collected || !strings.Contains(stderr.String(), "quick-test selection") {
+			if code := runPlanWithInput(t.Context(), arguments, &stdout, &stderr, collect, writeDestination, captureFixtureInput(t)); code != 1 || collected || !strings.Contains(stderr.String(), "quick-test selection") {
 				t.Fatalf("invalid selection progressed: code=%d collected=%t stderr=%s", code, collected, stderr.String())
 			}
 			if _, err := os.Stat(outputPath); !os.IsNotExist(err) {
@@ -117,7 +117,7 @@ func TestPlanCommandRejectsPositionalArgumentsBeforeReadingInputs(t *testing.T) 
 			return inventory.NewSnapshot(nil), nil
 		}
 		var stdout, stderr bytes.Buffer
-		if code := runPlanWith(t.Context(), arguments, &stdout, &stderr, collect); code != 2 || collected || stdout.Len() != 0 || !strings.Contains(stderr.String(), "no positional arguments") {
+		if code := runPlanWithInput(t.Context(), arguments, &stdout, &stderr, collect, writeDestination, captureFixtureInput(t)); code != 2 || collected || stdout.Len() != 0 || !strings.Contains(stderr.String(), "no positional arguments") {
 			t.Fatalf("positional tail bypassed selection: code=%d collected=%t stderr=%s", code, collected, stderr.String())
 		}
 		if _, err := os.Stat(outputPath); !os.IsNotExist(err) {
@@ -146,7 +146,7 @@ func TestPlanCommandRejectsSelectionSymlink(t *testing.T) {
 	}
 	var stdout, stderr bytes.Buffer
 	arguments := []string{"-fingerprint-key", filepath.Join(directory, "unread.key"), "-selection-file", selectionPath}
-	if code := runPlanWith(t.Context(), arguments, &stdout, &stderr, collect); code != 1 || collected || !strings.Contains(stderr.String(), "read quick-test selection") {
+	if code := runPlanWithInput(t.Context(), arguments, &stdout, &stderr, collect, writeDestination, captureFixtureInput(t)); code != 1 || collected || !strings.Contains(stderr.String(), "read quick-test selection") {
 		t.Fatalf("selection symlink was followed: code=%d collected=%t stderr=%s", code, collected, stderr.String())
 	}
 }
@@ -165,7 +165,7 @@ func TestPlanCommandRejectsNonQuickExclusions(t *testing.T) {
 	arguments := []string{"-fingerprint-key", keyPath, "-profile", "standard", "-selection-file", selectionPath}
 	collect := func(context.Context) (inventory.Snapshot, error) { return inventory.NewSnapshot(nil), nil }
 	var stdout, stderr bytes.Buffer
-	if code := runPlanWith(t.Context(), arguments, &stdout, &stderr, collect); code != 1 || stdout.Len() != 0 {
+	if code := runPlanWithInput(t.Context(), arguments, &stdout, &stderr, collect, writeDestination, captureFixtureInput(t)); code != 1 || stdout.Len() != 0 {
 		t.Fatalf("non-quick exclusions accepted: %d %s", code, stderr.String())
 	}
 }

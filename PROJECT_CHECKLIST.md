@@ -558,9 +558,47 @@ the alpha still requires the separate documented release gates.
   confirmed cleanup. The CLI matrix uses provisioned trust and no/both
   views. This predates the separate output-completion change and grants
   no native close-fault, media, rebuilt-image or physical qualification.
-- [ ] Implement and qualify the media worker, backing-device and loop-lifetime
-  safeguards, supervised acceptance and catalog activation. Rebuilt images,
-  physical media and release approval remain separate gates.
+- [x] Implement isolated storage sampling and discovery components: finite read
+  schedules, strict worker replies, parent accounting, result projection, bounded
+  topology/mount/swap parsing, owned metadata capture, held metadata scope and
+  canonical-fact classification. These components do not yet form a live sampler.
+- [x] Validate the earlier 27-file component candidate on Windows amd64 and 386: 773
+  test/subtest passes across two packages on each target, including all 495
+  selected names under 68 roots and 427 direct parent relationships. No failures
+  or skips occurred. Formatting, vet, six Linux test-binary cross-builds and all
+  seven postchecks passed. The arm64 builds remain compile-only evidence.
+- [x] Qualify the selected component and owned-path fixtures on Linux amd64 and
+  386: 505 passes under 70 roots and 435 direct parent relationships per
+  architecture across two packages, or 1,010 passes across four suite runs.
+  Nine ownership fixtures, 32 archive checks and all six final checks passed;
+  cleanup and transfer EOF were confirmed. These runs sampled no real media.
+- [x] Connect canonical-ancestor acquisition to the held metadata scope and
+  classifier. Admit finite class/subsystem links, retain directory owners and
+  recheck identities and facts before returning a closed result. Classification
+  remains descriptive and leaves original boot backing unknown.
+- [x] Validate the current 31-file successor on Windows amd64 and 386: 848
+  test/subtest passes across two packages and all 119 package roots per target,
+  including exactly 570 selected names under 76 roots and 494 direct parent
+  relationships. No failures or skips; focused vet, six Linux test-binary
+  cross-builds and all seven postchecks passed. The module minimum is Go 1.25.0;
+  these checks used Go 1.27.2 and do not qualify execution on Go 1.25.
+- [x] Pass the full-module suite and vet on Windows amd64 with Go 1.27.2:
+  8,873 test/subtest passes, 18 allowed skips, 31 package passes and one package
+  without tests. All 32 packages, 1,349 required roots and the exact selected
+  570-name cohort were reconciled.
+- [x] Run the current selected Linux cohort on amd64 and 386: 667 named outcomes
+  under 91 roots and 576 direct parent relationships per architecture, or 1,334
+  passes across four package runs. No failures or skips; nine ownership
+  fixtures, 32 archive checks and six final checks passed, with cleanup and
+  transfer EOF confirmed. Linux arm64 remains compile-only; these owned-fixture
+  runs do not qualify the Linux full-module suite or real media.
+- [ ] Implement protected early boot-source production and consumption.
+  Unknown original boot backing must not become an empty exclusion set.
+- [ ] Implement and qualify continuous target/backing ownership, the supervised
+  media worker and checked CLI/result composition before catalog activation.
+  Repeated metadata is not a lifetime guarantee; loops remain rejected.
+  All four rebuilt images, physical media, the physical-PC pilot and release
+  approval remain separate gates.
 - [x] Check Ethernet/Wi-Fi driver and link readiness while failing closed on
   active non-loopback interfaces and generating no network traffic.
 - [x] Bound network registry, scalar, driver-link and fallback acquisition

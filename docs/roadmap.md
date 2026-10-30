@@ -274,10 +274,58 @@ The same reader source subsequently passed 1,582 native Linux amd64/386
 test/subtest events across 14 suite runs, all 67 candidate roots on each
 architecture and 62 verify/compare CLI cases, without failures or skips.
 Cleanup and all six final checks passed. That native cohort predates
-the separate CLI output-completion change. The media worker, supervised
-acceptance and complete backing-device safeguards remain planned.
-Rebuilt images, physical media and release qualification remain open;
-these fixtures accessed no media.
+the separate CLI output-completion change. Rebuilt images, physical media
+and release qualification remain open; these fixtures accessed no media.
+
+The next storage increment has complete isolated components for finite read
+schedules, strict worker replies, parent accounting and result projection,
+plus bounded topology/mount/swap parsing, owned metadata capture, a held
+metadata scope and canonical-fact classification. The earlier 27-file candidate passed
+773 test/subtest outcomes across two packages on each of Windows amd64 and 386.
+Each run included the exact 495 selected names under 68 roots and 427 direct
+parent relationships, without failures or skips. Formatting, vet and all seven
+postchecks passed. Six Linux test binaries compiled; the arm64 builds remain
+compile-only evidence. Selected native component and owned-path suites then
+passed on Linux amd64 and 386: 505 names under 70 roots and 435 direct parent
+relationships per architecture across two packages. All 1,010 named outcomes
+passed without skips, missing/extra names or duplicate lifecycles. Nine
+ownership fixtures, 32 archive checks and all six final checks passed, with
+cleanup and transfer EOF confirmed. These runs sampled no real media.
+
+The successor now connects finite canonical-ancestor acquisition to the held
+metadata scope and classifier. Directory owners and link/classification facts
+are rechecked before its result is released. This supplies descriptive facts,
+not boot provenance or continuous target ownership.
+
+Its current 31-file candidate passed 848 test/subtest outcomes and all 119
+package roots across two packages on each Windows architecture. The exact
+selected cohort was 570 names under 76 roots and 494 direct parent relationships,
+with no failures or skips. Focused vet, six Linux test-binary cross-builds and
+all seven postchecks passed. The module minimum is now Go 1.25.0; validation
+used Go 1.27.2 and does not qualify execution on Go 1.25.
+
+The full-module suite and vet also passed on Windows amd64: 8,873 test/subtest
+passes, 18 allowed skips, 31 package passes and one package without tests.
+All 32 packages, 1,349 required roots and the selected 570-name cohort were
+reconciled.
+
+The current selected Linux cohort passed on amd64 and 386, with 667 named
+outcomes under 91 roots and 576 direct parent relationships per architecture.
+All 1,334 outcomes across four package runs passed without skips. Nine ownership
+fixtures, 32 archive checks and six final checks passed, including cleanup and
+transfer EOF. Linux arm64 remains compile-only; this is selected component and
+owned-filesystem evidence, not Linux full-module or real-media qualification.
+
+The live sampling route is still incomplete.
+The remaining connected work includes protected early boot-source production
+and consumption, continuous target/backing ownership, and an actual supervised
+worker joined to the CLI and result consumers. Boot and ownership designs are
+not implementation or runtime evidence. Unknown boot backing is not an empty
+set, and repeated metadata does not establish continuous ownership. The
+components leave discovery/backing admission incomplete and reject loops;
+`storage.quick` remains inactive until the connected route is qualified.
+All four rebuilt images, physical media, the physical-PC pilot and release
+approval remain separate gates.
 
 CLI evidence outputs now propagate write, short-write and owned-file close
 failures, including simultaneous errors. Exclusive creation and caller-owned

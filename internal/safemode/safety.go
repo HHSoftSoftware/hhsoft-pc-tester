@@ -133,12 +133,43 @@ func ParseMounts(data []byte) (map[string]MountState, error) {
 	return projection.blockDevices, err
 }
 
+// MountFacts retains only validated device identities and exact RAM filesystem
+// types. RootDevice describes the sole visible root record; it is not proof that
+// the original boot medium or a zero-major filesystem is backed by RAM.
+type MountFacts struct {
+	BlockDevices      map[string]MountState
+	MemoryFilesystems map[string]string
+	RootDevice        string
+}
+
+// ParseMountFacts adds a complete-only projection for storage admission. The
+// caller must have proved EOF, stable acquisition and closure before using data.
+// Partial records and ambiguous visible roots yield no admission facts; legacy
+// ParseMounts continues returning its earlier block observations on an error.
+func ParseMountFacts(data []byte) (MountFacts, error) {
+	projection, err := parseMountProjection(data)
+	if err != nil {
+		return MountFacts{}, err
+	}
+	if projection.rootRecords != 1 {
+		return MountFacts{}, errors.New("mount root identity is ambiguous")
+	}
+	return MountFacts{
+		BlockDevices:      projection.blockDevices,
+		MemoryFilesystems: projection.memoryFilesystems,
+		RootDevice:        projection.rootDevice,
+	}, nil
+}
+
 type mountProjection struct {
-	blockDevices map[string]MountState
+	blockDevices      map[string]MountState
+	memoryFilesystems map[string]string
+	rootRecords       int
+	rootDevice        string
 }
 
 func parseMountProjection(data []byte) (mountProjection, error) {
-	projection := mountProjection{blockDevices: map[string]MountState{}}
+	projection := mountProjection{blockDevices: map[string]MountState{}, memoryFilesystems: map[string]string{}}
 	ids, virtualTypes := map[string]bool{}, map[string]string{}
 	if len(data) > 4<<20 {
 		return projection, errors.New("mount observations exceed the supported limit")
@@ -171,6 +202,10 @@ func parseMountProjection(data []byte) (mountProjection, error) {
 			return projection, err
 		}
 		number := fields[2]
+		if fields[4] == "/" {
+			projection.rootRecords++
+			projection.rootDevice = number
+		}
 		if strings.HasPrefix(number, "0:") {
 			filesystem := fields[separator+1]
 			if !virtualFilesystems[filesystem] {
@@ -185,6 +220,9 @@ func parseMountProjection(data []byte) (mountProjection, error) {
 				return projection, errors.New("conflicting non-block filesystem identity")
 			}
 			virtualTypes[number] = filesystem
+			if filesystem == "tmpfs" || filesystem == "ramfs" {
+				projection.memoryFilesystems[number] = filesystem
+			}
 		} else {
 			state := projection.blockDevices[number]
 			state.Mounted = true

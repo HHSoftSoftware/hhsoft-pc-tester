@@ -1946,6 +1946,86 @@ the later output-completion fault cases. Production sampling, loop
 backing/lifetime safeguards, all four rebuilt images, physical checks
 and release approval remain open.
 
+The later storage sampling/discovery increment remains an isolated component
+candidate. It implements finite read schedules and worker reply validation,
+parent accounting and result projection, bounded topology/mount/swap parsing,
+owned metadata capture, a held metadata scope and canonical-fact classification.
+The live producer-to-media-worker-to-report route is not yet implemented.
+
+The earlier 27-file candidate passed 773 test/subtest outcomes across two packages on
+each of Windows amd64 and 386. Independent reconciliation matched all 495
+selected names under 68 roots and 427 direct parent relationships on each
+target, with no failures, skips, missing/extra names or duplicate lifecycles.
+Formatting preserved tokens, literals and comments in every candidate file;
+vet, all 13 host commands and seven postchecks passed. Both packages compiled
+for Linux amd64, 386 and arm64; arm64 remains compile-only. Selected native
+component and owned-path suites passed on Linux amd64 and 386, with 505 names
+under 70 roots and 435 direct parent relationships per architecture. The four
+suite runs produced 1,010 named passes, 140 root executions and 870 parent
+relationships, with no failures, skips, missing/extra names or duplicate
+lifecycles. Nine ownership fixtures, 32 archive checks and all six final checks
+passed; cleanup and transfer EOF were confirmed.
+
+`TestLinuxStorageMetadataFeedsWholeFamilyExclusions`,
+`TestStorageMetadataRejectsOwnerAliases`,
+`TestStorageMetadataScopeRejectsFinalChanges` and
+`TestStorageClassificationUSBPrecedence` cover exclusion propagation, unique
+owner closure, retained final-verification faults and transport/optical
+classification. Complete topology inputs reject overflow beyond 256 nodes or
+1,024 edges. Unknown swap, incomplete relations and loops fail closed. The
+result and range-copy tests prevent caller callbacks from changing admitted
+facts or converting diagnostic observations into accepted work.
+
+The successor connects canonical-ancestor acquisition to the held metadata
+scope and existing classifier. It admits finite relative class and subsystem
+links, retains directory owners, checks registry/canonical device numbers and
+reobserves links and classification facts before the owning call succeeds.
+Final drift, cancellation or failed API closure withholds the result. Returned
+classification remains descriptive: original boot backing is still unknown.
+Link-text limits apply after SDK Readlink returns; they do not bound its internal
+allocation or make kernel calls preemptible.
+
+The current 31-file candidate passed 848 test/subtest outcomes and all 119
+package roots across two packages on each of Windows amd64 and 386. Independent
+reconciliation matched exactly 570 selected names under 76 roots and 494 direct
+parent relationships per target, with no failures, skips, missing/extra names
+or duplicates. All 30 Go candidates preserved tokens, literals and comments
+through formatting; the approved module bytes were unchanged. Focused vet,
+all 13 commands and seven postchecks passed. Six Linux test binaries compiled
+for amd64, 386 and arm64. The module declares Go 1.25.0 for the Root.Readlink
+API. Validation used Go 1.27.2 and provides no execution qualification on
+Go 1.25.
+
+The additional full-module suite and vet passed on Windows amd64: 8,873
+test/subtest passes and 18 allowed skips, with 31 package passes and one package
+without tests. All 32 packages and 1,349 source-required roots were accounted
+for; all observed lifecycles closed. The selected 570-name cohort, 23 fuzz seed
+children and 13 parallel children matched their required lifecycles. This was
+seed execution, not a fuzzing campaign.
+
+The current selected Linux cohort then passed on both amd64 and 386. Each
+architecture produced exactly 667 named outcomes under 91 roots and 576 direct
+parent relationships across two packages, without failures, skips, missing or
+extra names, or duplicate lifecycles. The four package runs totalled 1,334
+passes. Nine ownership fixtures, 32 archive checks and six final checks passed;
+cleanup and transfer EOF were confirmed. Linux arm64 remains compile-only.
+These native runs qualify the selected owned-fixture cohort, not the Linux
+full-module suite or any real-media sampler.
+
+The scoped source audit found complete internal component bodies and their
+fixture callers, with no implementation placeholder markers. It did not find
+a live sampler entry. Descriptive acquisition is connected; authority to sample
+media is still absent.
+The remaining route needs an authentic protected early boot-source handoff,
+continuous target/backing ownership and actual supervised worker/CLI composition.
+Boot and kernel-owner proposals are design evidence only. Unknown original
+boot backing cannot become an empty exclusion set, and equal snapshots cannot
+substitute for continuous ownership. Discovery/backing completeness remains
+ungranted and `storage.quick` remains inactive. These component and owned-fixture
+checks do not qualify real or physical media, underlying kernel close failures,
+hard preemption, adversarial namespaces, race, durability, all four rebuilt
+images, the physical-PC pilot or release readiness.
+
 CLI output completion requires successful writes and successful close of
 each owned destination. Short writes, including a final newline, fail;
 write and close errors remain discoverable together. Exclusive creation

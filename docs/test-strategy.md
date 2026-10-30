@@ -516,6 +516,95 @@ Media-worker supervision, loop lifetime, native sampling, rebuilt images and
 physical qualification require their own evidence. Earlier inventory native
 results do not qualify this new reader or a future sampler.
 
+The earlier 27-file storage component candidate has a separate execution scope.
+Windows amd64 and 386 each passed 773 test/subtest outcomes in the storage
+sampling and safety packages, including exactly 495 selected names under
+68 roots and 427 direct parent relationships. There were no failures, skips,
+missing or extra selected names, or duplicate lifecycles. Formatting, vet,
+all 13 host commands and seven postchecks passed. Linux test binaries for
+both packages compiled on amd64, 386 and arm64; arm64 remains compile-only.
+
+Selected native component and owned-path suites passed on Linux amd64 and 386.
+Each architecture passed all 505 names under 70 roots and 435 direct parent
+relationships across two packages. Independent reconciliation checked 2,026
+events per architecture, once-only run/pass lifecycles and child/parent
+ordering: 1,010 named passes, 140 root executions and 870 parent relationships
+across four suite runs, with no failures, skips, missing/extra names or
+duplicates. Nine supervision fixtures covered seven accepted cases and two
+expected cleanup-uncertainty rejections with confirmed fixture teardown.
+All 32 archive checks and six final checks passed; owned cleanup and transfer
+EOF were confirmed. This was selected component coverage, not a full Linux
+suite or a media-sampling run.
+
+The component tests include independent schedules above 2 GiB in
+`TestStorageSampleIndependentSchedules`, immutable range authority across
+callbacks, short reads and cancellation, and a run budget that never restarts
+in `TestStorageSampleParentRunBudgetNeverRestarts`. Strict worker framing and
+accepted-versus-diagnostic accounting reject forged or incomplete work.
+`TestStorageSampleProjectionContextCannotMutateFrozenFacts` verifies that caller
+context callbacks cannot change the frozen discovery or inventory inputs.
+
+Topology fixtures cover malformed and overflowing numbers, duplicate devices,
+cycles, incomplete relations, unknown swap, mount aliases and whole-family
+exclusions. Complete views are bounded to 256 nodes and 1,024 edges; overflow
+fails rather than truncating. `TestStorageMetadataRejectsOwnerAliases` checks
+unique acquisition and one close attempt per owner. Capture fixtures cover EOF,
+read/close errors, replacement and second-pass drift; the held-scope tests keep
+final verification failures fatal even if the callback ignores them.
+`TestStorageClassificationUSBPrecedence` preserves USB ancestry for optical
+classification and rejects conflicting non-USB transport observations.
+
+The current canonical-ancestor successor has separate focused Windows evidence:
+848 test/subtest passes and all 119 package roots across two packages on each of
+amd64 and 386. Exactly 570 selected names under 76 roots and 494 direct parent
+relationships passed per target, with no missing/extra names, duplicates, skips
+or failures. Formatting preserved all 30 Go candidates' tokens, literals and
+comments, and the approved module bytes were preserved. Focused vet, six Linux
+test-binary cross-builds, all 13 commands and seven postchecks passed. The
+module minimum is Go 1.25.0 for Root.Readlink; these runs used Go 1.27.2 and do
+not qualify execution on Go 1.25.
+
+A separate full-module suite and vet run on Windows amd64 with Go 1.27.2 passed:
+8,873 test/subtest passes, 18 explicitly allowed skips, 31 package passes and
+one package without tests. All 32 packages and 1,349 source-required roots were
+accounted for, and all observed test lifecycles closed. The exact selected
+570-name cohort retained its required parent relationships. All 23 fuzz seed
+children and 13 parallel children followed their required lifecycles; seed
+execution is not a fuzzing campaign. The three commands and seven postchecks
+passed. Full descendant equality is claimed for the selected cohort; the
+full-module check does not claim source-derived completeness of every dynamic
+child outside that cohort.
+
+Portable ancestry tests cover class/subsystem path grammars, USB field syntax,
+complete owner-budget reservation, copied views and expiration, and a closed
+empty route that still reports unknown boot origin.
+`TestStorageAncestryIgnoredFailurePoisonsScope` keeps an ignored classification
+failure fatal at scope completion; `TestStorageAncestryOwnerCapAfterAcquisition`
+requires checked closure of an owner returned at the cap. New Linux-only
+fixtures cover actual owned-path classification, link replacement, final drift,
+cancellation and Root.Readlink containment. The current selected native cohort
+passed on Linux amd64 and 386: exactly 667 named outcomes under 91 roots and
+576 direct parent relationships per architecture, across two packages each.
+All 1,334 outcomes across four package runs passed, with no missing/extra names,
+duplicates, skips or failures. Nine ownership fixtures, 32 archive checks and
+six final checks passed; cleanup and transfer EOF were confirmed. These are
+native tests of the current ancestry code, separate from the earlier 27-file
+cohort. Linux arm64 remains compile-only, and the Linux full-module suite is
+not qualified by these selected runs.
+
+These are internal component, injected-owner and owned Linux filesystem checks.
+The capture uses pathname/descriptor observations and a non-atomic second pass;
+equality does not establish continuous media or backing ownership. Checked API
+Close does not prove every underlying kernel close succeeded. The ancestry
+producer's link bounds apply after SDK Readlink allocation, and equal link
+observations cannot exclude a transient change-and-restore. Protected
+original-boot handoff, a real target owner,
+supervised media process and complete CLI/result composition still need their
+own connected tests. Unknown boot origin and loops remain unsupported, and
+`storage.quick` remains inactive. No real media, kernel-close fault, hard
+preemption, adversarial namespace, race, durability, physical device, rebuilt
+image, physical-PC pilot or release qualification is claimed by these runs.
+
 CLI output-completion regressions use injected writers and closers to
 exercise open failures, partial writes, nil-error short writes, final
 newline failures, close failures and combined write/close errors. Each

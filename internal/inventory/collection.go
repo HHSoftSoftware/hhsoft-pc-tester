@@ -6,12 +6,14 @@ import (
 	"iter"
 )
 
-// Configuration is copied; context and failure are never stored on the shared
-// collector. Concurrent use still requires a source safe for concurrent reads.
+// Configuration is copied; context, failure and acquisition budgets are never
+// stored on the shared collector. Concurrent use still requires a source safe
+// for concurrent reads.
 type linuxCollection struct {
 	LinuxCollector
-	ctx context.Context
-	err error
+	ctx             context.Context
+	err             error
+	directoryBudget inventoryDirectoryBudget
 }
 
 // The yielded callback is the production range-loop body. Recheck after the
@@ -32,7 +34,11 @@ func collectionItems[T any](collector *linuxCollection, values []T) iter.Seq2[in
 }
 
 func (collector *LinuxCollector) newCollection(ctx context.Context) *linuxCollection {
-	return &linuxCollection{LinuxCollector: *collector, ctx: ctx}
+	return &linuxCollection{
+		LinuxCollector:  *collector,
+		ctx:             ctx,
+		directoryBudget: newInventoryDirectoryBudget(),
+	}
 }
 
 func (collector *linuxCollection) check() bool {
@@ -54,7 +60,7 @@ func (collector *linuxCollection) readDir(name string) []fs.DirEntry {
 	var entries []fs.DirEntry
 	var err error
 	if source, ok := collector.Source.(*RootPathSource); ok {
-		entries, err = source.readDirectory(collector.ctx, name)
+		entries, err = source.readDirectoryWithBudget(collector.ctx, name, &collector.directoryBudget)
 		if err == fs.ErrNotExist && len(entries) == 0 {
 			err = nil
 		}
@@ -71,7 +77,7 @@ func (collector *linuxCollection) readDir(name string) []fs.DirEntry {
 			}
 		}
 		if err == nil {
-			entries, err = ownDirectoryEntries(collector.ctx, entries)
+			entries, err = ownDirectoryEntries(collector.ctx, entries, &collector.directoryBudget)
 		}
 	}
 	if err != nil {

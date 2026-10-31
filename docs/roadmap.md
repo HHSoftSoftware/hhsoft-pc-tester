@@ -186,7 +186,7 @@ acquisition bounds remain open, along with sampled-media reads, fresh images
 and physical-device qualification.
 
 Inventory enumeration now consumes production directory streams through EOF
-without a total device-count cutoff, closes handles before admission and reports
+without silently truncating device lists, closes handles before admission and reports
 hard directory failures instead of successful partial snapshots. Per-call state,
 owned slices and cancellation checks cover acquisition, processing and final
 snapshot creation. Inventory, plan, capture and finalize reject collection errors
@@ -207,8 +207,8 @@ probe to every declared attribute and direct scalar role, covered through 105
 category/role cases. The owned reader requires a regular file, exact EOF and
 successful closure; protocol,
 overflow and cleanup failures stop collection. Ordinary unavailable observations
-remain unknown, decorators keep their declared ReadFile behavior, and there is
-no device-count cutoff. Focused Windows validation passed 2,215 test/subtest
+remain unknown, decorators keep their declared ReadFile behavior, and the
+per-value budget does not truncate device lists. Focused Windows validation passed 2,215 test/subtest
 events across eight packages, including all 26 new portable test functions.
 Full host validation passed 3,362 test/subtest events across 25 packages, with
 17 platform test skips, three packages without tests and no failures. Vet,
@@ -251,8 +251,21 @@ There were no native/race failures or skips; cleanup and all six root
 postchecks passed. The native artifact privacy check passed all 590
 files with zero findings.
 
-Total acquisition, aggregate/peak allocation, parser CPU budgets and optional
-field-error visibility remain open. Legacy aggregate providers may allocate
+The later aggregate directory-budget increment limits each inventory collection
+to 65,536 directory records and 8 MiB of admitted name bytes across its directory
+reads. Exhaustion fails without a partial snapshot; exact-limit EOF, checked
+closure and source overrides remain mandatory. The counters reset for each
+collection. These bounds cover collector-owned retention, not allocations inside
+callbacks or opaque entry values, total heap use, or blocked kernel calls.
+
+All 39 new regression names passed on Windows amd64 and 386 and in the
+full Windows suite. Vet and Linux amd64, 386 and AArch64 production builds
+passed. Native Linux runtime, rebuilt-image and physical-device qualification
+remain open.
+
+Remaining acquisition, including cumulative scalar/proc data, aggregate/peak
+allocation, parser CPU budgets and optional field-error visibility remain open.
+Legacy aggregate providers may allocate
 before returning, and cancellation cannot interrupt a blocked source call.
 Inactive catalog entries remain inactive. Rebuilt images, physical devices,
 sampled-media reads, the physical pilot and release approval remain separate

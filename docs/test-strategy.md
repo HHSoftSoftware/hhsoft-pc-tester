@@ -526,8 +526,32 @@ There were no native/race failures or skips; cleanup and all six root
 postchecks passed. The native artifact privacy check passed all 590
 files with zero findings.
 
-Total acquisition, aggregate/peak allocation, parser CPU budgets and optional
-field-error visibility remain open. Legacy aggregate providers may allocate
+The aggregate inventory-directory budget adds 10 test roots and 39 root/subtest
+names, with 29 child relationships:
+
+- Check exact and one-over record/name-byte limits, multibyte names, the final
+  EOF probe and bounded slice capacity without silently truncating results.
+- Accumulate many individually small directories in one collection. Exercise
+  real RootPathSource wiring, the full Collect entry point, fresh budgets after
+  success or failure, declared overrides and unchanged provider slices.
+- Preserve read, cancellation and close-error precedence. Require no partial
+  snapshot or later source work after exhaustion.
+
+The [directory-budget regressions](../internal/inventory/directory_budget_test.go)
+cover these boundaries. Callback allocations, opaque entry values and blocked
+kernel operations are outside the owned-retention guarantee.
+
+Windows amd64 and 386 inventory runs each passed 1,550 test/subtest cases
+with one existing platform skip. All 39 new names passed in both runs and
+in the full Windows suite, which passed 10,380 cases with 18 platform skips,
+32 passing packages and one package without tests. Vet and Linux amd64,
+386 and AArch64 production builds passed. This provides host test and
+cross-build evidence; native Linux runtime, rebuilt-image and physical-device
+qualification remain open.
+
+Remaining acquisition, including cumulative scalar/proc data, aggregate/peak
+allocation, parser CPU budgets and optional field-error visibility remain open.
+Legacy aggregate providers may allocate
 before returning, and cancellation cannot interrupt a blocked source call.
 Inactive catalog entries remain inactive. Rebuilt images, physical devices,
 sampled-media reads, the physical pilot and release approval remain separate

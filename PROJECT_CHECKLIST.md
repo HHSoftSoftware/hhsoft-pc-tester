@@ -533,7 +533,7 @@ the alpha still requires the separate documented release gates.
   cases, with no native/race skips or failures and confirmed cleanup. Scalar
   fixtures use temporary files; block metadata and descriptors remain simulated.
 - [x] Enumerate inventory directories through actual EOF using bounded requests,
-  with no total device-count cutoff. Close acquired handles before admitting
+  without silently truncating the device list. Close handles before admitting
   names; reject directory failures and malformed or duplicate entries without
   returning a successful partial snapshot. Preserve legitimate absent paths and
   diskless systems.
@@ -593,9 +593,19 @@ the alpha still requires the separate documented release gates.
   on amd64 and 386 and in their corresponding race suites. No native/race
   failures or skips occurred; cleanup, six root postchecks and the
   590-file artifact privacy check passed.
-- [ ] Bound total acquisition, aggregate/peak allocation and parser CPU use;
-  improve optional field-error visibility. Legacy aggregate providers can
-  allocate before returning, and cancellation cannot interrupt a blocked call.
+- [x] Bound aggregate inventory-directory admission to 65,536 records and
+  8 MiB of name bytes per collection, with fresh counters for each call.
+  Exhaustion returns no partial snapshot; exact-limit EOF, checked closure
+  and declared source overrides remain mandatory. These limits bound owned
+  retention, not callback allocations or blocked kernel calls.
+- [x] Validate the aggregate directory-budget increment on Windows amd64 and
+  386, including all 39 new names. The full Windows suite, vet and Linux amd64,
+  386 and AArch64 production builds passed. Native runtime, image and physical
+  gates remain open.
+- [ ] Bound remaining acquisition, including cumulative scalar/proc data,
+  aggregate/peak allocation and parser CPU use; improve optional field-error
+  visibility. Legacy aggregate providers can allocate before returning, and
+  cancellation cannot interrupt a blocked call.
 - [ ] Qualify storage readiness, replacement and cancellation in rebuilt images
   and on physical devices. Matching kernel numbers do not prove persistent
   physical identity or detect every same-number replacement.

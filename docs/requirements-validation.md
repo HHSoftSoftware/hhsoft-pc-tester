@@ -1852,7 +1852,7 @@ sampled-media reads, rebuilt images, physical-device checks, the pilot and
 release gates remain open.
 
 The inventory enumeration increment now reads production directories in
-positive bounded batches through actual EOF, with no total device-count cutoff.
+positive bounded batches through actual EOF without silently truncating results.
 Short successful batches continue; partial errors, joined EOF/errors, no progress
 and oversized responses fail. Every acquired directory closes before names are
 validated and sorted. Failed closure is a hard error; malformed, duplicate and
@@ -1961,8 +1961,32 @@ There were no native/race failures or skips; cleanup and all six root
 postchecks passed. The native artifact privacy check passed all 590
 files with zero findings.
 
-Total acquisition, aggregate/peak allocation, parser CPU budgets and optional
-field-error visibility remain open. Legacy aggregate providers may allocate
+The later aggregate directory-budget implementation shares a 65,536-record and
+8 MiB name-byte budget across every directory read in one inventory collection.
+Each collection starts with fresh counters. Exact-limit EOF remains valid;
+exhaustion returns the fixed error
+`inventory: directory acquisition budget exceeded` and no partial snapshot.
+Owned-handle closure and declared PathSource overrides remain checked.
+
+The [reader](../internal/inventory/directory.go) bounds collector-owned entry
+retention and admitted name bytes. It does not bound allocations inside source
+or entry callbacks, opaque entry payloads, total peak heap use, or blocked kernel
+calls. The [new regressions](../internal/inventory/directory_budget_test.go)
+contain 10 roots and 39 root/subtest names, including aggregate, reset, EOF and
+cleanup failures. The earlier host/native counts above do not qualify this
+increment.
+
+Windows amd64 and 386 inventory runs each passed 1,550 test/subtest cases
+with one existing platform skip. All 39 new names passed in both runs and
+in the full Windows suite, which passed 10,380 cases with 18 platform skips,
+32 passing packages and one package without tests. Vet and Linux amd64,
+386 and AArch64 production builds passed. This provides host test and
+cross-build evidence; native Linux runtime, rebuilt-image and physical-device
+qualification remain open.
+
+Remaining acquisition, including cumulative scalar/proc data, aggregate/peak
+allocation, parser CPU budgets and optional field-error visibility remain open.
+Legacy aggregate providers may allocate
 before returning, and cancellation cannot interrupt a blocked source call.
 Inactive catalog entries remain inactive. Rebuilt images, physical devices,
 sampled-media reads, the physical pilot and release approval remain separate

@@ -91,6 +91,9 @@ func writeSessionReady(path, reportPath, keyEpoch string, frozen plan.Plan, jour
 	if sessionevidence.SupportsTouchpad(journal.Schema) {
 		marker += " touchpad=" + outcomes[touchpadExecutionID]
 	}
+	if sessionevidence.SupportsTouchscreen(journal.Schema) {
+		marker += " touchscreen=" + outcomes[touchscreenExecutionID]
+	}
 	if safeSessionToken(keyEpoch) {
 		marker += " key_epoch=" + keyEpoch
 	}

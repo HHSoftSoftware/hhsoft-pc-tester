@@ -56,12 +56,12 @@ func (collector *linuxCollection) collectInput() []Component {
 		if !collector.check() {
 			return nil
 		}
-		attributes := make(map[string]string, len(component.Attributes)+2)
+		attributes := make(map[string]string, len(component.Attributes)+3)
 		for _, attribute := range collectionItems(collector, component.Attributes) {
 			if !collector.check() {
 				return nil
 			}
-			if attribute.Name != "bitmap_word_bits" && attribute.Name != "touchpad_candidate" {
+			if attribute.Name != "bitmap_word_bits" && attribute.Name != "touchpad_candidate" && attribute.Name != "touchscreen_candidate" {
 				attributes[attribute.Name] = attribute.Value
 			}
 		}
@@ -78,13 +78,15 @@ func (collector *linuxCollection) collectInput() []Component {
 		category := attributes["category"]
 		attributes["touchpad_candidate"] = strconv.FormatBool(category == "touchpad" ||
 			absolute != "" && (category == "input" || category == "pointer"))
+		attributes["touchscreen_candidate"] = strconv.FormatBool(TouchscreenCandidate(category, absolute,
+			firstNonEmpty(attributes["properties"], attributes["prop_capabilities"]), wordBits))
 		if value, ok := canonicalInputMSC(attributes["msc_capabilities"], wordBits); ok {
 			attributes["msc_capabilities"] = value
 		} else {
 			// Absent, malformed or unknown-width data cannot become an empty set.
 			delete(attributes, "msc_capabilities")
 		}
-		// Registry text cannot supply either reserved derived observation.
+		// Registry text cannot supply these reserved derived observations.
 		// A discovery candidate cannot establish a functional input pass.
 		if !collector.check() {
 			return nil

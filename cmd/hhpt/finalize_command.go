@@ -166,6 +166,9 @@ func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, argu
 			outcomeValues, err = parseOutcomesWithDefinitions(outcomes, definitionsWithTouchpad(resultDefinitions))
 		}
 		if err != nil {
+			outcomeValues, err = parseOutcomesWithDefinitions(outcomes, definitionsWithTouchscreen(definitionsWithTouchpad(resultDefinitions)))
+		}
+		if err != nil {
 			fmt.Fprintf(stderr, "validate outcomes: %v\n", err)
 			return 2
 		}
@@ -293,6 +296,19 @@ func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, argu
 					return 1
 				}
 				testResults = append(testResults, touchpadResult)
+				continue
+			}
+			if definition.schema == inputtest.TouchscreenSchema {
+				touchscreenResult, touchscreenErr := newTouchscreenFinalResult(plannedTest, sourceStatus, encoded, readErr)
+				if touchscreenCleanupError(touchscreenErr) {
+					fmt.Fprintln(stderr, "validate touchscreen evidence: cleanup unconfirmed")
+					return workerCleanupUncertainExitCode
+				}
+				if touchscreenErr != nil {
+					fmt.Fprintln(stderr, "validate touchscreen evidence: invalid observations or disposition")
+					return 1
+				}
+				testResults = append(testResults, touchscreenResult)
 				continue
 			}
 			if readErr != nil {
@@ -469,6 +485,17 @@ func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, argu
 					}
 				}
 			}
+			if result.ID == touchscreenExecutionID {
+				if raw, exists := retainedEvidence[result.ID]; exists {
+					if err := validateTouchscreenPlanEvidence(raw, plannedTests[result.ID], frozenPlan, finalPlan, snapshot); err != nil {
+						if touchscreenCleanupError(err) {
+							return workerCleanupUncertainExitCode
+						}
+						fmt.Fprintln(stderr, "validate touchscreen evidence: frozen and final inventory binding changed")
+						return 1
+					}
+				}
+			}
 			if result.ID == "input.keyboard.quick" {
 				if raw, exists := retainedEvidence[result.ID]; exists {
 					value, decodeErr := keyboardevidence.Decode(raw)
@@ -562,6 +589,13 @@ func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, argu
 			raw, present := retainedEvidence[touchpadExecutionID]
 			if err := recheckTouchpadEvidence(filepath.Join(*evidenceDirectory, "touchpad.json"), raw, present, readOptionalEvidence); err != nil {
 				fmt.Fprintln(stderr, "validate touchpad evidence: retained file changed")
+				return 1
+			}
+		}
+		if layout.touchscreen {
+			raw, present := retainedEvidence[touchscreenExecutionID]
+			if err := recheckTouchscreenEvidence(filepath.Join(*evidenceDirectory, "touchscreen.json"), raw, present, readOptionalEvidence); err != nil {
+				fmt.Fprintln(stderr, "validate touchscreen evidence: retained file changed")
 				return 1
 			}
 		}

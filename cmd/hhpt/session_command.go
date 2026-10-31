@@ -131,7 +131,7 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 	if executionProfile == plan.ProfileStandard {
 		ids := sessionevidence.StandardWorkerIDs()
 		workerIDs = ids[:]
-		journalSchema = sessionevidence.SchemaV10
+		journalSchema = sessionevidence.SchemaV12
 	}
 	if !parentOptions.valid() {
 		fmt.Fprintln(stderr, "session: invalid predecessor options")
@@ -408,7 +408,7 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 		outcome, state, evidenceErr := sessionWorkerOutcomeEvidence(workerEvidence, workerReadErr, definitions[record.ID].schema, code, reason != "")
 		if evidenceErr != nil {
 			fmt.Fprintf(stderr, "session worker evidence: %v\n", evidenceErr)
-			if errors.Is(evidenceErr, errQuickCleanupUnconfirmed) || errors.Is(evidenceErr, keyboardevidence.ErrCleanupUnconfirmed) || errors.Is(evidenceErr, quick.ErrCPUStressCleanupUnconfirmed) || touchpadCleanupError(evidenceErr) {
+			if errors.Is(evidenceErr, errQuickCleanupUnconfirmed) || errors.Is(evidenceErr, keyboardevidence.ErrCleanupUnconfirmed) || errors.Is(evidenceErr, quick.ErrCPUStressCleanupUnconfirmed) || touchpadCleanupError(evidenceErr) || touchscreenCleanupError(evidenceErr) {
 				fmt.Fprintf(stderr, "HHPT_SESSION_FAILED worker=%s reason=cleanup_unconfirmed\n", record.ID)
 				return workerCleanupUncertainExitCode
 			}
@@ -422,6 +422,15 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 					return workerCleanupUncertainExitCode
 				}
 				fmt.Fprintln(stderr, "touchpad worker timing or evidence binding failed")
+				return 1
+			}
+		}
+		if record.ID == touchscreenExecutionID {
+			if err := validateTouchscreenWorkerRecord(*record, workerEvidence, workerReadErr, outcome, nil); err != nil {
+				if touchscreenCleanupError(err) {
+					return workerCleanupUncertainExitCode
+				}
+				fmt.Fprintln(stderr, "touchscreen worker timing or evidence binding failed")
 				return 1
 			}
 		}
@@ -553,7 +562,7 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 
 func printSessionWorkerResult(output io.Writer, record sessionWorkerRecord) {
 	labels := map[string]string{"cpu.quick": "CPU", "cpu.stress": "CPU_STRESS", "memory.quick": "MEMORY", "audio.readiness.quick": "AUDIO_READINESS",
-		"input.readiness.quick": "INPUT_READINESS", "input.keyboard.quick": "KEYBOARD", "input.pointer.quick": "POINTER", touchpadExecutionID: "TOUCHPAD", "network.readiness.quick": "NETWORK_READINESS", "storage.readiness.quick": "STORAGE_READINESS",
+		"input.readiness.quick": "INPUT_READINESS", "input.keyboard.quick": "KEYBOARD", "input.pointer.quick": "POINTER", touchpadExecutionID: "TOUCHPAD", touchscreenExecutionID: "TOUCHSCREEN", "network.readiness.quick": "NETWORK_READINESS", "storage.readiness.quick": "STORAGE_READINESS",
 		"usb.readiness.quick": "USB_READINESS", "graphics.quick": "GRAPHICS", "display.operator.quick": "DISPLAY", "inspection.exterior.quick": "EXTERIOR_INSPECTION"}
 	fmt.Fprintf(output, "HHPT_%s status=%s\n", labels[record.ID], record.Outcome)
 }
@@ -577,6 +586,9 @@ func sessionStopReason(parent, run, worker context.Context, now, runDeadline, wo
 func sessionWorkerOutcomeEvidence(encoded []byte, readErr error, schema string, code int, interrupted bool) (string, string, error) {
 	if schema == inputtest.TouchpadSchema {
 		return touchpadWorkerOutcomeEvidence(encoded, readErr, code, interrupted)
+	}
+	if schema == inputtest.TouchscreenSchema {
+		return touchscreenWorkerOutcomeEvidence(encoded, readErr, code, interrupted)
 	}
 	if schema == quick.CPUStressSchema {
 		if code == workerCleanupUncertainExitCode {

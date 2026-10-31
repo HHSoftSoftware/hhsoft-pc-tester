@@ -642,7 +642,7 @@ func TestTouchpadPublicProjectionKeepsUnknownsAndOriginalFingerprint(t *testing.
 			case "unknown_width":
 				appTouchpadSetComponent(&c, "bitmap_word_bits", "128")
 			case "unrelated_component":
-				appTouchpadSetComponent(&c, "category", "touchscreen")
+				appTouchpadSetComponent(&c, "category", "keyboard")
 				appTouchpadDeleteComponent(&c, "touchpad_candidate")
 				appTouchpadSetComponent(&c, "model", "retained model")
 			}
@@ -854,7 +854,7 @@ func TestTouchpadAppHistoricalAndCurrentSessionVersions(t *testing.T) {
 			}
 		})
 	}
-	if sessionevidence.Schema != "hhsoft.pc-tester.quick-session/v9" {
+	if sessionevidence.Schema != "hhsoft.pc-tester.quick-session/v11" {
 		t.Fatal("current quick schema changed")
 	}
 }
@@ -868,7 +868,7 @@ func TestTouchpadAppSessionRejectsForgedIntervalsAndSources(t *testing.T) {
 			v.Session.Schema = "hhsoft.pc-tester.quick-session/v7"
 		}},
 		{"future_session", func(p *InventoryPayload, v *sessionevidence.IntegrityEvidence) {
-			v.Session.Schema = "hhsoft.pc-tester.quick-session/v11"
+			v.Session.Schema = "hhsoft.pc-tester.quick-session/v13"
 		}},
 		{"short_interval", func(p *InventoryPayload, v *sessionevidence.IntegrityEvidence) {
 			v.Session.Workers[6].Timing.FinishedMilliseconds = 1009
@@ -927,7 +927,7 @@ func TestTouchpadAppSessionRejectsForgedIntervalsAndSources(t *testing.T) {
 				// The strict serializer rejects this fixture; edit only its wire schema
 				// so coverage and thermal validation still receive the malformed claim.
 				oldSchema := []byte(`"schema":"hhsoft.pc-tester.quick-session/v9"`)
-				newSchema := []byte(`"schema":"hhsoft.pc-tester.quick-session/v11"`)
+				newSchema := []byte(`"schema":"hhsoft.pc-tester.quick-session/v13"`)
 				if bytes.Count(originalEvidence, oldSchema) != 1 {
 					t.Fatal("future-session fixture must have exactly one current session schema")
 				}

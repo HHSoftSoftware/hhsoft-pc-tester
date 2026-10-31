@@ -106,10 +106,10 @@ func TestTouchpadActivatedSessionSignsCurrentProfile(t *testing.T) {
 	for _, profile := range []plan.Profile{plan.ProfileQuick, plan.ProfileStandard} {
 		t.Run(string(profile), func(t *testing.T) {
 			h := newSessionHarness(t, "x86_64", nil)
-			wantSchema, wantWorkers, count, index := "hhsoft.pc-tester.quick-session/v9", commandRouteTouchpadQuickWorkers, 13, 6
+			wantSchema, wantWorkers, count, index := "hhsoft.pc-tester.quick-session/v11", commandRouteTouchpadQuickWorkers, 14, 6
 			if profile == plan.ProfileStandard {
 				h = newStandardHarness(t, commandStressPass())
-				wantSchema, wantWorkers, count, index = "hhsoft.pc-tester.quick-session/v10", commandRouteTouchpadStandardWorkers, 14, 7
+				wantSchema, wantWorkers, count, index = "hhsoft.pc-tester.quick-session/v12", commandRouteTouchpadStandardWorkers, 15, 7
 			} else {
 				useRealSessionFinalizer(t, h, nil, nil)
 			}
@@ -173,6 +173,12 @@ func TestTouchpadActivatedSessionRetainsIncompleteAndCancelledEvidence(t *testin
 			}
 			if ending == "cancelled" {
 				for _, later := range h.journal.Workers[7:] {
+					if later.ID == "input.touchscreen.quick" {
+						if later.State != "not_scheduled" || later.Outcome != "not_present" || later.Timing != nil {
+							t.Fatal("absent touchscreen lost its frozen disposition")
+						}
+						continue
+					}
 					if later.State != "not_started" || later.Outcome != "aborted" || later.Timing != nil {
 						t.Fatal("cancelled session started later work")
 					}

@@ -21,6 +21,7 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quickevidence"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/storage"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/touchpadevidence"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/touchscreenevidence"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/usbtest"
 )
 
@@ -38,6 +39,13 @@ var errInvalidQuickSafety = quickevidence.ErrInvalid
 func testEvidenceStatus(encoded []byte, expectedSchema string) (string, error) {
 	if expectedSchema == inputtest.TouchpadSchema {
 		value, err := touchpadevidence.Decode(encoded)
+		if err != nil {
+			return "", err
+		}
+		return string(value.Status), nil
+	}
+	if expectedSchema == inputtest.TouchscreenSchema {
+		value, err := touchscreenevidence.Decode(encoded)
 		if err != nil {
 			return "", err
 		}

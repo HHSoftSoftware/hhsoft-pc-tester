@@ -194,7 +194,7 @@ func TestSessionRealThermalCancelsEveryWorkerAndLatchesAfterCooling(t *testing.T
 	for _, target := range sessionWorkerIDs {
 		t.Run(target, func(t *testing.T) {
 			h, write := realThermalHarness(t, nil, "41000\n")
-			enableTouchpadSessionFixture(t, h)
+			enableTouchscreenSessionFixture(t, h)
 			scheduled := false
 			for _, row := range h.frozen.Tests {
 				if row.ID == target {

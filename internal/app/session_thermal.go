@@ -8,7 +8,7 @@ import (
 )
 
 // ValidatedSessionThermal returns a copied view only after validating the new
-// v4-v10 session claim and its other signed result rows. Journals v1-v3 remain
+// v4-v12 session claim and its other signed result rows. Journals v1-v3 remain
 // opaque and return nil; they are not interpreted against the current catalog.
 func ValidatedSessionThermal(payload InventoryPayload) (*sessionevidence.ThermalView, error) {
 	if err := validateCPUStressReport(payload); err != nil {
@@ -27,6 +27,9 @@ func ValidatedSessionThermal(payload InventoryPayload) (*sessionevidence.Thermal
 		return nil, err
 	}
 	if err := validateTouchpadReport(payload); err != nil {
+		return nil, err
+	}
+	if err := validateTouchscreenReport(payload); err != nil {
 		return nil, err
 	}
 	if err := validateStorageReport(payload); err != nil {

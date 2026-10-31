@@ -186,9 +186,9 @@ func TestInventoryPlanFingerprintFixedOutputs(t *testing.T) {
 	}{
 		{"inventory-default", "inventory", "eed5302c9ef92a0eafb9df1a5f0b378196ddbf95503697852af07fb03f3d635b", 2588, false, false, false},
 		{"inventory-filtered", "inventory", "e686df6afb7f98552411b6b5b8f01cfee513ce1e129e163fa67716508926836e", 2289, true, false, false},
-		{"plan-default", "plan", "8ed421f0bfce795a17a08f4631e4e10e53adb8f0a134ec7a561974391cbfd2f8", 7135, false, false, false},
-		{"plan-selected", "plan", "dbec2fcf1091feed53beeb005e57882a7ac0c6e30415ce99c5ca11f29f217e8a", 6774, true, true, false},
-		{"plan-standard", "plan", "9bc131a4c422e5f52a8c31c3677c14b1ff1bd846dc0df866a9a600d577f617e6", 7142, false, false, true},
+		{"plan-default", "plan", "c098f579c456545d7dbf6eb197b07ecafda55a96edd81dc8335785c9a4fa593d", 7135, false, false, false},
+		{"plan-selected", "plan", "aeb68f1ab5dca8928f953997f085d579b56f01b57e2ff68529af09f69c6068f5", 6774, true, true, false},
+		{"plan-standard", "plan", "2666c8de7dc45dde4839704d7dc86e27039d00c04b7935afca79e72ef081f9e3", 7142, false, false, true},
 	}
 	for _, command := range inventoryPlanFingerprintCommands() {
 		for _, test := range cases {
@@ -647,7 +647,7 @@ func TestInventoryPlanFingerprintReadCompletion(t *testing.T) {
 					}
 					want := "eed5302c9ef92a0eafb9df1a5f0b378196ddbf95503697852af07fb03f3d635b"
 					if command.name == "plan" {
-						want = "8ed421f0bfce795a17a08f4631e4e10e53adb8f0a134ec7a561974391cbfd2f8"
+						want = "c098f579c456545d7dbf6eb197b07ecafda55a96edd81dc8335785c9a4fa593d"
 					}
 					if fmt.Sprintf("%x", sha256.Sum256(h.stdout.Bytes())) != want {
 						t.Fatal("completed key changed command output")

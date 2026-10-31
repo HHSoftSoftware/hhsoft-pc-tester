@@ -143,9 +143,9 @@ The development standard profile now adds an explicit bounded CPU stress step.
 Select `session -profile standard` with a matching frozen standard plan. Automatic
 boot and an omitted session profile remain quick; the development console requires
 explicit `S` to choose standard. Standard defaults to a
-900-second session budget and uses fourteen workers in journal v10, with stress
-immediately after a passing CPU quick check. Current Quick uses thirteen workers
-in v9. The 22-row catalog has fourteen implemented rows and eight inactive
+900-second session budget and uses fifteen workers in journal v12, with stress
+immediately after a passing CPU quick check. Current Quick uses fourteen workers
+in v11. The 22-row catalog has fifteen implemented rows and seven inactive
 families. The earlier CPU stress qualification below used Standard v8/thirteen
 and Quick v7/twelve.
 
@@ -204,7 +204,7 @@ hardware fault. Rebuilt-image and physical-memory validation remain open.
 Development source now also monitors temperatures throughout the quick session,
 including excluded-test runs, cleanup and final inventory. The v4 increment
 introduced initial, periodic and final observations and required both session
-monitors to join before signing; current v9/v10 journals retain those rules.
+monitors to join before signing; current v11/v12 journals retain those rules.
 Heat stops work without erasing earlier failures; missing
 telemetry remains a coverage limitation. That thermal increment passed Windows
 tests, vet, cross-builds, native Linux amd64/386 suites, race checks and all 15 CLI
@@ -242,7 +242,7 @@ hhpt pointer -duration 30s -timeout 90s -output pointer.json
 
 Pointer joins the quick session's shared five-minute budget and signed results;
 direct `capture` retains its existing subset and does not run this guided check.
-The current selection menu offers thirteen modern or eleven legacy Quick tests.
+The current selection menu offers fourteen modern or twelve legacy Quick tests.
 Pointer
 definition 2 and evidence v2 add advertised wheel directions and require a fresh
 plan. That pointer increment retained session v5 with eleven workers. Historical
@@ -276,7 +276,7 @@ Development source also connects the bounded legacy single-contact touchpad
 check to planning, Quick selection, session execution, signed reports and
 HTML/PDF views. The derived `touchpad_candidate=true` inventory marker can make
 definition 2 applicable; candidacy is not proof that the device is supported.
-The worker follows pointer in Quick v9 and Standard v10. Direct capture does
+The worker follows pointer in Quick v11 and Standard v12. Direct capture does
 not run guided touchpad actions.
 
 Windows software qualification passed with Go 1.27.2, including all 583
@@ -287,10 +287,19 @@ rebuilt images, physical testing, the pilot and release gates remain open.
 See the [touchpad scope](docs/requirements-validation.md#touchpad-inventory-and-strict-evidence)
 and [operator steps](docs/operator-guide.md#bounded-touchpad-check).
 
+The bounded single-contact touchscreen route is implemented across its command,
+current plan/menu, session, owned finalization and signed reports/views.
+Connected Windows software qualification passed in both focused architectures
+and the full suite. Twelve Linux command/test builds passed and provide
+compile-only evidence. The check covers movement and release; multi-touch,
+stylus, calibration and whole-panel coverage remain outside its scope. See the
+[touchscreen guide](docs/touchscreen-quick.md) for the supported interface,
+development command and remaining native, physical and release validation.
+
 The exterior-inspection check records an operator's finite observation of safely
 visible enclosure surfaces, without moving or opening the device. It does not
 verify physical condition or imply coverage of unseen surfaces. The v7 increment
-appended this check after the earlier eleven workers. Current v9/v10 sessions
+appended this check after the earlier eleven workers. Current v11/v12 sessions
 retain exterior inspection, and finalized reports contain 22 catalog results
 plus run integrity.
 Direct capture retains its
@@ -353,7 +362,7 @@ Broader SPD, ECC, topology, speed and firmware/OS reconciliation remain open.
 The periodic-monitor milestone introduced read-only mount/network sampling
 and a v3 session journal, without changing the catalog or ten worker outcomes.
 The v4 increment retained that monitor summary and added thermal evidence;
-current Quick v9 and Standard v10 keep those same monitoring requirements.
+current Quick v11 and Standard v12 keep those same monitoring requirements.
 Its first unsafe or uncertain observation stops active work and blocks signing.
 This is bounded periodic coverage, not continuous safety monitoring or kernel
 preemption. Automated tests, native Linux suites, race checks, and signed CLI
@@ -375,9 +384,9 @@ readiness result.
 Offline report reading additionally supports the finite storage sampling evidence
 and explicit v6 session format through verification, HTML/PDF views and
 comparison. This checks signed assertions and separates accepted work from
-diagnostics; it does not perform media reads. Current Quick sessions use v9
-with thirteen workers; explicit Standard uses v10 with fourteen. Historical
-v4-v8 reports retain their version-specific read rules, without authorizing
+diagnostics; it does not perform media reads. Current Quick sessions use v11
+with fourteen workers; explicit Standard uses v12 with fifteen. Historical
+v4-v10 reports retain their version-specific read rules, without authorizing
 stale plans for current execution. The sampling catalog entry remains inactive.
 See [report integrity](docs/report-integrity.md) for the evidence and cleanup
 limits.

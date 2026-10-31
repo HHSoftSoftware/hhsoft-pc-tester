@@ -14,45 +14,52 @@ const SchemaV7 = "hhsoft.pc-tester.quick-session/v7"
 const SchemaV8 = "hhsoft.pc-tester.quick-session/v8"
 const SchemaV9 = "hhsoft.pc-tester.quick-session/v9"
 const SchemaV10 = "hhsoft.pc-tester.quick-session/v10"
+const SchemaV11 = "hhsoft.pc-tester.quick-session/v11"
+const SchemaV12 = "hhsoft.pc-tester.quick-session/v12"
 
-// Schema selects current Quick touchpad sessions; storage execution remains inactive.
-const Schema = SchemaV9
+// Schema selects current Quick touchscreen sessions; storage execution remains inactive.
+const Schema = SchemaV11
 const IntegritySchema = "hhsoft.pc-tester.run-integrity/v1"
 const MaximumBytes = 64 << 10
 const Scope = "Quick-session execution, cleanup, final inventory and final safety gate; report encoding, output and saving are outside this monitoring window."
 const StandardScope = "Standard-session execution, cleanup, final inventory and final safety gate; report encoding, output and saving are outside this monitoring window."
 
 func IsStrictSchema(schema string) bool {
-	return schema == SchemaV4 || schema == SchemaV5 || schema == SchemaV6 || schema == SchemaV7 || schema == SchemaV8 || schema == SchemaV9 || schema == SchemaV10
+	return schema == SchemaV4 || schema == SchemaV5 || schema == SchemaV6 || schema == SchemaV7 || schema == SchemaV8 || schema == SchemaV9 || schema == SchemaV10 || schema == SchemaV11 || schema == SchemaV12
 }
 
 func supportsCurrentWorkerEvidence(schema string) bool {
-	return schema == SchemaV5 || schema == SchemaV6 || schema == SchemaV7 || schema == SchemaV8 || schema == SchemaV9 || schema == SchemaV10
+	return schema == SchemaV5 || schema == SchemaV6 || schema == SchemaV7 || schema == SchemaV8 || schema == SchemaV9 || schema == SchemaV10 || schema == SchemaV11 || schema == SchemaV12
 }
 
 // IsStandardSchema recognizes explicit historical and current Standard wire versions.
 func IsStandardSchema(schema string) bool {
-	return schema == SchemaV8 || schema == SchemaV10
+	return schema == SchemaV8 || schema == SchemaV10 || schema == SchemaV12
 }
 
 // SupportsInspection retains the bounded operator task only in its declared versions.
 func SupportsInspection(schema string) bool {
-	return schema == SchemaV7 || schema == SchemaV8 || schema == SchemaV9 || schema == SchemaV10
+	return schema == SchemaV7 || schema == SchemaV8 || schema == SchemaV9 || schema == SchemaV10 || schema == SchemaV11 || schema == SchemaV12
 }
 
 // SupportsTouchpad recognizes only the versioned touchpad session contracts.
 func SupportsTouchpad(schema string) bool {
-	return schema == SchemaV9 || schema == SchemaV10
+	return schema == SchemaV9 || schema == SchemaV10 || schema == SchemaV11 || schema == SchemaV12
+}
+
+// SupportsTouchscreen recognizes only the versioned DIRECT touchscreen contracts.
+func SupportsTouchscreen(schema string) bool {
+	return schema == SchemaV11 || schema == SchemaV12
 }
 
 // WorkerIDs returns the current Quick worker sequence.
-func WorkerIDs() [13]string {
-	return WorkerIDsV9()
+func WorkerIDs() [14]string {
+	return WorkerIDsV11()
 }
 
 // StandardWorkerIDs returns the current Standard worker sequence.
-func StandardWorkerIDs() [14]string {
-	return WorkerIDsV10()
+func StandardWorkerIDs() [15]string {
+	return WorkerIDsV12()
 }
 
 // WorkerIDsV7 preserves the historical Quick v7 worker sequence.
@@ -75,6 +82,16 @@ func WorkerIDsV10() [14]string {
 	return [14]string{"cpu.quick", "cpu.stress", "memory.quick", "audio.readiness.quick", "input.readiness.quick", "input.keyboard.quick", "input.pointer.quick", "input.touchpad.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick", "graphics.quick", "display.operator.quick", "inspection.exterior.quick"}
 }
 
+// WorkerIDsV11 returns the owned, version-frozen Quick v11 sequence.
+func WorkerIDsV11() [14]string {
+	return [14]string{"cpu.quick", "memory.quick", "audio.readiness.quick", "input.readiness.quick", "input.keyboard.quick", "input.pointer.quick", "input.touchpad.quick", "input.touchscreen.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick", "graphics.quick", "display.operator.quick", "inspection.exterior.quick"}
+}
+
+// WorkerIDsV12 returns the owned, version-frozen Standard v12 sequence.
+func WorkerIDsV12() [15]string {
+	return [15]string{"cpu.quick", "cpu.stress", "memory.quick", "audio.readiness.quick", "input.readiness.quick", "input.keyboard.quick", "input.pointer.quick", "input.touchpad.quick", "input.touchscreen.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick", "graphics.quick", "display.operator.quick", "inspection.exterior.quick"}
+}
+
 func workerIDs(schema string) []string {
 	switch schema {
 	case SchemaV4:
@@ -90,6 +107,12 @@ func workerIDs(schema string) []string {
 		return ids[:]
 	case SchemaV10:
 		ids := WorkerIDsV10()
+		return ids[:]
+	case SchemaV11:
+		ids := WorkerIDsV11()
+		return ids[:]
+	case SchemaV12:
+		ids := WorkerIDsV12()
 		return ids[:]
 	case SchemaV6:
 		return []string{"cpu.quick", "memory.quick", "audio.readiness.quick", "input.readiness.quick", "input.keyboard.quick", "input.pointer.quick", "network.readiness.quick", "storage.readiness.quick", "storage.quick", "usb.readiness.quick", "graphics.quick", "display.operator.quick"}
@@ -172,7 +195,7 @@ type ThermalView struct {
 	LocalSources                         []LocalThermalSource
 }
 
-// IntegrityEvidence preserves the graph-integrity v1 envelope. Strict v4-v10
+// IntegrityEvidence preserves the graph-integrity v1 envelope. Strict v4-v12
 // claims use its decoder; earlier evidence remains opaque.
 type IntegrityEvidence struct {
 	Schema                string                      `json:"schema"`

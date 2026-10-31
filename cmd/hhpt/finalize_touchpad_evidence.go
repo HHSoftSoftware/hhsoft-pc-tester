@@ -25,6 +25,7 @@ type commandExecutionLayout struct {
 	workerIDs   []string
 	schema      string
 	touchpad    bool
+	touchscreen bool
 }
 
 // Call only after the owner has checked the frozen plan. This finite selector
@@ -53,6 +54,27 @@ func commandLayoutForPlan(frozen plan.Plan, profile plan.Profile) (commandExecut
 			return commandExecutionLayout{}, touchpadevidence.ErrInvalid
 		}
 		seen[test.ID] = true
+		if test.ID == touchscreenExecutionID {
+			if test.Version == 1 {
+				if test.Status == plan.TestScheduled {
+					return commandExecutionLayout{}, touchpadevidence.ErrInvalid
+				}
+				continue
+			}
+			if test.Version != 2 || frozen.Profile != profile || !frozen.Frozen ||
+				frozen.SchemaVersion != plan.SchemaVersion || frozen.ID == "" ||
+				test.Capability != "input.touchscreen" || test.Destructive ||
+				test.EstimatedSeconds != 45 || test.TimeoutSeconds != 120 {
+				return commandExecutionLayout{}, touchpadevidence.ErrInvalid
+			}
+			switch test.Status {
+			case plan.TestScheduled, plan.TestExcluded, plan.TestNotPresent, plan.TestUnsupported, plan.TestMissingDriver:
+			default:
+				return commandExecutionLayout{}, touchpadevidence.ErrInvalid
+			}
+			layout.touchscreen = true
+			continue
+		}
 		if test.ID != touchpadExecutionID {
 			continue
 		}
@@ -86,6 +108,22 @@ func commandLayoutForPlan(frozen plan.Plan, profile plan.Profile) (commandExecut
 			layout.schema = sessionevidence.SchemaV10
 		}
 	}
+	if layout.touchscreen {
+		// Current touchscreen contracts retain the touchpad worker and its
+		// owned finalization path. An isolated version upgrade is invalid.
+		if !layout.touchpad {
+			return commandExecutionLayout{}, touchpadevidence.ErrInvalid
+		}
+		layout.definitions = definitionsWithTouchscreen(layout.definitions)
+		quick := sessionevidence.WorkerIDsV11()
+		layout.workerIDs = append([]string(nil), quick[:]...)
+		layout.schema = sessionevidence.SchemaV11
+		if profile == plan.ProfileStandard {
+			standard := sessionevidence.WorkerIDsV12()
+			layout.workerIDs = append([]string(nil), standard[:]...)
+			layout.schema = sessionevidence.SchemaV12
+		}
+	}
 	return layout, nil
 }
 
@@ -98,6 +136,20 @@ func definitionsWithTouchpad(before []quickResultDefinition) []quickResultDefini
 		if definition.id == "input.pointer.quick" {
 			result = append(result, quickResultDefinition{
 				id: touchpadExecutionID, filename: "touchpad.json", schema: inputtest.TouchpadSchema,
+			})
+		}
+	}
+	return result
+}
+
+// Keep preliminary syntax selection owned and separate from plan admission.
+func definitionsWithTouchscreen(before []quickResultDefinition) []quickResultDefinition {
+	result := make([]quickResultDefinition, 0, len(before)+1)
+	for _, definition := range before {
+		result = append(result, definition)
+		if definition.id == touchpadExecutionID {
+			result = append(result, quickResultDefinition{
+				id: touchscreenExecutionID, filename: "touchscreen.json", schema: inputtest.TouchscreenSchema,
 			})
 		}
 	}

@@ -32,7 +32,7 @@ func TestPointerPlanSchedulesEveryPointerWithoutTrustingTouchpadCategory(t *test
 				}
 				assertTestStatus(t, p, "input.keyboard.quick", TestScheduled)
 				assertTestStatus(t, p, "input.touchpad.quick", TestNotPresent)
-				assertTestStatus(t, p, "input.touchscreen.quick", TestUnsupported)
+				assertTestStatus(t, p, "input.touchscreen.quick", TestNotPresent)
 				if _, err := Decode(rehashPlanForTest(t, &p)); err != nil {
 					t.Fatalf("valid pointer plan rejected: %v", err)
 				}

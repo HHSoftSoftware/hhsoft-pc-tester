@@ -66,6 +66,11 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 				return ErrInvalid
 			}
 		}
+		if HasTouchscreenClaim(binding.Evidence) || strings.EqualFold(binding.ID, touchscreenTestID) && binding.Version != 1 {
+			if !SupportsTouchscreen(j.Schema) || binding.ID != touchscreenTestID || binding.Version != 2 {
+				return ErrInvalid
+			}
+		}
 		if HasInspectionClaim(binding.Evidence) || strings.EqualFold(binding.ID, "inspection.exterior.quick") {
 			if !SupportsInspection(j.Schema) || binding.ID != "inspection.exterior.quick" || binding.Version != 1 {
 				return ErrInvalid
@@ -146,6 +151,12 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 		}
 		if worker.ID == touchpadTestID {
 			if err := validateTouchpadBinding(worker, binding); err != nil {
+				return err
+			}
+			continue
+		}
+		if worker.ID == touchscreenTestID {
+			if err := validateTouchscreenBinding(worker, binding); err != nil {
 				return err
 			}
 			continue

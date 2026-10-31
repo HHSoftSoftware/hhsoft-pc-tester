@@ -48,7 +48,7 @@ func outputCommandCases(t *testing.T) []outputCommandCase {
 	finalizeArguments := []string{"-fingerprint-key", keyPath, "-plan", planPath, "-evidence-dir", directory,
 		"-session-id", "fixture-session", "-output", "owned-output", "-outcome", "audio.readiness.quick=not_present",
 		"-outcome", "cpu.quick=pass", "-outcome", "display.operator.quick=not_present", "-outcome", "graphics.quick=not_present",
-		"-outcome", "input.keyboard.quick=not_present", "-outcome", "input.pointer.quick=not_present", "-outcome", "input.touchpad.quick=not_present", "-outcome", "input.readiness.quick=not_present",
+		"-outcome", "input.keyboard.quick=not_present", "-outcome", "input.pointer.quick=not_present", "-outcome", "input.touchpad.quick=not_present", "-outcome", "input.touchscreen.quick=not_present", "-outcome", "input.readiness.quick=not_present",
 		"-outcome", "memory.quick=not_present", "-outcome", "network.readiness.quick=not_present", "-outcome", "storage.readiness.quick=not_present",
 		"-outcome", "usb.readiness.quick=not_present", "-outcome", "inspection.exterior.quick=excluded"}
 	now := func() time.Time { return time.Unix(10, 20) }

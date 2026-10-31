@@ -47,7 +47,7 @@ func signedMemoryPayload(t *testing.T, h *sessionHarness) app.InventoryPayload {
 	if json.Unmarshal(artifact.InventoryJSON, &payload) != nil {
 		t.Fatal("invalid signed payload")
 	}
-	if len(payload.TestResults) != 23 || len(h.journal.Workers) != 13 {
+	if len(payload.TestResults) != 23 || len(h.journal.Workers) != 14 {
 		t.Fatal("RAM increment changed row/worker counts")
 	}
 	return payload

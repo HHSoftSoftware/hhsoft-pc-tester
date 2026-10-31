@@ -78,6 +78,7 @@ func TestTouchpadCommandLayoutKeepsLiteralOldAndNewOrders(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			frozen, _, _ := commandRouteCurrentPlan(t, c.profile)
+			touchscreenRouteChangeTest(&frozen, func(v *plan.Test) { v.Version = 1; v.Status = plan.TestUnsupported })
 			if !c.future {
 				commandRouteChangeTest(&frozen, func(v *plan.Test) { v.Version = 1; v.Status = plan.TestUnsupported })
 			}
@@ -103,8 +104,8 @@ func TestTouchpadCommandLayoutKeepsLiteralOldAndNewOrders(t *testing.T) {
 			}
 		})
 	}
-	if sessionevidence.Schema != "hhsoft.pc-tester.quick-session/v9" || sessionJournalSchema != "hhsoft.pc-tester.quick-session/v9" {
-		t.Fatal("current quick schema is not v9")
+	if sessionevidence.Schema != "hhsoft.pc-tester.quick-session/v11" || sessionJournalSchema != "hhsoft.pc-tester.quick-session/v11" {
+		t.Fatal("current quick schema is not v11")
 	}
 }
 
@@ -156,7 +157,7 @@ func TestTouchpadCommandLayoutRejectsUnadmittedDefinitions(t *testing.T) {
 			frozen, _, _ := commandRouteCurrentPlan(t, plan.ProfileQuick)
 			commandRouteChangeTest(&frozen, func(v *plan.Test) { v.Status = plan.TestStatus(name) })
 			layout, err := commandLayoutForPlan(frozen, plan.ProfileQuick)
-			if err != nil || !layout.touchpad || layout.schema != "hhsoft.pc-tester.quick-session/v9" {
+			if err != nil || !layout.touchpad || layout.schema != "hhsoft.pc-tester.quick-session/v11" {
 				t.Fatal("finite non-scheduled definition lost its versioned layout")
 			}
 		})
@@ -320,16 +321,16 @@ func TestTouchpadWorkerRecordBindsDurationAndCleanup(t *testing.T) {
 
 func TestTouchpadCommandHistoricalJournalVersionsStayReadable(t *testing.T) {
 	cases := []struct {
-		name, schema, ids string
-		current           bool
+		name, schema, ids  string
+		current, typedPlan bool
 	}{
-		{"v4", "hhsoft.pc-tester.quick-session/v4", "cpu.quick memory.quick audio.readiness.quick input.readiness.quick input.pointer.quick network.readiness.quick storage.readiness.quick usb.readiness.quick graphics.quick display.operator.quick", false},
-		{"v5", "hhsoft.pc-tester.quick-session/v5", "cpu.quick memory.quick audio.readiness.quick input.readiness.quick input.keyboard.quick input.pointer.quick network.readiness.quick storage.readiness.quick usb.readiness.quick graphics.quick display.operator.quick", false},
-		{"v6", "hhsoft.pc-tester.quick-session/v6", "cpu.quick memory.quick audio.readiness.quick input.readiness.quick input.keyboard.quick input.pointer.quick network.readiness.quick storage.readiness.quick storage.quick usb.readiness.quick graphics.quick display.operator.quick", false},
-		{"v7", "hhsoft.pc-tester.quick-session/v7", commandRouteQuickWorkers, false},
-		{"v8", "hhsoft.pc-tester.quick-session/v8", commandRouteStandardWorkers, false},
-		{"v9", "hhsoft.pc-tester.quick-session/v9", commandRouteTouchpadQuickWorkers, true},
-		{"v10", "hhsoft.pc-tester.quick-session/v10", commandRouteTouchpadStandardWorkers, true},
+		{"v4", "hhsoft.pc-tester.quick-session/v4", "cpu.quick memory.quick audio.readiness.quick input.readiness.quick input.pointer.quick network.readiness.quick storage.readiness.quick usb.readiness.quick graphics.quick display.operator.quick", false, false},
+		{"v5", "hhsoft.pc-tester.quick-session/v5", "cpu.quick memory.quick audio.readiness.quick input.readiness.quick input.keyboard.quick input.pointer.quick network.readiness.quick storage.readiness.quick usb.readiness.quick graphics.quick display.operator.quick", false, false},
+		{"v6", "hhsoft.pc-tester.quick-session/v6", "cpu.quick memory.quick audio.readiness.quick input.readiness.quick input.keyboard.quick input.pointer.quick network.readiness.quick storage.readiness.quick storage.quick usb.readiness.quick graphics.quick display.operator.quick", false, false},
+		{"v7", "hhsoft.pc-tester.quick-session/v7", commandRouteQuickWorkers, false, false},
+		{"v8", "hhsoft.pc-tester.quick-session/v8", commandRouteStandardWorkers, false, false},
+		{"v9", "hhsoft.pc-tester.quick-session/v9", commandRouteTouchpadQuickWorkers, false, true},
+		{"v10", "hhsoft.pc-tester.quick-session/v10", commandRouteTouchpadStandardWorkers, false, true},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -339,11 +340,12 @@ func TestTouchpadCommandHistoricalJournalVersionsStayReadable(t *testing.T) {
 				profile = plan.ProfileStandard
 			}
 			frozen, _, _ := commandRouteCurrentPlan(t, profile)
+			touchscreenRouteChangeTest(&frozen, func(v *plan.Test) { v.Version = 1; v.Status = plan.TestUnsupported })
 			if c.name != "v9" && c.name != "v10" {
 				commandRouteChangeTest(&frozen, func(v *plan.Test) { v.Version = 1; v.Status = plan.TestUnsupported })
 			}
-			if currentSessionProfileForPlan(journal, frozen, profile) != c.current {
-				t.Fatal("historical/current selection changed")
+			if currentSessionProfileForPlan(journal, frozen, profile) != c.typedPlan {
+				t.Fatal("typed historical plan binding changed")
 			}
 			if currentSessionProfile(journal, profile) != c.current {
 				t.Fatal("current producer accepted a historical schema or lost its current schema")
@@ -362,28 +364,35 @@ func TestTouchpadCommandHistoricalJournalVersionsStayReadable(t *testing.T) {
 
 func TestTouchpadCheckedJournalBindsFrozenPlanAndReadyMarkers(t *testing.T) {
 	cases := []struct {
-		name        string
-		profile     plan.Profile
-		schema, ids string
-		future      bool
+		name            string
+		profile         plan.Profile
+		schema, ids     string
+		future, current bool
 	}{
-		{"quick_v7", plan.ProfileQuick, "hhsoft.pc-tester.quick-session/v7", commandRouteQuickWorkers, false},
-		{"standard_v8", plan.ProfileStandard, "hhsoft.pc-tester.quick-session/v8", commandRouteStandardWorkers, false},
-		{"quick_v9", plan.ProfileQuick, "hhsoft.pc-tester.quick-session/v9", commandRouteTouchpadQuickWorkers, true},
-		{"standard_v10", plan.ProfileStandard, "hhsoft.pc-tester.quick-session/v10", commandRouteTouchpadStandardWorkers, true},
+		{"quick_v7", plan.ProfileQuick, "hhsoft.pc-tester.quick-session/v7", commandRouteQuickWorkers, false, false},
+		{"standard_v8", plan.ProfileStandard, "hhsoft.pc-tester.quick-session/v8", commandRouteStandardWorkers, false, false},
+		{"quick_v9", plan.ProfileQuick, "hhsoft.pc-tester.quick-session/v9", commandRouteTouchpadQuickWorkers, true, false},
+		{"standard_v10", plan.ProfileStandard, "hhsoft.pc-tester.quick-session/v10", commandRouteTouchpadStandardWorkers, true, false},
+		{"quick_v11", plan.ProfileQuick, "hhsoft.pc-tester.quick-session/v11", touchscreenRouteTouchscreenQuickWorkers, true, true},
+		{"standard_v12", plan.ProfileStandard, "hhsoft.pc-tester.quick-session/v12", touchscreenRouteTouchscreenStandardWorkers, true, true},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
 			// This is an internal checked-boundary fixture, not a Plan.Decode or
-			// catalog-activation test. No live monitoring authority is manufactured.
+			// catalog-activation test. Historical decoding is separate from current
+			// defaults and Plan.Decode execution admission; no live monitoring
+			// authority is manufactured by this typed binding fixture.
 			frozen, _, _ := commandRouteCurrentPlan(t, c.profile)
 			for i := range frozen.Tests {
 				frozen.Tests[i].Status = plan.TestExcluded
 			}
+			if !c.current {
+				touchscreenRouteChangeTest(&frozen, func(v *plan.Test) { v.Version = 1 })
+			}
 			if !c.future {
 				commandRouteChangeTest(&frozen, func(v *plan.Test) { v.Version = 1 })
 			}
-			journal := commandRouteJournal(t, c.schema, c.ids)
+			journal := touchscreenRouteJournal(t, c.schema, c.ids)
 			journal.PlanID = frozen.ID
 			outcomes := map[string]string{}
 			for _, w := range journal.Workers {
@@ -414,7 +423,7 @@ func TestTouchpadCheckedJournalBindsFrozenPlanAndReadyMarkers(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
-			if strings.Contains(string(raw), " touchpad=excluded") != c.future || !strings.Contains(string(raw), " exterior_inspection=excluded") || strings.Contains(string(raw), " profile=standard cpu_stress=excluded") != (c.profile == plan.ProfileStandard) {
+			if strings.Contains(string(raw), " touchpad=excluded") != c.future || strings.Contains(string(raw), " touchscreen=excluded") != c.current || !strings.Contains(string(raw), " exterior_inspection=excluded") || strings.Contains(string(raw), " profile=standard cpu_stress=excluded") != (c.profile == plan.ProfileStandard) {
 				t.Fatal("versioned ready marker changed")
 			}
 			if strings.Count(string(raw), "HHPT_READY ") != 1 || strings.Count(string(raw), "\n") != 1 {
@@ -444,16 +453,16 @@ func TestTouchpadProfileAndJournalClaimsRejectAliases(t *testing.T) {
 	for _, name := range []string{"old_schema", "wrong_profile", "quick_has_stress", "standard_lacks_profile", "worker_duplicate", "worker_missing", "outcome_changed", "planned_status_changed", "version_changed"} {
 		t.Run(name, func(t *testing.T) {
 			profile := plan.ProfileQuick
-			schema, ids := "hhsoft.pc-tester.quick-session/v9", commandRouteTouchpadQuickWorkers
+			schema, ids := "hhsoft.pc-tester.quick-session/v11", touchscreenRouteTouchscreenQuickWorkers
 			if name == "standard_lacks_profile" {
 				profile = plan.ProfileStandard
-				schema, ids = "hhsoft.pc-tester.quick-session/v10", commandRouteTouchpadStandardWorkers
+				schema, ids = "hhsoft.pc-tester.quick-session/v12", touchscreenRouteTouchscreenStandardWorkers
 			}
 			frozen, _, _ := commandRouteCurrentPlan(t, profile)
 			for i := range frozen.Tests {
 				frozen.Tests[i].Status = plan.TestExcluded
 			}
-			journal := commandRouteJournal(t, schema, ids)
+			journal := touchscreenRouteJournal(t, schema, ids)
 			journal.PlanID = frozen.ID
 			outcomes := map[string]string{}
 			for _, w := range journal.Workers {
@@ -591,7 +600,7 @@ func TestTouchpadAbsentCandidateRemainsExplicitInCurrentSession(t *testing.T) {
 	if code := h.run(t.Context()); code != 0 || !h.finalized {
 		t.Fatalf("current session failed: %d %s", code, h.stderr.String())
 	}
-	if h.journal.Schema != "hhsoft.pc-tester.quick-session/v9" || len(h.journal.Workers) != 13 ||
+	if h.journal.Schema != "hhsoft.pc-tester.quick-session/v11" || len(h.journal.Workers) != 14 ||
 		!reflect.DeepEqual(h.calls, strings.Fields(commandRouteQuickWorkers)) {
 		t.Fatal("absent candidate changed current execution order")
 	}

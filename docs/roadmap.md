@@ -506,13 +506,14 @@ Touchpad definition 2 now connects the catalog, frozen plan, Quick defaults
 and menu, checked session dispatch, owned finalization and signed consumers.
 The provider requires the finite derived `touchpad_candidate=true` marker;
 a category label alone cannot schedule the worker, and candidacy does not
-establish device support. Quick v9 has thirteen workers and Standard v10 has
-fourteen, with touchpad inserted once after pointer. Modern Quick selection
-offers thirteen checks and legacy x86 offers eleven. Explicit exclusions remain
+establish device support. That touchpad activation used Quick v9 with thirteen
+workers and Standard v10 with fourteen, with touchpad inserted once after
+pointer. Its Quick selection offered thirteen modern checks and eleven on
+legacy x86. Explicit exclusions remain
 Quick-only; Standard rejects a nonempty exclusion set.
 
 Current execution requires a freshly decoded plan matching the current catalog.
-Rehashing an obsolete plan does not admit it. Historical v4-v8 signed reports
+Rehashing an obsolete plan does not admit it. Historical v4-v10 signed reports
 and journals retain their version-specific read rules without authorizing
 historical plans for current execution.
 
@@ -526,6 +527,35 @@ behavior, edges, taps, multi-touch, scrolling and gestures, rebuilt images,
 physical devices, the pilot and release approval remain open. See
 [route scope](requirements-validation.md#touchpad-inventory-and-strict-evidence)
 and [tests](test-strategy.md#touchpad-inventory-and-evidence-host-validation).
+
+### Bounded single-contact touchscreen development
+
+The touchscreen producer observes a narrow single-contact absolute-input
+interface. Each interface needs fresh coordinates, movement in both directions
+on both axes within one contact, a release and checked terminal cleanup.
+Activity alone cannot pass. Multi-touch, stylus, pressure, calibration and
+whole-panel coverage are outside this check; touchpad behavior is unchanged.
+
+The connected implementation makes touchscreen definition 2 applicable
+through the derived candidate marker. It places the worker once after touchpad
+in Quick v11/fourteen workers and Standard v12/fifteen. Its 22-row catalog has
+fifteen implemented rows and seven inactive rows; modern Quick selection has
+fourteen choices and legacy x86 has twelve. Current execution still requires a
+fresh schema-3 plan matching the catalog. Historical v4-v10 journals retain
+their own decoding rules without authorizing stale-plan execution.
+
+Earlier producer/discovery qualification passed 2,250 test/subtest outcomes
+with one existing platform skip on each focused Windows architecture, plus
+six compile-only Linux test builds.
+
+The complete connected route has now passed Windows software qualification.
+Focused amd64 and 386 runs each passed 8,369 test/subtest outcomes with seven
+platform skips; the full suite passed 11,238 with eighteen skips. All 794 new
+named checks passed in each run. Formatting, vet and twelve Linux builds passed:
+three application builds and nine command/input/inventory test builds across
+amd64, 386 and arm64. None of these Linux artifacts was executed. Native
+execution, real touchscreen behavior, rebuilt images, the ten-PC pilot and
+release approval remain open. See [operator guidance and scope](touchscreen-quick.md).
 
 The CPU worker now adds twelve fixed scalar binary64 operations per suite, with
 per-worker counts and exact mismatch bits. Definition 2 uses CPU v3 evidence in
@@ -872,7 +902,7 @@ and inserts CPU stress immediately after a passing CPU quick result. The shared
 600-second elapsed load request and 660-second local watchdog retain checked
 work, strict initial and ongoing accepted thermal coverage, finite non-pass
 outcomes and confirmed cleanup. The CPU qualification below used Standard
-v8/thirteen and Quick v7/twelve. Current touchpad activation uses Standard
+v8/thirteen and Quick v7/twelve. The touchpad activation used Standard
 v10/fourteen and Quick v9/thirteen. Newly generated plans bind the current
 catalog digest; historical signed reports retain their original rules.
 
@@ -888,8 +918,9 @@ observations of 35 degrees C. Both runs passed with cleanup confirmed. This
 establishes elapsed-window completion and checked worker participation within
 that fixture. CPU time, utilization, all-core saturation and physical thermal
 behavior remain unqualified.
-The 22-row catalog now has fourteen implemented rows and eight inactive
-families: audio functionality, camera, touchscreen, memory stress,
+At the touchpad qualification stage, the 22-row catalog had fourteen
+implemented rows and eight inactive families: audio functionality, camera,
+touchscreen, memory stress,
 network functionality, storage sampling,
 destructive storage and USB functionality. Their readiness or offline evidence
 readers do not constitute active functional implementations. Full standard,

@@ -66,6 +66,8 @@ func run(ctx context.Context, arguments []string, stdin io.Reader, stdout, stder
 		return runPointer(ctx, arguments[1:], stdout, stderr)
 	case "touchpad":
 		return runTouchpad(ctx, arguments[1:], stdout, stderr)
+	case "touchscreen":
+		return runTouchscreen(ctx, arguments[1:], stdout, stderr)
 	case "report-target":
 		return runReportTarget(ctx, arguments[1:], stdout, stderr)
 	case "save":
@@ -186,6 +188,7 @@ func usage(destination io.Writer) {
 	fmt.Fprintln(destination, "       hhpt keyboard [-duration 30s] [-timeout 90s] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt pointer [-duration 30s] [-timeout 90s] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt touchpad [-duration 30s] [-timeout 90s] [-output FILE]")
+	fmt.Fprintln(destination, "       hhpt touchscreen [-duration 45s] [-timeout 120s] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt network [-allow-active] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt report-target -fingerprint-key FILE [-device /dev/DEVICE -confirm CODE] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt persist -authorization FILE -fingerprint-key FILE (-self-issued | -public-key FILE -key-id ID) [-name NAME.hhpcr] REPORT.hhpcr")

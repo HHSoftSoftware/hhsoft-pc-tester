@@ -8,8 +8,8 @@ are complete. Architecture and policy documents alone do not make an item
 complete; real-hardware requirements remain open until physically tested.
 
 The 2026-10-24 requirements audit compared the retained test matrix with the
-catalog and execution paths. Development source now contains thirteen
-implemented safe Quick definitions and fourteen implemented catalog rows,
+catalog and execution paths. Development source now contains fourteen
+implemented safe Quick definitions and fifteen implemented catalog rows,
 subject to hardware, architecture and explicit operator applicability.
 The pointer movement/button and wheel-direction increments passed automated
 and native Linux software validation. Guided keyboard software qualification
@@ -294,7 +294,7 @@ the alpha still requires the separate documented release gates.
   explicit matching `session -profile standard`, a 900-second default session,
   a shared 600-second load window and an origin-anchored 660-second watchdog.
   That CPU qualification used Standard v8 with thirteen workers and default
-  Quick v7 with twelve. Current touchpad activation uses Standard v10/fourteen
+  Quick v7 with twelve. The touchpad activation used Standard v10/fourteen
   and Quick v9/thirteen. Strict stress v1 evidence reaches finalization,
   signed verification,
   HTML/PDF and comparison; a raw command's zero exit means a valid diagnostic,
@@ -453,7 +453,8 @@ the alpha still requires the separate documented release gates.
   names across 25 roots; vet passed.
 - [x] Activate touchpad definition 2 through current catalog and frozen-plan
   admission, Quick defaults/menu selection, checked dispatch and owned
-  finalization. Quick v9 has thirteen workers and Standard v10 has fourteen.
+  finalization. That touchpad activation used Quick v9 with thirteen workers
+  and Standard v10 with fourteen.
   Candidate discovery remains distinct from supported-device evidence.
 - [x] Validate the connected route with Go 1.27.2 Windows fixtures. Focused
   amd64/386 runs each passed 4,838 outcomes with six permitted skips; the full
@@ -463,6 +464,26 @@ the alpha still requires the separate documented release gates.
   evdev/kernel evidence, broader touch and gesture coverage, rebuilt images,
   physical devices, the pilot and release gates. See
 [scope](docs/requirements-validation.md#touchpad-inventory-and-strict-evidence).
+- [x] Implement bounded single-contact touchscreen observation and candidate
+  discovery. Require fresh X/Y coordinates, both directions on each axis within
+  one released contact, terminal checks and confirmed cleanup. Candidate
+  discovery and generic activity do not establish functional support.
+- [x] Qualify the producer/discovery slice with Windows amd64 and 386 software
+  fixtures: each focused run passed 2,250 test/subtest outcomes with one existing
+  platform skip. Six Linux test builds cover amd64, 386 and arm64; these builds
+  provide compile-only evidence.
+- [x] Qualify the complete touchscreen command, current plan/menu, session,
+  owned finalization and signed report/view route with Windows software tests.
+  Quick v11 has fourteen workers and Standard v12 has fifteen. Focused amd64
+  and 386 runs each passed 8,369 test/subtest outcomes with seven platform skips;
+  the full suite passed 11,238 with eighteen skips. All 794 new named checks
+  passed in each run. Formatting, vet and twelve Linux command/test builds
+  passed; the Linux artifacts were not executed.
+- [ ] Validate native touchscreen execution and real devices, including
+  incomplete actions, cancellation and disconnects. Multi-touch, stylus,
+  pressure, calibration and whole-panel coverage remain outside this bounded
+  check. Rebuilt images, the ten-PC pilot and release gates remain open; see
+  [touchscreen scope](docs/touchscreen-quick.md).
 - [x] Check storage mount safety and read-only block-node readiness without
   reading or changing media contents.
 - [x] Bind storage readiness to canonical registry, pathname and open-descriptor

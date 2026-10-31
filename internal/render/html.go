@@ -33,6 +33,7 @@ type inventoryDocument struct {
 	Memory              *memoryDocument
 	Pointer             *pointerDocument
 	Touchpad            *touchpadDocument
+	Touchscreen         *touchscreenDocument
 	Storage             *storageDocument
 	CPUStress           *cpuStressDocument
 	Inspection          *inspectionDocument
@@ -242,6 +243,32 @@ table{background:var(--panel);border-collapse:collapse;border:1px solid var(--li
 {{end}}</tbody></table>{{end}}
 {{else}}<p>No touchpad interface observations were obtained.</p>
 {{end}}</section>
+{{end}}{{if .Touchscreen}}<section class="section" aria-labelledby="touchscreen-heading">
+<h2 id="touchscreen-heading">Guided Single-Contact Touchscreen Observations</h2>
+<p>{{.Touchscreen.Scope}}</p>
+<table><tbody>
+<tr><th class="label" scope="row">Status</th><td>{{.Touchscreen.Status}}</td></tr>
+<tr><th class="label" scope="row">Finding</th><td>{{.Touchscreen.Finding}}</td></tr>
+<tr><th class="label" scope="row">Stop reason</th><td>{{.Touchscreen.StopReason}}</td></tr>
+<tr><th class="label" scope="row">Duration / limit (ms)</th><td>{{.Touchscreen.DurationMilliseconds}} / {{.Touchscreen.LimitMilliseconds}}</td></tr>
+<tr><th class="label" scope="row">Cleanup confirmed</th><td>{{.Touchscreen.CleanupConfirmed}}</td></tr>
+</tbody></table>
+{{range .Touchscreen.Devices}}<h3>Interface {{.Interface}}</h3>
+<p>Status: {{.Status}}. {{.Finding}}</p>
+<table><tbody>
+<tr><th class="label" scope="row">Readable / supported</th><td>{{.Readable}} / {{.Supported}}</td></tr>
+<tr><th class="label" scope="row">Numeric identity</th><td>{{.Identity}}</td></tr>
+<tr><th class="label" scope="row">Advertised codes</th><td>{{.Capabilities}}</td></tr>
+<tr><th class="label" scope="row">Configuration</th><td>{{.Configuration}}</td></tr>
+<tr><th class="label" scope="row">Frames</th><td>{{.Frames}}</td></tr>
+<tr><th class="label" scope="row">Contact starts / releases</th><td>{{.ContactStarts}} / {{.ContactReleases}}</td></tr>
+<tr><th class="label" scope="row">Fresh XY baselines / qualifying contacts</th><td>{{.XYBaselines}} / {{.QualifyingContacts}}</td></tr>
+<tr><th class="label" scope="row">X positive / negative</th><td>{{.XPositive}} / {{.XNegative}}</td></tr>
+<tr><th class="label" scope="row">Y positive / negative</th><td>{{.YPositive}} / {{.YNegative}}</td></tr>
+<tr><th class="label" scope="row">Baseline / final neutral / cleanup</th><td>{{.BaselineNeutral}} / {{.FinalNeutral}} / {{.CleanupConfirmed}}</td></tr>
+</tbody></table>
+{{else}}<p>No touchscreen interface observations were obtained.</p>
+{{end}}</section>
 {{end}}{{if .Pointer}}<section class="section" aria-labelledby="pointer-heading">
 <h2 id="pointer-heading">Guided Pointer Wheel Observations</h2>
 <p>{{.Pointer.Scope}}</p>
@@ -357,6 +384,10 @@ func renderInventoryHTMLWithPrevious(output io.Writer, payload app.InventoryPayl
 	if err != nil {
 		return err
 	}
+	touchscreen, err := touchscreenReportDocument(payload)
+	if err != nil {
+		return err
+	}
 	pointer, err := pointerReportDocument(payload)
 	if err != nil {
 		return err
@@ -409,6 +440,7 @@ func renderInventoryHTMLWithPrevious(output io.Writer, payload app.InventoryPayl
 		Keyboard:            keyboard,
 		Pointer:             pointer,
 		Touchpad:            touchpad,
+		Touchscreen:         touchscreen,
 		CPUScalar:           cpuScalar,
 		Memory:              memory,
 		Storage:             storage,

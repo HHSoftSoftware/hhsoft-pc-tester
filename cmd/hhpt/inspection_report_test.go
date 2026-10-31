@@ -129,10 +129,10 @@ func inspectSignedCoordinator(t *testing.T, h *sessionHarness, wantStatus, wantF
 		if row.ID == "run.integrity.quick" {
 			integrity = true
 			value, err := sessionevidence.DecodeIntegrity(row.Evidence)
-			if err != nil || value.Session == nil || value.Session.Schema != sessionevidence.SchemaV9 || len(value.Session.Workers) != 13 {
-				t.Fatal("actual v9 session absent", err)
+			if err != nil || value.Session == nil || value.Session.Schema != sessionevidence.SchemaV11 || len(value.Session.Workers) != 14 {
+				t.Fatal("actual v11 session absent", err)
 			}
-			last := value.Session.Workers[12]
+			last := value.Session.Workers[13]
 			if last.ID != "inspection.exterior.quick" || last.Outcome != wantStatus || last.Timing == nil ||
 				got.ObservationMilliseconds > last.Timing.FinishedMilliseconds-last.Timing.StartedMilliseconds {
 				t.Fatal("observation detached from actual worker interval")

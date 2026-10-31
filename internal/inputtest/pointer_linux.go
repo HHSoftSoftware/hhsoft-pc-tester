@@ -32,7 +32,7 @@ func parseFunctionalInputInterfaces(reader io.Reader, wanted string, wordBits in
 	fields := map[string]string{}
 	flush := func() error {
 		category := inventory.ClassifyInput(fields["name"], fields["handlers"], fields["KEY"], fields["REL"], fields["ABS"], fields["PROP"])
-		if wanted == "keyboard" || wanted == "touchpad" {
+		if wanted == "keyboard" || wanted == "touchpad" || wanted == "touchscreen" {
 			category = inventory.ClassifyInputWithBitmapWidth(fields["name"], fields["handlers"], fields["KEY"], fields["REL"], fields["ABS"], fields["PROP"], wordBits)
 		}
 		selected := category == wanted
@@ -40,6 +40,9 @@ func parseFunctionalInputInterfaces(reader io.Reader, wanted string, wordBits in
 		// admission can reject MT or unknown capability shapes without hiding a row.
 		if wanted == "touchpad" && fields["ABS"] != "" && (category == "input" || category == "pointer") {
 			selected = true
+		}
+		if wanted == "touchscreen" {
+			selected = inventory.TouchscreenCandidate(category, fields["ABS"], fields["PROP"], wordBits)
 		}
 		hasEvent := false
 		for _, handler := range strings.Fields(fields["handlers"]) {

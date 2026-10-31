@@ -472,14 +472,15 @@ func TestTouchpadCurrentCatalogRequiresDecodedExecutionPlan(t *testing.T) {
 		t.Run(string(profile), func(t *testing.T) {
 			current, _, _ := commandRouteCurrentPlan(t, profile)
 			layout, err := commandLayoutForPlan(current, profile)
-			wantSchema, wantWorkers := "hhsoft.pc-tester.quick-session/v9", commandRouteTouchpadQuickWorkers
+			wantSchema, wantWorkers := "hhsoft.pc-tester.quick-session/v11", touchscreenRouteTouchscreenQuickWorkers
 			if profile == plan.ProfileStandard {
-				wantSchema, wantWorkers = "hhsoft.pc-tester.quick-session/v10", commandRouteTouchpadStandardWorkers
+				wantSchema, wantWorkers = "hhsoft.pc-tester.quick-session/v12", touchscreenRouteTouchscreenStandardWorkers
 			}
 			if err != nil || !layout.touchpad || layout.schema != wantSchema || !reflect.DeepEqual(layout.workerIDs, strings.Fields(wantWorkers)) {
 				t.Fatal("decoded current plan selected the wrong execution layout")
 			}
 			commandRouteChangeTest(&current, func(row *plan.Test) { row.Version = 1; row.Status = plan.TestUnsupported })
+			touchscreenRouteChangeTest(&current, func(row *plan.Test) { row.Version = 1; row.Status = plan.TestUnsupported })
 			if _, err := plan.Decode(commandRouteEncode(t, current)); err == nil {
 				t.Fatal("historical typed layout authorized current execution")
 			}
@@ -519,7 +520,7 @@ func TestTouchpadFinalizerCopiesKeyBeforeContextCallback(t *testing.T) {
 	}
 	arguments := []string{"-plan", planPath, "-fingerprint-key", "synthetic-key", "-key-epoch", "owned-fixture", "-evidence-dir", directory, "-output", "synthetic-report"}
 	// This explicit current set keeps the key-ownership fixture independent of layout helpers.
-	for _, id := range strings.Fields("audio.readiness.quick cpu.quick display.operator.quick graphics.quick input.keyboard.quick input.pointer.quick input.touchpad.quick input.readiness.quick inspection.exterior.quick memory.quick network.readiness.quick storage.readiness.quick usb.readiness.quick") {
+	for _, id := range strings.Fields("audio.readiness.quick cpu.quick display.operator.quick graphics.quick input.keyboard.quick input.pointer.quick input.touchpad.quick input.touchscreen.quick input.readiness.quick inspection.exterior.quick memory.quick network.readiness.quick storage.readiness.quick usb.readiness.quick") {
 		found := false
 		for _, row := range frozen.Tests {
 			if row.ID == id {

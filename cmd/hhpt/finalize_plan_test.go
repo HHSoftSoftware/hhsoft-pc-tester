@@ -145,7 +145,7 @@ func absentPlanFinalizationArguments(t *testing.T, directory, fingerprintPath, p
 	arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory,
 		"-session-id", "plan-validation-fixture", "-output", reportPath}
 	definitions := currentResultDefinitionsForTest(t, baseline)
-	if len(definitions) != 13 {
+	if len(definitions) != 14 {
 		t.Fatal("current argument baseline has the wrong result count")
 	}
 	values := []string{}
@@ -159,7 +159,7 @@ func absentPlanFinalizationArguments(t *testing.T, directory, fingerprintPath, p
 	}
 	parsed, err := parseOutcomesWithDefinitions(values, definitions)
 	if err != nil || validatePlanOutcomesWithDefinitions(baseline, parsed, definitions) != nil ||
-		parsed["inspection.exterior.quick"] != "excluded" || parsed["input.touchpad.quick"] != "not_present" {
+		parsed["inspection.exterior.quick"] != "excluded" || parsed["input.touchpad.quick"] != "not_present" || parsed["input.touchscreen.quick"] != "not_present" {
 		t.Fatal("valid independent argument baseline failed outcome admission")
 	}
 	return arguments

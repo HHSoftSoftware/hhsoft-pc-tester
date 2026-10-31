@@ -141,15 +141,15 @@ func TestSessionKeyboardCancellationRetainsTypedPartialAndStopsLaterWorkers(t *t
 	}
 }
 
-func TestSessionAllOffStillRecordsThirteenWorkersAndRejectsStaleKeyboard(t *testing.T) {
+func TestSessionAllOffStillRecordsFourteenWorkersAndRejectsStaleKeyboard(t *testing.T) {
 	for _, architecture := range []string{"x86_64", "legacy-x86"} {
 		excluded, err := plan.SelectableQuickTests(architecture)
 		if err != nil {
 			t.Fatal(err)
 		}
 		h := newSessionHarness(t, architecture, excluded)
-		if code := h.run(t.Context()); code != 0 || len(h.calls) != 0 || len(h.journal.Workers) != 13 {
-			t.Fatal("all-off v9 omitted worker records or started work")
+		if code := h.run(t.Context()); code != 0 || len(h.calls) != 0 || len(h.journal.Workers) != 14 {
+			t.Fatal("all-off v11 omitted worker records or started work")
 		}
 		h = newSessionHarness(t, architecture, excluded)
 		writeSessionFixture(t, filepath.Join(h.directory, "keyboard.json"), completeKeyboardEvidence())
@@ -175,14 +175,14 @@ func TestSessionFinalizerCannotUseHistoricalV4AsCurrentLiveEvidence(t *testing.T
 			value.Schema = sessionevidence.SchemaV4
 			workers := value.Workers[:0]
 			for _, worker := range value.Workers {
-				if worker.ID != "input.keyboard.quick" && worker.ID != "input.touchpad.quick" && worker.ID != "inspection.exterior.quick" {
+				if worker.ID != "input.keyboard.quick" && worker.ID != "input.touchpad.quick" && worker.ID != "input.touchscreen.quick" && worker.ID != "inspection.exterior.quick" {
 					workers = append(workers, worker)
 				}
 			}
 			value.Workers = workers
 			safety := value.Safety[:0]
 			for _, record := range value.Safety {
-				if record.Phase != "before-input.keyboard.quick" && record.Phase != "before-input.touchpad.quick" && record.Phase != "before-inspection.exterior.quick" {
+				if record.Phase != "before-input.keyboard.quick" && record.Phase != "before-input.touchpad.quick" && record.Phase != "before-input.touchscreen.quick" && record.Phase != "before-inspection.exterior.quick" {
 					safety = append(safety, record)
 				}
 			}

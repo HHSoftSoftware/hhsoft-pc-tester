@@ -13,9 +13,9 @@ func TestMemoryInversionDefinitionKeepsExistingWorkerBudgetAndCatalog(t *testing
 			t.Fatal("RAM catalog scope or budget changed")
 		}
 		ids, err := SelectableQuickTests(architecture)
-		wanted := 13
+		wanted := 14
 		if architecture == "legacy-x86" {
-			wanted = 11
+			wanted = 12
 		}
 		if err != nil || len(ids) != wanted {
 			t.Fatal("selectable worker count changed")

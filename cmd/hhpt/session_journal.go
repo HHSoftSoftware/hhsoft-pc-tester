@@ -85,7 +85,7 @@ func validateSessionJournal(journal sessionJournal, frozen plan.Plan, outcomes m
 
 func currentSessionProfile(journal sessionJournal, profile plan.Profile) bool {
 	if profile == plan.ProfileStandard {
-		return journal.Schema == sessionevidence.SchemaV10 && journal.Profile == "standard"
+		return journal.Schema == sessionevidence.SchemaV12 && journal.Profile == "standard"
 	}
 	return (profile == "" || profile == plan.ProfileQuick) && journal.Schema == sessionJournalSchema && journal.Profile == "" && journal.CPUStressSource == nil
 }
@@ -155,6 +155,12 @@ func validateSessionWorkerEvidence(journal *sessionJournal, id string, encoded [
 				return errUnsupportedEvidence
 			}
 			return validateTouchpadWorkerRecord(worker, encoded, readErr, sourceStatus, statusErr)
+		}
+		if id == touchscreenExecutionID {
+			if !sessionevidence.SupportsTouchscreen(journal.Schema) {
+				return errUnsupportedEvidence
+			}
+			return validateTouchscreenWorkerRecord(worker, encoded, readErr, sourceStatus, statusErr)
 		}
 		if worker.State == "not_started" || worker.State == "not_scheduled" {
 			if !errors.Is(readErr, os.ErrNotExist) {

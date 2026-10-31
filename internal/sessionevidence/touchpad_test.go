@@ -162,12 +162,12 @@ func TestTouchpadSessionLiteralHistoryAndWire(t *testing.T) {
 }
 
 func TestTouchpadSessionCurrentAndHistoricalSelectorsAndOwnedArrays(t *testing.T) {
-	if sessionevidence.Schema != "hhsoft.pc-tester.quick-session/v9" {
+	if sessionevidence.Schema != "hhsoft.pc-tester.quick-session/v11" {
 		t.Fatal("current quick schema changed")
 	}
 	quick, standard := sessionevidence.WorkerIDs(), sessionevidence.StandardWorkerIDs()
-	if !reflect.DeepEqual(quick[:], strings.Fields(touchpadHistory[5].workers)) ||
-		!reflect.DeepEqual(standard[:], strings.Fields(touchpadHistory[6].workers)) {
+	if !reflect.DeepEqual(quick[:], strings.Fields("cpu.quick memory.quick audio.readiness.quick input.readiness.quick input.keyboard.quick input.pointer.quick input.touchpad.quick input.touchscreen.quick network.readiness.quick storage.readiness.quick usb.readiness.quick graphics.quick display.operator.quick inspection.exterior.quick")) ||
+		!reflect.DeepEqual(standard[:], strings.Fields("cpu.quick cpu.stress memory.quick audio.readiness.quick input.readiness.quick input.keyboard.quick input.pointer.quick input.touchpad.quick input.touchscreen.quick network.readiness.quick storage.readiness.quick usb.readiness.quick graphics.quick display.operator.quick inspection.exterior.quick")) {
 		t.Fatal("active selectors changed")
 	}
 	v7, v8 := sessionevidence.WorkerIDsV7(), sessionevidence.WorkerIDsV8()
@@ -178,7 +178,7 @@ func TestTouchpadSessionCurrentAndHistoricalSelectorsAndOwnedArrays(t *testing.T
 	v9, v10 := sessionevidence.WorkerIDsV9(), sessionevidence.WorkerIDsV10()
 	if !reflect.DeepEqual(v9[:], strings.Fields(touchpadHistory[5].workers)) ||
 		!reflect.DeepEqual(v10[:], strings.Fields(touchpadHistory[6].workers)) {
-		t.Fatal("current versioned selector order")
+		t.Fatal("frozen historical versioned selector order")
 	}
 	quick[0], standard[0], v7[0], v8[0], v9[0], v10[0] = "changed", "changed", "changed", "changed", "changed", "changed"
 	if sessionevidence.WorkerIDs()[0] != "cpu.quick" || sessionevidence.StandardWorkerIDs()[0] != "cpu.quick" ||
@@ -197,7 +197,7 @@ func TestTouchpadSessionCurrentAndHistoricalSelectorsAndOwnedArrays(t *testing.T
 		{"v8", "hhsoft.pc-tester.quick-session/v8", true, true, true, false},
 		{"v9", "hhsoft.pc-tester.quick-session/v9", true, false, true, true},
 		{"v10", "hhsoft.pc-tester.quick-session/v10", true, true, true, true},
-		{"future", "hhsoft.pc-tester.quick-session/v11", false, false, false, false},
+		{"future", "hhsoft.pc-tester.quick-session/v13", false, false, false, false},
 		{"case_alias", "HHSOFT.PC-TESTER.QUICK-SESSION/V10", false, false, false, false},
 		{"numeric_alias", "hhsoft.pc-tester.quick-session/v010", false, false, false, false},
 		{"empty", "", false, false, false, false},
@@ -216,7 +216,7 @@ func TestTouchpadSessionWireRejectsAmbiguity(t *testing.T) {
 	for _, c := range []struct{ name, old, replacement string }{
 		{"duplicate_schema", `"schema":"hhsoft.pc-tester.quick-session/v10"`, `"schema":"hhsoft.pc-tester.quick-session/v8","schema":"hhsoft.pc-tester.quick-session/v10"`},
 		{"aliased_schema_key", `"schema":`, `"Schema":`},
-		{"future_schema", "quick-session/v10", "quick-session/v11"},
+		{"future_schema", "quick-session/v10", "quick-session/v13"},
 		{"unknown_member", `"stop_reason":`, `"unknown":false,"stop_reason":`},
 		{"duplicate_worker_id", `"id":"input.touchpad.quick"`, `"id":"input.pointer.quick","id":"input.touchpad.quick"`},
 		{"null_workers", `"workers":[`, `"workers":null,"unused":[`},

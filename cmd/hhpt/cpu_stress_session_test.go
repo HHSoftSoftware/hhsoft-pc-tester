@@ -109,7 +109,7 @@ func TestCPUStressStandardSessionPreservesOrderAndSource(t *testing.T) {
 		t.Fatalf("standard session failed: %d %s", code, &h.stderr)
 	}
 	want := []string{"cpu.quick", "cpu.stress", "memory.quick", "audio.readiness.quick", "input.readiness.quick", "input.keyboard.quick", "input.pointer.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick", "graphics.quick", "display.operator.quick", "inspection.exterior.quick"}
-	if !reflect.DeepEqual(h.calls, want) || h.journal.Schema != sessionevidence.SchemaV10 || len(h.journal.Workers) != 14 ||
+	if !reflect.DeepEqual(h.calls, want) || h.journal.Schema != sessionevidence.SchemaV12 || len(h.journal.Workers) != 15 ||
 		h.journal.Profile != "standard" || h.journal.BudgetMilliseconds != 900000 || h.request.Profile != plan.ProfileStandard {
 		t.Fatal("standard profile/order/default changed")
 	}
@@ -140,7 +140,7 @@ func TestCPUStressNoLoadNonPassStillBindsSourceAndStopsLaterWorkers(t *testing.T
 		t.Fatal("valid non-pass changed")
 	}
 	for _, worker := range h.journal.Workers[2:] {
-		if worker.ID == "input.touchpad.quick" {
+		if worker.ID == "input.touchpad.quick" || worker.ID == "input.touchscreen.quick" {
 			if worker.State != "not_scheduled" || worker.Outcome != "not_present" || worker.Timing != nil {
 				t.Fatal("absent touchpad lost its frozen disposition")
 			}

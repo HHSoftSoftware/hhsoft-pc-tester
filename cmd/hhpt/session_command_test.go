@@ -236,7 +236,8 @@ func TestSessionCancellationDuringPointerPreservesPartialEvidence(t *testing.T) 
 	}
 	if h.journal.Workers[5].State != "interrupted" || h.journal.Workers[5].Outcome != "aborted" ||
 		h.journal.Workers[6].ID != "input.touchpad.quick" || h.journal.Workers[6].State != "not_scheduled" || h.journal.Workers[6].Outcome != "not_present" ||
-		h.journal.Workers[7].ID != "network.readiness.quick" || h.journal.Workers[7].State != "not_started" {
+		h.journal.Workers[7].ID != "input.touchscreen.quick" || h.journal.Workers[7].State != "not_scheduled" || h.journal.Workers[7].Outcome != "not_present" ||
+		h.journal.Workers[8].ID != "network.readiness.quick" || h.journal.Workers[8].State != "not_started" {
 		t.Fatal("pointer cancellation started a later worker or discarded its outcome")
 	}
 }
@@ -259,7 +260,7 @@ func TestSessionExecutesFrozenAllowlistAndRetainsSelection(t *testing.T) {
 			if h.journal.Workers[2].State != "not_scheduled" || h.journal.Workers[2].Outcome != "excluded" {
 				t.Fatal("excluded choice was changed")
 			}
-			if architecture == "legacy-x86" && (h.journal.Workers[10].Outcome != "unsupported" || h.journal.Workers[11].Outcome != "unsupported") {
+			if architecture == "legacy-x86" && (h.journal.Workers[11].ID != "graphics.quick" || h.journal.Workers[11].Outcome != "unsupported" || h.journal.Workers[12].ID != "display.operator.quick" || h.journal.Workers[12].Outcome != "unsupported") {
 				t.Fatal("legacy unsupported rows were changed")
 			}
 			if !strings.Contains(h.stdout.String(), "HHPT_SESSION_RESULT reason=completed") || !strings.Contains(h.stdout.String(), "HHPT_AUDIO_READINESS status=excluded") {
@@ -320,7 +321,7 @@ func TestSessionStopsAndFinalizesWithFreshContext(t *testing.T) {
 				t.Fatal("interrupted active worker lost its state")
 			}
 			for _, record := range h.journal.Workers[1:] {
-				if record.ID == "input.touchpad.quick" {
+				if record.ID == "input.touchpad.quick" || record.ID == "input.touchscreen.quick" {
 					if record.State != "not_scheduled" || record.Outcome != "not_present" || record.Timing != nil {
 						t.Fatal("absent touchpad lost its frozen disposition")
 					}
@@ -433,7 +434,7 @@ func TestSessionOrdinaryGraphicsErrorRemainsReportable(t *testing.T) {
 		}
 		return worker(ctx, w, in, out, errOut)
 	}
-	if code := h.run(t.Context()); code != 0 || !h.finalized || len(h.calls) != 12 || h.journal.Workers[10].Outcome != "error" {
+	if code := h.run(t.Context()); code != 0 || !h.finalized || len(h.calls) != 12 || h.journal.Workers[11].ID != "graphics.quick" || h.journal.Workers[11].Outcome != "error" {
 		t.Fatalf("ordinary error behavior changed: code=%d stderr=%s", code, &h.stderr)
 	}
 }
@@ -546,7 +547,7 @@ func TestSessionExplicitGraphicsFailureStopsDisplayAndRemainsFailure(t *testing.
 		return 0
 	}
 	if code := h.run(t.Context()); code != 0 || !h.finalized || len(h.calls) != 10 || h.journal.StopReason != "worker_stop" ||
-		h.journal.Workers[10].Outcome != "fail" || h.journal.Workers[10].State != "completed" || h.journal.Workers[11].State != "not_started" {
+		h.journal.Workers[11].ID != "graphics.quick" || h.journal.Workers[11].Outcome != "fail" || h.journal.Workers[11].State != "completed" || h.journal.Workers[12].ID != "display.operator.quick" || h.journal.Workers[12].State != "not_started" {
 		t.Fatalf("graphics failure was lost: code=%d calls=%v stderr=%s", code, h.calls, &h.stderr)
 	}
 	marker, err := os.ReadFile(filepath.Join(h.directory, "session-ready.txt"))

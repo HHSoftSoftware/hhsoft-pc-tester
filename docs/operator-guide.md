@@ -97,11 +97,12 @@ After the HHSoft splash appears, a 15-second inactivity timer begins.
 The quick profile is offline and uses read-only device discovery. It runs a
 short CPU known-answer load, bounded RAM patterns and inversions, device-node
 readiness checks, guided keyboard, relative-pointer and bounded single-contact
-touchpad actions, modern-image graphics/display checks where applicable, and
-the bounded exterior observation. Current development selection covers thirteen
-tests on modern targets and eleven on legacy x86, subject to applicability.
-Touchpad candidacy does not establish device support; see
-[the bounded check and qualification limits](#bounded-touchpad-check).
+touchpad and touchscreen actions, modern-image graphics/display checks where
+applicable, and the bounded exterior observation. Current development selection
+covers fourteen tests on modern targets and twelve on legacy x86, subject to
+applicability. Candidate discovery does not establish device support; see the
+[touchpad limits](#bounded-touchpad-check) and
+[touchscreen limits](#bounded-touchscreen-check).
 Storage readiness opens eligible block devices read-only and issues no sector
 read. USB readiness issues no application USB transfers. Network readiness configures
 nothing and sends no traffic. An active non-loopback interface or writable
@@ -325,8 +326,8 @@ media sector works.
 
 ## Bounded Touchpad Check
 
-Development source runs the touchpad check after pointer in Quick v9 and
-Standard v10. A detected candidate may still be unsupported; the implemented
+Development source runs the touchpad check after pointer in Quick v11 and
+Standard v12. A detected candidate may still be unsupported; the implemented
 subset is legacy single-contact absolute-event input, not multi-touch or
 gesture coverage. Quick's `C` menu can exclude the check. Standard requires
 the default set and rejects nonempty Quick exclusions.
@@ -358,6 +359,34 @@ evdev/kernel behavior, installed-command and rebuilt-image checks, physical
 touchpads, the pilot and release approval remain open. Edges, tap, multi-touch,
 scroll and gestures remain outside this check. See
 [the exact scope](requirements-validation.md#touchpad-inventory-and-strict-evidence).
+
+## Bounded Touchscreen Check
+
+The development menu labels this step **Touchscreen movement and release**.
+Connected Windows software qualification covers the command/session,
+finalization and signed report/view route. Linux builds provide compile-only
+evidence; native execution and real-device qualification remain open. See the
+[touchscreen scope and validation status](touchscreen-quick.md).
+
+Lift every finger before starting. Touch with one finger, move left/right and
+up/down while keeping that contact, then lift to finish it. Repeat if needed;
+unchanged coordinates can delay a fresh starting point. Each supported screen
+must supply its own complete movement and release. Missing actions are
+incomplete coverage, not proof of a defective screen.
+
+The development command uses a 45-second observation window within a
+120-second command limit and the remaining session budget:
+
+```sh
+hhpt touchscreen -duration 45s -timeout 120s -output touchscreen.json
+```
+
+Exit 0 means validated diagnostic JSON was written, including non-pass results;
+it does not mean the screen passed. Cleanup uncertainty retains exit 12 and
+prevents session signing. Evidence contains bounded action summaries rather
+than coordinate traces. Multi-touch, stylus, pressure, calibration, full-panel
+coverage and gesture recognition are unsupported by this check. Direct capture
+retains input readiness and does not run guided touchscreen actions.
 
 ## Start Standard from the Development Console
 
@@ -415,8 +444,8 @@ hhpt session -profile standard -plan standard-plan.json -fingerprint-key fingerp
 ```
 
 Standard defaults to a 900-second session budget, the existing maximum. It adds
-one worker after a passing CPU quick check. Current Standard v10 has fourteen
-workers and Quick v9 has thirteen.
+one worker after a passing CPU quick check. Current Standard v12 has fifteen
+workers and Quick v11 has fourteen.
 CPU stress requests 600 seconds of shared elapsed load
 following preparation, within a 660-second local watchdog that starts at invocation.
 A shorter remaining session budget may prevent load or leave an incomplete result;
@@ -781,7 +810,7 @@ checks before started workers, final observations, and a fresh check before
 signing. The periodic-monitor increment introduced a journal v3 summary while retaining
 the same ten worker outcomes. It samples read-only mount and network metadata
 once per second, allows one second per observation and at most 2,500 milliseconds
-between observations. As in the qualified v4/v5 workflows, current v9/v10
+between observations. As in the qualified v4/v5 workflows, current v11/v12
 monitoring remains active through final inventory and the final gate.
 Its first unsafe,
 unknown, timed-out, or excessively delayed observation stops active work and
@@ -806,7 +835,7 @@ before session launch and after report creation remain separate operational gate
 capture and direct finalization without a session journal retain their older
 limited scope and do not claim this session history.
 
-Reports using supported v4-v10 journals also show run-wide thermal coverage
+Reports using supported v4-v12 journals also show run-wide thermal coverage
 and any observed limit.
 The initial and final thermal readings are required even in a sub-second or all-off
 session. `thermal_finding=limit_reached` means a valid global or local CPU/RAM
@@ -867,9 +896,9 @@ Supported functional claims also pass shared schema and binding checks, even
 when views are omitted. This includes explicit v6 storage evidence read support;
 accepted work stays distinct from diagnostics, and unconfirmed cleanup rejects
 the report. The utility does not rerun hardware tests or reconstruct original
-collection events. Current development commands emit Quick v9 with thirteen
-workers or Standard v10 with fourteen, without sampled storage reads.
-Historical v4-v8 reports remain readable under their own rules. This offline
+collection events. Current development commands emit Quick v11 with fourteen
+workers or Standard v12 with fifteen, without sampled storage reads.
+Historical v4-v10 reports remain readable under their own rules. This offline
 compatibility does not authorize an old plan for current execution; freeze a
 new plan against the current catalog.
 

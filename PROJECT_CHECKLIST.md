@@ -356,9 +356,15 @@ the alpha still requires the separate documented release gates.
   for 13 Go files, 196 named fixture passes without skips on each of Windows
   amd64 and 386, and 11,434 full-suite passes with 18 retained platform skips.
   Vet, three Linux application builds and nine Linux test-binary builds passed;
-  the Linux artifacts were compiled but not executed.
-- [ ] Qualify native Linux fixtures, race checks and an actual 1,800-second load
-  for this addition; separately qualify physical memory and thermal behavior.
+  those host commands compiled the Linux artifacts without executing them.
+- [x] Qualify the selected standalone memory fixtures on Linux amd64 and 386:
+  392 named passes across 62 root executions and six package executions, with
+  all 330 declared-parent intervals checked and no failures or skips. All nine
+  ownership cases, 32 archive cases and six postchecks passed; cleanup was
+  confirmed. These controlled fixtures do not establish a real 1,800-second load.
+- [ ] Qualify the full Linux suite, race checks, ARM runtime, the installed CLI
+  and an actual 1,800-second load for this addition; separately qualify physical
+  memory and thermal behavior.
 - [ ] Integrate memory stress into an explicitly selected longer profile with
   suitable budgets, frozen-plan authorization, versioned journals and strict
   signed report/view/comparison consumers. Do not insert a 30-minute load into

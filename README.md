@@ -207,8 +207,14 @@ uses fresh availability and thermal admission, final verification and a shared
 31-minute watchdog. The `memory.stress` catalog row remains inactive; the
 command is not part of Quick or Standard and does not provide signed-session
 evidence. Host fixture tests passed on Windows amd64 and 386, alongside the full
-Windows suite, vet and Linux cross-builds. Native/race checks and real
-elapsed-duration qualification remain pending for this addition. See
+Windows suite, vet and Linux cross-builds. That host step compiled the Linux
+artifacts without executing them. Subsequent selected Linux amd64/386 fixture
+runs passed 392 named outcomes across 62 roots and six package executions, with
+all 330 declared-parent intervals checked, no failures or skips, and confirmed
+cleanup. Ownership, archive and post-run checks also passed.
+These controlled fixtures do not establish a real 30-minute load. Race, full
+Linux suite, ARM runtime, installed-command, physical-memory/thermal, image,
+pilot and release qualification remain open. See
 [memory stress guidance](docs/memory-stress.md) for invocation, result
 interpretation and remaining limits.
 

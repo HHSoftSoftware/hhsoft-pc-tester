@@ -511,9 +511,15 @@ its 900-second budget are unchanged. A longer profile and its signed
 plan/journal/report integration remain separate work.
 
 Host fixture tests passed all 196 named cases without skips on each of Windows
-amd64 and 386. The full Windows suite and vet passed; Linux application and
-test artifacts were compiled only. Native Linux/race checks and an actual
-1,800-second run remain pending for this addition. Four-image,
+amd64 and 386. The full Windows suite and vet passed; that host step only
+compiled the Linux application and test artifacts. Subsequent selected native
+Linux amd64/386 fixtures passed 392 named outcomes across 62 roots and six
+package executions, with all 330 declared-parent intervals checked and no
+failures or skips. Nine ownership cases, 32 archive cases and six postchecks
+also passed, with cleanup confirmed.
+
+These controlled fixtures do not qualify a real 1,800-second run. Race checks,
+the full Linux suite, ARM runtime, installed-command execution, four-image,
 physical-memory/thermal, ten-PC pilot and release qualification remain open.
 
 ## Observe the Visible Exterior

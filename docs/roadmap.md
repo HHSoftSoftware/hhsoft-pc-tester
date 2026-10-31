@@ -594,10 +594,17 @@ See [the command and scope guide](memory-stress.md).
 All 19 host-validation commands passed: formatting/checks for 13 Go files,
 196 named fixture passes without skips on each of Windows amd64 and 386,
 11,434 full-suite passes with 18 retained platform skips, vet, three Linux
-application builds and nine Linux test-binary builds. The Linux artifacts
-were not executed. Native Linux/race checks and an actual 1,800-second load
-remain pending for this addition. The earlier RAM quick qualification above
-remains evidence for that earlier implementation.
+application builds and nine Linux test-binary builds. That host step compiled
+the Linux artifacts without executing them. Subsequent selected Linux
+amd64/386 runs executed six test binaries and passed 392 named outcomes across
+62 roots, with all 330 declared-parent intervals checked and no failures or
+skips. All nine ownership cases, 32 archive cases and six postchecks passed;
+cleanup was confirmed.
+
+This closes only the selected native software-fixture gate. A real
+1,800-second load, race checks, the full Linux suite, ARM runtime,
+installed-command execution and physical-memory/thermal qualification remain
+open. The earlier RAM quick qualification above retains its original scope.
 
 The `memory.stress` catalog row remains inactive, with fifteen implemented and
 seven inactive catalog rows overall. Quick v11/fourteen workers and Standard

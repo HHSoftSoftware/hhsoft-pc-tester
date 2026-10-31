@@ -99,12 +99,20 @@ passed all 196 named fixture cases on each architecture, with no skips. The
 full Windows suite recorded 11,434 passes and 18 retained platform skips.
 Formatting and format checks passed for all 13 Go files, and vet passed.
 Three Linux application binaries and nine test binaries built for amd64, 386
-and arm64; these artifacts were not executed.
+and arm64; that host-validation step did not execute the Linux artifacts.
 
-These host checks include controlled-clock timing fixtures and do not establish
-a real 1,800-second load. Native Linux fixtures, race checks and an actual
-1,800-second run remain pending. Earlier quick-memory and CPU-stress results
-remain evidence for those earlier implementations.
+Subsequent selected native Linux amd64 and 386 runs executed six test binaries
+for `cmd/hhpt`, `internal/quick` and `internal/quickevidence`. They passed all
+392 named outcomes across 62 root executions, with all 330 declared-parent
+intervals checked. No outcome failed, skipped or used pause/continue. All nine
+process-ownership cases, 32 archive cases and six postchecks passed, and cleanup
+was confirmed. This closes the selected native software-fixture gate.
+
+These controlled-clock fixtures do not establish a real 1,800-second load.
+An actual full-duration run, race checks, the full Linux suite, ARM runtime,
+installed-command execution and physical-memory/thermal qualification remain
+open. Earlier quick-memory and CPU-stress results remain evidence for those
+earlier implementations.
 
 Connecting `memory.stress` requires an explicitly selected longer profile
 with suitable budgets, frozen-plan authorization, versioned journals and

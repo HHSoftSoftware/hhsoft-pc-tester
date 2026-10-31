@@ -155,7 +155,7 @@ func prepareQuickFinalization(t *testing.T, id string, evidence any, outcome str
 	planPath := writeFinalizeTestPlan(t, directory, snapshot, fingerprintKey)
 	reportPath := filepath.Join(directory, "quick.hhpcr")
 	arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "quick-fixture", "-output", reportPath}
-	for _, definition := range quickResultDefinitions {
+	for _, definition := range currentResultDefinitionsFromPathForTest(t, planPath) {
 		status := "not_present"
 		if definition.id == "inspection.exterior.quick" {
 			status = "excluded"

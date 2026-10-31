@@ -147,7 +147,7 @@ func TestFinalizeAcceptsActualWorkerJSONSerialization(t *testing.T) {
 			reportPath := filepath.Join(directory, "session.hhpcr")
 			arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory,
 				"-session-id", "fixture-session", "-output", reportPath}
-			for _, definition := range quickResultDefinitions {
+			for _, definition := range currentResultDefinitionsFromPathForTest(t, planPath) {
 				status := "not_present"
 				if definition.id == "inspection.exterior.quick" {
 					status = "excluded"

@@ -38,6 +38,9 @@ func ValidateCoverage(payload InventoryPayload) error {
 	if err := validatePointerReport(payload); err != nil {
 		return err
 	}
+	if err := validateTouchpadReport(payload); err != nil {
+		return err
+	}
 	if err := validateStorageReport(payload); err != nil {
 		return err
 	}

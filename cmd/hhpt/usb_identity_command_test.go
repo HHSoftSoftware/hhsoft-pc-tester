@@ -80,7 +80,7 @@ func prepareUSBFinalization(t *testing.T, evidence usbtest.Result, outcome strin
 	planPath := writeFinalizeTestPlan(t, directory, snapshot, key)
 	output := filepath.Join(directory, "usb.hhpcr")
 	arguments := []string{"-fingerprint-key", keyPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "usb-fixture", "-output", output}
-	for _, definition := range quickResultDefinitions {
+	for _, definition := range currentResultDefinitionsFromPathForTest(t, planPath) {
 		status := "not_present"
 		if definition.id == "inspection.exterior.quick" {
 			status = "excluded"

@@ -20,6 +20,7 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quick"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quickevidence"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/storage"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/touchpadevidence"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/usbtest"
 )
 
@@ -35,6 +36,13 @@ var errInvalidQuickSafety = quickevidence.ErrInvalid
 // worker's status. It does not infer health, performance, or physical coverage
 // from a node-readiness result. Partial non-pass observations remain reportable.
 func testEvidenceStatus(encoded []byte, expectedSchema string) (string, error) {
+	if expectedSchema == inputtest.TouchpadSchema {
+		value, err := touchpadevidence.Decode(encoded)
+		if err != nil {
+			return "", err
+		}
+		return string(value.Status), nil
+	}
 	if expectedSchema == quick.CPUStressSchema {
 		value, _, err := quickevidence.DecodeCPUStress(encoded)
 		if err != nil {

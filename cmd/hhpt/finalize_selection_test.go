@@ -141,7 +141,7 @@ func selectedCPUFinalization(t *testing.T, cpuOutcome string) ([]string, invento
 	}
 	reportPath := filepath.Join(directory, "selected.hhpcr")
 	arguments := []string{"-fingerprint-key", keyPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "selected-fixture", "-output", reportPath}
-	for _, definition := range quickResultDefinitions {
+	for _, definition := range currentResultDefinitionsForTest(t, frozen) {
 		status := "not_present"
 		if definition.id == "inspection.exterior.quick" {
 			status = "excluded"

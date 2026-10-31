@@ -12,28 +12,67 @@ const SchemaV5 = "hhsoft.pc-tester.quick-session/v5"
 const SchemaV6 = "hhsoft.pc-tester.quick-session/v6"
 const SchemaV7 = "hhsoft.pc-tester.quick-session/v7"
 const SchemaV8 = "hhsoft.pc-tester.quick-session/v8"
+const SchemaV9 = "hhsoft.pc-tester.quick-session/v9"
+const SchemaV10 = "hhsoft.pc-tester.quick-session/v10"
 
-// Schema activates the bounded operator inspection; storage execution remains inactive.
-const Schema = SchemaV7
+// Schema selects current Quick touchpad sessions; storage execution remains inactive.
+const Schema = SchemaV9
 const IntegritySchema = "hhsoft.pc-tester.run-integrity/v1"
 const MaximumBytes = 64 << 10
 const Scope = "Quick-session execution, cleanup, final inventory and final safety gate; report encoding, output and saving are outside this monitoring window."
 const StandardScope = "Standard-session execution, cleanup, final inventory and final safety gate; report encoding, output and saving are outside this monitoring window."
 
 func IsStrictSchema(schema string) bool {
-	return schema == SchemaV4 || schema == SchemaV5 || schema == SchemaV6 || schema == SchemaV7 || schema == SchemaV8
+	return schema == SchemaV4 || schema == SchemaV5 || schema == SchemaV6 || schema == SchemaV7 || schema == SchemaV8 || schema == SchemaV9 || schema == SchemaV10
 }
 
 func supportsCurrentWorkerEvidence(schema string) bool {
-	return schema == SchemaV5 || schema == SchemaV6 || schema == SchemaV7 || schema == SchemaV8
+	return schema == SchemaV5 || schema == SchemaV6 || schema == SchemaV7 || schema == SchemaV8 || schema == SchemaV9 || schema == SchemaV10
 }
 
-func WorkerIDs() [12]string {
+// IsStandardSchema recognizes explicit historical and current Standard wire versions.
+func IsStandardSchema(schema string) bool {
+	return schema == SchemaV8 || schema == SchemaV10
+}
+
+// SupportsInspection retains the bounded operator task only in its declared versions.
+func SupportsInspection(schema string) bool {
+	return schema == SchemaV7 || schema == SchemaV8 || schema == SchemaV9 || schema == SchemaV10
+}
+
+// SupportsTouchpad recognizes only the versioned touchpad session contracts.
+func SupportsTouchpad(schema string) bool {
+	return schema == SchemaV9 || schema == SchemaV10
+}
+
+// WorkerIDs returns the current Quick worker sequence.
+func WorkerIDs() [13]string {
+	return WorkerIDsV9()
+}
+
+// StandardWorkerIDs returns the current Standard worker sequence.
+func StandardWorkerIDs() [14]string {
+	return WorkerIDsV10()
+}
+
+// WorkerIDsV7 preserves the historical Quick v7 worker sequence.
+func WorkerIDsV7() [12]string {
 	return [12]string{"cpu.quick", "memory.quick", "audio.readiness.quick", "input.readiness.quick", "input.keyboard.quick", "input.pointer.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick", "graphics.quick", "display.operator.quick", "inspection.exterior.quick"}
 }
 
-func StandardWorkerIDs() [13]string {
+// WorkerIDsV8 preserves the historical Standard v8 worker sequence.
+func WorkerIDsV8() [13]string {
 	return [13]string{"cpu.quick", "cpu.stress", "memory.quick", "audio.readiness.quick", "input.readiness.quick", "input.keyboard.quick", "input.pointer.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick", "graphics.quick", "display.operator.quick", "inspection.exterior.quick"}
+}
+
+// WorkerIDsV9 returns the owned, version-frozen Quick v9 sequence.
+func WorkerIDsV9() [13]string {
+	return [13]string{"cpu.quick", "memory.quick", "audio.readiness.quick", "input.readiness.quick", "input.keyboard.quick", "input.pointer.quick", "input.touchpad.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick", "graphics.quick", "display.operator.quick", "inspection.exterior.quick"}
+}
+
+// WorkerIDsV10 returns the owned, version-frozen Standard v10 sequence.
+func WorkerIDsV10() [14]string {
+	return [14]string{"cpu.quick", "cpu.stress", "memory.quick", "audio.readiness.quick", "input.readiness.quick", "input.keyboard.quick", "input.pointer.quick", "input.touchpad.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick", "graphics.quick", "display.operator.quick", "inspection.exterior.quick"}
 }
 
 func workerIDs(schema string) []string {
@@ -43,10 +82,14 @@ func workerIDs(schema string) []string {
 	case SchemaV5:
 		return []string{"cpu.quick", "memory.quick", "audio.readiness.quick", "input.readiness.quick", "input.keyboard.quick", "input.pointer.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick", "graphics.quick", "display.operator.quick"}
 	case SchemaV7:
-		ids := WorkerIDs()
-		return ids[:]
+		return []string{"cpu.quick", "memory.quick", "audio.readiness.quick", "input.readiness.quick", "input.keyboard.quick", "input.pointer.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick", "graphics.quick", "display.operator.quick", "inspection.exterior.quick"}
 	case SchemaV8:
-		ids := StandardWorkerIDs()
+		return []string{"cpu.quick", "cpu.stress", "memory.quick", "audio.readiness.quick", "input.readiness.quick", "input.keyboard.quick", "input.pointer.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick", "graphics.quick", "display.operator.quick", "inspection.exterior.quick"}
+	case SchemaV9:
+		ids := WorkerIDsV9()
+		return ids[:]
+	case SchemaV10:
+		ids := WorkerIDsV10()
 		return ids[:]
 	case SchemaV6:
 		return []string{"cpu.quick", "memory.quick", "audio.readiness.quick", "input.readiness.quick", "input.keyboard.quick", "input.pointer.quick", "network.readiness.quick", "storage.readiness.quick", "storage.quick", "usb.readiness.quick", "graphics.quick", "display.operator.quick"}
@@ -129,7 +172,7 @@ type ThermalView struct {
 	LocalSources                         []LocalThermalSource
 }
 
-// IntegrityEvidence preserves the graph-integrity v1 envelope. Strict v4-v7
+// IntegrityEvidence preserves the graph-integrity v1 envelope. Strict v4-v10
 // claims use its decoder; earlier evidence remains opaque.
 type IntegrityEvidence struct {
 	Schema                string                      `json:"schema"`

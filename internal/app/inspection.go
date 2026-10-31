@@ -73,13 +73,13 @@ func validateInspectionReport(payload InventoryPayload) error {
 				continue
 			}
 			value, err := sessionevidence.DecodeIntegrity(row.Evidence)
-			if found || err != nil || value.Session == nil || (value.Session.Schema != sessionevidence.SchemaV7 && value.Session.Schema != sessionevidence.SchemaV8) {
+			if found || err != nil || value.Session == nil || !sessionevidence.SupportsInspection(value.Session.Schema) {
 				return errors.New("inspection evidence requires a strict inspection session")
 			}
 			found = true
 		}
 		if !found {
-			return errors.New("inspection evidence has no v7 session binding")
+			return errors.New("inspection evidence has no supported session binding")
 		}
 	}
 	foundRow := false

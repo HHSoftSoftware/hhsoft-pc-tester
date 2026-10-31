@@ -65,7 +65,7 @@ func sameSessionJournal(a, b sessionJournal) bool { return reflect.DeepEqual(a, 
 
 func retainLocalThermalSource(journal *sessionJournal, worker sessionWorkerRecord, raw []byte, readErr error) error {
 	if worker.ID == "cpu.stress" {
-		if journal.Schema != sessionevidence.SchemaV8 || journal.Profile != "standard" || journal.CPUStressSource != nil ||
+		if !sessionevidence.IsStandardSchema(journal.Schema) || journal.Profile != "standard" || journal.CPUStressSource != nil ||
 			readErr != nil || worker.Timing == nil {
 			return errors.New("CPU stress source cannot be retained")
 		}

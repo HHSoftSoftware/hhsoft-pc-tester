@@ -8,7 +8,7 @@ import (
 )
 
 // ValidatedSessionThermal returns a copied view only after validating the new
-// v4/v5/v6/v7 session claim and its other signed result rows. Journals v1-v3 remain
+// v4-v10 session claim and its other signed result rows. Journals v1-v3 remain
 // opaque and return nil; they are not interpreted against the current catalog.
 func ValidatedSessionThermal(payload InventoryPayload) (*sessionevidence.ThermalView, error) {
 	if err := validateCPUStressReport(payload); err != nil {
@@ -24,6 +24,9 @@ func ValidatedSessionThermal(payload InventoryPayload) (*sessionevidence.Thermal
 		return nil, err
 	}
 	if err := validatePointerReport(payload); err != nil {
+		return nil, err
+	}
+	if err := validateTouchpadReport(payload); err != nil {
 		return nil, err
 	}
 	if err := validateStorageReport(payload); err != nil {
@@ -90,7 +93,7 @@ func validatedSessionThermal(payload InventoryPayload) (*sessionevidence.Thermal
 	if err := sessionevidence.ValidateBindings(*decoded.Session, bindings); err != nil {
 		return nil, err
 	}
-	if keyboardClaim && decoded.Session.Schema != sessionevidence.SchemaV5 && decoded.Session.Schema != sessionevidence.SchemaV6 && decoded.Session.Schema != sessionevidence.SchemaV7 && decoded.Session.Schema != sessionevidence.SchemaV8 {
+	if keyboardClaim && decoded.Session.Schema != sessionevidence.SchemaV5 && decoded.Session.Schema != sessionevidence.SchemaV6 && decoded.Session.Schema != sessionevidence.SchemaV7 && decoded.Session.Schema != sessionevidence.SchemaV8 && !sessionevidence.SupportsTouchpad(decoded.Session.Schema) {
 		return nil, errors.New("keyboard functional evidence requires a current quick session")
 	}
 	if err := validateKeyboardInventory(payload); err != nil {

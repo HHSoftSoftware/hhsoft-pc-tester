@@ -29,8 +29,8 @@ func storageBindings(j Journal) []ResultBinding {
 }
 
 func TestStorageJournalV6KeepsStorageInactiveInV7(t *testing.T) {
-	if Schema != "hhsoft.pc-tester.quick-session/v7" || len(WorkerIDs()) != 12 || WorkerIDs()[11] != "inspection.exterior.quick" {
-		t.Fatal("inactive reader changed the current producer")
+	if len(WorkerIDsV7()) != 12 || WorkerIDsV7()[11] != "inspection.exterior.quick" || WorkerIDsV7()[8] != "usb.readiness.quick" {
+		t.Fatal("storage reader changed the historical v7 contract")
 	}
 	j := storageJournal()
 	if err := ValidateBindings(j, storageBindings(j)); err != nil {

@@ -194,6 +194,16 @@ func TestSessionRealThermalCancelsEveryWorkerAndLatchesAfterCooling(t *testing.T
 	for _, target := range sessionWorkerIDs {
 		t.Run(target, func(t *testing.T) {
 			h, write := realThermalHarness(t, nil, "41000\n")
+			enableTouchpadSessionFixture(t, h)
+			scheduled := false
+			for _, row := range h.frozen.Tests {
+				if row.ID == target {
+					scheduled = row.Status == plan.TestScheduled
+				}
+			}
+			if !scheduled {
+				t.Fatal("every-worker fixture did not schedule its target")
+			}
 			acceptedSafetySample := make(chan struct{})
 			h.dependencies.StartMonitor = func(started time.Time, fail context.CancelFunc) (sessionSafetyMonitor, error) {
 				observations := 0

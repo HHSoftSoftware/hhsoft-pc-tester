@@ -84,8 +84,8 @@ func TestInputUniqueIdentifiersNeverReachSignedReportsOrViews(t *testing.T) {
 				}
 				outcomes[test.ID] = status
 			}
-			for _, id := range []string{"audio.readiness.quick", "cpu.quick", "display.operator.quick", "graphics.quick",
-				"input.keyboard.quick", "input.pointer.quick", "input.readiness.quick", "inspection.exterior.quick", "memory.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick"} {
+			for _, definition := range currentResultDefinitionsForTest(t, frozen) {
+				id := definition.id
 				if outcomes[id] == "" {
 					t.Fatalf("quick workflow result absent from plan: %s", id)
 				}
@@ -119,5 +119,56 @@ func assertInputReportPrivacy(t *testing.T, artifact bundle.Artifact, identifier
 		if !bytes.Contains(content, []byte(model)) || !bytes.Contains(content, []byte("touchscreen")) {
 			t.Fatalf("privacy filtering removed useful model/category from %s", name)
 		}
+	}
+}
+
+// This checks the existing signed inventory/report path. It does not activate
+// definition 2 or claim an evdev observation under the current catalog.
+func TestTouchpadInventoryProjectionReachesSignedPrivateSafeViews(t *testing.T) {
+	for _, name := range []string{"touchpad", "ambiguous_input", "ambiguous_pointer"} {
+		t.Run(name, func(t *testing.T) {
+			category := "touchpad"
+			if name == "ambiguous_input" {
+				category = "input"
+			}
+			if name == "ambiguous_pointer" {
+				category = "pointer"
+			}
+			raw := "synthetic-private-touchpad-canary"
+			snapshot := inventory.NewSnapshot([]inventory.Component{
+				inventory.NewComponent(inventory.ComponentInput, "event0", map[string]string{
+					"category": category, "interface": "event0", "handlers": "event0", "touchpad_candidate": "true", "bitmap_word_bits": "64",
+					"event_capabilities": "b", "key_capabilities": "420 10000 0 0 0 0", "relative_capabilities": "0", "abs_capabilities": "3",
+					"properties": "1", "msc_capabilities": "0", "bus": "0003", "vendor_id": "1234", "product_id": "abcd", "version": "0001",
+					"unique_id": raw, "model": raw, "name": raw, "kernel_path": raw, "coordinates": raw, "msc_payload": raw, "error": raw,
+				}),
+			})
+			before, err := json.Marshal(snapshot)
+			if err != nil {
+				t.Fatal(err)
+			}
+			key := bytes.Repeat([]byte{0x23}, 32)
+			signer := ed25519.NewKeyFromSeed(bytes.Repeat([]byte{0x45}, ed25519.SeedSize))
+			encoded, err := captureBundle(snapshot, nil, key, "fixture", signer, "fixture-signer", "touchpad-privacy", time.Unix(1, 0), "")
+			if err != nil {
+				t.Fatal(err)
+			}
+			artifact, err := bundle.Verify(bytes.NewReader(encoded), int64(len(encoded)), report.Keyring{"fixture-signer": signer.Public().(ed25519.PublicKey)})
+			if err != nil {
+				t.Fatal(err)
+			}
+			for label, content := range map[string][]byte{"inventory": artifact.InventoryJSON, "envelope": artifact.Envelope.Payload, "html": artifact.RenderedReport, "pdf": artifact.RenderedPDF} {
+				if bytes.Contains(content, []byte(raw)) || bytes.Contains(content, []byte("unique_id")) || bytes.Contains(content, []byte("msc_payload")) {
+					t.Fatalf("private source text reached %s", label)
+				}
+				if !bytes.Contains(content, []byte("touchpad_candidate")) || !bytes.Contains(content, []byte("msc_capabilities")) {
+					t.Fatalf("finite projection lost from %s", label)
+				}
+			}
+			after, _ := json.Marshal(snapshot)
+			if !bytes.Equal(before, after) {
+				t.Fatal("display projection mutated the original inventory owner")
+			}
+		})
 	}
 }

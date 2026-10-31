@@ -77,9 +77,9 @@ func TestInspectionSessionKeepsLiteralHistoricalWorkerContracts(t *testing.T) {
 			}
 		})
 	}
-	active := WorkerIDs()
-	if Schema != "hhsoft.pc-tester.quick-session/v7" || !slices.Equal(active[:], expected[Schema]) || slices.Contains(active[:], "storage.quick") {
-		t.Fatal("active worker contract changed")
+	frozen := WorkerIDsV7()
+	if !slices.Equal(frozen[:], expected["hhsoft.pc-tester.quick-session/v7"]) || slices.Contains(frozen[:], "storage.quick") {
+		t.Fatal("historical v7 worker contract changed")
 	}
 }
 

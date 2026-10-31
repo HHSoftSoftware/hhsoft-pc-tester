@@ -6,6 +6,7 @@ import (
 	"errors"
 	"io"
 	"strings"
+	"unicode/utf8"
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inputtest"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/quick"
@@ -40,6 +41,15 @@ func HasPointerClaim(encoded []byte) bool {
 	return hasReportClaim(encoded, pointerClaim)
 }
 
+// HasTouchpadClaim selects strict validation, including malformed definitions.
+// Historical definition 1 and genuine ID-only worker references retain their profile.
+func HasTouchpadClaim(encoded []byte) bool {
+	if len(encoded) > maxTestEvidenceBytes || !utf8.Valid(encoded) {
+		return true
+	}
+	return hasReportClaim(encoded, touchpadClaim)
+}
+
 type reportClaim int
 
 const (
@@ -49,6 +59,7 @@ const (
 	pointerClaim
 	cpuScalarClaim
 	memoryClaim
+	touchpadClaim
 )
 
 func hasReportClaim(encoded []byte, kind reportClaim) bool {
@@ -57,7 +68,7 @@ func hasReportClaim(encoded []byte, kind reportClaim) bool {
 	}
 	decoder := json.NewDecoder(bytes.NewReader(encoded))
 	decoder.UseNumber()
-	found, _, err := findReportClaim(decoder, 0, kind)
+	found, _, err := findReportClaim(decoder, 0, kind, false)
 	if found || err != nil {
 		return true
 	}
@@ -65,7 +76,7 @@ func hasReportClaim(encoded []byte, kind reportClaim) bool {
 	return err != io.EOF
 }
 
-func findReportClaim(decoder *json.Decoder, depth int, kind reportClaim) (bool, json.Token, error) {
+func findReportClaim(decoder *json.Decoder, depth int, kind reportClaim, definitionRow bool) (bool, json.Token, error) {
 	if depth > 64 {
 		return false, nil, errors.New("report claim nesting exceeds the supported limit")
 	}
@@ -75,7 +86,8 @@ func findReportClaim(decoder *json.Decoder, depth int, kind reportClaim) (bool, 
 	}
 	switch token {
 	case json.Delim('{'):
-		definitionID, newVersion := false, false
+		definitionID, newVersion, versionSeen := false, false, false
+		definitionShape := definitionRow
 		for decoder.More() {
 			key, err := decoder.Token()
 			if err != nil {
@@ -84,6 +96,9 @@ func findReportClaim(decoder *json.Decoder, depth int, kind reportClaim) (bool, 
 			name, ok := key.(string)
 			if !ok {
 				return false, nil, errors.New("invalid report claim member")
+			}
+			if kind == touchpadClaim && !strings.EqualFold(name, "id") && !strings.EqualFold(name, "state") && !strings.EqualFold(name, "outcome") && !strings.EqualFold(name, "timing") {
+				definitionShape = true
 			}
 			if kind == anySessionClaim && strings.EqualFold(name, "session") || kind == thermalClaim && (strings.EqualFold(name, "thermal") || strings.EqualFold(name, "local_thermal_sources")) {
 				return true, nil, nil
@@ -97,11 +112,11 @@ func findReportClaim(decoder *json.Decoder, depth int, kind reportClaim) (bool, 
 			if kind == memoryClaim && strings.EqualFold(name, "memory_coverage") {
 				return true, nil, nil
 			}
-			found, scalar, err := findReportClaim(decoder, depth+1, kind)
+			found, scalar, err := findReportClaim(decoder, depth+1, kind, kind == touchpadClaim && strings.EqualFold(name, "test_results"))
 			if found || err != nil {
 				return found, nil, err
 			}
-			if kind == keyboardClaim || kind == pointerClaim || kind == cpuScalarClaim || kind == memoryClaim {
+			if kind == keyboardClaim || kind == pointerClaim || kind == cpuScalarClaim || kind == memoryClaim || kind == touchpadClaim {
 				wantedID := "input.keyboard.quick"
 				if kind == pointerClaim {
 					wantedID = "input.pointer.quick"
@@ -112,10 +127,20 @@ func findReportClaim(decoder *json.Decoder, depth int, kind reportClaim) (bool, 
 				if kind == memoryClaim {
 					wantedID = "memory.quick"
 				}
+				if kind == touchpadClaim {
+					wantedID = touchpadReportID
+				}
 				if value, ok := scalar.(string); ok && strings.EqualFold(name, "id") && strings.EqualFold(value, wantedID) {
 					definitionID = true
+					if kind == touchpadClaim && (name != "id" || value != wantedID) {
+						newVersion = true
+					}
 				}
 				if strings.EqualFold(name, "version") {
+					versionSeen = true
+					if kind == touchpadClaim && name != "version" {
+						newVersion = true
+					}
 					if value, ok := scalar.(json.Number); ok {
 						newVersion = newVersion || value.String() != "1"
 					} else {
@@ -127,11 +152,14 @@ func findReportClaim(decoder *json.Decoder, depth int, kind reportClaim) (bool, 
 				}
 			}
 		}
+		if kind == touchpadClaim && definitionShape && definitionID && !versionSeen {
+			return true, nil, nil
+		}
 		_, err = decoder.Token()
 		return false, nil, err
 	case json.Delim('['):
 		for decoder.More() {
-			found, _, err := findReportClaim(decoder, depth+1, kind)
+			found, _, err := findReportClaim(decoder, depth+1, kind, definitionRow)
 			if found || err != nil {
 				return found, nil, err
 			}
@@ -147,6 +175,10 @@ func findReportClaim(decoder *json.Decoder, depth int, kind reportClaim) (bool, 
 			name, _, versioned := strings.Cut(value, "/")
 			return ok && versioned && strings.EqualFold(name, "hhsoft.pc-tester.pointer-functional"), token, nil
 		}
+		if kind == touchpadClaim {
+			name, _, _ := strings.Cut(value, "/")
+			return ok && strings.EqualFold(name, "hhsoft.pc-tester.touchpad-functional"), token, nil
+		}
 		if kind == cpuScalarClaim {
 			name, version, versioned := strings.Cut(value, "/")
 			return ok && versioned && strings.EqualFold(name, "hhsoft.pc-tester.cpu") && version != "v2", token, nil
@@ -160,6 +192,6 @@ func findReportClaim(decoder *json.Decoder, depth int, kind reportClaim) (bool, 
 			return ok && versioned && strings.EqualFold(name, "hhsoft.pc-tester.quick-session"), token, nil
 		}
 		return ok && (sessionevidence.IsStrictSchema(value) || strings.EqualFold(value, sessionevidence.SchemaV4) ||
-			strings.EqualFold(value, sessionevidence.SchemaV5) || strings.EqualFold(value, sessionevidence.SchemaV6) || strings.EqualFold(value, sessionevidence.SchemaV7) || strings.EqualFold(value, sessionevidence.SchemaV8) || strings.EqualFold(value, "hhsoft.pc-tester.run-thermal/v1")), token, nil
+			strings.EqualFold(value, sessionevidence.SchemaV5) || strings.EqualFold(value, sessionevidence.SchemaV6) || strings.EqualFold(value, sessionevidence.SchemaV7) || strings.EqualFold(value, sessionevidence.SchemaV8) || strings.EqualFold(value, sessionevidence.SchemaV9) || strings.EqualFold(value, sessionevidence.SchemaV10) || strings.EqualFold(value, "hhsoft.pc-tester.run-thermal/v1")), token, nil
 	}
 }

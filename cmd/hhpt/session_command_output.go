@@ -82,11 +82,14 @@ func writeSessionReady(path, reportPath, keyEpoch string, frozen plan.Plan, jour
 	marker := fmt.Sprintf("HHPT_READY report=%s plan=%s components=%d integrity=%s audio=%s cpu=%s memory=%s input=%s keyboard=%s pointer=%s network=%s storage=%s usb=%s graphics=%s display=%s writable_block_mounts=0 active_non_loop_interfaces=0",
 		sessionMarkerValue(reportPath), frozen.ID, counts[1], status, outcomes["audio.readiness.quick"], outcomes["cpu.quick"], outcomes["memory.quick"],
 		outcomes["input.readiness.quick"], outcomes["input.keyboard.quick"], outcomes["input.pointer.quick"], outcomes["network.readiness.quick"], outcomes["storage.readiness.quick"], outcomes["usb.readiness.quick"], outcomes["graphics.quick"], outcomes["display.operator.quick"])
-	if journal.Schema == sessionevidence.SchemaV7 || journal.Schema == sessionevidence.SchemaV8 {
+	if sessionevidence.SupportsInspection(journal.Schema) {
 		marker += " exterior_inspection=" + outcomes["inspection.exterior.quick"]
 	}
-	if journal.Schema == sessionevidence.SchemaV8 {
+	if sessionevidence.IsStandardSchema(journal.Schema) {
 		marker += " profile=standard cpu_stress=" + outcomes["cpu.stress"]
+	}
+	if sessionevidence.SupportsTouchpad(journal.Schema) {
+		marker += " touchpad=" + outcomes[touchpadExecutionID]
 	}
 	if safeSessionToken(keyEpoch) {
 		marker += " key_epoch=" + keyEpoch

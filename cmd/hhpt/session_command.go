@@ -131,7 +131,7 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 	if executionProfile == plan.ProfileStandard {
 		ids := sessionevidence.StandardWorkerIDs()
 		workerIDs = ids[:]
-		journalSchema = sessionevidence.SchemaV8
+		journalSchema = sessionevidence.SchemaV10
 	}
 	if !parentOptions.valid() {
 		fmt.Fprintln(stderr, "session: invalid predecessor options")
@@ -168,6 +168,12 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 		fmt.Fprintln(stderr, "session requires a matching explicit profile, valid plan and key epoch")
 		return 1
 	}
+	layout, err := commandLayoutForPlan(frozen, executionProfile)
+	if err != nil {
+		fmt.Fprintln(stderr, "session requires a checked execution layout")
+		return 1
+	}
+	resultDefinitions, workerIDs, journalSchema = layout.definitions, layout.workerIDs, layout.schema
 	definitions := make(map[string]quickResultDefinition, len(resultDefinitions))
 	for _, definition := range resultDefinitions {
 		definitions[definition.id] = definition
@@ -402,7 +408,7 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 		outcome, state, evidenceErr := sessionWorkerOutcomeEvidence(workerEvidence, workerReadErr, definitions[record.ID].schema, code, reason != "")
 		if evidenceErr != nil {
 			fmt.Fprintf(stderr, "session worker evidence: %v\n", evidenceErr)
-			if errors.Is(evidenceErr, errQuickCleanupUnconfirmed) || errors.Is(evidenceErr, keyboardevidence.ErrCleanupUnconfirmed) || errors.Is(evidenceErr, quick.ErrCPUStressCleanupUnconfirmed) {
+			if errors.Is(evidenceErr, errQuickCleanupUnconfirmed) || errors.Is(evidenceErr, keyboardevidence.ErrCleanupUnconfirmed) || errors.Is(evidenceErr, quick.ErrCPUStressCleanupUnconfirmed) || touchpadCleanupError(evidenceErr) {
 				fmt.Fprintf(stderr, "HHPT_SESSION_FAILED worker=%s reason=cleanup_unconfirmed\n", record.ID)
 				return workerCleanupUncertainExitCode
 			}
@@ -410,6 +416,15 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 		}
 		record.State, record.Outcome = state, outcome
 		record.Timing = &sessionevidence.WorkerTiming{StartedMilliseconds: workerStart.Sub(started).Milliseconds(), FinishedMilliseconds: workerFinished.Sub(started).Milliseconds()}
+		if record.ID == touchpadExecutionID {
+			if err := validateTouchpadWorkerRecord(*record, workerEvidence, workerReadErr, outcome, nil); err != nil {
+				if touchpadCleanupError(err) {
+					return workerCleanupUncertainExitCode
+				}
+				fmt.Fprintln(stderr, "touchpad worker timing or evidence binding failed")
+				return 1
+			}
+		}
 		if err := retainLocalThermalSource(&journal, *record, workerEvidence, workerReadErr); err != nil {
 			fmt.Fprintln(stderr, "local thermal evidence binding failed")
 			return 1
@@ -513,6 +528,10 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 	defer finishFinal()
 	finalOutput := &sessionFinalOutput{destination: stdout}
 	finalResult := dependencies.Finalize(finalContext, request, finalOutput, stderr)
+	if layout.touchpad && finalResult.Journal != nil {
+		owned := sessionevidence.CloneJournal(*finalResult.Journal)
+		finalResult.Journal = &owned
+	}
 	if monitorCode == workerCleanupUncertainExitCode {
 		return monitorCode
 	}
@@ -534,7 +553,7 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 
 func printSessionWorkerResult(output io.Writer, record sessionWorkerRecord) {
 	labels := map[string]string{"cpu.quick": "CPU", "cpu.stress": "CPU_STRESS", "memory.quick": "MEMORY", "audio.readiness.quick": "AUDIO_READINESS",
-		"input.readiness.quick": "INPUT_READINESS", "input.keyboard.quick": "KEYBOARD", "input.pointer.quick": "POINTER", "network.readiness.quick": "NETWORK_READINESS", "storage.readiness.quick": "STORAGE_READINESS",
+		"input.readiness.quick": "INPUT_READINESS", "input.keyboard.quick": "KEYBOARD", "input.pointer.quick": "POINTER", touchpadExecutionID: "TOUCHPAD", "network.readiness.quick": "NETWORK_READINESS", "storage.readiness.quick": "STORAGE_READINESS",
 		"usb.readiness.quick": "USB_READINESS", "graphics.quick": "GRAPHICS", "display.operator.quick": "DISPLAY", "inspection.exterior.quick": "EXTERIOR_INSPECTION"}
 	fmt.Fprintf(output, "HHPT_%s status=%s\n", labels[record.ID], record.Outcome)
 }
@@ -556,6 +575,9 @@ func sessionStopReason(parent, run, worker context.Context, now, runDeadline, wo
 }
 
 func sessionWorkerOutcomeEvidence(encoded []byte, readErr error, schema string, code int, interrupted bool) (string, string, error) {
+	if schema == inputtest.TouchpadSchema {
+		return touchpadWorkerOutcomeEvidence(encoded, readErr, code, interrupted)
+	}
 	if schema == quick.CPUStressSchema {
 		if code == workerCleanupUncertainExitCode {
 			return "", "", quick.ErrCPUStressCleanupUnconfirmed

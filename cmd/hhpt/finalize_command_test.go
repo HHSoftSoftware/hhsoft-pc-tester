@@ -60,7 +60,7 @@ func TestFinalizeBuildsSelfIssuedReportFromExistingEvidence(t *testing.T) {
 	})
 	planPath := writeFinalizeTestPlan(t, directory, snapshot, fingerprintKey)
 	arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "session-1", "-output", reportPath,
-		"-outcome", "audio.readiness.quick=not_present", "-outcome", "cpu.quick=pass", "-outcome", "display.operator.quick=not_present", "-outcome", "graphics.quick=not_present", "-outcome", "input.keyboard.quick=not_present", "-outcome", "input.pointer.quick=not_present", "-outcome", "input.readiness.quick=not_present",
+		"-outcome", "audio.readiness.quick=not_present", "-outcome", "cpu.quick=pass", "-outcome", "display.operator.quick=not_present", "-outcome", "graphics.quick=not_present", "-outcome", "input.keyboard.quick=not_present", "-outcome", "input.pointer.quick=not_present", "-outcome", "input.touchpad.quick=not_present", "-outcome", "input.readiness.quick=not_present",
 		"-outcome", "memory.quick=not_present", "-outcome", "network.readiness.quick=not_present", "-outcome", "storage.readiness.quick=not_present", "-outcome", "usb.readiness.quick=not_present", "-outcome", "inspection.exterior.quick=excluded"}
 	collect := func(context.Context) (inventory.Snapshot, error) { return snapshot, nil }
 	random := bytes.NewReader(bytes.Repeat([]byte{0x31}, sessionIDLength+32))
@@ -121,12 +121,16 @@ func TestFinalizeRejectsEvidenceOutcomeMismatch(t *testing.T) {
 	snapshot := inventory.NewSnapshot([]inventory.Component{inventory.NewComponent(inventory.ComponentCPU, "cpu:0", nil)})
 	planPath := writeFinalizeTestPlan(t, directory, snapshot, fingerprintKey)
 	arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory, "-output", reportPath,
-		"-outcome", "audio.readiness.quick=not_present", "-outcome", "cpu.quick=pass", "-outcome", "display.operator.quick=not_present", "-outcome", "graphics.quick=not_present", "-outcome", "input.keyboard.quick=not_present", "-outcome", "input.pointer.quick=not_present", "-outcome", "input.readiness.quick=not_present", "-outcome", "memory.quick=not_present",
+		"-outcome", "audio.readiness.quick=not_present", "-outcome", "cpu.quick=pass", "-outcome", "display.operator.quick=not_present", "-outcome", "graphics.quick=not_present", "-outcome", "input.keyboard.quick=not_present", "-outcome", "input.pointer.quick=not_present", "-outcome", "input.touchpad.quick=not_present", "-outcome", "input.readiness.quick=not_present", "-outcome", "memory.quick=not_present",
 		"-outcome", "network.readiness.quick=not_present", "-outcome", "storage.readiness.quick=not_present", "-outcome", "usb.readiness.quick=not_present", "-outcome", "inspection.exterior.quick=excluded"}
 	called := false
 	collect := func(context.Context) (inventory.Snapshot, error) { called = true; return inventory.Snapshot{}, nil }
-	if result := runFinalizeTestWith(t, context.Background(), arguments, bytes.NewBuffer(nil), bytes.NewBuffer(nil), collect, bytes.NewReader(bytes.Repeat([]byte{1}, 48)), time.Now); result != 1 {
+	var stderr bytes.Buffer
+	if result := runFinalizeTestWith(t, context.Background(), arguments, bytes.NewBuffer(nil), &stderr, collect, bytes.NewReader(bytes.Repeat([]byte{1}, 48)), time.Now); result != 1 {
 		t.Fatalf("finalize returned %d", result)
+	}
+	if !strings.HasPrefix(stderr.String(), "validate evidence cpu.quick: ") {
+		t.Fatalf("contradictory evidence did not reach evidence validation: %s", stderr.String())
 	}
 	if called {
 		t.Fatal("inventory collected after contradictory evidence")
@@ -168,7 +172,7 @@ func TestFinalizeWillNotSignUnsupportedPassEvidence(t *testing.T) {
 			}
 			reportPath := filepath.Join(directory, "rejected.hhpcr")
 			arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "fixture", "-output", reportPath}
-			for _, definition := range quickResultDefinitions {
+			for _, definition := range currentResultDefinitionsFromPathForTest(t, planPath) {
 				status := "not_present"
 				if definition.id == "inspection.exterior.quick" {
 					status = "excluded"
@@ -210,7 +214,7 @@ func TestFinalizeRecordsHotPlugAgainstFrozenPlan(t *testing.T) {
 	}
 	reportPath := filepath.Join(directory, "session.hhpcr")
 	arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "session-2", "-output", reportPath,
-		"-outcome", "audio.readiness.quick=not_present", "-outcome", "cpu.quick=not_present", "-outcome", "display.operator.quick=not_present", "-outcome", "graphics.quick=not_present", "-outcome", "input.keyboard.quick=not_present", "-outcome", "input.pointer.quick=not_present", "-outcome", "input.readiness.quick=not_present", "-outcome", "memory.quick=not_present",
+		"-outcome", "audio.readiness.quick=not_present", "-outcome", "cpu.quick=not_present", "-outcome", "display.operator.quick=not_present", "-outcome", "graphics.quick=not_present", "-outcome", "input.keyboard.quick=not_present", "-outcome", "input.pointer.quick=not_present", "-outcome", "input.touchpad.quick=not_present", "-outcome", "input.readiness.quick=not_present", "-outcome", "memory.quick=not_present",
 		"-outcome", "network.readiness.quick=not_present", "-outcome", "storage.readiness.quick=pass", "-outcome", "usb.readiness.quick=not_present", "-outcome", "inspection.exterior.quick=excluded"}
 	collect := func(context.Context) (inventory.Snapshot, error) { return final, nil }
 	var stdout, stderr bytes.Buffer
@@ -245,10 +249,24 @@ func TestFinalizeRejectsPassForNonScheduledTest(t *testing.T) {
 	planPath := writeFinalizeTestPlan(t, directory, inventory.NewSnapshot(nil), fingerprintKey)
 	reportPath := filepath.Join(directory, "session.hhpcr")
 	arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory, "-output", reportPath,
-		"-outcome", "audio.readiness.quick=pass", "-outcome", "cpu.quick=not_present", "-outcome", "display.operator.quick=not_present", "-outcome", "graphics.quick=not_present", "-outcome", "input.keyboard.quick=not_present", "-outcome", "input.pointer.quick=not_present", "-outcome", "input.readiness.quick=not_present",
+		"-outcome", "audio.readiness.quick=pass", "-outcome", "cpu.quick=not_present", "-outcome", "display.operator.quick=not_present", "-outcome", "graphics.quick=not_present", "-outcome", "input.keyboard.quick=not_present", "-outcome", "input.pointer.quick=not_present", "-outcome", "input.touchpad.quick=not_present", "-outcome", "input.readiness.quick=not_present",
 		"-outcome", "memory.quick=not_present", "-outcome", "network.readiness.quick=not_present", "-outcome", "storage.readiness.quick=not_present", "-outcome", "usb.readiness.quick=not_present", "-outcome", "inspection.exterior.quick=excluded"}
-	if result := runFinalizeTestWith(t, context.Background(), arguments, bytes.NewBuffer(nil), bytes.NewBuffer(nil), func(context.Context) (inventory.Snapshot, error) { return inventory.Snapshot{}, nil }, bytes.NewReader(bytes.Repeat([]byte{1}, 48)), time.Now); result != 1 {
-		t.Fatalf("finalize returned %d", result)
+	collected, outputs := false, 0
+	collect := func(context.Context) (inventory.Snapshot, error) {
+		collected = true
+		return inventory.Snapshot{}, nil
+	}
+	write := func(_ string, _ io.Writer, callback func(io.Writer) error) error {
+		outputs++
+		return callback(io.Discard)
+	}
+	var stderr bytes.Buffer
+	result := runFinalizeTestDestination(t, context.Background(), arguments, bytes.NewBuffer(nil), &stderr, collect, bytes.NewReader(bytes.Repeat([]byte{1}, 48)), time.Now, nil, write)
+	if result.Code != 1 || collected || outputs != 0 || !strings.HasPrefix(stderr.String(), "validate frozen plan outcomes: ") {
+		t.Fatalf("non-scheduled pass did not stop at plan outcome validation: code=%d collected=%v outputs=%d error=%s", result.Code, collected, outputs, stderr.String())
+	}
+	if _, err := os.Stat(reportPath); !os.IsNotExist(err) {
+		t.Fatal("report exists after rejected plan outcome")
 	}
 }
 
@@ -263,7 +281,7 @@ func TestFinalizeRecordsWorkerErrorWhenEvidenceIsIncomplete(t *testing.T) {
 	}
 	reportPath := filepath.Join(directory, "session.hhpcr")
 	arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory, "-output", reportPath,
-		"-outcome", "audio.readiness.quick=error", "-outcome", "cpu.quick=not_present", "-outcome", "display.operator.quick=not_present", "-outcome", "graphics.quick=not_present", "-outcome", "input.keyboard.quick=not_present", "-outcome", "input.pointer.quick=not_present", "-outcome", "input.readiness.quick=not_present",
+		"-outcome", "audio.readiness.quick=error", "-outcome", "cpu.quick=not_present", "-outcome", "display.operator.quick=not_present", "-outcome", "graphics.quick=not_present", "-outcome", "input.keyboard.quick=not_present", "-outcome", "input.pointer.quick=not_present", "-outcome", "input.touchpad.quick=not_present", "-outcome", "input.readiness.quick=not_present",
 		"-outcome", "memory.quick=not_present", "-outcome", "network.readiness.quick=not_present", "-outcome", "storage.readiness.quick=not_present", "-outcome", "usb.readiness.quick=not_present", "-outcome", "inspection.exterior.quick=excluded"}
 	if result := runFinalizeTestWith(t, context.Background(), arguments, bytes.NewBuffer(nil), bytes.NewBuffer(nil), func(context.Context) (inventory.Snapshot, error) { return snapshot, nil }, bytes.NewReader(bytes.Repeat([]byte{1}, 48)), time.Now); result != 0 {
 		t.Fatalf("finalize returned %d", result)
@@ -380,7 +398,7 @@ func prepareDisplayFinalization(t *testing.T, display graphics.VisualResult, out
 	}
 	reportPath := filepath.Join(directory, "display.hhpcr")
 	arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "display-fixture", "-output", reportPath}
-	for _, definition := range quickResultDefinitions {
+	for _, definition := range currentResultDefinitionsFromPathForTest(t, planPath) {
 		status := "not_present"
 		if definition.id == "inspection.exterior.quick" {
 			status = "excluded"
@@ -391,4 +409,45 @@ func prepareDisplayFinalization(t *testing.T, display graphics.VisualResult, out
 		arguments = append(arguments, "-outcome", definition.id+"="+status)
 	}
 	return arguments, snapshot, reportPath
+}
+
+func currentResultDefinitionsForTest(t *testing.T, frozen plan.Plan) []quickResultDefinition {
+	t.Helper()
+	encoded, err := json.Marshal(frozen)
+	if err != nil {
+		t.Fatal(err)
+	}
+	checked, err := plan.Decode(encoded)
+	if err != nil {
+		t.Fatal(err)
+	}
+	layout, err := commandLayoutForPlan(checked, checked.Profile)
+	if err != nil {
+		t.Fatal(err)
+	}
+	planned := make(map[string]bool, len(checked.Tests))
+	for _, row := range checked.Tests {
+		planned[row.ID] = true
+	}
+	seen := make(map[string]bool, len(layout.definitions))
+	for _, definition := range layout.definitions {
+		if !planned[definition.id] || seen[definition.id] {
+			t.Fatal("current outcome layout is incomplete or duplicated")
+		}
+		seen[definition.id] = true
+	}
+	return append([]quickResultDefinition(nil), layout.definitions...)
+}
+
+func currentResultDefinitionsFromPathForTest(t *testing.T, path string) []quickResultDefinition {
+	t.Helper()
+	encoded, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	frozen, err := plan.Decode(encoded)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return currentResultDefinitionsForTest(t, frozen)
 }

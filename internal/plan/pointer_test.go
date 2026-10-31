@@ -9,7 +9,7 @@ import (
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
 )
 
-func TestPointerPlanSchedulesEveryPointerWithoutEnablingTouchInput(t *testing.T) {
+func TestPointerPlanSchedulesEveryPointerWithoutTrustingTouchpadCategory(t *testing.T) {
 	snapshot := inventory.NewSnapshot([]inventory.Component{
 		inventory.NewComponent(inventory.ComponentInput, "input:0", map[string]string{"category": "pointer", "handlers": "mouse0 event2"}),
 		inventory.NewComponent(inventory.ComponentInput, "input:1", map[string]string{"category": "pointer", "handlers": "mouse1 event5"}),
@@ -31,9 +31,8 @@ func TestPointerPlanSchedulesEveryPointerWithoutEnablingTouchInput(t *testing.T)
 					t.Fatalf("catalog row count changed: %d", len(p.Tests))
 				}
 				assertTestStatus(t, p, "input.keyboard.quick", TestScheduled)
-				for _, id := range []string{"input.touchpad.quick", "input.touchscreen.quick"} {
-					assertTestStatus(t, p, id, TestUnsupported)
-				}
+				assertTestStatus(t, p, "input.touchpad.quick", TestNotPresent)
+				assertTestStatus(t, p, "input.touchscreen.quick", TestUnsupported)
 				if _, err := Decode(rehashPlanForTest(t, &p)); err != nil {
 					t.Fatalf("valid pointer plan rejected: %v", err)
 				}

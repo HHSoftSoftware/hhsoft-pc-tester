@@ -41,7 +41,7 @@ func HasCPUStressClaim(raw []byte) bool {
 }
 
 func validStressSourceStructure(j Journal) bool {
-	if j.Schema != SchemaV8 {
+	if !IsStandardSchema(j.Schema) {
 		return j.Profile == "" && j.CPUStressSource == nil
 	}
 	if j.Profile != "standard" || j.StorageSource != nil {
@@ -60,7 +60,7 @@ func validStressSourceStructure(j Journal) bool {
 }
 
 func validateStressBinding(j Journal, worker WorkerRecord, binding ResultBinding, sources map[string]LocalThermalSource) (bool, error) {
-	if j.Schema != SchemaV8 || binding.ID != "cpu.stress" || binding.Version != 1 {
+	if !IsStandardSchema(j.Schema) || binding.ID != "cpu.stress" || binding.Version != 1 {
 		return false, ErrInvalid
 	}
 	if worker.State == "not_scheduled" || worker.State == "not_started" {

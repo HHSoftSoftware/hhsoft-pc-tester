@@ -88,13 +88,14 @@ func newPowerCommandFixture(t *testing.T) powerCommandFixture {
 	return f
 }
 
-func (f powerCommandFixture) arguments(output string) []string {
+func (f powerCommandFixture) arguments(t *testing.T, output string) []string {
+	t.Helper()
 	args := []string{"-fingerprint-key", f.keyPath, "-key-epoch", "power-fixture", "-plan", f.planPath, "-evidence-dir", f.directory, "-session-id", "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee", "-output", output}
 	planned := make(map[string]string)
 	for _, row := range f.frozen.Tests {
 		planned[row.ID] = string(row.Status)
 	}
-	for _, worker := range quickResultDefinitions {
+	for _, worker := range currentResultDefinitionsForTest(t, f.frozen) {
 		args = append(args, "-outcome", worker.id+"="+planned[worker.id])
 	}
 	return args
@@ -183,7 +184,7 @@ func TestPowerSupplyRealFinalizerKeepsCurrentTelemetryAndIndependentParentTrust(
 				}
 			}
 			output := filepath.Join(f.directory, "child.hhpcr")
-			args := append(f.arguments(output), "-previous-report", parentPath)
+			args := append(f.arguments(t, output), "-previous-report", parentPath)
 			if selfParent {
 				args = append(args, "-previous-self-issued")
 			} else {
@@ -415,7 +416,7 @@ func TestPowerSupplyOwnedCollectionFailureStopsFinalizerSigningAndOutput(t *test
 			random := bytes.NewReader(bytes.Repeat([]byte{0x72}, 64))
 			output := filepath.Join(f.directory, "must-not-exist.hhpcr")
 			var stdout, stderr bytes.Buffer
-			result := runFinalizeOwnedDestination(t.Context(), f.arguments(output), &stdout, &stderr, collect, random, func() time.Time { return time.Unix(3, 0) }, nil, write)
+			result := runFinalizeOwnedDestination(t.Context(), f.arguments(t, output), &stdout, &stderr, collect, random, func() time.Time { return time.Unix(3, 0) }, nil, write)
 			want := "collect final inventory: inventory: scalar exceeds acquisition budget\n"
 			if fault == "nonregular_scalar" {
 				want = "collect final inventory: inventory: scalar acquisition failed\n"

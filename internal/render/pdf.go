@@ -126,6 +126,10 @@ func inventoryPDFLinesWithPrevious(payload app.InventoryPayload, version string,
 	if err != nil {
 		return nil, err
 	}
+	touchpad, err := touchpadReportDocument(payload)
+	if err != nil {
+		return nil, err
+	}
 	pointer, err := pointerReportDocument(payload)
 	if err != nil {
 		return nil, err
@@ -187,6 +191,7 @@ func inventoryPDFLinesWithPrevious(payload app.InventoryPayload, version string,
 	appendThermalPDF(&lines, thermal)
 	appendKeyboardPDF(&lines, keyboard)
 	appendPointerPDF(&lines, pointer)
+	appendTouchpadPDF(&lines, touchpad)
 	lines.add("", "FUNCTIONAL TEST EVIDENCE")
 	if len(tests) == 0 {
 		lines.add("No functional test evidence is included.")

@@ -48,7 +48,7 @@ func TestSelectionPreservesDefaultsAndFreezesCanonicalIntent(t *testing.T) {
 }
 
 func TestSelectableQuickTestsReflectSafeImplementedImageCatalog(t *testing.T) {
-	wantModern := []string{"audio.readiness.quick", "cpu.quick", "display.operator.quick", "graphics.quick", "input.keyboard.quick", "input.pointer.quick", "input.readiness.quick", "inspection.exterior.quick", "memory.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick"}
+	wantModern := []string{"audio.readiness.quick", "cpu.quick", "display.operator.quick", "graphics.quick", "input.keyboard.quick", "input.pointer.quick", "input.readiness.quick", "input.touchpad.quick", "inspection.exterior.quick", "memory.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick"}
 	for _, architecture := range []string{"x86_64", "x86", "aarch64", "legacy-x86"} {
 		ids, err := SelectableQuickTests(architecture)
 		if err != nil {
@@ -56,7 +56,7 @@ func TestSelectableQuickTestsReflectSafeImplementedImageCatalog(t *testing.T) {
 		}
 		want := wantModern
 		if architecture == "legacy-x86" {
-			want = []string{"audio.readiness.quick", "cpu.quick", "input.keyboard.quick", "input.pointer.quick", "input.readiness.quick", "inspection.exterior.quick", "memory.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick"}
+			want = []string{"audio.readiness.quick", "cpu.quick", "input.keyboard.quick", "input.pointer.quick", "input.readiness.quick", "input.touchpad.quick", "inspection.exterior.quick", "memory.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick"}
 		}
 		if !slices.Equal(ids, want) {
 			t.Fatalf("selectable %s tests = %v", architecture, ids)
@@ -66,7 +66,11 @@ func TestSelectableQuickTestsReflectSafeImplementedImageCatalog(t *testing.T) {
 			t.Fatal(err)
 		}
 		for _, id := range ids {
-			assertTestStatus(t, p, id, TestExcluded)
+			if id == "input.touchpad.quick" {
+				assertTestStatus(t, p, id, TestNotPresent)
+			} else {
+				assertTestStatus(t, p, id, TestExcluded)
+			}
 		}
 	}
 }

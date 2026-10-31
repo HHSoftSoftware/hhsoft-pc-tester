@@ -156,7 +156,7 @@ func assertKeyboardAcquisitionFinalizerBoundary(t *testing.T, raw []byte, cleanu
 	for _, promote := range []bool{false, true} {
 		report := filepath.Join(directory, map[bool]string{false: "honest.hhpcr", true: "promoted.hhpcr"}[promote])
 		args := []string{"-fingerprint-key", keyPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "keyboard-acquisition", "-output", report}
-		for _, definition := range quickResultDefinitions {
+		for _, definition := range currentResultDefinitionsForTest(t, decoded) {
 			for _, row := range decoded.Tests {
 				if row.ID == definition.id {
 					outcome := string(row.Status)

@@ -106,10 +106,17 @@ func BuildInventoryPayload(snapshot inventory.Snapshot, fingerprintKey []byte, k
 	materials := make([]identity.ComponentMaterial, 0, len(snapshot.Components))
 	materialIndexes := make([]int, 0, len(snapshot.Components))
 	for _, component := range snapshot.Components {
+		attributes, candidate, err := touchpadPublicAttributes(component)
+		if err != nil {
+			return InventoryPayload{}, err
+		}
+		if !candidate {
+			attributes = publicAttributes(component)
+		}
 		record := ComponentRecord{
 			Type:       component.Type,
 			ID:         component.ID,
-			Attributes: publicAttributes(component),
+			Attributes: attributes,
 			Identity: ComponentIdentity{
 				Algorithm:  "hmac-sha256",
 				KeyEpoch:   keyEpoch,

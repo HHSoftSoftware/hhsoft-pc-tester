@@ -32,8 +32,14 @@ func parseFunctionalInputInterfaces(reader io.Reader, wanted string, wordBits in
 	fields := map[string]string{}
 	flush := func() error {
 		category := inventory.ClassifyInput(fields["name"], fields["handlers"], fields["KEY"], fields["REL"], fields["ABS"], fields["PROP"])
-		if wanted == "keyboard" {
+		if wanted == "keyboard" || wanted == "touchpad" {
 			category = inventory.ClassifyInputWithBitmapWidth(fields["name"], fields["handlers"], fields["KEY"], fields["REL"], fields["ABS"], fields["PROP"], wordBits)
+		}
+		selected := category == wanted
+		// Ambiguous indirect absolute inputs remain candidates. Only descriptor
+		// admission can reject MT or unknown capability shapes without hiding a row.
+		if wanted == "touchpad" && fields["ABS"] != "" && (category == "input" || category == "pointer") {
+			selected = true
 		}
 		hasEvent := false
 		for _, handler := range strings.Fields(fields["handlers"]) {
@@ -45,14 +51,14 @@ func parseFunctionalInputInterfaces(reader io.Reader, wanted string, wordBits in
 			}
 			seen[handler] = true
 			hasEvent = true
-			if category == wanted {
+			if selected {
 				result = append(result, handler)
 				if len(result) > maximumPointerDevices {
 					return errors.New("pointer registry exceeds device limit")
 				}
 			}
 		}
-		if category == wanted && !hasEvent {
+		if selected && !hasEvent {
 			return errors.New("pointer registry record has no event interface")
 		}
 		fields = map[string]string{}

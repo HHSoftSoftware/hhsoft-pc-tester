@@ -463,7 +463,7 @@ func retestFinalizeFixture(t *testing.T) ([]string, inventory.Snapshot, string) 
 	}
 	output := filepath.Join(dir, "child.hhpcr")
 	args := []string{"-fingerprint-key", keyPath, "-plan", planPath, "-evidence-dir", dir, "-output", output}
-	for _, definition := range quickResultDefinitions {
+	for _, definition := range currentResultDefinitionsForTest(t, frozen) {
 		outcome := "not_present"
 		if definition.id == "inspection.exterior.quick" {
 			outcome = "excluded"

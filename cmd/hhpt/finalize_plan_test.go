@@ -68,7 +68,7 @@ func TestFinalizeRejectsRehashedCapabilityHiddenOnUnchangedHardware(t *testing.T
 		t.Fatal(err)
 	}
 	reportPath := filepath.Join(directory, "rejected.hhpcr")
-	arguments := absentPlanFinalizationArguments(directory, fingerprintPath, planPath, reportPath)
+	arguments := absentPlanFinalizationArguments(t, directory, fingerprintPath, planPath, reportPath)
 	collected := false
 	collect := func(context.Context) (inventory.Snapshot, error) { collected = true; return snapshot, nil }
 	random := bytes.NewReader(bytes.Repeat([]byte{0x63}, 64))
@@ -114,7 +114,7 @@ func TestFinalizeRejectsContradictoryPlanJSONBeforeSigning(t *testing.T) {
 				t.Fatal(err)
 			}
 			reportPath := filepath.Join(directory, "rejected.hhpcr")
-			arguments := absentPlanFinalizationArguments(directory, fingerprintPath, planPath, reportPath)
+			arguments := absentPlanFinalizationArguments(t, directory, fingerprintPath, planPath, reportPath)
 			collected := false
 			collect := func(context.Context) (inventory.Snapshot, error) { collected = true; return snapshot, nil }
 			random := bytes.NewReader(bytes.Repeat([]byte{0x64}, 64))
@@ -135,15 +135,32 @@ func TestFinalizeRejectsContradictoryPlanJSONBeforeSigning(t *testing.T) {
 	}
 }
 
-func absentPlanFinalizationArguments(directory, fingerprintPath, planPath, reportPath string) []string {
+func absentPlanFinalizationArguments(t *testing.T, directory, fingerprintPath, planPath, reportPath string) []string {
+	t.Helper()
+	// The target may be invalid. Use a separate valid current argument baseline.
+	baseline, err := plan.BuildWithSelection(inventory.NewSnapshot(nil), plan.ProfileQuick, "x86_64", make([]byte, 32), "fixture", []string{"inspection.exterior.quick"})
+	if err != nil {
+		t.Fatal(err)
+	}
 	arguments := []string{"-fingerprint-key", fingerprintPath, "-plan", planPath, "-evidence-dir", directory,
 		"-session-id", "plan-validation-fixture", "-output", reportPath}
-	for _, definition := range quickResultDefinitions {
+	definitions := currentResultDefinitionsForTest(t, baseline)
+	if len(definitions) != 13 {
+		t.Fatal("current argument baseline has the wrong result count")
+	}
+	values := []string{}
+	for _, definition := range definitions {
 		status := "not_present"
 		if definition.id == "inspection.exterior.quick" {
 			status = "excluded"
 		}
+		values = append(values, definition.id+"="+status)
 		arguments = append(arguments, "-outcome", definition.id+"="+status)
+	}
+	parsed, err := parseOutcomesWithDefinitions(values, definitions)
+	if err != nil || validatePlanOutcomesWithDefinitions(baseline, parsed, definitions) != nil ||
+		parsed["inspection.exterior.quick"] != "excluded" || parsed["input.touchpad.quick"] != "not_present" {
+		t.Fatal("valid independent argument baseline failed outcome admission")
 	}
 	return arguments
 }

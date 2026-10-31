@@ -183,7 +183,7 @@ func prepareInputAcquisitionFinalization(t *testing.T, evidence inputtest.Result
 	}
 	output := filepath.Join(directory, "input.hhpcr")
 	arguments := []string{"-fingerprint-key", keyPath, "-plan", path, "-evidence-dir", directory, "-session-id", "input-fixture", "-output", output}
-	for _, definition := range quickResultDefinitions {
+	for _, definition := range currentResultDefinitionsForTest(t, decoded) {
 		status := string(planned[definition.id])
 		if definition.id == "input.readiness.quick" {
 			status = outcome

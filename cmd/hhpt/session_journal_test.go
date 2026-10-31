@@ -38,6 +38,7 @@ type journalFixture struct {
 	directory, reportPath string
 	arguments             []string
 	frozen                plan.Plan
+	definitions           []quickResultDefinition
 	snapshot              inventory.Snapshot
 	journal               sessionJournal
 }
@@ -80,7 +81,7 @@ func newJournalFixture(t *testing.T, selected ...string) *journalFixture {
 	if err := os.WriteFile(planPath, encoded, 0o600); err != nil {
 		t.Fatal(err)
 	}
-	fixture := &journalFixture{t: t, directory: directory, reportPath: filepath.Join(directory, "report.hhpcr"), frozen: frozen, snapshot: snapshot}
+	fixture := &journalFixture{t: t, directory: directory, reportPath: filepath.Join(directory, "report.hhpcr"), frozen: frozen, snapshot: snapshot, definitions: currentResultDefinitionsForTest(t, frozen)}
 	fixture.arguments = []string{"-fingerprint-key", keyPath, "-plan", planPath, "-evidence-dir", directory,
 		"-session-id", "journal-fixture", "-output", fixture.reportPath}
 	fixture.journal = sessionJournal{Schema: sessionJournalSchema, PlanID: frozen.ID, StopReason: "operator_cancelled", BudgetMilliseconds: 1000, ElapsedMilliseconds: 100, Monitor: journalShortMonitor(), PreparationStartedMilliseconds: 100, InventoryPreparedMilliseconds: 100, StopRequestedMilliseconds: 100, SafetyJoinedMilliseconds: 100, Thermal: sessionThermalSummary(100), LocalThermalSources: []sessionevidence.LocalThermalSource{}}
@@ -126,7 +127,7 @@ func (fixture *journalFixture) worker(t *testing.T, id, state, outcome string, e
 		}
 	}
 	if evidence != nil {
-		for _, definition := range quickResultDefinitions {
+		for _, definition := range fixture.definitions {
 			if definition.id == id {
 				if err := os.WriteFile(filepath.Join(fixture.directory, definition.filename), encodeEvidenceFixture(t, evidence), 0o600); err != nil {
 					t.Fatal(err)
@@ -354,7 +355,7 @@ func TestFinalizeSessionPreservesFailureAndNeverStartedReadiness(t *testing.T) {
 				t.Fatal("signed session missing")
 			}
 			journal := evidence.Session
-			if journal.Schema != "hhsoft.pc-tester.quick-session/v7" || journal.PlanID != fixture.frozen.ID || journal.StopReason != "worker_stop" || len(journal.Safety) != len(fixture.journal.Safety) || journal.Safety[len(journal.Safety)-1].Phase != "pre-sign" || !journal.Safety[len(journal.Safety)-1].Result.Safe() ||
+			if journal.Schema != "hhsoft.pc-tester.quick-session/v9" || journal.PlanID != fixture.frozen.ID || journal.StopReason != "worker_stop" || len(journal.Safety) != len(fixture.journal.Safety) || journal.Safety[len(journal.Safety)-1].Phase != "pre-sign" || !journal.Safety[len(journal.Safety)-1].Result.Safe() ||
 				!bytes.Equal(encodeEvidenceFixture(t, journal.Monitor), encodeEvidenceFixture(t, fixture.journal.Monitor)) {
 				t.Fatal("fresh safety or session intent not bound")
 			}

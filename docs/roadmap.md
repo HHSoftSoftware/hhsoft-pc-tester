@@ -262,8 +262,8 @@ The inactive storage result reader now checks complete typed topology and fixtur
 facts, finite read observations and accepted versus diagnostic counters. Explicit
 v6 session read support reaches signed-report verification, HTML/PDF rendering
 and comparison, including bundles without views. Historical v4/v5 handling stays
-supported. Current session emission is v7 with twelve workers, and the
-storage sampling catalog entry remains inactive.
+supported. That reader qualification used v7 sessions with twelve workers;
+the storage sampling catalog entry remains inactive.
 
 The preceding admission and observation model passed 140 Windows test/subtest
 events across 30 test functions, with no skips; formatting and vet passed. Those
@@ -433,6 +433,73 @@ compile-only. Earlier keyboard results above retain their original scope. This
 injected queue-model regression is not a deployed-kernel race reproduction. The six controls,
 evidence schema and session policy are unchanged, and rebuilt-image,
 physical-device, pilot and release gates remain open.
+
+The legacy single-contact touchpad core and Linux adapter were first qualified
+as inactive components. They observe complete frames with fixed per-contact X/Y
+anchors, finite signed-axis thresholds and a primary-button cycle. Checked
+acquisition, terminal identity/idle/neutral proof and reverse closure prevent
+incomplete actions or cleanup uncertainty from becoming a pass. Unsupported
+capabilities remain visible; multi-touch and broader gesture coverage are not
+inferred from a supported subset.
+
+With Go 1.27.2, focused Windows amd64/386 suites each passed 541 outcomes,
+including the exact 196-name component selection. The full Windows amd64 suite
+passed 9,148 outcomes with 18 permitted skips, and vet passed. Native Linux
+amd64/386 each passed all 395 selected names across 47 roots, with no failures or
+skips and confirmed cleanup. Linux AArch64 remains compile-only.
+
+These component results qualify software and owned fixtures. The subsequent
+inventory/evidence increment adds finite candidate discovery, checked MSC
+observations and strict functional evidence with inventory/plan bindings.
+Go 1.27.2 focused Windows amd64/386 suites each passed 2,332 outcomes with one
+platform skip, including all 686 selected names. The full Windows suite passed
+9,509 outcomes with 18 permitted skips, and vet passed. This increment's
+Linux/native qualification remains open.
+
+The standalone command is also host-qualified with Go 1.27.2: focused Windows
+amd64/386 runs each passed 5,647 outcomes with seven permitted skips, and the
+full Windows suite passed 9,617 outcomes with 18 permitted skips. All 108 CLI
+names passed in each run, and vet passed. This adds no Linux/native or
+real-device qualification.
+
+The pre-activation v9/v10 session evidence and command/finalizer increment
+passed Go 1.27.2 Windows fixture qualification. Focused amd64/386 runs each passed
+6,277 outcomes with seven permitted skips; the full suite passed 9,982 with
+18 permitted skips, and vet passed. All 151 session and 214 command names
+passed in each run, including strict binding and cancellation/cleanup cases.
+
+The pre-activation app/report increment implemented strict validation,
+signed-bundle checks, bounded HTML/PDF views and public candidate projection.
+They preserve historical handling, reject contradictory evidence and retain cleanup uncertainty. Their
+new app, bundle, comparison, render and privacy fixtures have Go 1.27.2
+Windows qualification: focused amd64/386 runs each passed 4,586 outcomes
+with six permitted skips; the full amd64 suite passed 10,242 with 18 permitted
+skips. All 260 app names passed in each run, and vet passed.
+
+Touchpad definition 2 now connects the catalog, frozen plan, Quick defaults
+and menu, checked session dispatch, owned finalization and signed consumers.
+The provider requires the finite derived `touchpad_candidate=true` marker;
+a category label alone cannot schedule the worker, and candidacy does not
+establish device support. Quick v9 has thirteen workers and Standard v10 has
+fourteen, with touchpad inserted once after pointer. Modern Quick selection
+offers thirteen checks and legacy x86 offers eleven. Explicit exclusions remain
+Quick-only; Standard rejects a nonempty exclusion set.
+
+Current execution requires a freshly decoded plan matching the current catalog.
+Rehashing an obsolete plan does not admit it. Historical v4-v8 signed reports
+and journals retain their version-specific read rules without authorizing
+historical plans for current execution.
+
+Go 1.27.2 focused Windows amd64/386 runs each passed 4,838 outcomes with six
+permitted skips; the full amd64 suite passed 10,341 with 18 permitted test skips.
+All 583 activation names across 73 roots passed in each run. Formatting, vet
+and all seven postchecks passed. These are software-fixture results.
+
+Linux/native validation of the later integrated route, real evdev/kernel
+behavior, edges, taps, multi-touch, scrolling and gestures, rebuilt images,
+physical devices, the pilot and release approval remain open. See
+[route scope](requirements-validation.md#touchpad-inventory-and-strict-evidence)
+and [tests](test-strategy.md#touchpad-inventory-and-evidence-host-validation).
 
 The CPU worker now adds twelve fixed scalar binary64 operations per suite, with
 per-worker counts and exact mismatch bits. Definition 2 uses CPU v3 evidence in
@@ -675,8 +742,8 @@ or opening the device. N records no listed defect observed on inspected
 surfaces; uncertain or incomplete work cannot pass. A complete defect survives
 a later stop, and hard input errors remain errors.
 
-The whole-device operator row requires fresh schema-3 plans. Current session
-v7 has twelve workers and the catalog has 22 test rows. Historical v4/v5/v6
+The whole-device operator row requires fresh schema-3 plans. That qualification
+used v7 sessions with twelve workers and 22 catalog rows. Historical v4/v5/v6
 remain supported; storage sampling is inactive. Full host validation passed
 5,942 test/subtest outcomes across 30 packages, with 17 test skips and one
 skipped package. Formatting, vet and three Linux application cross-builds
@@ -700,10 +767,10 @@ hardware absence. Ordinary scalar observation failures discard returned bytes;
 existing ownership, bounds, protocol and cancellation policy remains in force.
 
 The new-type-only volatility policy preserves the existing graph and comparison
-rules for other components. It adds no worker or catalog entry: current v7 has
-twelve workers and the catalog remains at 22 rows, with historical contracts
-unchanged. The complete host suite passed 6,239 test/subtest outcomes across
-30 packages, with 17 test skips and one skipped package. Selected native Linux
+rules for other components. That increment added no worker or catalog entry:
+its qualification used v7 with twelve workers and 22 catalog rows, preserving
+historical contracts. The complete host suite passed 6,239 test/subtest outcomes
+across 30 packages, with 17 test skips and one skipped package. Selected native Linux
 amd64/386 fixtures passed 3,100 named outcomes across 14 suites and 582 root
 executions, with no failures or skips and confirmed cleanup;
 see [requirements and limits](requirements-validation.md#power-supply-inventory).
@@ -735,12 +802,12 @@ native Linux amd64/386 fixtures passed 3,886 named outcomes across 14 suites and
 [the finite contract](requirements-validation.md#firmware-and-tpm-inventory).
 
 This inventory-only slice adds no worker or catalog row and does not reduce the
-nine inactive functional families listed below. It establishes no security
+remaining inactive functional families listed below. It establishes no security
 verdict, TPM health, measured-boot verification, attestation, firmware-lock
 assessment or physical continuity. Those broader features, optional Secure Boot
 image support, physical-PC pilot, installed-command/image qualification and
-release approval remain open. Quick v7, standard v8 and their budgets are
-unchanged.
+release approval remain open. That inventory increment preserved Quick v7,
+Standard v8 and their budgets.
 
 ### Finite memory device inventory
 
@@ -757,9 +824,10 @@ addition, including actual 32-bit capacity boundaries. The 34 new roots and
 See [the finite contract, results and remaining gates](requirements-validation.md#memory-device-inventory).
 Earlier CPU and firmware results remain evidence for those earlier changes.
 
-This bounded inventory slice adds no worker or catalog row and leaves nine
-functional families inactive. Quick v7 and explicit standard v8 retain their
-schedules and budgets. Broader SPD, ECC, topology, speed, firmware/OS capacity
+This bounded inventory slice added no worker or catalog row. At that increment,
+nine functional families were inactive, and Quick v7 and explicit Standard v8
+retained their schedules and budgets. Broader SPD, ECC, topology, speed,
+firmware/OS capacity
 reconciliation, RAM correctness, extended testing and pre-boot Memtest86+
 requirements remain open. Selected firmware observations establish neither
 usable OS RAM nor module health or physical continuity. Image/sysfs availability,
@@ -777,9 +845,10 @@ It requires explicit matching profile consent, defaults to a 900-second session,
 and inserts CPU stress immediately after a passing CPU quick result. The shared
 600-second elapsed load request and 660-second local watchdog retain checked
 work, strict initial and ongoing accepted thermal coverage, finite non-pass
-outcomes and confirmed cleanup. Standard uses thirteen workers and v8; automatic
-quick keeps twelve workers and v7. Newly generated plans reflect the changed
-catalog digest, while historical signed reports retain their original rules.
+outcomes and confirmed cleanup. The CPU qualification below used Standard
+v8/thirteen and Quick v7/twelve. Current touchpad activation uses Standard
+v10/fourteen and Quick v9/thirteen. Newly generated plans bind the current
+catalog digest; historical signed reports retain their original rules.
 
 The complete source passed the host suite: 6,732 test/subtest passes across
 30 packages, with 17 test skips and one package skip. All 493 required named
@@ -793,8 +862,9 @@ observations of 35 degrees C. Both runs passed with cleanup confirmed. This
 establishes elapsed-window completion and checked worker participation within
 that fixture. CPU time, utilization, all-core saturation and physical thermal
 behavior remain unqualified.
-The 22-row catalog still has nine inactive families: audio functionality, camera,
-touchpad, touchscreen, memory stress, network functionality, storage sampling,
+The 22-row catalog now has fourteen implemented rows and eight inactive
+families: audio functionality, camera, touchscreen, memory stress,
+network functionality, storage sampling,
 destructive storage and USB functionality. Their readiness or offline evidence
 readers do not constitute active functional implementations. Full standard,
 extended and burn-in coverage, sensor/clock/power/throttling instrumentation,

@@ -176,8 +176,9 @@ func inventoryPlanFingerprintKey(offset byte) []byte {
 }
 
 func TestInventoryPlanFingerprintFixedOutputs(t *testing.T) {
-	// These digests bind independently checked, pre-change command bytes for
-	// literal synthetic fixtures. They include formatting and the final newline.
+	// These digests bind independently checked command bytes for literal
+	// synthetic fixtures, including formatting and the final newline. Plan
+	// bytes include the current catalog; the inventory goldens are unchanged.
 	cases := []struct {
 		name, command, digest        string
 		size                         int
@@ -185,9 +186,9 @@ func TestInventoryPlanFingerprintFixedOutputs(t *testing.T) {
 	}{
 		{"inventory-default", "inventory", "eed5302c9ef92a0eafb9df1a5f0b378196ddbf95503697852af07fb03f3d635b", 2588, false, false, false},
 		{"inventory-filtered", "inventory", "e686df6afb7f98552411b6b5b8f01cfee513ce1e129e163fa67716508926836e", 2289, true, false, false},
-		{"plan-default", "plan", "9773df6a9b74f9b211c137591f1758f09bd0ba525325223cf7eb7bcef29a00ad", 7135, false, false, false},
-		{"plan-selected", "plan", "0aa8de428f50d44adef3a5519a39aba1c2f66757dff74941d2a5cc319a8d9634", 6774, true, true, false},
-		{"plan-standard", "plan", "f9a28c4e5f85bd7a30f29fd44149013f553e8648d26b9ed5367a48aab0c0e971", 7142, false, false, true},
+		{"plan-default", "plan", "8ed421f0bfce795a17a08f4631e4e10e53adb8f0a134ec7a561974391cbfd2f8", 7135, false, false, false},
+		{"plan-selected", "plan", "dbec2fcf1091feed53beeb005e57882a7ac0c6e30415ce99c5ca11f29f217e8a", 6774, true, true, false},
+		{"plan-standard", "plan", "9bc131a4c422e5f52a8c31c3677c14b1ff1bd846dc0df866a9a600d577f617e6", 7142, false, false, true},
 	}
 	for _, command := range inventoryPlanFingerprintCommands() {
 		for _, test := range cases {
@@ -646,7 +647,7 @@ func TestInventoryPlanFingerprintReadCompletion(t *testing.T) {
 					}
 					want := "eed5302c9ef92a0eafb9df1a5f0b378196ddbf95503697852af07fb03f3d635b"
 					if command.name == "plan" {
-						want = "9773df6a9b74f9b211c137591f1758f09bd0ba525325223cf7eb7bcef29a00ad"
+						want = "8ed421f0bfce795a17a08f4631e4e10e53adb8f0a134ec7a561974391cbfd2f8"
 					}
 					if fmt.Sprintf("%x", sha256.Sum256(h.stdout.Bytes())) != want {
 						t.Fatal("completed key changed command output")

@@ -85,16 +85,17 @@ func validateSessionJournal(journal sessionJournal, frozen plan.Plan, outcomes m
 
 func currentSessionProfile(journal sessionJournal, profile plan.Profile) bool {
 	if profile == plan.ProfileStandard {
-		return journal.Schema == sessionevidence.SchemaV8 && journal.Profile == "standard"
+		return journal.Schema == sessionevidence.SchemaV10 && journal.Profile == "standard"
 	}
 	return (profile == "" || profile == plan.ProfileQuick) && journal.Schema == sessionJournalSchema && journal.Profile == "" && journal.CPUStressSource == nil
 }
 
 func validateSessionJournalForProfile(journal sessionJournal, frozen plan.Plan, outcomes map[string]string, stopReason, evidenceDirectory string, profile plan.Profile) error {
-	definitions, err := executionResultDefinitions(profile)
-	if err != nil || !currentSessionProfile(journal, profile) {
+	layout, err := commandLayoutForPlan(frozen, profile)
+	if err != nil || !currentSessionProfileForPlan(journal, frozen, profile) {
 		return errors.New("current session requires the current journal schema")
 	}
+	definitions := layout.definitions
 	if err := validateSessionJournalStructure(journal); err != nil {
 		return err
 	}
@@ -149,6 +150,12 @@ func validateSessionWorkerEvidence(journal *sessionJournal, id string, encoded [
 		if worker.ID != id {
 			continue
 		}
+		if id == touchpadExecutionID {
+			if !sessionevidence.SupportsTouchpad(journal.Schema) {
+				return errUnsupportedEvidence
+			}
+			return validateTouchpadWorkerRecord(worker, encoded, readErr, sourceStatus, statusErr)
+		}
 		if worker.State == "not_started" || worker.State == "not_scheduled" {
 			if !errors.Is(readErr, os.ErrNotExist) {
 				return errors.New("evidence appeared for an unstarted session worker")
@@ -156,7 +163,7 @@ func validateSessionWorkerEvidence(journal *sessionJournal, id string, encoded [
 			return nil
 		}
 		if id == "cpu.stress" {
-			if journal.Schema != sessionevidence.SchemaV8 || readErr != nil || statusErr != nil || sourceStatus != worker.Outcome ||
+			if !sessionevidence.IsStandardSchema(journal.Schema) || readErr != nil || statusErr != nil || sourceStatus != worker.Outcome ||
 				worker.Timing == nil || journal.CPUStressSource == nil {
 				return errors.New("dispatched CPU stress lacks its persisted source")
 			}

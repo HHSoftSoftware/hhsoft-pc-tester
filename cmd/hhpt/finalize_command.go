@@ -163,6 +163,9 @@ func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, argu
 		}
 		outcomeValues, err := parseOutcomesWithDefinitions(outcomes, resultDefinitions)
 		if err != nil {
+			outcomeValues, err = parseOutcomesWithDefinitions(outcomes, definitionsWithTouchpad(resultDefinitions))
+		}
+		if err != nil {
 			fmt.Fprintf(stderr, "validate outcomes: %v\n", err)
 			return 2
 		}
@@ -183,6 +186,8 @@ func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, argu
 			fmt.Fprintln(stderr, "read fingerprint key: input acquisition failed")
 			return 1
 		}
+		// The input reader owns its returned backing storage. Freeze before Err.
+		fingerprintKey = append([]byte(nil), fingerprintKey...)
 		if ctx.Err() != nil {
 			fmt.Fprintln(stderr, "finalize input acquisition failed")
 			return 1
@@ -205,6 +210,21 @@ func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, argu
 		if frozenPlan.HardwareGraph.KeyEpoch != strings.TrimSpace(*keyEpoch) {
 			fmt.Fprintln(stderr, "validate frozen plan: fingerprint-key epoch changed")
 			return 1
+		}
+		layout, err := commandLayoutForPlan(frozenPlan, executionProfile)
+		if err != nil {
+			fmt.Fprintln(stderr, "validate frozen plan: invalid execution layout")
+			return 1
+		}
+		if layout.touchpad && ctx.Err() != nil {
+			fmt.Fprintln(stderr, "touchpad finalization interrupted during plan admission")
+			return 1
+		}
+		resultDefinitions = layout.definitions
+		outcomeValues, err = parseOutcomesWithDefinitions(outcomes, resultDefinitions)
+		if err != nil {
+			fmt.Fprintln(stderr, "validate outcomes: frozen plan requires its exact result set")
+			return 2
 		}
 		if err := validatePlanOutcomesWithDefinitions(frozenPlan, outcomeValues, resultDefinitions); err != nil {
 			fmt.Fprintf(stderr, "validate frozen plan outcomes: %v\n", err)
@@ -232,6 +252,10 @@ func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, argu
 			}
 		}
 
+		if layout.touchpad && ctx.Err() != nil {
+			fmt.Fprintln(stderr, "touchpad finalization interrupted during session identification")
+			return 1
+		}
 		var relation *report.PreviousReport
 		if previous != nil {
 			if *sessionID != strings.TrimSpace(*sessionID) || !report.ValidRetestID(resolvedSessionID) || resolvedSessionID == previous.sessionID {
@@ -257,6 +281,19 @@ func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, argu
 			encoded, readErr := readOptionalEvidence(path)
 			if readErr == nil {
 				retainedEvidence[definition.id] = append([]byte(nil), encoded...)
+			}
+			if definition.schema == inputtest.TouchpadSchema {
+				touchpadResult, touchpadErr := newTouchpadFinalResult(plannedTest, sourceStatus, encoded, readErr)
+				if touchpadCleanupError(touchpadErr) {
+					fmt.Fprintln(stderr, "validate touchpad evidence: cleanup unconfirmed")
+					return workerCleanupUncertainExitCode
+				}
+				if touchpadErr != nil {
+					fmt.Fprintln(stderr, "validate touchpad evidence: invalid observations or disposition")
+					return 1
+				}
+				testResults = append(testResults, touchpadResult)
+				continue
 			}
 			if readErr != nil {
 				if definition.schema == quick.CPUStressSchema && readErr != os.ErrNotExist {
@@ -375,10 +412,25 @@ func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, argu
 			testResults = append(testResults, result)
 		}
 
+		if layout.touchpad && ctx.Err() != nil {
+			fmt.Fprintln(stderr, "touchpad finalization interrupted before final inventory")
+			return 1
+		}
 		snapshot, err := collect(ctx)
 		if err != nil {
 			fmt.Fprintf(stderr, "collect final inventory: %v\n", err)
 			return 1
+		}
+		if layout.touchpad {
+			frozenPlan, snapshot, fingerprintKey, err = freezeTouchpadFinalInputs(frozenPlan, snapshot, fingerprintKey)
+			if err != nil {
+				fmt.Fprintln(stderr, "freeze touchpad final inputs: invalid owned binding")
+				return 1
+			}
+			if ctx.Err() != nil {
+				fmt.Fprintln(stderr, "touchpad finalization interrupted during final inventory")
+				return 1
+			}
 		}
 		if *fixtureComponents != "" {
 			snapshot, err = excludeFixtureComponentsFromFile(snapshot, *fixtureComponents)
@@ -406,6 +458,17 @@ func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, argu
 			return 1
 		}
 		for _, result := range testResults {
+			if result.ID == touchpadExecutionID {
+				if raw, exists := retainedEvidence[result.ID]; exists {
+					if err := validateTouchpadPlanEvidence(raw, plannedTests[result.ID], frozenPlan, finalPlan, snapshot); err != nil {
+						if touchpadCleanupError(err) {
+							return workerCleanupUncertainExitCode
+						}
+						fmt.Fprintln(stderr, "validate touchpad evidence: frozen and final inventory binding changed")
+						return 1
+					}
+				}
+			}
 			if result.ID == "input.keyboard.quick" {
 				if raw, exists := retainedEvidence[result.ID]; exists {
 					value, decodeErr := keyboardevidence.Decode(raw)
@@ -441,12 +504,12 @@ func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, argu
 				return 1
 			}
 			value, gateErr := gate(ctx)
+			value = sessionevidence.CloneJournal(value)
 			if gateErr != nil || ctx.Err() != nil {
 				fmt.Fprintln(stderr, "session live final gate failed; report not signed")
 				return 1
 			}
-			value = sessionevidence.CloneJournal(value)
-			if !currentSessionProfile(value, executionProfile) {
+			if !currentSessionProfileForPlan(value, frozenPlan, executionProfile) {
 				fmt.Fprintln(stderr, "live finalization requires the current session journal schema")
 				return 1
 			}
@@ -495,6 +558,13 @@ func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, argu
 			}
 			result.Journal = &value
 		}
+		if layout.touchpad {
+			raw, present := retainedEvidence[touchpadExecutionID]
+			if err := recheckTouchpadEvidence(filepath.Join(*evidenceDirectory, "touchpad.json"), raw, present, readOptionalEvidence); err != nil {
+				fmt.Fprintln(stderr, "validate touchpad evidence: retained file changed")
+				return 1
+			}
+		}
 		result.Integrity = sessionIntegrity{Status: string(integrityStatus), PlanID: frozenPlan.ID, PlannedComponents: uint64(len(frozenPlan.HardwareGraph.Components)), FinalComponents: uint64(len(finalPlan.HardwareGraph.Components)), Added: uint64(len(delta.Added)), Removed: uint64(len(delta.Removed)), Changed: uint64(len(delta.Changed))}
 		integrityEvidence := sessionevidence.IntegrityEvidence{Schema: sessionevidence.IntegritySchema, Status: string(integrityStatus), PlanID: frozenPlan.ID, PlannedHardwareGraph: frozenPlan.HardwareGraph.Value, FinalHardwareGraph: finalPlan.HardwareGraph.Value, PlannedComponentCount: len(frozenPlan.HardwareGraph.Components), FinalComponentCount: len(finalPlan.HardwareGraph.Components), AddedComponents: delta.Added, RemovedComponents: delta.Removed, ChangedComponents: delta.Changed, ExcludedTests: frozenPlan.ExcludedTests, Session: journal}
 		integrityResult, err := app.NewTestResult("run.integrity.quick", 1, integrityStatus, integrityEvidence)
@@ -507,40 +577,74 @@ func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, argu
 		}
 		testResults = append(testResults, integrityResult)
 		fmt.Fprintf(stdout, "HHPT_RUN_INTEGRITY status=%s plan=%s planned_components=%d final_components=%d added=%d removed=%d changed=%d\n", integrityStatus, frozenPlan.ID, len(frozenPlan.HardwareGraph.Components), len(finalPlan.HardwareGraph.Components), len(delta.Added), len(delta.Removed), len(delta.Changed))
+		if layout.touchpad && ctx.Err() != nil {
+			fmt.Fprintln(stderr, "touchpad finalization interrupted before signing")
+			return 1
+		}
 		if previous != nil && ctx.Err() != nil {
 			fmt.Fprintln(stderr, "finalize: linked retest cancelled before signing")
 			return 1
 		}
-		publicKey, privateKey, err := ed25519.GenerateKey(random)
+		var publicKey ed25519.PublicKey
+		var privateKey ed25519.PrivateKey
+		var observed time.Time
+		if layout.touchpad {
+			publicKey, privateKey, observed, err = touchpadSigningInputs(ctx, random, now)
+		} else {
+			publicKey, privateKey, err = ed25519.GenerateKey(random)
+		}
 		if err != nil {
-			fmt.Fprintf(stderr, "generate self-issued report key: %v\n", err)
+			if layout.touchpad {
+				fmt.Fprintln(stderr, "prepare touchpad signing inputs failed")
+			} else {
+				fmt.Fprintf(stderr, "generate self-issued report key: %v\n", err)
+			}
 			return 1
 		}
-		if (journal != nil || previous != nil) && ctx.Err() != nil {
+		if (journal != nil || previous != nil || layout.touchpad) && ctx.Err() != nil {
 			fmt.Fprintln(stderr, "session finalization cancelled before signing")
 			return 1
 		}
+		if !layout.touchpad {
+			observed = now()
+		}
 		var encoded []byte
 		if relation == nil {
-			encoded, err = captureSelfIssuedBundle(snapshot, testResults, fingerprintKey, *keyEpoch, privateKey, publicKey, resolvedSessionID, now(), app.CoverageFrozenPlan)
+			encoded, err = captureSelfIssuedBundle(snapshot, testResults, fingerprintKey, *keyEpoch, privateKey, publicKey, resolvedSessionID, observed, app.CoverageFrozenPlan)
 		} else {
-			encoded, err = captureSelfIssuedBundleWithPrevious(snapshot, testResults, fingerprintKey, *keyEpoch, privateKey, publicKey, resolvedSessionID, now(), app.CoverageFrozenPlan, relation)
+			encoded, err = captureSelfIssuedBundleWithPrevious(snapshot, testResults, fingerprintKey, *keyEpoch, privateKey, publicKey, resolvedSessionID, observed, app.CoverageFrozenPlan, relation)
 		}
 		if err != nil {
 			fmt.Fprintf(stderr, "build self-issued report: %v\n", err)
 			return 1
 		}
-		if (journal != nil || previous != nil) && ctx.Err() != nil {
+		if (journal != nil || previous != nil || layout.touchpad) && ctx.Err() != nil {
 			fmt.Fprintln(stderr, "session finalization cancelled before report output")
 			return 1
 		}
-		if err := writeOutput(*outputPath, stdout, func(destination io.Writer) error {
-			return writeAll(destination, encoded)
-		}); err != nil {
-			fmt.Fprintf(stderr, "write report: %v\n", err)
+		var outputErr error
+		if layout.touchpad {
+			outputErr = writeTouchpadFinalOutput(ctx, *outputPath, stdout, writeOutput, encoded)
+		} else {
+			outputErr = writeOutput(*outputPath, stdout, func(destination io.Writer) error {
+				return writeAll(destination, encoded)
+			})
+		}
+		if outputErr != nil {
+			if layout.touchpad {
+				fmt.Fprintln(stderr, "write touchpad report failed; completed output may remain")
+			} else {
+				fmt.Fprintf(stderr, "write report: %v\n", outputErr)
+			}
 			return 1
 		}
-		fmt.Fprintln(stdout, "finalized: signed self-issued report (reduced identity assurance)")
+		if layout.touchpad {
+			if writeAll(stdout, []byte("finalized: signed self-issued report (reduced identity assurance)\n")) != nil || ctx.Err() != nil {
+				return 1
+			}
+		} else {
+			fmt.Fprintln(stdout, "finalized: signed self-issued report (reduced identity assurance)")
+		}
 		return 0
 	}()
 	return result

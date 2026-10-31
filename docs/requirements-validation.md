@@ -28,14 +28,16 @@ observed on inspected surfaces. I, empty, invalid or incomplete input cannot
 establish a pass. A completed defect stays adverse after a clean stop.
 Hard prompt/input errors retain error status.
 
-The consumed path includes the standalone Linux console command, quick-test
+The consumed path includes the standalone Linux console command, Quick-test
 menu and coordinator, finalization, signed bundles without optional views,
 HTML/PDF rendering and linked retesting/comparison. Plan schema 3 makes the
-row applicable to an operator rather than a discovered component. Current v7
-has twelve ordered workers and 22 catalog rows plus run integrity. Modern
-selection offers twelve checks; legacy x86 offers ten. Direct capture retains
-its seven-check subset. Historical v4/v5/v6 reports and their original
-validation results stay separate; storage sampling remains inactive.
+row applicable to an operator rather than a discovered component. Current
+Quick v9 has thirteen ordered workers and Standard v10 has fourteen; the
+catalog has 22 rows plus run integrity. Modern Quick selection offers thirteen
+checks and legacy x86 offers eleven. Direct capture retains its seven-check
+subset. Historical v4-v8 reports and journals retain their version-specific
+read rules; that compatibility does not admit stale plans for current execution.
+Storage sampling remains inactive.
 
 Observation time starts at prompt attempt and ends at the response or stop
 decision, capped at the effective deadline including a shorter parent deadline.
@@ -126,8 +128,9 @@ The new power-specific volatility rule covers only the eleven values and their
 eleven states. Existing shared exclusions and other types retain their prior
 rules; unknown attributes do not gain a blanket exclusion. Power identity stays unavailable; ordinals
 can shift and same-count replacement can be undetectable. No-supply payload bytes,
-identified-component fingerprints, catalog 22, current v7 with twelve workers,
-historical session contracts and inactive storage sampling remain unchanged.
+identified-component fingerprints and historical session contracts remain
+unchanged. That qualification used 22 catalog rows and v7 with twelve workers;
+storage sampling remains inactive.
 
 **Qualification completed for the bounded software scope:** the complete
 collector, plan and downstream composition passed 6,239 host test/subtest
@@ -202,9 +205,10 @@ All finite attributes/states and rows remain in the frozen configuration graph
 and normal comparison. There is no power-style volatility exclusion for these
 types. Changes require a new plan for future execution; existing finalization
 retains a signed failed-integrity diagnostic with exact component changes.
-Unavailable identities are not upgraded by matching ordinals. No-observation
-payload/view compatibility, existing identified components, quick v7, explicit
-standard v8, historical v4/v5/v6 and inactive storage sampling remain unchanged.
+Unavailable identities are not upgraded by matching ordinals. That inventory
+increment preserved no-observation payload/view compatibility, existing
+identified components, Quick v7, explicit Standard v8, historical v4/v5/v6 and
+inactive storage sampling.
 
 **Qualification completed for the bounded software scope:** the complete host
 suite passed 6,948 test/subtest outcomes across 30 packages, with 17 platform
@@ -367,9 +371,9 @@ bytes are preserved.
 
 The addition reads no SPD or EDAC data, performs no device command, loads no
 module, requests no extra privilege and adds no global-table fallback, worker,
-capability, catalog row, dependency or identity algorithm. Quick v7 and explicit
-standard v8 retain their 12/13-worker schedules, 22 catalog rows and nine inactive
-functional families.
+capability, catalog row, dependency or identity algorithm. At that memory-device
+increment, Quick v7 and Standard v8 retained their 12/13-worker schedules,
+22 catalog rows and nine inactive functional families.
 
 ### Qualification and remaining requirements
 
@@ -411,16 +415,16 @@ attestation or physical-continuity conclusion follows from this inventory.
 ## Bounded Standard CPU Stress
 
 Implementation is present across the standard coordinator, strict evidence,
-finalization, signed bundles, canonical views and comparison. Host, selected
-native and bounded real elapsed-window qualification have passed; remaining
-gates are listed below. Quick remains the default with twelve workers
-and v7; explicit `session -profile standard` requires a matching frozen standard
-plan and uses thirteen workers with v8. Its default and maximum session budget
-are 900 seconds. The existing 22-row catalog now has thirteen implemented
-families and nine inactive families: `audio.quick`, `camera.quick`,
-`input.touchpad.quick`, `input.touchscreen.quick`, `memory.stress`,
-`network.quick`, `storage.quick`, `storage.destructive` and `usb.quick`.
-Standard-only CPU stress does not activate them or complete the broader matrix.
+finalization, signed bundles, canonical views and comparison. The earlier CPU
+increment passed host, selected native and bounded real elapsed-window
+qualification; current integrated-route gates remain below. Current Quick v9
+remains the default with thirteen workers. Explicit `session -profile standard`
+requires a matching frozen standard plan and uses fourteen workers with v10. Its default and maximum
+session budget are 900 seconds. The 22-row catalog has fourteen implemented
+rows and eight inactive families: `audio.quick`, `camera.quick`,
+`input.touchscreen.quick`, `memory.stress`, `network.quick`, `storage.quick`,
+`storage.destructive` and `usb.quick`. Standard-only CPU stress does not
+activate those families or complete the broader matrix.
 
 The fixed request is a 600-second shared elapsed load window after all launched
 workers have completed initial integer/SHA-256/scalar work and reached readiness.
@@ -441,12 +445,13 @@ to finite precedence. Unconfirmed cleanup and invalid clock/counter/accounting
 cannot produce signable evidence. Sample availability does not identify CPU
 sensor coverage or detect every same-count sensor substitution.
 
-Every dispatched v8 stress row requires strict persisted bytes, file and typed
-digests and a bound worker interval, including valid no-load or non-pass results.
-Null source is limited to undispatched rows. Current standard finalization needs
-the actual fresh v8 gate even when stress never starts. Historical quick contracts
-and exact old supervisor notes remain readable, but opaque observed error/aborted
-objects and re-signed no-view forgeries must fail semantic admission.
+Every dispatched Standard stress row, historical v8 or current v10, requires
+strict persisted bytes, file and typed digests and a bound worker interval,
+including valid no-load or non-pass results. Null source is limited to
+undispatched rows. Current Standard finalization needs the actual fresh v10
+gate even when stress never starts. Historical Quick contracts and exact old
+supervisor notes remain readable, but opaque observed error/aborted objects
+and re-signed no-view forgeries must fail semantic admission.
 
 Independent acceptance covers readiness-or-terminal barrier liveness, nonzero
 worker faults, fixed scalar-bit oracles, late work, stop precedence, partial
@@ -1970,7 +1975,7 @@ typed backing and fixture facts, fixed sample geometry and recomputed accepted
 counters. Required integer masks, exact fields, nullable objects and bounded
 arrays reject ambiguous or hidden claims. Historical v4/v5 wire handling remains
 supported; that reader increment retained the v5 emitter with eleven workers.
-Storage sampling remains inactive in the current v7 workflow.
+Storage sampling remains inactive in the current workflow.
 
 Accepted failures survive later stops. Unaccepted observations remain diagnostic
 and add no accepted work; an unfinished eligible target cannot claim clean
@@ -2484,3 +2489,164 @@ physical ports, privilege separation, comprehensive watchdogs, Secure Boot,
 and the broader profiles remain open where marked in
 [the master checklist](../PROJECT_CHECKLIST.md). VM success must not be used
 to close physical-hardware requirements.
+
+## Inactive Touchpad Core and Linux Adapter
+
+This section records the legacy single-contact touchpad core and Linux adapter
+qualification obtained while `input.touchpad.quick` was inactive. Those results
+covered components; they did not qualify the later inventory, command,
+catalog/plan, session or signed-report integration. Current activation has
+separate evidence below. Historical verification rules remain version-specific.
+
+The core uses complete frames, bounded counters and fixed X/Y anchors within
+each contact. Signed range arithmetic is widened before computing engineering
+thresholds; these thresholds do not measure physical distance. Fresh motion
+cannot be assembled across contacts or borrowed from a queried coordinate.
+A supported device must supply the required directional motion and primary
+button cycle. Initially held input supplies no fresh action credit.
+Key-state queries occur only at the baseline and noncrediting terminal phases;
+completed devices remain observed while another device is unfinished.
+Undefined `SYN_REPORT` values preserve frame boundaries, while loss and invalid
+transitions reject.
+
+The Linux adapter checks the caller's event layout, ioctl return counts and
+the complete returned bitmap extent. Signed axis descriptors are validated;
+unreturned compatibility padding is not capability evidence. Unknown absolute
+axes retain their codes as unsupported markers: their zero-filled fields are
+unmeasured, not measured zero configurations. Unknown and multi-touch
+capabilities cannot be discarded to manufacture a supported subset. Acquisition
+checks metadata before readable event access and closes acquired owners in
+reverse order. Terminal identity, idle and neutral proof cannot add actions;
+failure revokes tentative completion. Valid fragmented input interrupted by
+cancellation or a deadline remains incomplete, while observed EOF, malformed
+input, event loss and failed closure retain their distinct error precedence.
+Component results omit raw coordinates, event sequences, device names and
+event timestamps. The implemented strict evidence, privacy projection and owned
+finalization route is described under
+[touchpad inventory and strict evidence](#touchpad-inventory-and-strict-evidence);
+its later integration has separate validation evidence.
+
+With Go 1.27.2, focused Windows amd64 and 386 each passed 541 test/subtest
+outcomes across 95 roots. Both included all 196 selected names across 26 roots
+and 170 direct-parent intervals, with no failures or skips. These runs exercise
+the portable core and explicit non-Linux behavior, not the Linux adapter.
+The full Windows amd64 suite passed 9,148 outcomes with 18 permitted test skips:
+31 packages passed and one had no test files, covering 32 packages and 1,386
+source roots. The exact 916-name selection, 23 fuzz seed children and 13
+parallel children reconciled; seed execution is not a fuzzing campaign.
+Whole-module vet passed and formatting preserved tokens, literals and comments.
+
+Linux amd64 and 386 each passed the exact 395-name selection across 47 roots
+and 348 direct-parent intervals, with no missing, extra, duplicate, skipped or
+failed outcomes. Nine ownership fixtures and 32 archive cases also passed;
+EOF and cleanup checks were confirmed. Linux amd64, 386 and AArch64 test
+artifacts compiled; AArch64 was not executed. Recorded host and cross-build
+commands and postchecks reconciled, but their outer process exit codes were
+unavailable. Native execution closed successfully.
+
+This qualifies software and injected owned fixtures only. It adds no real
+evdev/uinput exercise, deployed-kernel ioctl or queue qualification, physical
+touchpad result, new race run or Go 1.25 runtime matrix. The following
+inventory/evidence increment has separate host evidence; it does not extend
+the component's native results to those new paths. Edge coverage, tap,
+multi-touch, scroll and gesture behavior, all four rebuilt images, the
+physical-PC pilot and release approval remain separate gates. See
+[component tests](test-strategy.md#inactive-touchpad-component-validation).
+
+## Touchpad Inventory and Strict Evidence
+
+Inventory now derives a finite `touchpad_candidate` marker from category and
+ABS observations, using the adapter's candidate predicate. Checked sysfs/proc
+MSC collection preserves bounded 32/64-bit bitmap meaning and distinguishes
+unavailable data from a valid empty set. Neither the marker nor an unsupported
+capability grants functional support.
+
+The strict evidence package rejects ambiguous JSON and contradictory bounded
+status, frame, action and cleanup claims. Inventory/plan binding requires
+complete capability sets and consistent candidate, identity, scheduled-test
+and original graph claims. Its caller must supply checked plan and inventory
+inputs; self-consistency does not authenticate unseen kernel history.
+Unknown-axis zero fields remain unmeasured unsupported markers. Functional
+evidence adds no raw coordinates, model names, paths or event timestamps.
+
+With Go 1.27.2, focused Windows amd64/386 suites each passed 2,332 outcomes with
+one platform skip, including all 686 selected names across 58 roots and 628
+direct-parent intervals. The full Windows amd64 suite passed 9,509 outcomes
+with 18 permitted test skips across 33 packages and 1,409 roots; 32 packages
+passed and one had no tests. Vet and all seven postchecks passed. Linux/native
+qualification of this inventory/evidence increment remains pending.
+
+The standalone command is also host-qualified with Go 1.27.2. Focused Windows
+amd64/386 suites each passed 5,647 outcomes with seven permitted skips and all
+794 selected names. The full Windows amd64 suite passed 9,617 outcomes with
+18 permitted skips; vet and all seven postchecks passed. All 108 CLI names
+across 16 roots and 92 direct-parent intervals passed in each focused run and
+the full run. These are software command fixtures; Linux/native, installed
+command and real-device qualification remain open for this increment.
+
+The pre-activation v9/v10 session evidence and command/finalizer increment
+passed Windows qualification. Typed-plan fixtures exercise fixed dispatch,
+strict publication/status/duration matching and original-key HMAC reconstruction
+over owned plan and inventory inputs. Evidence is reread and compared; cleanup
+uncertainty retains priority. Tests reject success after cancellation at
+entropy, clock and output callbacks while preserving output already written.
+A supplied journal still requires the existing live safety/thermal owner.
+
+With Go 1.27.2, focused Windows amd64/386 suites each passed 6,277 outcomes with
+seven permitted skips; the full Windows amd64 suite passed 9,982 outcomes with
+18 permitted skips. All 151 session names across 14 roots and 137 direct-parent
+intervals, and all 214 command names across 19 roots and 195 intervals, passed
+in each focused run and the full run. Vet and all seven postchecks passed.
+
+The app/report consumers added before activation check functional evidence, final
+candidate sets, finite disposition notes and matching v9/v10 session records.
+They reject contradictory component-difference sets and a scheduled touchpad
+row that the same integrity record explicitly excludes. Cleanup uncertainty
+cannot become a successful observation. These are consistency checks; original
+inventory ownership and HMAC reconstruction remain in the finalizer.
+
+Signed bundles apply these checks even without HTML/PDF views. Unknown or
+malformed touchpad definitions cannot bypass validation through the historical
+opaque-report path; explicit definition-1 unsupported notes and ID-only
+references retain their limited historical handling. HTML/PDF views use copied,
+bounded data and distinguish unsupported markers from measured fields. The
+public candidate projection excludes raw coordinates, model/name text, paths,
+unique device IDs and event timestamps without rewriting the original inventory.
+Inventory without an event interface remains reportable; functional evidence
+still requires a matching event interface.
+
+Go 1.27.2 focused Windows amd64/386 runs each passed 4,586 outcomes with six
+permitted skips. The full Windows amd64 suite passed 10,242 with 18 permitted
+skips; vet and all seven postchecks passed. All 260 app names, 25 roots and
+235 direct-parent intervals passed in each of the three runs. Review
+reconciled all 16 formatted candidates and confirmed 639 other source members
+unchanged. Those measurements qualify the app increment before catalog
+activation.
+
+Current touchpad definition 2 uses the exact derived `touchpad_candidate=true`
+provider marker; category text alone grants no worker authority. Quick v9
+contains thirteen workers and Standard v10 fourteen, with touchpad once after
+pointer. Modern Quick selection has thirteen choices and legacy x86 eleven.
+Explicit exclusions remain Quick-only. Absent or unsupported candidates retain
+their finite dispositions, and cleanup uncertainty prevents a pass.
+
+Execution still requires `Plan.Decode` and validation against the current
+catalog. Stale plans remain rejected even if rehashed. Historical v4-v8 signed
+reports and journals retain their original interpretation; they are not a
+fallback for current execution or live-owner finalization. Extended and
+Destructive profile names do not introduce new session coordinators.
+
+With Go 1.27.2, the connected activation fixtures passed focused Windows
+amd64/386 runs: each had 4,838 passes and six permitted skips. The full amd64
+suite had 10,341 passes and 18 permitted test skips. All 583 activation names
+across 73 roots and 510 declared parent intervals passed in all three streams.
+Vet and all seven postchecks passed. Strict formatting review covered all
+50 Go candidates, including twelve with byte changes, with no normalization
+exceptions; tokens, literals and comment anchors were preserved. The other
+607 source members remained byte-exact.
+
+These Windows fixtures add no Linux/native, real evdev, deployed-kernel,
+installed-image or physical qualification for the later integrated route.
+Broader touch/gesture coverage, the physical pilot, complete beta matrix and
+release gates remain open. See
+[tests](test-strategy.md#touchpad-inventory-and-evidence-host-validation).

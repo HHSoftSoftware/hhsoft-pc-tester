@@ -40,7 +40,7 @@ Operators may deselect a test, but it remains `skip` in the report. A custom
 profile inherits one below and discloses every override.
 
 The implemented operator selection currently covers the safe quick catalog:
-twelve tests on modern images and ten on legacy x86. Only otherwise scheduled
+thirteen tests on modern images and eleven on legacy x86. Only otherwise scheduled
 tests become `excluded`, reported as `skip` with the exclusion reason. Absent
 and missing-driver states retain their applicability reason, and unsupported
 or destructive work cannot be enabled through selection. Reports retain explicit
@@ -49,7 +49,7 @@ and coverage below remain targets, not completed workflows. The implemented
 bounded standard CPU path uses a 15-minute session budget; it does not claim
 the complete standard matrix or the target budget below.
 The [validation milestones](requirements-validation.md) distinguish each
-qualified catalog, including the current keyboard increment. Software
+qualified catalog, including the current touchpad increment. Software
 qualification does not close rebuilt-image or physical gates.
 
 | Profile | Objective and default budget | Required coverage | Explicit exclusions |
@@ -565,9 +565,9 @@ Retained passed devices require exact final inventory, while a vanished
 nonaccepted diagnostic does not erase an earlier valid pass. Cleanup uncertainty
 must reach every consumer as an error.
 
-Current emission is v7 with twelve workers and the sampling catalog entry
-stays inactive. The reader validates signed assertions and feasible time fields;
-it does not reproduce precise parent timing, kernel ownership or media behavior.
+That reader qualification used v7 emission with twelve workers. The sampling
+catalog entry stays inactive. The reader validates signed assertions and
+feasible time fields; it does not reproduce precise parent timing, kernel ownership or media behavior.
 Media-worker supervision, loop lifetime, native sampling, rebuilt images and
 physical qualification require their own evidence. Earlier inventory native
 results do not qualify this new reader or a future sampler.
@@ -1046,7 +1046,7 @@ The coordinator takes snapshots at
 session preflight, before each started worker, and after execution stops. The
 finalizer validates that history against the plan, outcomes, and worker evidence.
 The current live final gate supplies the fresh pre-sign observation before the
-completed v7 journal is written. Missing, contradictory, unsafe, or
+completed journal is written. Missing, contradictory, unsafe, or
 incomplete observations block signing. A clean cancellation/deadline can use a
 fresh finalization context after confirmed cleanup, but cannot turn an aborted
 safety-readiness check or an earlier unsafe observation into permission to sign.
@@ -1258,8 +1258,9 @@ Regression acceptance for the current coordinator requires:
 - Coverage validation rejects missing or contradictory timing, excessive
   leading/trailing gaps, fabricated zero-tick coverage, and an older execution
   journal. Clean operator stops preserve completed failures after a confirmed
-  monitor join; all twelve v7 worker outcomes remain present. Original v4
-  journals retain their ten-worker rules and historical report verification.
+  monitor join. Current Quick v9 retains all thirteen worker outcomes and
+  Standard v10 all fourteen. Historical v7 journals retain twelve workers and
+  v4 journals ten, with their original report-verification rules.
 - Deterministic monitor fixtures control observation completion and time rather
   than relying on sleeps. Native checks use private mount/network namespaces;
   unsafe transition fixtures do not require changing real device mounts or
@@ -1979,11 +1980,12 @@ separate. See [the exact field contract and limits](requirements-validation.md#m
 
 ## Bounded Standard CPU Stress Validation
 
-The new standard path must be qualified as a consumed workflow, separately from
-retained quick-worker tests and synthetic evidence fixtures. Default quick and
-explicit standard need independent profile/plan admission cases. Standard alone
-uses thirteen workers and v8; historical quick v7, v4/v5/v6 wire bytes, old exact
-supervisor notes and absent report sections must retain their prior meaning.
+The standard path must be qualified as a consumed workflow, separately from
+retained Quick-worker tests and synthetic evidence fixtures. Default Quick and
+explicit Standard need independent profile/plan admission cases. Current
+Standard uses fourteen workers and v10; Quick uses thirteen and v9. Historical
+Standard v8/thirteen, Quick v7/twelve and v4-v6 wire bytes, old exact supervisor
+notes and absent report sections retain their prior meaning.
 
 Core acceptance needs independent known-answer bits and a controlled nonzero
 worker at the readiness barrier. Each launched worker reports readiness or
@@ -2033,6 +2035,237 @@ separate from the ordinary native fixture totals above. Race, installed-CLI, reb
 image, physical-PC/sensor, durability and release evidence remain separate.
 See [the bounded requirements](requirements-validation.md#bounded-standard-cpu-stress).
 
+
+## Inactive Touchpad Component Validation
+
+This section records software qualification of the legacy single-contact core
+and Linux adapter while the catalog and complete route were inactive. The
+broader touchpad matrix remains planned. These tests use injected metadata,
+event and owner operations; they do not establish real evdev or physical-device
+behavior. Later connected activation has separate evidence below.
+
+- [Core state fixtures](../internal/inputtest/touchpad_state_test.go) check
+  literal signed-axis threshold boundaries, fixed contact anchors and complete
+  packet validation. `TestTouchpadContactBoundariesCannotCombineOrSeedMotion`
+  rejects motion assembled across contacts; unknown capability bits and optional
+  axes cannot silently supply the required X/Y actions.
+- [Observation fixtures](../internal/inputtest/touchpad_run_test.go) keep a
+  completed device under observation while another remains unfinished.
+  `TestTouchpadInterruptedFragmentsDoNotInventProtocolFaults` distinguishes
+  cancellation/deadline with valid unfinished input from actual EOF, malformed
+  reads, event loss and cleanup failure.
+  `TestTouchpadTerminalProofAloneAssignsFinalNeutral` directly tests terminal
+  proof without closing owners; terminal traffic adds no action credit and does
+  not start a replacement window.
+- [Linux query fixtures](../internal/inputtest/touchpad_linux_test.go) exercise
+  literal request values, native/compatibility buffer extents, exact return
+  counts, signed descriptors and unknown bits.
+  `TestTouchpadLinuxReturnedExtentSeparatesCompatPadding` separates returned
+  unknown capability bits from unreturned padding. Unqueried unknown-axis
+  zero fields remain unsupported markers, not measured configuration.
+- [Owned adapter fixtures](../internal/inputtest/touchpad_acquisition_linux_test.go)
+  traverse production discovery, acquisition, queries and the core runner.
+  `TestTouchpadOwnedCompleteAdapterCoreRoute` requires exactly baseline and
+  terminal key-state queries and checked reverse closure.
+  `TestTouchpadOwnedCloseFailureDominatesEveryAcquiredRole` checks cancellation
+  combined with closure failure. Handle-plus-error, typed-nil, alias, replacement
+  and dynamically uncomparable provider cases retain explicit ownership checks.
+- [Non-Linux fixtures](../internal/inputtest/touchpad_other_test.go) require an
+  explicit unsupported result, preserve interruption and reject invalid options.
+
+Go 1.27.2 focused Windows amd64/386 suites each passed 541 outcomes across 95
+roots, including the exact 196-name, 26-root component selection and its 170
+direct-parent intervals. The full Windows amd64 suite passed 9,148 outcomes
+with 18 permitted test skips across 32 packages and 1,386 roots; 31 packages
+passed and one had no tests. All 916 selected names, 23 fuzz seed children and
+13 parallel children reconciled, and whole-module vet passed. This counts
+observed full-suite lifecycles and required roots; it does not prove the
+completeness of every unselected dynamically named child.
+
+Native Linux amd64 and 386 each passed all 395 selected names across 47 roots
+and 348 direct-parent intervals. Each package closed without failures, skips,
+missing or extra names, or duplicates. Nine ownership fixtures, 32 archive
+cases, EOF and cleanup checks passed. AArch64 has compile-only evidence.
+Host/cross-build recorded commands and postchecks reconciled; their outer
+process exit codes were unavailable. Native execution closed successfully.
+
+No real evdev/uinput, deployed-kernel ioctl/queue, new race, physical touchpad,
+image, pilot or release qualification follows. Broader edge/tap/multi-touch,
+scroll and gesture coverage remains open. The exact component scope is in
+[scope](requirements-validation.md#inactive-touchpad-core-and-linux-adapter).
+
+## Touchpad Inventory and Evidence Host Validation
+
+The next host increment qualifies inventory and strict evidence logic over the
+component baseline; it does not borrow native qualification for its new paths.
+
+- [Inventory fixtures](../internal/inventory/touchpad_inventory_test.go)
+  exercise the production collector path.
+  `TestInventoryTouchpadCandidateReservedText`
+  recomputes externally supplied candidate markers;
+  `TestInventoryTouchpadMSCIndependentVectors` and
+  `TestInventoryTouchpadMSCProductionPath` cover literal width/bitmaps,
+  sysfs/proc parity and missing versus canonical-empty observations.
+- [Evidence fixtures](../internal/touchpadevidence/evidence_test.go) reject
+  duplicate, aliased and unknown JSON members and contradictory phase claims.
+  `TestTouchpadEvidenceMotionFrameAccounting` preserves independent axis
+  accounting; `TestTouchpadEvidenceCleanupPrecedence` prevents cleanup
+  uncertainty from becoming successful evidence.
+- [Binding fixtures](../internal/touchpadevidence/bindings_test.go), including
+  `TestTouchpadInventoryRejectsMissingAndAmbiguousProof` and
+  `TestTouchpadPlanRejectsBindingChanges`, reject missing capabilities,
+  changed candidate sets and altered supplied plan/inventory claims. These
+  fixtures establish consistency checks, not hardware-history authenticity.
+
+Go 1.27.2 Windows amd64/386 focused runs each recorded 2,332 passes and one
+permitted inventory fixture skip across three packages and 235 roots. All 686
+selected names, 58 roots and 628 direct-parent intervals passed without missing,
+extra or duplicate outcomes. The full Windows amd64 run recorded 9,509 passes,
+18 permitted test skips, 32 package passes and one no-test package across 33
+packages and 1,409 roots. All 1,406 selected names, 23 fuzz seed children and 13
+parallel children reconciled; seed execution is not a fuzz campaign.
+Whole-module vet and all seven postchecks passed.
+
+The standalone command adds qualified portable regressions:
+[command tests](../cmd/hhpt/touchpad_command_test.go) include
+`TestTouchpadCommandCleanupWinsOtherFailures`, which preserves cleanup
+uncertainty over malformed results, interruption and output failures.
+[Boundary tests](../cmd/hhpt/touchpad_acquisition_command_test.go) include
+`TestTouchpadCommandFreezesBeforeContextObservation`, which prevents a context
+callback from changing the collector result after it is frozen.
+
+Go 1.27.2 focused Windows amd64/386 runs each passed 5,647 outcomes with seven
+permitted skips across four packages and 716 roots. All 794 selected names,
+74 roots and 720 direct-parent intervals reconciled. The full Windows amd64
+run passed 9,617 outcomes with 18 permitted test skips across 33 packages and
+1,425 roots; 32 packages passed and one had no tests. All 1,514 selected names,
+23 seed children and 13 parallel children reconciled. The CLI subset passed
+all 108 names, 16 roots and 92 direct-parent intervals in each of the three
+streams. Vet and all seven postchecks passed.
+
+The session/command increment, first qualified before activation, adds
+independent portable fixtures:
+
+- [Session evidence tests](../internal/sessionevidence/touchpad_test.go) preserve
+  literal v4-v10 history and reject ambiguous claims, contradictory bindings
+  and cleanup uncertainty. `TestTouchpadSessionDecodeAndViewsOwnStorage`
+  checks copied storage rather than aliased decoded slices.
+- [Worker and journal tests](../cmd/hhpt/session_touchpad_test.go), including
+  `TestTouchpadWorkerPublicationRequiresExactSuccessfulBoundary` and
+  `TestTouchpadWorkerRecordBindsDurationAndCleanup`, bind publication, status,
+  duration and cleanup to the checked worker boundary. Historical order tests
+  remain literal. Current-plan admission and stale-plan rejection are checked
+  separately from historical journal readability.
+- [Finalizer tests](../cmd/hhpt/finalize_touchpad_test.go) check complete frozen
+  and final candidate sets, original-key HMAC facts, owned inputs and exact
+  evidence readback. `TestTouchpadStandaloneSigningChecksRealCallbackBoundaries`
+  and `TestTouchpadStandaloneOutputCancellationAndOwnership` reject success
+  after cancellation at entropy, clock and output callbacks, preserve cleanup
+  errors and keep already-written bytes without rollback.
+
+With Go 1.27.2, focused Windows
+amd64/386 runs each passed 6,277 outcomes with seven permitted skips across
+five packages and 782 roots. All 1,159 selected names, 107 roots and 1,052
+direct-parent intervals reconciled. The full Windows amd64 run passed 9,982
+outcomes with 18 permitted skips across 33 packages and 1,458 roots; 32 packages
+passed and one had no tests. All 1,879 selected names, 208 roots and 1,671 parent
+intervals, 23 fuzz seed children and 13 parallel children reconciled. Seed
+execution is not a fuzz campaign. The session subset (151 names, 14 roots,
+137 intervals) and command subset (214 names, 19 roots, 195 intervals) passed
+without skips or missing, extra or duplicate outcomes in each of the three
+streams. Vet and all seven postchecks passed.
+
+The pre-activation app/report increment added the following fixtures,
+qualified on Windows with Go 1.27.2:
+
+- [App tests](../internal/app/touchpad_test.go) exercise malformed and unknown
+  definitions, finite notes, final candidate bindings and cleanup uncertainty.
+  `TestTouchpadAppIntegrityDiffSetsAreStructural` covers duplicate, empty and
+  overlapping component differences;
+  `TestTouchpadAppExplicitExclusionCannotClaimScheduledExecution` checks
+  scheduled observations against explicit exclusions while retaining valid
+  unavailable and historical notes.
+  `TestTouchpadPublicProjectionPreservesUnaddressableInventory` checks incomplete
+  inventory, privacy filtering and input preservation. It rejects functional
+  claims without a matching interface and explicitly empty interface names.
+- [Bundle tests](../internal/bundle/touchpad_test.go), including
+  `TestTouchpadSignedBundleRejectsOpaqueDefinitionBypasses`, use signed
+  adversarial payloads to require strict validation even without rendered views.
+- [Render tests](../internal/render/touchpad_test.go) distinguish unsupported
+  markers from measurements and exercise copied nested data at writer callbacks.
+  [Comparison tests](../internal/comparison/touchpad_test.go), including
+  `TestTouchpadComparisonRejectsForgedEitherSide`, reject inconsistent evidence
+  in either report.
+- [Privacy tests](../cmd/hhpt/report_privacy_test.go) include
+  `TestTouchpadInventoryProjectionReachesSignedPrivateSafeViews`, which checks
+  finite candidate data across signed JSON, HTML and PDF while preserving the
+  original inventory and excluding synthetic private text.
+
+Go 1.27.2 focused Windows amd64/386 runs each passed 4,586 outcomes with six
+permitted skips across five packages and 713 roots. All 582 selected names,
+60 roots and 522 direct-parent intervals reconciled. The full Windows amd64
+run passed 10,242 outcomes with 18 permitted skips across 33 packages and
+1,483 roots; 32 packages passed and one had no tests. All 2,139 selected names,
+233 roots and 1,906 direct-parent intervals reconciled. The full run also
+covered 23 fuzz seed children and 13 parallel children. Seed execution is not
+a fuzz campaign.
+All 260 app names, 25 roots and 235 direct-parent intervals passed without
+skips or missing, extra or duplicate outcomes in each of the three streams.
+Vet and all seven postchecks passed.
+
+Review reconciled all 16 formatted candidates, ten with byte changes, and
+confirmed 639 other source members unchanged. Across four test files, review
+accounted for four exact import-order permutations and removal of one
+redundant pair of parentheses around a condition.
+After these exact normalizations, tokens, literals and comment anchors
+matched. These formatting exceptions belong to that earlier app increment.
+
+### Current catalog and session activation
+
+The current connected fixtures cover independent plan and execution boundaries:
+
+- [Catalog and selection tests](../internal/plan/touchpad_test.go):
+  `TestTouchpadCatalogUsesDerivedCandidateAuthority`,
+  `TestTouchpadCurrentSelectionRetainsUnavailableDispositions` and
+  `TestTouchpadCatalogRequiresFreshFrozenExecutionPlan` check the exact derived
+  marker, literal current schedules, absent/unsupported/excluded dispositions
+  and rejection of stale or rehashed execution plans.
+- [Session and real-finalizer fixtures](../cmd/hhpt/touchpad_activation_test.go):
+  `TestTouchpadActivatedSessionSignsCurrentProfile`,
+  `TestTouchpadActivatedSessionRetainsIncompleteAndCancelledEvidence` and
+  `TestTouchpadActivatedSessionRefusesUncertainPublication` exercise current
+  Quick and Standard sessions, retained failures and checked publication.
+  `TestTouchpadActivatedFinalizerRejectsChangedCandidateAuthority` and
+  `TestTouchpadActivatedSessionRejectsRehashedStaleExecutionPlan` reject changed
+  authority and obsolete plans at their intended boundaries.
+- [Menu tests](../cmd/hhpt/ui_selection_test.go), including
+  `TestUISelectionPublishesOnlyTheExplicitTouchpadExclusion`, check the finite
+  Quick-only operator selection.
+- [Layout and journal tests](../cmd/hhpt/session_touchpad_test.go):
+  `TestTouchpadCommandLayoutKeepsLiteralOldAndNewOrders`,
+  `TestTouchpadCommandHistoricalJournalVersionsStayReadable` and
+  `TestTouchpadProfileAndJournalClaimsRejectAliases` separate literal history,
+  current v9/v10 schedules and exact profile/schema claims.
+
+With Go 1.27.2, each focused Windows amd64/386 suite passed 4,838 test/subtest
+outcomes across four packages and 684 roots, with six permitted test skips.
+The full Windows amd64 suite passed 10,341 outcomes across 1,492 roots and
+33 packages, with 18 permitted test skips and one no-test package. All 1,083
+selected focused names and 2,556 selected full-suite names passed. The activation
+selection itself passed all 583 names across 73 roots and 510 declared parent
+intervals in each of the three streams.
+
+All eight commands and seven postchecks passed, including vet. Strict review
+compared all 50 formatted Go candidates; twelve files had byte changes, with
+tokens, literals and comment anchors preserved and no normalization exceptions.
+The other 607 source members, including the catalog JSON, remained byte-exact.
+
+Linux/native validation of the later integrated route remains open; earlier
+Linux component evidence does not qualify it. Real evdev/kernel behavior,
+broader edges/tap/multi-touch/scroll/gesture coverage, installed-command and
+rebuilt-image checks, all four images, physical devices, the pilot and release
+gates remain open. See
+[scope](requirements-validation.md#touchpad-inventory-and-strict-evidence).
 
 ## Evidence contract
 

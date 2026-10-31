@@ -1,6 +1,6 @@
 # HHSoft PC Tester Master Checklist
 
-Status date: 2026-10-26
+Status date: 2026-10-31
 
 This is the project-level source of truth derived from the original product
 requirements. Check an item only when implementation and applicable validation
@@ -8,16 +8,16 @@ are complete. Architecture and policy documents alone do not make an item
 complete; real-hardware requirements remain open until physically tested.
 
 The 2026-10-24 requirements audit compared the retained test matrix with the
-catalog and execution paths. Development source now contains twelve implemented
-safe quick test definitions, subject to hardware, architecture and explicit
-operator applicability.
+catalog and execution paths. Development source now contains thirteen
+implemented safe Quick definitions and fourteen implemented catalog rows,
+subject to hardware, architecture and explicit operator applicability.
 The pointer movement/button and wheel-direction increments passed automated
 and native Linux software validation. Guided keyboard software qualification
-also passed; rebuilt-image and physical gates remain open for both. The planner
-also accepts standard, extended, and destructive profile names, but
-the new bounded standard CPU path awaits full qualification and their complete
-functional workflows remain unfinished. Burn-in is a planned
-profile. The unchecked requirements below include those broader matrix items;
+also passed; rebuilt-image and physical gates remain open for both. The bounded
+standard CPU workflow has host, selected native and elapsed-window fixture
+evidence. Complete Standard, Extended and Destructive workflows remain
+unfinished, and burn-in is a planned profile. The unchecked requirements below
+include those broader matrix items;
 the alpha still requires the separate documented release gates.
 
 ## Product and repository
@@ -293,8 +293,10 @@ the alpha still requires the separate documented release gates.
   Linux architectures:
   explicit matching `session -profile standard`, a 900-second default session,
   a shared 600-second load window and an origin-anchored 660-second watchdog.
-  Standard v8 has thirteen workers; quick v7 and its twelve workers remain the
-  default. Strict stress v1 evidence reaches finalization, signed verification,
+  That CPU qualification used Standard v8 with thirteen workers and default
+  Quick v7 with twelve. Current touchpad activation uses Standard v10/fourteen
+  and Quick v9/thirteen. Strict stress v1 evidence reaches finalization,
+  signed verification,
   HTML/PDF and comparison; a raw command's zero exit means a valid diagnostic,
   not a passing CPU. The full host suite passed, including all 493 required named
   outcomes across 69 selected roots. Selected native fixtures passed 6,040 named
@@ -413,6 +415,54 @@ the alpha still requires the separate documented release gates.
 - [ ] Qualify the six-control keyboard check in rebuilt images and on physical
   keyboards, including multiple devices, held keys, incomplete actions,
   disconnects and cancellation. Full layouts and rollover remain separate.
+- [x] Implement the legacy single-contact touchpad core and Linux adapter,
+  first qualified as inactive components: bounded complete-frame observation,
+  fixed contact anchors, signed axis thresholds, checked acquisition and
+  reverse closure. Keep key-state
+  queries at baseline and terminal proof, with no active query.
+- [x] Qualify these components with Go 1.27.2 software fixtures. Focused Windows
+  amd64/386 suites each passed 541 outcomes, including all 196 selected names;
+  the full Windows suite passed 9,148 outcomes with 18 permitted skips and vet.
+  Native Linux amd64/386 each passed all 395 selected names across 47 roots,
+  with no skips or failures and confirmed cleanup. AArch64 is compile-only.
+- [x] Implement finite touchpad candidate inventory and strict functional
+  evidence validation, including checked MSC observations, complete capability
+  sets, producer-phase diagnostics, cleanup precedence and plan/inventory
+  binding. Candidate discovery does not establish device support.
+- [x] Qualify the inventory/evidence increment with Go 1.27.2 Windows fixtures:
+  each focused amd64/386 suite passed 2,332 outcomes with one platform skip and
+  all 686 selected names; the full suite passed 9,509 outcomes with 18 permitted
+  skips, and vet passed. Linux/native qualification for this increment is open.
+- [x] Qualify the standalone command with Go 1.27.2 Windows fixtures: each
+  focused amd64/386 suite passed 5,647 outcomes with seven permitted skips and
+  all 108 CLI names; the full suite passed 9,617 outcomes with 18 permitted
+  skips, and vet passed. This adds no Linux/native or real-device evidence.
+- [x] Implement and host-qualify v9/v10 session evidence, checked worker
+  dispatch and owned-file finalization before catalog activation. Fixtures cover
+  original-key HMAC binding, publication/duration checks and cancellation/cleanup
+  precedence without enabling the catalog. Go 1.27.2 focused Windows amd64/386
+  runs each passed 6,277 outcomes with seven permitted skips; the full suite
+  passed 9,982 with 18 permitted skips, and vet passed. All 151 session and 214
+  command names passed in all three runs.
+- [x] Implement app validation, signed-bundle checks and bounded
+  HTML/PDF touchpad views. Candidate/integrity consistency, cleanup uncertainty
+  and copied public data retain explicit checks and historical report handling.
+- [x] Qualify the pre-activation app/report/render fixtures on Windows with
+  Go 1.27.2.
+  Focused amd64/386 runs and the full amd64 suite each passed all 260 selected
+  names across 25 roots; vet passed.
+- [x] Activate touchpad definition 2 through current catalog and frozen-plan
+  admission, Quick defaults/menu selection, checked dispatch and owned
+  finalization. Quick v9 has thirteen workers and Standard v10 has fourteen.
+  Candidate discovery remains distinct from supported-device evidence.
+- [x] Validate the connected route with Go 1.27.2 Windows fixtures. Focused
+  amd64/386 runs each passed 4,838 outcomes with six permitted skips; the full
+  amd64 suite passed 10,341 with 18 permitted test skips. All 583 activation
+  names across 73 roots passed in all three runs, and vet passed.
+- [ ] Complete Linux/native validation of the later integrated route, real
+  evdev/kernel evidence, broader touch and gesture coverage, rebuilt images,
+  physical devices, the pilot and release gates. See
+[scope](docs/requirements-validation.md#touchpad-inventory-and-strict-evidence).
 - [x] Check storage mount safety and read-only block-node readiness without
   reading or changing media contents.
 - [x] Bind storage readiness to canonical registry, pathname and open-descriptor
@@ -555,8 +605,8 @@ the alpha still requires the separate documented release gates.
 - [x] Add explicit v6 session read support through signed-report verification,
   HTML/PDF rendering and comparison, including bundles without optional views.
   Preserve historical v4/v5 wire behavior. That reader increment retained the
-  v5 emitter; current v7 sessions have twelve workers and the storage sampling
-  catalog entry remains inactive.
+  v5 emitter. Its later qualification used v7 sessions with twelve workers;
+  the storage sampling catalog entry remains inactive.
 - [x] Validate the preceding admission and observation model with 140 Windows
   test/subtest passes across 30 test functions, no skips, formatting and vet.
   This fixture result does not qualify the later integrated report reader.
@@ -748,7 +798,8 @@ the alpha still requires the separate documented release gates.
   without moving or opening the device. Finite D/N/I responses, incomplete
   input and retained defects reach planning, the session coordinator,
   finalization, signed verification, HTML/PDF views and linked comparison.
-  Current v7 sessions have twelve workers; the catalog has 22 test rows.
+  That qualification used v7 sessions with twelve workers; the catalog has
+  22 test rows.
 - [x] Validate the complete exterior-inspection source with the full host suite:
   5,942 test/subtest passes across 30 packages, 17 platform test skips and one
   skipped package. Formatting, vet, Linux amd64/386/arm64 application builds

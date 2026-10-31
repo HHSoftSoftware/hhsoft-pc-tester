@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/app"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/product"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/report"
 )
@@ -31,6 +32,7 @@ type inventoryDocument struct {
 	CPUScalar           *cpuScalarDocument
 	Memory              *memoryDocument
 	Pointer             *pointerDocument
+	Touchpad            *touchpadDocument
 	Storage             *storageDocument
 	CPUStress           *cpuStressDocument
 	Inspection          *inspectionDocument
@@ -211,6 +213,35 @@ table{background:var(--panel);border-collapse:collapse;border:1px solid var(--li
 {{end}}</tbody></table>
 {{else}}<p>No keyboard interface observations were obtained.</p>
 {{end}}</section>
+{{end}}{{if .Touchpad}}<section class="section" aria-labelledby="touchpad-heading">
+<h2 id="touchpad-heading">Guided Single-Contact Touchpad Observations</h2>
+<p>{{.Touchpad.Scope}}</p>
+<table><tbody>
+<tr><th class="label" scope="row">Status</th><td>{{.Touchpad.Status}}</td></tr>
+<tr><th class="label" scope="row">Finding</th><td>{{.Touchpad.Finding}}</td></tr>
+<tr><th class="label" scope="row">Stop reason</th><td>{{.Touchpad.StopReason}}</td></tr>
+<tr><th class="label" scope="row">Duration / limit (ms)</th><td>{{.Touchpad.DurationMilliseconds}} / {{.Touchpad.LimitMilliseconds}}</td></tr>
+<tr><th class="label" scope="row">Cleanup confirmed</th><td>{{.Touchpad.CleanupConfirmed}}</td></tr>
+</tbody></table>
+{{range .Touchpad.Devices}}<h3>Interface {{.Interface}}</h3>
+<p>Status: {{.Status}}. {{.Finding}}</p>
+<table><tbody>
+<tr><th class="label" scope="row">Readable / supported</th><td>{{.Readable}} / {{.Supported}}</td></tr>
+<tr><th class="label" scope="row">Numeric identity</th><td>{{.Identity}}</td></tr>
+<tr><th class="label" scope="row">Advertised codes</th><td>{{.Capabilities}}</td></tr>
+<tr><th class="label" scope="row">Configuration</th><td>{{.Configuration}}</td></tr>
+<tr><th class="label" scope="row">Frames</th><td>{{.Frames}}</td></tr>
+<tr><th class="label" scope="row">Contact starts / releases</th><td>{{.ContactStarts}} / {{.ContactReleases}}</td></tr>
+<tr><th class="label" scope="row">Fresh XY baselines / qualifying contacts</th><td>{{.XYBaselines}} / {{.QualifyingContacts}}</td></tr>
+<tr><th class="label" scope="row">X positive / negative</th><td>{{.XPositive}} / {{.XNegative}}</td></tr>
+<tr><th class="label" scope="row">Y positive / negative</th><td>{{.YPositive}} / {{.YNegative}}</td></tr>
+<tr><th class="label" scope="row">Baseline / final neutral / cleanup</th><td>{{.BaselineNeutral}} / {{.FinalNeutral}} / {{.CleanupConfirmed}}</td></tr>
+</tbody></table>
+{{if .Buttons}}<table><thead><tr><th>Button</th><th>Presses</th><th>Releases</th><th>Pairs</th></tr></thead><tbody>
+{{range .Buttons}}<tr><td>{{.Name}}</td><td>{{.Presses}}</td><td>{{.Releases}}</td><td>{{.Pairs}}</td></tr>
+{{end}}</tbody></table>{{end}}
+{{else}}<p>No touchpad interface observations were obtained.</p>
+{{end}}</section>
 {{end}}{{if .Pointer}}<section class="section" aria-labelledby="pointer-heading">
 <h2 id="pointer-heading">Guided Pointer Wheel Observations</h2>
 <p>{{.Pointer.Scope}}</p>
@@ -322,6 +353,10 @@ func renderInventoryHTMLWithPrevious(output io.Writer, payload app.InventoryPayl
 	if err != nil {
 		return err
 	}
+	touchpad, err := touchpadReportDocument(payload)
+	if err != nil {
+		return err
+	}
 	pointer, err := pointerReportDocument(payload)
 	if err != nil {
 		return err
@@ -339,6 +374,9 @@ func renderInventoryHTMLWithPrevious(output io.Writer, payload app.InventoryPayl
 		return err
 	}
 	components := append([]app.ComponentRecord(nil), payload.Components...)
+	for i := range components {
+		components[i].Attributes = append([]inventory.Attribute(nil), components[i].Attributes...)
+	}
 	sort.SliceStable(components, func(left, right int) bool {
 		if components[left].Type != components[right].Type {
 			return components[left].Type < components[right].Type
@@ -370,6 +408,7 @@ func renderInventoryHTMLWithPrevious(output io.Writer, payload app.InventoryPayl
 		Thermal:             thermal,
 		Keyboard:            keyboard,
 		Pointer:             pointer,
+		Touchpad:            touchpad,
 		CPUScalar:           cpuScalar,
 		Memory:              memory,
 		Storage:             storage,

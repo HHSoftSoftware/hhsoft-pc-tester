@@ -32,6 +32,8 @@ func runSessionWorker(ctx context.Context, worker sessionWorker, input io.Reader
 		return runKeyboardOwned(ctx, append(arguments, "-duration", "30s", "-timeout", worker.Timeout.String()), input, stdout, stderr)
 	case "input.pointer.quick":
 		return runPointer(ctx, append(arguments, "-duration", "30s", "-timeout", worker.Timeout.String()), stdout, stderr)
+	case touchpadExecutionID:
+		return runTouchpad(ctx, append(arguments, "-duration", "30s", "-timeout", worker.Timeout.String()), stdout, stderr)
 	case "network.readiness.quick":
 		return runNetwork(ctx, arguments, stdout, stderr)
 	case "storage.readiness.quick":

@@ -69,7 +69,7 @@ func TestFinalizeAccountsForEveryFrozenTestWithoutInventingExecution(t *testing.
 				for _, test := range frozen.Tests {
 					planned[test.ID] = test
 				}
-				for _, worker := range quickResultDefinitions {
+				for _, worker := range currentResultDefinitionsForTest(t, frozen) {
 					arguments = append(arguments, "-outcome", worker.id+"="+string(planned[worker.id].Status))
 				}
 				var stdout, stderr bytes.Buffer
@@ -147,11 +147,15 @@ func TestFinalizeRejectsScheduledRowsWithoutExecutionAdapters(t *testing.T) {
 		t.Fatal(err)
 	}
 	outcomes := make(map[string]string)
-	for _, worker := range quickResultDefinitions {
+	definitions := currentResultDefinitionsForTest(t, frozen)
+	for _, worker := range definitions {
 		outcomes[worker.id] = "not_present"
 		if worker.id == "inspection.exterior.quick" {
 			outcomes[worker.id] = "excluded"
 		}
+	}
+	if err := validatePlanOutcomesWithDefinitions(frozen, outcomes, definitions); err != nil {
+		t.Fatal("valid current outcome prerequisite rejected", err)
 	}
 	for _, id := range []string{"camera.quick", "future.quick"} {
 		candidate := frozen
@@ -166,7 +170,7 @@ func TestFinalizeRejectsScheduledRowsWithoutExecutionAdapters(t *testing.T) {
 		if !found {
 			candidate.Tests = append(candidate.Tests, plan.Test{ID: id, Version: 1, Status: plan.TestScheduled})
 		}
-		if err := validatePlanOutcomes(candidate, outcomes); err == nil || !strings.Contains(err.Error(), "no execution adapter") {
+		if err := validatePlanOutcomesWithDefinitions(candidate, outcomes, definitions); err == nil || !strings.Contains(err.Error(), "no execution adapter") {
 			t.Fatalf("uncovered scheduled row accepted: %s %v", id, err)
 		}
 	}

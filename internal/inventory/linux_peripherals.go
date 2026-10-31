@@ -63,6 +63,7 @@ func (collector *linuxCollection) collectInputDevices() []Component {
 			{name: "key_capabilities", relativePath: "capabilities/key"},
 			{name: "absolute_capabilities", relativePath: "capabilities/abs"},
 			{name: "relative_capabilities", relativePath: "capabilities/rel"},
+			{name: "msc_capabilities", relativePath: "capabilities/msc"},
 			{name: "properties", relativePath: "properties"},
 		})
 		attributes["category"] = ClassifyInput(

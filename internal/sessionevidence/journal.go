@@ -60,7 +60,7 @@ func ValidateStructure(j Journal) error {
 	}
 	ids := workerIDs(j.Schema)
 	maximumSources := 2
-	if j.Schema == SchemaV8 {
+	if IsStandardSchema(j.Schema) {
 		maximumSources = 3
 	}
 	if len(j.Workers) != len(ids) || j.Safety == nil || j.LocalThermalSources == nil || len(j.LocalThermalSources) > maximumSources {
@@ -111,7 +111,7 @@ func ValidateStructure(j Journal) error {
 				default:
 					return ErrInvalid
 				}
-				if worker.Outcome == "fail" || worker.Outcome == "aborted" || (worker.ID == "cpu.quick" || worker.ID == "memory.quick" || j.Schema == SchemaV8 && worker.ID == "cpu.stress") && worker.Outcome != "pass" {
+				if worker.Outcome == "fail" || worker.Outcome == "aborted" || (worker.ID == "cpu.quick" || worker.ID == "memory.quick" || IsStandardSchema(j.Schema) && worker.ID == "cpu.stress") && worker.Outcome != "pass" {
 					if j.StopReason == "completed" {
 						return ErrInvalid
 					}
@@ -149,7 +149,7 @@ func ValidateStructure(j Journal) error {
 			}
 		case "memory.quick":
 			index = 1
-			if j.Schema == SchemaV8 {
+			if IsStandardSchema(j.Schema) {
 				index = 2
 			}
 			schema = quick.MemorySchemaV2
@@ -157,7 +157,7 @@ func ValidateStructure(j Journal) error {
 				schema = quick.MemorySchema
 			}
 		case "cpu.stress":
-			if j.Schema != SchemaV8 {
+			if !IsStandardSchema(j.Schema) {
 				return ErrInvalid
 			}
 			index, schema = 1, quick.CPUStressSchema
@@ -212,7 +212,7 @@ func CloneJournal(j Journal) Journal {
 // ThermalViewOf consumes a validated journal. It returns independent storage.
 func ThermalViewOf(j Journal) ThermalView {
 	scope := Scope
-	if j.Schema == SchemaV8 {
+	if IsStandardSchema(j.Schema) {
 		scope = StandardScope
 	}
 	finding := "no_limit_observed"

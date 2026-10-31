@@ -63,8 +63,8 @@ func TestCPUStressSignedStandardViewsAndCopiedAccessor(t *testing.T) {
 	for _, row := range payload.TestResults {
 		if row.ID == "run.integrity.quick" {
 			value, err := sessionevidence.DecodeIntegrity(row.Evidence)
-			if err != nil || value.Session == nil || value.Session.Schema != sessionevidence.SchemaV8 ||
-				value.Session.Profile != "standard" || value.Session.CPUStressSource == nil || len(value.Session.Workers) != 13 {
+			if err != nil || value.Session == nil || value.Session.Schema != sessionevidence.SchemaV10 ||
+				value.Session.Profile != "standard" || value.Session.CPUStressSource == nil || len(value.Session.Workers) != 14 {
 				t.Fatal("full strict standard journal missing")
 			}
 		}

@@ -48,7 +48,7 @@ func outputCommandCases(t *testing.T) []outputCommandCase {
 	finalizeArguments := []string{"-fingerprint-key", keyPath, "-plan", planPath, "-evidence-dir", directory,
 		"-session-id", "fixture-session", "-output", "owned-output", "-outcome", "audio.readiness.quick=not_present",
 		"-outcome", "cpu.quick=pass", "-outcome", "display.operator.quick=not_present", "-outcome", "graphics.quick=not_present",
-		"-outcome", "input.keyboard.quick=not_present", "-outcome", "input.pointer.quick=not_present", "-outcome", "input.readiness.quick=not_present",
+		"-outcome", "input.keyboard.quick=not_present", "-outcome", "input.pointer.quick=not_present", "-outcome", "input.touchpad.quick=not_present", "-outcome", "input.readiness.quick=not_present",
 		"-outcome", "memory.quick=not_present", "-outcome", "network.readiness.quick=not_present", "-outcome", "storage.readiness.quick=not_present",
 		"-outcome", "usb.readiness.quick=not_present", "-outcome", "inspection.exterior.quick=excluded"}
 	now := func() time.Time { return time.Unix(10, 20) }
@@ -147,9 +147,14 @@ func TestEveryDestinationCallerRejectsIncompleteOutput(t *testing.T) {
 						t.Fatalf("code=%d calls=%d open=%d write=%d close=%d stderr=%s", code, calls, opens, file.writes, file.closes, stderr.String())
 					}
 					for _, expected := range []error{test.openErr, test.wantWrite, test.closeErr} {
-						if expected != nil && (!errors.Is(completion, expected) || !strings.Contains(stderr.String(), expected.Error())) {
+						if expected != nil && (!errors.Is(completion, expected) || command.name != "finalize" && !strings.Contains(stderr.String(), expected.Error())) {
 							t.Fatalf("caller lost failure %v: error=%v stderr=%s", expected, completion, stderr.String())
 						}
+					}
+					// The current finalizer preserves typed completion errors but
+					// emits only its fixed public diagnostic, never provider text or paths.
+					if command.name == "finalize" && wantCode != 0 && stderr.String() != "write touchpad report failed; completed output may remain\n" {
+						t.Fatalf("finalizer output diagnostic was not sanitized: %s", stderr.String())
 					}
 					if test.name == "success" && (file.Len() == 0 || stderr.Len() != 0) {
 						t.Fatal("healthy control did not produce clean output")

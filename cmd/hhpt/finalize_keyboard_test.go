@@ -92,7 +92,7 @@ func TestFinalizeKeyboardRejectsUnboundRetainedPassAndCleanupBeforeSigning(t *te
 			}
 			reportPath := filepath.Join(directory, "report.hhpcr")
 			arguments := []string{"-fingerprint-key", keyPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "keyboard-fixture", "-output", reportPath}
-			for _, definition := range quickResultDefinitions {
+			for _, definition := range currentResultDefinitionsForTest(t, frozen) {
 				for _, row := range frozen.Tests {
 					if row.ID == definition.id {
 						status := string(row.Status)

@@ -30,7 +30,7 @@ func scalarRoleGroups() []scalarRoleGroup {
 		{"block", "sys/class/block", "sys/class/block/disk0", []string{"disk0"}, []string{"dev", "size", "ro", "removable", "queue/logical_block_size", "queue/physical_block_size", "queue/rotational", "device/vendor", "device/model", "device/serial", "wwid", "device/type", "partition"}},
 		{"pci", "sys/bus/pci/devices", "sys/bus/pci/devices/0000:00:01.0", []string{"0000:00:01.0"}, []string{"class", "vendor", "device", "subsystem_vendor", "subsystem_device", "revision", "irq", "numa_node", "modalias"}},
 		{"network", "sys/class/net", "sys/class/net/eth0", []string{"eth0"}, []string{"address", "type", "ifindex", "iflink", "mtu", "operstate", "carrier", "speed", "duplex", "device/vendor", "device/device"}},
-		{"input", "sys/class/input", "sys/class/input/event0/device", []string{"event0"}, []string{"name", "phys", "uniq", "id/bustype", "id/vendor", "id/product", "id/version", "capabilities/ev", "capabilities/key", "capabilities/abs", "capabilities/rel", "properties"}},
+		{"input", "sys/class/input", "sys/class/input/event0/device", []string{"event0"}, []string{"name", "phys", "uniq", "id/bustype", "id/vendor", "id/product", "id/version", "capabilities/ev", "capabilities/key", "capabilities/abs", "capabilities/rel", "capabilities/msc", "properties"}},
 		{"sound", "sys/class/sound", "sys/class/sound/card0", []string{"card0"}, []string{"id", "device/vendor", "device/device"}},
 		{"drm", "sys/class/drm", "sys/class/drm/card0", []string{"card0"}, []string{"dev", "device/vendor", "device/device", "device/subsystem_vendor", "device/subsystem_device"}},
 		{"video", "sys/class/video4linux", "sys/class/video4linux/video0", []string{"video0"}, []string{"name", "index", "dev", "device/modalias"}},
@@ -97,7 +97,7 @@ func TestInventoryScalarEveryDeclaredAndDirectRoleFailsClosed(t *testing.T) {
 			})
 		}
 	}
-	if count != 105 {
+	if count != 106 {
 		t.Fatalf("scalar role coverage changed: %d", count)
 	}
 }

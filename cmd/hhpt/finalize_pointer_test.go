@@ -455,7 +455,7 @@ func TestFinalizeRejectsUnboundOrIncompletePointerPassBeforeSigning(t *testing.T
 				}
 			}
 			arguments := []string{"-fingerprint-key", keyPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "pointer-rejection", "-output", reportPath}
-			for _, definition := range quickResultDefinitions {
+			for _, definition := range currentResultDefinitionsForTest(t, frozen) {
 				for _, row := range frozen.Tests {
 					if definition.id == row.ID {
 						outcome := string(row.Status)
@@ -523,7 +523,7 @@ func TestFinalizeSignsPointerCoverageAndPreservesUnrelatedHotplugFailure(t *test
 			t.Fatal(err)
 		}
 		arguments := []string{"-fingerprint-key", keyPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "pointer-fixture", "-output", reportPath}
-		for _, definition := range quickResultDefinitions {
+		for _, definition := range currentResultDefinitionsForTest(t, frozen) {
 			for _, row := range frozen.Tests {
 				if definition.id == row.ID {
 					outcome := string(row.Status)

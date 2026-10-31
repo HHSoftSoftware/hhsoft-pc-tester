@@ -198,7 +198,7 @@ func prepareAudioAcquisitionFinalization(t *testing.T, evidence audio.Result, ou
 	}
 	output := filepath.Join(directory, "audio.hhpcr")
 	arguments := []string{"-fingerprint-key", keyPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "audio-fixture", "-output", output}
-	for _, definition := range quickResultDefinitions {
+	for _, definition := range currentResultDefinitionsForTest(t, frozen) {
 		status := "not_present"
 		if definition.id == "inspection.exterior.quick" {
 			status = "excluded"

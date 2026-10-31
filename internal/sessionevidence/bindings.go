@@ -61,8 +61,13 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 		if _, exists := byID[binding.ID]; exists {
 			return ErrInvalid
 		}
+		if HasTouchpadClaim(binding.Evidence) || strings.EqualFold(binding.ID, touchpadTestID) && binding.Version != 1 {
+			if !SupportsTouchpad(j.Schema) || binding.ID != touchpadTestID || binding.Version != 2 {
+				return ErrInvalid
+			}
+		}
 		if HasInspectionClaim(binding.Evidence) || strings.EqualFold(binding.ID, "inspection.exterior.quick") {
-			if (j.Schema != SchemaV7 && j.Schema != SchemaV8) || binding.ID != "inspection.exterior.quick" || binding.Version != 1 {
+			if !SupportsInspection(j.Schema) || binding.ID != "inspection.exterior.quick" || binding.Version != 1 {
 				return ErrInvalid
 			}
 		}
@@ -81,7 +86,7 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 		}
 		stressObservation := HasCPUStressClaim(binding.Evidence)
 		if stressObservation {
-			if j.Schema != SchemaV8 || binding.ID != "cpu.stress" || binding.Version != 1 {
+			if !IsStandardSchema(j.Schema) || binding.ID != "cpu.stress" || binding.Version != 1 {
 				return ErrInvalid
 			}
 			if _, _, err := quickevidence.DecodeCPUStress(binding.Evidence); err != nil {
@@ -136,6 +141,12 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 		if worker.ID == "input.keyboard.quick" {
 			if binding.Version != 2 || validateKeyboardBinding(worker, binding) != nil {
 				return ErrInvalid
+			}
+			continue
+		}
+		if worker.ID == touchpadTestID {
+			if err := validateTouchpadBinding(worker, binding); err != nil {
+				return err
 			}
 			continue
 		}

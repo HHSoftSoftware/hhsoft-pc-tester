@@ -156,7 +156,7 @@ func prepareNetworkAcquisitionFinalization(t *testing.T, evidence networktest.Re
 	}
 	output := filepath.Join(directory, "network.hhpcr")
 	arguments := []string{"-fingerprint-key", keyPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "network-fixture", "-output", output}
-	for _, definition := range quickResultDefinitions {
+	for _, definition := range currentResultDefinitionsForTest(t, frozen) {
 		status := "not_present"
 		if definition.id == "inspection.exterior.quick" {
 			status = "excluded"

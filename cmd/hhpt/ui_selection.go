@@ -227,6 +227,7 @@ func quickTestLabel(id string) string {
 		"input.readiness.quick":     "Input device readiness",
 		"input.keyboard.quick":      "Keyboard shifts and arrow keys",
 		"input.pointer.quick":       "Pointer movement, buttons and wheels",
+		"input.touchpad.quick":      "Touchpad movement and buttons",
 		"memory.quick":              "Memory patterns",
 		"network.readiness.quick":   "Network device readiness",
 		"storage.readiness.quick":   "Storage device readiness",

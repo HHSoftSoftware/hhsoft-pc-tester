@@ -27,18 +27,18 @@ type journalV8Wire struct {
 // MarshalJSON preserves the exact legacy field order and omission behavior.
 // A source cannot be silently discarded by changing the declared schema.
 func (j Journal) MarshalJSON() ([]byte, error) {
-	if j.Schema != SchemaV8 && (j.Profile != "" || j.CPUStressSource != nil) {
+	if !IsStandardSchema(j.Schema) && (j.Profile != "" || j.CPUStressSource != nil) {
 		return nil, ErrInvalid
 	}
 	switch j.Schema {
-	case SchemaV4, SchemaV5, SchemaV7:
+	case SchemaV4, SchemaV5, SchemaV7, SchemaV9:
 		if j.StorageSource != nil {
 			return nil, ErrInvalid
 		}
 		return json.Marshal(legacyJournalWire(j))
 	case SchemaV6:
 		return json.Marshal(journalV6Wire{legacyJournalWire: legacyJournalWire(j), StorageSource: j.StorageSource})
-	case SchemaV8:
+	case SchemaV8, SchemaV10:
 		if j.StorageSource != nil || j.Profile != "standard" {
 			return nil, ErrInvalid
 		}
@@ -97,7 +97,7 @@ func decodeJournalWire(raw []byte) (Journal, error) {
 	var source *StorageSource
 	var stressSource *StressSource
 	profile := ""
-	if schema == SchemaV8 {
+	if IsStandardSchema(schema) {
 		encoded, present := fields["cpu_stress_source"]
 		if !present || json.Unmarshal(fields["profile"], &profile) != nil || profile != "standard" {
 			return Journal{}, ErrInvalid

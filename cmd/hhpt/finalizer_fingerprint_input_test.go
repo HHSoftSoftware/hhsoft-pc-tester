@@ -64,7 +64,7 @@ func newFinalizerFingerprintHarness(t *testing.T) *finalizerFingerprintHarness {
 	}
 	outputPath := filepath.Join(directory, "final.hhpcr")
 	args := []string{"-fingerprint-key", keyPath, "-plan", planPath, "-evidence-dir", directory, "-session-id", "finalizer-fixture", "-output", outputPath}
-	for _, definition := range quickResultDefinitions {
+	for _, definition := range currentResultDefinitionsForTest(t, frozen) {
 		outcome := "not_present"
 		if definition.id == "inspection.exterior.quick" {
 			outcome = "excluded"

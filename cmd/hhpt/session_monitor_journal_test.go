@@ -291,7 +291,7 @@ func TestFinalizeSessionSignsHonestMonitorCoverageAndFreshSafety(t *testing.T) {
 					Session *sessionJournal `json:"session"`
 				}
 				if json.Unmarshal(result.Evidence, &evidence) != nil || evidence.Session == nil ||
-					evidence.Session.Schema != "hhsoft.pc-tester.quick-session/v7" || evidence.Session.StopReason != "operator_cancelled" ||
+					evidence.Session.Schema != "hhsoft.pc-tester.quick-session/v9" || evidence.Session.StopReason != "operator_cancelled" ||
 					!bytes.Equal(encodeEvidenceFixture(t, evidence.Session.Monitor), encodeEvidenceFixture(t, *monitor)) ||
 					evidence.Session.Safety[len(evidence.Session.Safety)-1].Phase != "pre-sign" {
 					t.Fatal("signed monitor or fresh safety binding changed")

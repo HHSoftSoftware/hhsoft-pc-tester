@@ -45,7 +45,7 @@ func validateCPUStressReport(payload InventoryPayload) error {
 		claimed = true
 		if row.ID == "run.integrity.quick" {
 			value, err := sessionevidence.DecodeIntegrity(row.Evidence)
-			if err != nil || row.Version != 1 || value.Session == nil || value.Session.Schema != sessionevidence.SchemaV8 {
+			if err != nil || row.Version != 1 || value.Session == nil || !sessionevidence.IsStandardSchema(value.Session.Schema) {
 				return errors.New("invalid standard-session CPU stress reference")
 			}
 			continue
@@ -69,7 +69,7 @@ func validateCPUStressReport(payload InventoryPayload) error {
 	for _, row := range payload.TestResults {
 		if row.ID == "run.integrity.quick" {
 			value, err := sessionevidence.DecodeIntegrity(row.Evidence)
-			if journal != nil || err != nil || row.Version != 1 || value.Session == nil || value.Session.Schema != sessionevidence.SchemaV8 ||
+			if journal != nil || err != nil || row.Version != 1 || value.Session == nil || !sessionevidence.IsStandardSchema(value.Session.Schema) ||
 				value.PlanID != row.PlanID || value.PlannedHardwareGraph != row.HardwareGraph || value.Status != string(row.Status) {
 				return errors.New("CPU stress observation has no valid standard-session binding")
 			}

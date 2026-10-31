@@ -26,8 +26,8 @@ type inventoryScalar interface {
 // observed distinguishes a completed empty value from unavailable metadata.
 // Only exact EOF proves completion. Ordinary open/read observation errors
 // discard all bytes; malformed acquisition and cleanup abort the collection.
-func readInventoryScalar(ctx context.Context, name string, open func(string) (inventoryScalar, error)) ([]byte, bool, error) {
-	data, observed, err := readInventoryBytes(ctx, name, inventoryScalarLimit, open)
+func readInventoryScalarWithBudget(ctx context.Context, name string, open func(string) (inventoryScalar, error), budget *inventoryAcquisitionBudget) ([]byte, bool, error) {
+	data, observed, err := readInventoryBytesWithBudget(ctx, name, inventoryScalarLimit, open, budget)
 	switch err {
 	case errInventoryFileRead:
 		err = ErrScalarRead
@@ -47,18 +47,25 @@ func (collector *linuxCollection) readScalar(name string) ([]byte, bool) {
 		collector.err = ErrNoPathSource
 		return nil, false
 	}
+	if err := collector.acquisitionBudget.chargeAttempt(); err != nil {
+		collector.err = err
+		return nil, false
+	}
 	var data []byte
 	var observed bool
 	var err error
 	if source, exact := collector.Source.(*RootPathSource); exact {
-		data, observed, err = source.readScalar(collector.ctx, name)
+		data, observed, err = source.readScalar(collector.ctx, name, &collector.acquisitionBudget)
 	} else {
 		// A decorator keeps its ReadFile override. An aggregate provider has
 		// already allocated before returning; only its result is bounded here.
 		var observationErr error
 		data, observationErr = collector.Source.ReadFile(name)
+		budgetErr := collector.acquisitionBudget.chargeBytes(len(data))
 		if len(data) > inventoryScalarLimit {
 			err = ErrScalarLimit
+		} else if budgetErr != nil {
+			err = budgetErr
 		} else {
 			observed = observationErr == nil
 		}

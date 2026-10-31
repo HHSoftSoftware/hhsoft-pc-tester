@@ -1984,13 +1984,33 @@ in the full Windows suite, which passed 10,380 cases with 18 platform skips,
 cross-build evidence; native Linux runtime, rebuilt-image and physical-device
 qualification remain open.
 
-Remaining acquisition, including cumulative scalar/proc data, aggregate/peak
-allocation, parser CPU budgets and optional field-error visibility remain open.
-Legacy aggregate providers may allocate
+Cumulative scalar/proc acquisition shares 65,536 file attempts and
+64 MiB of raw bytes across all scalar and primary-proc reads in one collection.
+Missing, empty and repeated attempts count. Raw bytes remain charged when an
+observation is discarded or a read returns bytes with an error; normalization
+does not refund them. Every collection receives fresh counters.
+
+The [owned reader](../internal/inventory/acquisition.go) may consume at most
+one additional, unretained byte to detect overflow. Exhaustion returns
+`inventory: file acquisition budget exceeded` and no partial snapshot, with no
+later source work. Existing per-file caps, exact EOF, malformed-read checks,
+close-error precedence and declared source overrides remain mandatory. Legacy
+aggregate providers may already have allocated before their results are checked.
+
+Windows amd64 and 386 inventory runs each passed 1,611 test/subtest cases
+with one existing platform skip. All 61 new names passed in both runs and
+in the full Windows suite, which passed 10,441 cases with 18 platform skips,
+32 passing packages and one package without tests. Vet and Linux amd64,
+386 and AArch64 production builds passed. Native Linux runtime, rebuilt-image
+and physical-device qualification remain open.
+
+Parser expansion, aggregate/peak allocation, parser CPU budgets and optional
+field-error visibility remain open. Legacy aggregate providers may allocate
 before returning, and cancellation cannot interrupt a blocked source call.
-Inactive catalog entries remain inactive. Rebuilt images, physical devices,
-sampled-media reads, the physical pilot and release approval remain separate
-gates.
+These budgets do not establish a whole-heap bound or kernel preemption.
+Inactive catalog entries remain inactive. Native Linux runtime for this
+increment, rebuilt images, physical devices, sampled-media reads, the physical
+pilot and release approval remain separate gates.
 
 The inactive storage result reader validates storage-sample/v1 metadata and
 explicit v6 session claims through the existing signed-report verification,

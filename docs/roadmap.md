@@ -263,13 +263,26 @@ full Windows suite. Vet and Linux amd64, 386 and AArch64 production builds
 passed. Native Linux runtime, rebuilt-image and physical-device qualification
 remain open.
 
-Remaining acquisition, including cumulative scalar/proc data, aggregate/peak
-allocation, parser CPU budgets and optional field-error visibility remain open.
-Legacy aggregate providers may allocate
+Cumulative scalar/proc acquisition shares 65,536 file attempts
+and 64 MiB of raw bytes across one inventory collection. Missing, empty and
+repeated attempts count; discarded prefixes and bytes returned with an error
+remain charged. Counters reset for each collection. The owned reader may use
+at most one additional, unretained byte to detect overflow. Exhaustion returns
+a fixed error and no partial snapshot. Existing per-file limits, exact EOF,
+checked closure and declared source overrides remain mandatory.
+
+All 61 new regression names passed on Windows amd64 and 386 and in the
+full Windows suite. Vet and Linux amd64, 386 and AArch64 production builds
+passed. Native Linux runtime, rebuilt-image and physical-device qualification
+remain open.
+
+Parser expansion, aggregate/peak allocation, parser CPU budgets and optional
+field-error visibility remain open. Legacy aggregate providers may allocate
 before returning, and cancellation cannot interrupt a blocked source call.
-Inactive catalog entries remain inactive. Rebuilt images, physical devices,
-sampled-media reads, the physical pilot and release approval remain separate
-gates.
+These budgets do not establish a whole-heap bound or kernel preemption.
+Inactive catalog entries remain inactive. Native Linux runtime for this
+increment, rebuilt images, physical devices, sampled-media reads, the physical
+pilot and release approval remain separate gates.
 
 The inactive storage result reader now checks complete typed topology and fixture
 facts, finite read observations and accepted versus diagnostic counters. Explicit

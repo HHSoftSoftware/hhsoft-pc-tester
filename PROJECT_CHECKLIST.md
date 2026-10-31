@@ -602,10 +602,21 @@ the alpha still requires the separate documented release gates.
   386, including all 39 new names. The full Windows suite, vet and Linux amd64,
   386 and AArch64 production builds passed. Native runtime, image and physical
   gates remain open.
-- [ ] Bound remaining acquisition, including cumulative scalar/proc data,
-  aggregate/peak allocation and parser CPU use; improve optional field-error
-  visibility. Legacy aggregate providers can allocate before returning, and
-  cancellation cannot interrupt a blocked call.
+- [x] Implement and host-test cumulative scalar/proc acquisition budgets. The collector
+  shares 65,536 file attempts and 64 MiB of raw bytes per collection. Missing,
+  empty and repeated attempts count, as do discarded bytes and bytes returned
+  with an error. The owned reader may consume one unretained detection byte;
+  exhaustion returns a fixed error and no partial snapshot. Per-file limits,
+  checked closure and declared source overrides remain mandatory.
+  All 61 new names passed on Windows amd64 and 386 and in the full Windows
+  suite. Vet and Linux amd64, 386 and AArch64 production builds passed.
+  Native runtime, image, physical-device and release gates remain open.
+- [ ] Bound parser expansion, aggregate/peak allocation and parser CPU use;
+  improve optional field-error visibility. These acquisition budgets do not
+  establish a whole-heap bound or kernel preemption. Legacy aggregate providers
+  can allocate before returning, and cancellation cannot interrupt a blocked
+  call. Native Linux runtime, rebuilt-image, physical-device and release gates
+  for this increment remain open.
 - [ ] Qualify storage readiness, replacement and cancellation in rebuilt images
   and on physical devices. Matching kernel numbers do not prove persistent
   physical identity or detect every same-number replacement.

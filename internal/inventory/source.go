@@ -44,16 +44,16 @@ func (source *RootPathSource) readDirectoryWithBudget(ctx context.Context, name 
 	return readInventoryDirectoryWithBudget(ctx, source.resolve(name), openInventoryDirectory, budget)
 }
 
-func (source *RootPathSource) readScalar(ctx context.Context, name string) ([]byte, bool, error) {
+func (source *RootPathSource) readScalar(ctx context.Context, name string, budget *inventoryAcquisitionBudget) ([]byte, bool, error) {
 	if source == nil {
 		return nil, false, ErrNoPathSource
 	}
-	return readInventoryScalar(ctx, source.resolve(name), openInventoryScalar)
+	return readInventoryScalarWithBudget(ctx, source.resolve(name), openInventoryScalar, budget)
 }
 
-func (source *RootPathSource) readProc(ctx context.Context, name string, role inventoryProcRole) ([]byte, bool, error) {
+func (source *RootPathSource) readProc(ctx context.Context, name string, role inventoryProcRole, budget *inventoryAcquisitionBudget) ([]byte, bool, error) {
 	if source == nil {
 		return nil, false, ErrNoPathSource
 	}
-	return readInventoryProc(ctx, source.resolve(name), role, openInventoryScalar)
+	return readInventoryProcWithBudget(ctx, source.resolve(name), role, openInventoryScalar, budget)
 }

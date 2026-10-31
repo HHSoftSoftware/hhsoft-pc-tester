@@ -549,13 +549,38 @@ in the full Windows suite, which passed 10,380 cases with 18 platform skips,
 cross-build evidence; native Linux runtime, rebuilt-image and physical-device
 qualification remain open.
 
-Remaining acquisition, including cumulative scalar/proc data, aggregate/peak
-allocation, parser CPU budgets and optional field-error visibility remain open.
-Legacy aggregate providers may allocate
+Acceptance cases for cumulative scalar/proc acquisition require:
+
+- Share 65,536 file attempts and 64 MiB of raw bytes across scalar and all three
+  proc roles. Count missing, empty and repeated attempts, discarded prefixes
+  and bytes returned with errors before normalization or parser admission.
+- Distinguish exact-budget EOF from one-byte overflow. Bound each owned request
+  and buffer growth; never retain the detection byte or issue later source work
+  after exhaustion. Require the fixed error and no partial snapshot.
+- Preserve per-file overflow, malformed-read, cancellation and checked-close
+  precedence. Exercise real RootPathSource wiring and declared decorator
+  overrides without treating callback allocation as bounded collector work.
+- Exercise the full Collect path, fresh state after success or failure and
+  concurrent collections with independent counters. Retain complete under-budget
+  device sets and ordinary unavailable-value behavior.
+
+The [acquisition tests](../internal/inventory/acquisition_budget_test.go)
+provide source fixtures for these boundaries.
+
+Windows amd64 and 386 inventory runs each passed 1,611 test/subtest cases
+with one existing platform skip. All 61 new names passed in both runs and
+in the full Windows suite, which passed 10,441 cases with 18 platform skips,
+32 passing packages and one package without tests. Vet and Linux amd64,
+386 and AArch64 production builds passed. Native Linux runtime, rebuilt-image
+and physical-device qualification remain open.
+
+Parser expansion, aggregate/peak allocation, parser CPU budgets and optional
+field-error visibility remain open. Legacy aggregate providers may allocate
 before returning, and cancellation cannot interrupt a blocked source call.
-Inactive catalog entries remain inactive. Rebuilt images, physical devices,
-sampled-media reads, the physical pilot and release approval remain separate
-gates.
+These budgets do not establish a whole-heap bound or kernel preemption.
+Inactive catalog entries remain inactive. Native Linux runtime for this
+increment, rebuilt images, physical devices, sampled-media reads, the physical
+pilot and release approval remain separate gates.
 
 The inactive storage reader has a separate qualification boundary from a media
 worker. Its earlier admission and observation model passed 140 focused Windows

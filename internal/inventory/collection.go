@@ -11,9 +11,10 @@ import (
 // for concurrent reads.
 type linuxCollection struct {
 	LinuxCollector
-	ctx             context.Context
-	err             error
-	directoryBudget inventoryDirectoryBudget
+	ctx               context.Context
+	err               error
+	directoryBudget   inventoryDirectoryBudget
+	acquisitionBudget inventoryAcquisitionBudget
 }
 
 // The yielded callback is the production range-loop body. Recheck after the
@@ -35,9 +36,10 @@ func collectionItems[T any](collector *linuxCollection, values []T) iter.Seq2[in
 
 func (collector *LinuxCollector) newCollection(ctx context.Context) *linuxCollection {
 	return &linuxCollection{
-		LinuxCollector:  *collector,
-		ctx:             ctx,
-		directoryBudget: newInventoryDirectoryBudget(),
+		LinuxCollector:    *collector,
+		ctx:               ctx,
+		directoryBudget:   newInventoryDirectoryBudget(),
+		acquisitionBudget: newInventoryAcquisitionBudget(),
 	}
 }
 

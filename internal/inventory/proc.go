@@ -39,12 +39,12 @@ func inventoryProcLimit(role inventoryProcRole) (int, bool) {
 	}
 }
 
-func readInventoryProc(ctx context.Context, name string, role inventoryProcRole, open func(string) (inventoryScalar, error)) ([]byte, bool, error) {
+func readInventoryProcWithBudget(ctx context.Context, name string, role inventoryProcRole, open func(string) (inventoryScalar, error), budget *inventoryAcquisitionBudget) ([]byte, bool, error) {
 	limit, valid := inventoryProcLimit(role)
 	if !valid {
 		return nil, false, ErrBulkRead
 	}
-	data, observed, err := readInventoryBytes(ctx, name, limit, open)
+	data, observed, err := readInventoryBytesWithBudget(ctx, name, limit, open, budget)
 	switch err {
 	case errInventoryFileRead:
 		err = ErrBulkRead
@@ -69,18 +69,25 @@ func (collector *linuxCollection) readProc(name string, role inventoryProcRole) 
 		collector.err = ErrBulkRead
 		return nil, false
 	}
+	if err := collector.acquisitionBudget.chargeAttempt(); err != nil {
+		collector.err = err
+		return nil, false
+	}
 	var data []byte
 	var observed bool
 	var err error
 	if source, exact := collector.Source.(*RootPathSource); exact {
-		data, observed, err = source.readProc(collector.ctx, name, role)
+		data, observed, err = source.readProc(collector.ctx, name, role, &collector.acquisitionBudget)
 	} else {
 		// Preserve the declared override. This aggregate provider may have
 		// allocated before returning; only admission of its result is bounded.
 		var observationErr error
 		data, observationErr = collector.Source.ReadFile(name)
+		budgetErr := collector.acquisitionBudget.chargeBytes(len(data))
 		if len(data) > limit {
 			err = ErrBulkLimit
+		} else if budgetErr != nil {
+			err = budgetErr
 		} else {
 			observed = observationErr == nil
 		}

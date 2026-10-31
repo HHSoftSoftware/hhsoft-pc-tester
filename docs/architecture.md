@@ -168,7 +168,8 @@ choices. Canonically ordered exclusions become part of the plan ID. An empty
 selection preserves the default plan encoding and ID within the same catalog.
 Exclusions only change tests that would otherwise be scheduled, preserving absent-hardware and
 missing-driver evidence. Both boot supervisors retain their unconditional mount
-and network safety checks and pass all twelve quick outcomes to finalization.
+and network safety checks. The current Go coordinator supplies all thirteen
+Quick outcomes to finalization.
 Signed run-integrity evidence includes the exclusions, including choices for
 hardware that was not available.
 
@@ -184,8 +185,8 @@ Each catalog result carries its definition version and `planned_status`, even
 when no adapter runs. The signed `coverage_scope` is `frozen_plan`; HTML/PDF
 views show the planned disposition and its reason alongside the final outcome.
 Direct capture instead labels its seven collected checks `direct_capture` and
-does not run guided keyboard/pointer checks or exterior observation, or claim a
-frozen plan. Optional absent
+does not run guided keyboard, pointer or touchpad checks, acquire exterior
+observation, or claim a frozen plan. Optional absent
 coverage fields preserve historical report rendering; new reports require a
 matching rebuilt companion verifier.
 The quick-session coordinator adds a signed session journal inside run-integrity
@@ -227,14 +228,15 @@ The guided keyboard increment activates definition version 2 of the existing
 eleventh worker between input readiness and pointer testing. Shared validation
 dispatches v4 to its original ten-worker rules, v5 to eleven-worker rules,
 v6 to its twelve-worker storage read format and v7 to its twelve-worker exterior
-inspection format. Current emission is v7; unknown versions and relabeled
-journals cannot bypass those checks. A shared
+inspection format. Historical Standard v8 keeps thirteen workers. Current
+Quick v9 and Standard v10 use thirteen and fourteen respectively; unknown
+versions and relabeled journals cannot bypass those checks. A shared
 keyboard decoder binds fixed action summaries, cleanup, worker timing and
 unchanged per-device identity/capabilities. Raw input events and typed text are
 never exported. Standalone finalization may retain strict nonexecution notes
 for excluded, absent, unsupported or missing-driver keyboards without claiming
-session coverage. Keyboard execution uses the live v7 workflow; historical
-v5/v6 reports retain their explicit functional-evidence rules.
+session coverage. Current keyboard execution uses the live v9/v10 workflow;
+historical v5-v8 reports retain their explicit functional-evidence rules.
 Windows and native Linux amd64/386 qualification, including race checks and CLI
 workflows, passed for the v5 keyboard integration. This qualifies that application
 source;
@@ -245,9 +247,29 @@ The inactive storage evidence reader shares one finite Result validator across
 report verification, rendering and comparison. Explicit v6 read support binds a
 storage source to its typed result, reconstructs topology/fixture eligibility and
 keeps accepted work separate from diagnostics. Historical v4/v5 wire handling is
-preserved. Current emission is v7 with twelve workers; the sampling catalog
-entry remains inactive. This reader adds no media acquisition backend; see
+preserved. Current Quick emission is v9 with thirteen workers and Standard is
+v10 with fourteen; the sampling catalog entry remains inactive.
+This reader adds no media acquisition backend; see
 [report integrity](report-integrity.md) for signed-assertion and cleanup limits.
+
+Touchpad definition 2 uses the finite derived `touchpad_candidate=true`
+provider marker, rather than a category label alone. The catalog has fourteen
+implemented rows and eight inactive families. Quick selection offers thirteen
+checks on modern targets and eleven on legacy x86; applicability is resolved
+separately. Exclusions remain Quick-only, and Standard rejects a nonempty set.
+
+The touchpad worker is inserted once after pointer in current v9/v10 layouts.
+Checked acquisition, bounded complete-frame observation, terminal proof and
+confirmed cleanup precede accepted evidence. The worker, owned finalizer, strict
+signed consumers and copied HTML/PDF views form one connected software path.
+Candidate discovery does not establish supported-device behavior.
+
+`plan.Decode` still admits only plans matching the embedded current catalog.
+An obsolete plan cannot become executable by recomputing its unkeyed ID.
+Historical signed-report and journal decoding remains version-specific and does
+not use this execution-plan gate. Windows qualification covers the activated
+route; integrated Linux/native, real evdev, physical, image and release gates
+remain open. See [the qualification scope](requirements-validation.md#touchpad-inventory-and-strict-evidence).
 
 A graph change does not discard evidence. It fails run integrity and preserves
 the final report with the original/final graph HMACs and component-level delta,
@@ -402,10 +424,10 @@ qualification remain pending.
 `inspection.exterior.quick` definition 1 uses the explicit `operator.exterior`
 capability and `whole_device_operator` applicability. Frozen plan schema 3
 can select or exclude it without fabricating a hardware component. The current
-catalog has 22 rows; modern images offer twelve selectable quick checks and
-legacy x86 offers ten. Current v7 appends inspection after the eleven v5
-workers. Historical v4/v5/v6 retain their original wire rules; v6 storage
-reading does not activate storage sampling in v7.
+catalog has 22 rows; modern targets offer thirteen selectable Quick checks and
+legacy x86 offers eleven. The v7 increment appended inspection after the eleven
+v5 workers; current v9/v10 layouts retain it. Historical v4-v8 keep their
+original wire rules. V6 storage reading does not activate current sampling.
 
 The real Linux console owner is shared by session cancellation and operator
 prompts. Exterior observation borrows that owner and discards input preceding
@@ -419,8 +441,8 @@ decision at or after that deadline cannot pass even if context notification
 lags; the evidence value is not a hard operating-system return deadline.
 
 Finalization binds typed evidence to the plan, graph, result status and,
-for a session claim, the v7 worker interval. Its fresh live safety gate and
-complete cleanup precede signing. A shared validated accessor supplies a copied
+for a session claim, the worker interval in its supported journal version.
+Its fresh live safety gate and complete cleanup precede signing. A shared validated accessor supplies a copied
 result to rendering; no-view bundle verification applies the same claim rules.
 Linked retesting records a fresh child observation and preserves exact parent
 binding and independent trust. Comparison does not use an operator observation
@@ -456,8 +478,8 @@ continuity. Existing identified components retain their fingerprint rules.
 
 The implementation uses the existing inventory, signing and view contracts. It
 adds no catalog row, worker, session schema or generic arbitrary-metadata
-validator: the catalog remains at 22 rows and the quick v7 path retains twelve workers.
-Historical v4/v5/v6 rules and inactive storage sampling remain unchanged.
+validator. That increment retained 22 catalog rows and the twelve-worker
+Quick v7 path, historical v4/v5/v6 rules and inactive storage sampling.
 The full host suite and selected native Linux amd64/386 fixtures passed; see
 [the validation contract](requirements-validation.md#power-supply-inventory).
 
@@ -496,8 +518,9 @@ graph and ordinary comparison. A changed graph requires a new plan for future
 execution; finalization preserves a signed failed-integrity diagnostic identifying
 the changed components. Generic payload, signature, view and parent-trust rules
 remain in force. The new types add no worker, catalog entry, capability, schema
-or identity algorithm. Quick v7, explicit standard v8, historical session rules
-and inactive storage sampling are unchanged. The full host suite and selected
+or identity algorithm. That increment preserved Quick v7, explicit Standard
+v8, historical session rules and inactive storage sampling.
+The full host suite and selected
 native Linux amd64/386 fixtures passed; no measured-boot, attestation, TPM-health
 or physical firmware claim follows from metadata collection.
 
@@ -532,8 +555,9 @@ retains a signed failed-integrity diagnostic with changed component references.
 Identity stays unavailable, so equal rows or ordinals cannot establish physical
 continuity. The existing `memory:system` OS observation and RAM provider remain
 unchanged. There is no added worker, capability, catalog row, evidence schema,
-identity algorithm or dependency; quick v7 and standard v8 keep their existing
-schedules. Host tests and selected native Linux amd64/386 fixtures passed for
+identity algorithm or dependency. That increment preserved the Quick v7 and
+Standard v8 schedules.
+Host tests and selected native Linux amd64/386 fixtures passed for
 this addition. Actual image/sysfs availability and physical-device coverage
 remain separate.
 
@@ -541,10 +565,12 @@ remain separate.
 
 The explicit `standard` coordinator inserts `cpu.stress` after a passing
 `cpu.quick`. The profile flag must match the frozen plan; a standard plan alone
-cannot select sustained load. Automatic quick execution, its twelve-worker v7
-journal and historical worker encodings remain unchanged. Standard uses thirteen
-workers and `hhsoft.pc-tester.quick-session/v8`, while retaining the existing
-`run.integrity.quick` row and report envelope. The catalog still has 22 rows;
+cannot select sustained load. Current automatic Quick uses thirteen workers
+and journal v9; explicit Standard uses fourteen and
+`hhsoft.pc-tester.quick-session/v10`. Historical Quick v7/twelve and Standard
+v8/thirteen retain their original worker encodings. The existing
+`run.integrity.quick` row and report envelope remain unchanged. The catalog
+still has 22 rows;
 activation changes its digest and new plan IDs. Old execution plans fail the
 current-catalog gate; historical signed verification remains catalog-independent.
 
@@ -565,7 +591,8 @@ stop reason. Coverage refers to accepted exposed readings, not proof of CPU sens
 coverage or detection of same-count sensor replacement. Cleanup uncertainty,
 invalid accounting or untrusted evidence blocks signing.
 
-V8 binds every dispatched stress result, including no-load and non-pass results,
+Historical v8 and current v10 bind every dispatched stress result, including
+no-load and non-pass results,
 to strict typed evidence, exact-file and typed digests, and its worker interval.
 Only undispatched rows have a null stress source. The finalizer requires the real
 fresh standard-session gate; supplied journal files cannot authorize signing.
@@ -573,7 +600,7 @@ Views and no-view bundle verification share strict admission. Historical exact
 supervisor notes remain readable, while opaque error/aborted objects do not gain
 that exemption. Comparison retains its existing identity policy.
 
-The complete source passed the host suite: 6,732 test/subtest passes across
+The CPU stress increment passed the host suite: 6,732 test/subtest passes across
 30 packages, with 17 test skips and one package skip. All 493 required named
 outcomes across 69 selected roots passed. Selected native tests passed on Linux
 amd64 and 386: 6,040 test/subtest outcomes across 18 package executions, covering

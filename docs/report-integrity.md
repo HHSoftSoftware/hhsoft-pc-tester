@@ -353,8 +353,8 @@ execution or signing in place of the one-use live final gate. Those monitoring
 increments retained 21 catalog rows plus run integrity. Historical signed reports,
 including earlier session evidence,
 retain their existing verification and rendering behavior. Direct capture's
-limited subset does not include guided keyboard, pointer or exterior-inspection
-evidence. Each retained pointer
+limited subset does not include guided keyboard, pointer, touchpad or
+exterior-inspection evidence. Each retained pointer
 pass, including a completed device inside a partial result, must match the
 frozen and final component identity and advertised capabilities. Kernel bitmap
 word width is independently observed and bound in the component fingerprint;
@@ -438,11 +438,13 @@ mismatch bits and separate integer/SHA-256/scalar failure flags. Its definition
 version is 2; current finalization requires that pair. Historical definition 1
 and CPU v2 keep their original field order, omission rules and typed hash through
 an immutable wire type, including in strict v4/v5 reports. New scalar evidence
-requires v5, v6 or v7 for session reports, but remains supported in strict standalone
-capture/finalization. Unknown versions, impossible counter or failure
+requires a supported v5-v10 journal for session reports, but remains supported
+in strict standalone capture/finalization.
+Unknown versions, impossible counter or failure
 relationships, hidden claims and definition downgrades fail shared validation,
-including bundles without views. Current v7 emission has twelve workers and
-23 report rows. Host and native Linux validation passed for the v5 CPU increment,
+including bundles without views. Current Quick v9 has thirteen workers and
+Standard v10 fourteen; finalized reports retain 23 rows including run integrity.
+Host and native Linux validation passed for the v5 CPU increment,
 including signed standalone and v5 session CPU cases. Rebuilt-image and physical
 qualification remain open.
 
@@ -456,10 +458,11 @@ matching bytes and accepted work; a mismatching read is never a verified byte.
 Historical memory definition 1 and v2 keep their exact field order, omission
 rules and nested safety encoding, including strict v4/v5 typed hashes. Current
 memory evidence supports strict direct capture and standalone finalization;
-session reports require v5, v6 or v7. Definition/schema mismatches, hidden claims and
-impossible counters are rejected even without bundle views. Current emission keeps
-22 test rows plus run integrity, twelve workers and the existing seven-row
-direct-capture subset. Full host and native Linux validation passed for the v5
+session reports require a supported v5-v10 journal. Definition/schema
+mismatches, hidden claims and impossible counters are rejected even without
+bundle views. Current emission keeps 22 test rows plus run integrity, with
+thirteen Quick v9 or fourteen Standard v10 workers. The seven-row direct-capture
+subset remains unchanged. Full host and native Linux validation passed for the v5
 increment, including signed direct-capture, standalone-finalization and v5 session
 cases. Rebuilt-image
 and physical gates remain open for this increment.
@@ -485,11 +488,46 @@ Complete initial/final inventory cannot be reconstructed by an offline verifier.
 Case aliases, duplicate or hidden modern claims and omitted bundle views cannot
 turn functional evidence into an opaque historical or unexecuted note. A strict
 nonexecution note can preserve standalone finalization without a session;
-functional keyboard observations require v5, v6 or v7 in session reports. Current
-emission is v7. Windows and native Linux amd64/386 qualification, including
+functional keyboard observations require a supported v5-v10 journal in session
+reports. Current emission is Quick v9 or Standard v10.
+Windows and native Linux amd64/386 qualification, including
 race checks and signed CLI workflows, passed for the v5 increment. These checks
 establish software behavior, not physical input coverage;
 rebuilt-image and physical-keyboard validation remain open.
+
+## Bounded Touchpad Evidence
+
+Touchpad definition 2 uses `hhsoft.pc-tester.touchpad-functional/v1`; this
+functional-evidence schema is separate from the current Quick v9 and Standard
+v10 journal schemas. The current catalog selects the finite derived
+`touchpad_candidate=true` provider marker. A category label alone is not
+execution authority, and a candidate is not proof of a supported device.
+
+Strict shared validation checks complete capability and result claims, finite
+phase diagnostics, action accounting, terminal proof and cleanup. Session
+bindings additionally require the matching worker outcome and an observation
+duration within its interval. The live finalizer owns frozen/final inventory
+and plan checks and retained evidence reads; a signed report cannot reconstruct
+those original acquisitions or prove kernel history.
+
+Malformed or hidden functional claims cannot become opaque historical data
+or an unexecuted note. In a session, touchpad observations require v9 or v10;
+historical v4-v8 retain their original rules without gaining touchpad coverage.
+Finite nonexecution notes preserve legitimate absent, unsupported, excluded
+or unobserved outcomes without claiming device observations. Cleanup uncertainty
+prevents acceptance and signing.
+
+Signed verification applies these checks with or without optional views.
+HTML/PDF and comparison consume validated, copied data. Unqueried unknown-axis
+zero fields are unsupported markers, not measured configuration. Raw event
+traces, coordinate samples, device names/paths and wall-clock timestamps are
+not exported. Signatures authenticate the recorded claims, not physical truth.
+
+The activated connected route passed Go 1.27.2 Windows software qualification.
+Earlier native Linux core/adapter evidence does not qualify the later integrated
+route. Integrated Linux/native, real evdev/kernel behavior, broader gestures,
+installed-command/images, physical devices, the pilot and release gates remain
+open. See [the scope and results](requirements-validation.md#touchpad-inventory-and-strict-evidence).
 
 ## Bounded Exterior Inspection Evidence
 
@@ -508,11 +546,12 @@ while retaining an observed defect. Time is credited observation time, not
 preparation, cleanup or a hard execution deadline.
 
 A typed result requires the exact inspection row, definition and whole-device
-operator plan binding. A session claim also requires strict v7 integrity, its
-inspection worker, matching outcome and observation time no larger than that
-worker's interval. Current v7 retains the earlier eleven workers and appends
-inspection. V4/v5/v6 keep their historical worker lists and cannot be relabeled
-as current evidence. V7 does not activate the v6 storage sampling contract.
+operator plan binding. A session claim also requires a supported v7-v10
+journal, its inspection worker, matching outcome and observation time no larger
+than that worker's interval. The v7 increment retained the earlier eleven
+workers and appended inspection; current v9/v10 layouts retain it. Historical
+v4-v8 keep their original worker lists and cannot be relabeled as current
+evidence. None of these inspection layouts activates v6 storage sampling.
 
 Complete validation precedes HTML/PDF output and runs during bundle verification
 even without views. Absent bounded evidence requires the exact excluded,
@@ -562,8 +601,9 @@ This is a finite producer contract within existing inventory payloads, not a
 new strict evidence schema or a generic validator for arbitrary attributes.
 Bundle signatures, no-view verification, linked parent references, independent
 trust choices and semantic view verification retain their existing rules.
-Current v7, its twelve workers, the 22-row catalog and historical v4/v5/v6
-contracts remain unchanged. The full host suite and selected native Linux
+That inventory increment preserved its then-current v7, twelve workers, the
+22-row catalog and historical v4/v5/v6 contracts.
+The full host suite and selected native Linux
 amd64/386 fixtures passed; broader physical, image, durability and release gates remain open.
 
 ## Firmware and TPM Inventory Assertions
@@ -592,9 +632,9 @@ truth, device health, measured boot or attestation. This producer is not a new
 strict evidence schema or a generic semantic validator for arbitrary inventory
 attributes. Existing no-view and semantic-view rules, linked parent references,
 and independently selected parent/child trust policies remain unchanged.
-The full host suite and selected native Linux amd64/386 fixtures passed. Quick
-v7, standard v8 and historical report behavior are retained; physical, image,
-durability and release gates remain separate.
+The full host suite and selected native Linux amd64/386 fixtures passed for
+that inventory increment, which preserved Quick v7, Standard v8 and historical
+report behavior. Physical, image, durability and release gates remain separate.
 
 ## Memory Device Inventory Assertions
 
@@ -642,9 +682,10 @@ coverage. Counts establish completed checked operations, not CPU time or
 utilization. Ready workers resume their existing arithmetic state and cadence;
 readiness checks cannot satisfy the further load-check requirement.
 
-Current standard reports require the thirteen-worker v8 journal with
+Current Standard reports require the fourteen-worker v10 journal with
 `profile: standard`, the retained run-integrity row and a fresh in-process final
-gate. Every dispatched stress outcome has strict evidence plus an exact-file
+gate. Historical Standard v8 retains its thirteen-worker contract.
+Every dispatched stress outcome has strict evidence plus an exact-file
 SHA-256 and a domain-separated canonical typed digest in `cpu_stress_source`.
 A null source is valid only for an undispatched row. An error note cannot replace
 malformed, adverse, cleanup-uncertain or missing dispatched evidence. The raw
@@ -659,8 +700,9 @@ remains a failure through cancellation or late heat. Hard monitoring faults and
 coverage loss remain visible even when another cause determines the primary stop
 reason. Absent or partial telemetry cannot authorize a passing load.
 
-Quick v7 and historical v4/v5/v6 evidence retain their own wire and note rules;
-v6 storage reading does not activate storage in v8. Exact historical stress
+Historical v4-v8 and current Quick v9/Standard v10 retain their own wire and
+note rules; explicit v6 storage reading does not activate current sampling.
+Exact historical stress
 supervisor notes remain admissible. Observed statuses, decoded stress identities
 and schema claims route opaque or forged evidence through strict validation,
 including re-signed bundles without views. Both linked and unlinked manifests
@@ -668,7 +710,7 @@ retain the same report-envelope v1. Canonical HTML/PDF displays and hardware
 comparison consume the validated report; signatures authenticate assertions,
 not the physical truth of the test.
 
-The complete source passed the host suite: 6,732 test/subtest passes across
+The CPU stress increment passed the host suite: 6,732 test/subtest passes across
 30 packages, with 17 test skips and one package skip. All 493 required named
 outcomes across 69 selected roots passed. Selected native tests passed on Linux
 amd64 and 386: 6,040 test/subtest outcomes across 18 package executions, covering
@@ -709,9 +751,10 @@ Source digests, close/final-binding flags and timing remain signed assertions;
 they do not prove kernel behavior, precise monotonic acceptance or physical
 continuity. Buffered sample consistency cannot establish drive health, uncached
 I/O or full-media coverage. Historical v4/v5 wire behavior stays supported and
-those schemas reject storage sampling claims. Current commands emit v7
-sessions with twelve workers; this reader adds no media worker or command and
-leaves the sampling catalog entry inactive. Host fixture tests and Linux
+those schemas reject storage sampling claims. Current commands emit Quick v9
+with thirteen workers or Standard v10 with fourteen. This reader adds no media
+worker or command and leaves the sampling catalog entry inactive.
+Host fixture tests and Linux
 amd64/386/arm64 cross-builds passed. Reader fixtures subsequently passed
 natively on Linux amd64 and 386, including 62 verify/compare CLI cases
 using provisioned trust and no/both views. That reader cohort predates

@@ -143,9 +143,11 @@ The development standard profile now adds an explicit bounded CPU stress step.
 Select `session -profile standard` with a matching frozen standard plan. Automatic
 boot and an omitted session profile remain quick; the development console requires
 explicit `S` to choose standard. Standard defaults to a
-900-second session budget and has thirteen workers, with stress immediately
-after a passing CPU quick check. The existing quick v7 path retains twelve
-workers. The catalog still contains 22 rows; nine families remain inactive.
+900-second session budget and uses fourteen workers in journal v10, with stress
+immediately after a passing CPU quick check. Current Quick uses thirteen workers
+in v9. The 22-row catalog has fourteen implemented rows and eight inactive
+families. The earlier CPU stress qualification below used Standard v8/thirteen
+and Quick v7/twelve.
 
 The stress worker requests a shared 600-second elapsed load window after every
 worker has completed its initial checked arithmetic. Its 660-second local
@@ -155,7 +157,7 @@ lost. A pass also requires further checked work from every worker; elapsed time
 alone is insufficient. Counters do not measure CPU time, utilization, core
 coverage, performance or physical CPU health.
 
-The complete source passed the host suite: 6,732 test/subtest passes across
+The CPU stress increment passed the host suite: 6,732 test/subtest passes across
 30 packages, with 17 test skips and one package skip. All 493 required named
 outcomes across 69 selected roots passed. Selected native tests passed on Linux
 amd64 and 386: 6,040 test/subtest outcomes across 18 package executions, covering
@@ -200,11 +202,13 @@ These checks cover an owned userspace working set, not all installed RAM or ever
 hardware fault. Rebuilt-image and physical-memory validation remain open.
 
 Development source now also monitors temperatures throughout the quick session,
-including excluded-test runs, cleanup and final inventory. Journal v4 records
-initial, periodic and final observations and requires both session monitors to
-join before signing. Heat stops work without erasing earlier failures; missing
-telemetry remains a coverage limitation. Windows tests, vet, cross-builds,
-native Linux amd64/386 suites, race checks and all 15 CLI scenarios passed.
+including excluded-test runs, cleanup and final inventory. The v4 increment
+introduced initial, periodic and final observations and required both session
+monitors to join before signing; current v9/v10 journals retain those rules.
+Heat stops work without erasing earlier failures; missing
+telemetry remains a coverage limitation. That thermal increment passed Windows
+tests, vet, cross-builds, native Linux amd64/386 suites, race checks and all 15 CLI
+scenarios.
 The VM session scenarios reported unavailable temperature telemetry honestly;
 rebuilt-image and physical-sensor qualification remain open. See
 [requirements validation](docs/requirements-validation.md).
@@ -238,7 +242,8 @@ hhpt pointer -duration 30s -timeout 90s -output pointer.json
 
 Pointer joins the quick session's shared five-minute budget and signed results;
 direct `capture` retains its existing subset and does not run this guided check.
-The selection menu offers twelve modern or ten legacy quick tests. Pointer
+The current selection menu offers thirteen modern or eleven legacy Quick tests.
+Pointer
 definition 2 and evidence v2 add advertised wheel directions and require a fresh
 plan. That pointer increment retained session v5 with eleven workers. Historical
 pointer v1 retains its original
@@ -267,11 +272,28 @@ and command-line workflows passed. Rebuilt images, physical keyboards and full
 layout/rollover validation remain open. See
 [requirements validation](docs/requirements-validation.md).
 
+Development source also connects the bounded legacy single-contact touchpad
+check to planning, Quick selection, session execution, signed reports and
+HTML/PDF views. The derived `touchpad_candidate=true` inventory marker can make
+definition 2 applicable; candidacy is not proof that the device is supported.
+The worker follows pointer in Quick v9 and Standard v10. Direct capture does
+not run guided touchpad actions.
+
+Windows software qualification passed with Go 1.27.2, including all 583
+activation test/subtest names in both focused architectures and the full suite.
+Earlier Linux core/adapter fixtures do not qualify this later integrated route.
+Integrated Linux/native checks, real evdev/device behavior, broader gestures,
+rebuilt images, physical testing, the pilot and release gates remain open.
+See the [touchpad scope](docs/requirements-validation.md#touchpad-inventory-and-strict-evidence)
+and [operator steps](docs/operator-guide.md#bounded-touchpad-check).
+
 The exterior-inspection check records an operator's finite observation of safely
 visible enclosure surfaces, without moving or opening the device. It does not
-verify physical condition or imply coverage of unseen surfaces. Current v7
-sessions append this check after the existing eleven workers; finalized reports
-contain 22 catalog results plus run integrity. Direct capture retains its
+verify physical condition or imply coverage of unseen surfaces. The v7 increment
+appended this check after the earlier eleven workers. Current v9/v10 sessions
+retain exterior inspection, and finalized reports contain 22 catalog results
+plus run integrity.
+Direct capture retains its
 seven-check subset and does not acquire this observation.
 
 The complete implementation passed the host suite, formatting, vet and three
@@ -290,8 +312,9 @@ exported, and these rows do not establish component identity. No rows means no
 reported supply data, not proof that a battery or adapter is absent.
 
 These are separate driver observations, not battery-health or AC/battery
-transition tests. The feature adds no worker or catalog row and leaves current
-v7 sessions and historical report contracts unchanged. The full host suite and
+transition tests. That inventory increment added no worker or catalog row and
+preserved its then-current v7 sessions and historical report contracts.
+The full host suite and
 selected native Linux amd64/386 fixtures passed; see the [operator interpretation](docs/operator-guide.md#read-power-supply-inventory)
 and [validation contract](docs/requirements-validation.md#power-supply-inventory).
 Physical testing, the ten-PC pilot, rebuilt images and release approval remain
@@ -330,7 +353,7 @@ Broader SPD, ECC, topology, speed and firmware/OS reconciliation remain open.
 The periodic-monitor milestone introduced read-only mount/network sampling
 and a v3 session journal, without changing the catalog or ten worker outcomes.
 The v4 increment retained that monitor summary and added thermal evidence;
-the current v7 workflow keeps those same monitoring requirements.
+current Quick v9 and Standard v10 keep those same monitoring requirements.
 Its first unsafe or uncertain observation stops active work and blocks signing.
 This is bounded periodic coverage, not continuous safety monitoring or kernel
 preemption. Automated tests, native Linux suites, race checks, and signed CLI
@@ -352,9 +375,12 @@ readiness result.
 Offline report reading additionally supports the finite storage sampling evidence
 and explicit v6 session format through verification, HTML/PDF views and
 comparison. This checks signed assertions and separates accepted work from
-diagnostics; it does not perform media reads. Current quick sessions use v7 with twelve workers; explicit standard sessions
-use v8 with thirteen. The sampling catalog entry remains inactive. See
-[report integrity](docs/report-integrity.md) for the evidence and cleanup limits.
+diagnostics; it does not perform media reads. Current Quick sessions use v9
+with thirteen workers; explicit Standard uses v10 with fourteen. Historical
+v4-v8 reports retain their version-specific read rules, without authorizing
+stale plans for current execution. The sampling catalog entry remains inactive.
+See [report integrity](docs/report-integrity.md) for the evidence and cleanup
+limits.
 
 `hhpt network` inventories only hardware-backed Ethernet and Wi-Fi interfaces,
 checks driver binding, records link state without retaining MAC addresses, and

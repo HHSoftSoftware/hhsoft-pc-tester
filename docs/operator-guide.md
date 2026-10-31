@@ -96,10 +96,12 @@ After the HHSoft splash appears, a 15-second inactivity timer begins.
 
 The quick profile is offline and uses read-only device discovery. It runs a
 short CPU known-answer load, bounded RAM patterns and inversions, device-node
-readiness checks, guided keyboard and relative-pointer actions, and modern-image
-graphics/display checks where applicable, and the bounded exterior observation.
-The choices cover twelve tests on modern images and ten on legacy x86, subject
-to each check's applicability rules.
+readiness checks, guided keyboard, relative-pointer and bounded single-contact
+touchpad actions, modern-image graphics/display checks where applicable, and
+the bounded exterior observation. Current development selection covers thirteen
+tests on modern targets and eleven on legacy x86, subject to applicability.
+Touchpad candidacy does not establish device support; see
+[the bounded check and qualification limits](#bounded-touchpad-check).
 Storage readiness opens eligible block devices read-only and issues no sector
 read. USB readiness issues no application USB transfers. Network readiness configures
 nothing and sends no traffic. An active non-loopback interface or writable
@@ -246,10 +248,11 @@ unlinkable to earlier ones.
 The console shows compact `HHPT_*` progress markers. Important markers are:
 
 - `HHPT_PLAN`: the test plan and initial hardware graph have been frozen.
-- `HHPT_CPU`, `HHPT_MEMORY`, `HHPT_INPUT_READINESS`,
-  `HHPT_POINTER`, `HHPT_AUDIO_READINESS`, `HHPT_NETWORK_READINESS`,
-  `HHPT_STORAGE_READINESS`, `HHPT_USB_READINESS`, `HHPT_GRAPHICS`, and
-  `HHPT_DISPLAY`: individual outcomes.
+- `HHPT_CPU`, `HHPT_CPU_STRESS`, `HHPT_MEMORY`, `HHPT_INPUT_READINESS`,
+  `HHPT_KEYBOARD`, `HHPT_POINTER`, `HHPT_TOUCHPAD`, `HHPT_AUDIO_READINESS`,
+  `HHPT_NETWORK_READINESS`, `HHPT_STORAGE_READINESS`, `HHPT_USB_READINESS`,
+  `HHPT_GRAPHICS`, `HHPT_DISPLAY`, and `HHPT_EXTERIOR_INSPECTION`:
+  individual outcomes.
 - `HHPT_RUN_INTEGRITY status=pass`: the final component graph matches the
   frozen plan. A `fail` plus nonzero added, removed, or changed counts means
   hardware changed during the run; preserve the report but repeat the test
@@ -320,6 +323,42 @@ the result. A readiness result only proves that the associated kernel interface
 could be accessed, not that every key, button, port, pixel, cell, link, or
 media sector works.
 
+## Bounded Touchpad Check
+
+Development source runs the touchpad check after pointer in Quick v9 and
+Standard v10. A detected candidate may still be unsupported; the implemented
+subset is legacy single-contact absolute-event input, not multi-touch or
+gesture coverage. Quick's `C` menu can exclude the check. Standard requires
+the default set and rejects nonempty Quick exclusions.
+
+Follow the displayed instructions: lift all fingers, then use one finger to
+move left/right and up/down repeatedly. Lift to finish the contact, and press
+and release the primary button. Repeat motions if needed; unchanged axes may
+delay a fresh baseline. Each interface must supply its own observations.
+Missing actions are incomplete coverage, not proof of a defective touchpad.
+
+The default observation window is 30 seconds within a 90-second command limit
+and the remaining session budget. A standalone diagnostic is available:
+
+```sh
+hhpt touchpad -duration 30s -timeout 90s -output touchpad.json
+```
+
+Exit 0 means validated diagnostic JSON was written, including non-pass results;
+it does not mean the touchpad passed. Incomplete actions, lost records, changed
+devices and uncertain cleanup cannot become a pass. Cleanup uncertainty retains
+exit 12 and stops session signing. Evidence contains bounded action summaries,
+not raw event traces or coordinate samples. Direct capture omits this guided
+check along with keyboard, pointer and exterior observation.
+
+The connected route passed Windows software fixtures, including signed
+finalization and report views. Earlier native Linux core/adapter fixtures do
+not qualify the later integrated route. Integrated Linux/native checks, real
+evdev/kernel behavior, installed-command and rebuilt-image checks, physical
+touchpads, the pilot and release approval remain open. Edges, tap, multi-touch,
+scroll and gestures remain outside this check. See
+[the exact scope](requirements-validation.md#touchpad-inventory-and-strict-evidence).
+
 ## Start Standard from the Development Console
 
 The updated startup scripts offer `S` followed by Enter to request standard.
@@ -347,20 +386,24 @@ The outer deadlines do not establish complete process cleanup. Invalid handoffs
 and failed planning prevent the session; session or final safety failures prevent
 ready/save progression and retain available diagnostics.
 
-Host validation and selected native Linux amd64/386 tests have passed, along
-with all 18 startup-shell fixture methods using owned command stubs. Native
+The earlier Standard console increment passed host validation and selected
+native Linux amd64/386 tests, along with all 18 startup-shell fixture methods
+using owned command stubs. Native
 Linux amd64 and 386 VM runs also exercised the explicit `S` path through a
 matching frozen plan, session and CLI verification of a self-issued report.
 Cancellation smoke and one full 600-second CPU load per architecture completed
-with confirmed cleanup. Those runs used synthetic 35 C thermal observations.
-Qualification of the four rebuilt bootable images, physical hardware, the
+with confirmed cleanup. Those runs used synthetic 35 C thermal observations
+and preceded touchpad activation. The later integrated touchpad route retains
+its separate Linux/native gate. Qualification of the four rebuilt bootable
+images, physical hardware, the
 ten-PC pilot and release approval remains separate; see the
 [console validation record](requirements-validation.md#standard-console-launch).
 
 ## Optional Standard CPU Stress
 
-This development path is opt-in. Host, selected native and real elapsed-window
-fixtures have passed; image and physical qualification remain open.
+This development path is opt-in. The earlier CPU stress increment passed host,
+selected native and real elapsed-window fixtures; image and physical
+qualification remain open.
 Automatic boot and an omitted session profile continue to select quick; the
 updated development console requires explicit `S` to choose standard. A standard
 plan does not by itself authorize the longer load; select the same profile in
@@ -372,8 +415,9 @@ hhpt session -profile standard -plan standard-plan.json -fingerprint-key fingerp
 ```
 
 Standard defaults to a 900-second session budget, the existing maximum. It adds
-one worker after a passing CPU quick check, for thirteen workers instead of the
-quick profile's twelve. CPU stress requests 600 seconds of shared elapsed load
+one worker after a passing CPU quick check. Current Standard v10 has fourteen
+workers and Quick v9 has thirteen.
+CPU stress requests 600 seconds of shared elapsed load
 following preparation, within a 660-second local watchdog that starts at invocation.
 A shorter remaining session budget may prevent load or leave an incomplete result;
 the command does not silently shorten the requested window into a pass.
@@ -737,9 +781,9 @@ checks before started workers, final observations, and a fresh check before
 signing. The periodic-monitor increment introduced a journal v3 summary while retaining
 the same ten worker outcomes. It samples read-only mount and network metadata
 once per second, allows one second per observation and at most 2,500 milliseconds
-between observations. As in the qualified v4/v5 workflows, current v7 monitoring
-remains active through
-final inventory and the final gate. Its first unsafe,
+between observations. As in the qualified v4/v5 workflows, current v9/v10
+monitoring remains active through final inventory and the final gate.
+Its first unsafe,
 unknown, timed-out, or excessively delayed observation stops active work and
 blocks signing; a later safe result cannot erase it. The monitor must join
 within two seconds before signing. A clean operator stop can still be reported.
@@ -762,7 +806,8 @@ before session launch and after report creation remain separate operational gate
 capture and direct finalization without a session journal retain their older
 limited scope and do not claim this session history.
 
-Reports using v4, v5, v6 or v7 also show run-wide thermal coverage and any observed limit.
+Reports using supported v4-v10 journals also show run-wide thermal coverage
+and any observed limit.
 The initial and final thermal readings are required even in a sub-second or all-off
 session. `thermal_finding=limit_reached` means a valid global or local CPU/RAM
 observation reached the limit; `no_limit_observed` means no such observation was
@@ -822,8 +867,11 @@ Supported functional claims also pass shared schema and binding checks, even
 when views are omitted. This includes explicit v6 storage evidence read support;
 accepted work stays distinct from diagnostics, and unconfirmed cleanup rejects
 the report. The utility does not rerun hardware tests or reconstruct original
-collection events. Current appliance commands emit v7 sessions with twelve
-workers and do not perform sampled storage reads.
+collection events. Current development commands emit Quick v9 with thirteen
+workers or Standard v10 with fourteen, without sampled storage reads.
+Historical v4-v8 reports remain readable under their own rules. This offline
+compatibility does not authorize an old plan for current execution; freeze a
+new plan against the current catalog.
 
 Compare two sessions made with the same deployment-key token:
 
@@ -1004,9 +1052,10 @@ contract; their existing authorization and output rules remain in force.
 
 ## Current Limits
 
-- Only the safe quick profile is connected to the automatic boot workflow.
-  Standard, extended, destructive, PXE, server upload/share, and authenticated
-  managed-deployment workflows are not operator-ready.
+- Only the safe Quick profile is connected to automatic boot. The bounded
+  Standard development path requires explicit selection; the complete Standard
+  matrix, extended, destructive, PXE, server upload/share and authenticated
+  managed-deployment workflows remain incomplete.
 - Quick CPU and RAM tests are bounded samples, not sustained stress or complete
   memory qualification. Full-media memory testing remains a separate future
   boot path.
@@ -1023,9 +1072,12 @@ contract; their existing authorization and output rules remain in force.
 - Input readiness checks read-only event-device access. Guided pointer testing
   adds relative X/Y movement, primary/advertised right/middle button cycles and
   advertised wheel directions. Guided keyboard testing adds six fixed
-  press/release controls on each keyboard. These checks do not prove every key,
-  wheel precision, extra button or touch geometry.
-  Direct capture retains the readiness subset and omits both guided workers.
+  press/release controls on each keyboard. The bounded touchpad check adds
+  single-contact absolute movement and a primary-button cycle. These checks do
+  not prove every key, wheel precision, extra button, touch geometry or gesture.
+  Direct capture retains the readiness subset and omits all three guided input
+  checks. The integrated touchpad route still needs Linux/native, real-device,
+  installed/image, physical and pilot qualification.
 - Storage testing is readiness only: no SMART/NVMe health qualification,
   sampled sector verification, throughput, optical-media read, or complete
   media scan.

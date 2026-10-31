@@ -85,12 +85,19 @@ runs; all 2,603 focused and 3,453 full-suite selected names passed.
 
 The 19-command qualification also passed formatting, vet and twelve Linux
 builds: three application builds and nine test builds for the command, input
-and inventory packages across amd64, 386 and arm64. These Linux artifacts were
-not executed.
+and inventory packages across amd64, 386 and arm64. At that host-only stage,
+those Linux artifacts had not been executed.
 
-Native Linux execution, real evdev/device behavior, installed-command and
-rebuilt-image checks, physical touchscreens, all four bootable images, the
-ten-PC pilot and release approval remain open. Broader
+Selected native fixtures subsequently passed on Linux amd64 and 386 for the
+command, input and session-evidence packages: 2,952 named outcomes across six
+package/architecture runs and 344 root executions, with no skips or failures.
+Nine ownership cases, 32 archive cases and all six postchecks passed, with
+cleanup confirmed. These are bounded software fixtures, not observations of
+real touchscreen devices or an installed command.
+
+Real evdev/device behavior, installed-command checks, ARM runtime, race checks,
+rebuilt images, physical touchscreens, all four bootable images, the ten-PC
+pilot and release approval remain open. Broader
 keyboard/mouse/touchpad/touchscreen coverage stays on the
 [project checklist](../PROJECT_CHECKLIST.md).
 

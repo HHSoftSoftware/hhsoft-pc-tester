@@ -553,9 +553,15 @@ Focused amd64 and 386 runs each passed 8,369 test/subtest outcomes with seven
 platform skips; the full suite passed 11,238 with eighteen skips. All 794 new
 named checks passed in each run. Formatting, vet and twelve Linux builds passed:
 three application builds and nine command/input/inventory test builds across
-amd64, 386 and arm64. None of these Linux artifacts was executed. Native
-execution, real touchscreen behavior, rebuilt images, the ten-PC pilot and
-release approval remain open. See [operator guidance and scope](touchscreen-quick.md).
+amd64, 386 and arm64. At that host-only stage, those Linux artifacts had not
+been executed. Subsequent selected native Linux amd64 and 386 fixtures passed
+2,952 named outcomes across six package/architecture runs and 344 root
+executions, with no skips or failures. Nine ownership cases, 32 archive cases
+and all six postchecks passed, with cleanup confirmed.
+
+Real evdev/device behavior, installed-command checks, ARM runtime, race checks,
+rebuilt images, physical touchscreens, the ten-PC pilot and release approval
+remain open. See [operator guidance and scope](touchscreen-quick.md).
 
 The CPU worker now adds twelve fixed scalar binary64 operations per suite, with
 per-worker counts and exact mismatch bits. Definition 2 uses CPU v3 evidence in
@@ -577,6 +583,29 @@ confirmed buffer accesses and reverse indexing. Native Linux suites, race tests
 and signed direct, standalone and session workflows passed. Rebuilt images,
 physical memory, broader working sets, SPD/ECC, extended stress and Memtest86+
 remain open. The frozen alpha scope is unchanged.
+
+A separate `hhpt memory-stress` command is implemented in development source.
+It requests a fixed 30-minute load over one 4-64 MiB working set selected against
+fresh available memory. Initial and ongoing thermal admission, checked logical
+work, a final read and confirmed cleanup share a 31-minute watchdog. Its strict
+JSON diagnostic is separate from quick-memory and signed-session authority.
+See [the command and scope guide](memory-stress.md).
+
+All 19 host-validation commands passed: formatting/checks for 13 Go files,
+196 named fixture passes without skips on each of Windows amd64 and 386,
+11,434 full-suite passes with 18 retained platform skips, vet, three Linux
+application builds and nine Linux test-binary builds. The Linux artifacts
+were not executed. Native Linux/race checks and an actual 1,800-second load
+remain pending for this addition. The earlier RAM quick qualification above
+remains evidence for that earlier implementation.
+
+The `memory.stress` catalog row remains inactive, with fifteen implemented and
+seven inactive catalog rows overall. Quick v11/fourteen workers and Standard
+v12/fifteen workers retain their current schedules and the 900-second Standard
+budget. The next integration work is an explicitly selected longer profile,
+its frozen plan and versioned journal, and strict signed consumers and views.
+Broader working sets, SPD/ECC, Memtest86+, rebuilt images, physical systems,
+the ten-PC pilot and release approval remain open.
 
 The audio readiness acquisition increment checks closure of its owned root,
 registry and attribute handles, bounds metadata reads and retains earlier

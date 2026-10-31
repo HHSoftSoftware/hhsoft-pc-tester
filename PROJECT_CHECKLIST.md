@@ -343,6 +343,27 @@ the alpha still requires the separate documented release gates.
 - [ ] Qualify the RAM increment in rebuilt beta images and on representative
   physical memory systems. Broader working-set and hardware-fault coverage remain
   open.
+- [x] Implement the standalone `hhpt memory-stress` diagnostic in development
+  source: one owned 4-64 MiB working set, fresh availability and thermal
+  admission, a fixed 1,800-second load request and a 1,860-second watchdog,
+  checked cycle accounting, final verification and confirmed cleanup before
+  diagnostic output. See [operator guidance](docs/memory-stress.md).
+- [x] Keep stress JSON distinct from quick-memory and signed-session evidence.
+  The `memory.stress` catalog row remains inactive. The catalog stays at fifteen
+  implemented and seven inactive rows; Quick v11/fourteen workers and Standard
+  v12/fifteen workers with a 900-second budget are unchanged.
+- [x] Validate this standalone addition with 19 host commands: formatting/checks
+  for 13 Go files, 196 named fixture passes without skips on each of Windows
+  amd64 and 386, and 11,434 full-suite passes with 18 retained platform skips.
+  Vet, three Linux application builds and nine Linux test-binary builds passed;
+  the Linux artifacts were compiled but not executed.
+- [ ] Qualify native Linux fixtures, race checks and an actual 1,800-second load
+  for this addition; separately qualify physical memory and thermal behavior.
+- [ ] Integrate memory stress into an explicitly selected longer profile with
+  suitable budgets, frozen-plan authorization, versioned journals and strict
+  signed report/view/comparison consumers. Do not insert a 30-minute load into
+  the existing Standard budget. The four-image, physical-PC, ten-PC pilot and
+  release gates remain open.
 - [x] Discover DRM cards, bound drivers, render nodes, connectors, and modes.
 - [x] Detect Mesa hardware acceleration versus software-rendering fallback.
 - [x] Run a bounded KMS display pattern on a connected display.
@@ -478,11 +499,16 @@ the alpha still requires the separate documented release gates.
   and 386 runs each passed 8,369 test/subtest outcomes with seven platform skips;
   the full suite passed 11,238 with eighteen skips. All 794 new named checks
   passed in each run. Formatting, vet and twelve Linux command/test builds
-  passed; the Linux artifacts were not executed.
-- [ ] Validate native touchscreen execution and real devices, including
-  incomplete actions, cancellation and disconnects. Multi-touch, stylus,
-  pressure, calibration and whole-panel coverage remain outside this bounded
-  check. Rebuilt images, the ten-PC pilot and release gates remain open; see
+  passed; those builds initially provided compile-only evidence.
+- [x] Validate selected touchscreen fixtures on native Linux amd64 and 386:
+  2,952 named passes across six package/architecture runs and 344 root
+  executions, with no skips or failures. Nine ownership cases, 32 archive cases
+  and all six postchecks passed, with cleanup confirmed.
+- [ ] Validate real evdev/device behavior, installed commands, ARM runtime and
+  race checks, including incomplete actions, cancellation and disconnects.
+  Multi-touch, stylus, pressure, calibration and whole-panel coverage remain
+  outside this bounded check. Rebuilt images, physical devices, the ten-PC
+  pilot and release gates remain open; see
   [touchscreen scope](docs/touchscreen-quick.md).
 - [x] Check storage mount safety and read-only block-node readiness without
   reading or changing media contents.

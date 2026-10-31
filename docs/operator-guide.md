@@ -172,7 +172,8 @@ The quick-session RAM worker keeps its 30-second limit and shares the remaining
 session budget. Modern automatic selection uses at most a quarter of reported
 available memory, capped at 64 MiB; legacy sessions use 16 MiB and one pass.
 Unreadable availability data retains the conservative 4 MiB fallback. Explicit
-standalone limits stay bounded to 4-512 MiB and one to eight passes. This is an
+standalone limits for `hhpt memory` stay at 4-512 MiB and one to eight passes.
+This is an
 owned userspace working set, not all installed RAM. Full Windows and native
 Linux checks passed, including race tests and signed CLI workflows. Rebuilt-image
 and physical-memory qualification remain pending.
@@ -364,9 +365,11 @@ scroll and gestures remain outside this check. See
 
 The development menu labels this step **Touchscreen movement and release**.
 Connected Windows software qualification covers the command/session,
-finalization and signed report/view route. Linux builds provide compile-only
-evidence; native execution and real-device qualification remain open. See the
-[touchscreen scope and validation status](touchscreen-quick.md).
+finalization and signed report/view route. Selected native Linux amd64 and 386
+fixtures also passed all 2,952 named outcomes without skips or failures.
+Real evdev/device behavior, installed-command checks, ARM runtime, race checks,
+rebuilt images, physical touchscreens, the pilot and release approval remain
+open. See the [touchscreen scope and validation status](touchscreen-quick.md).
 
 Lift every finger before starting. Touch with one finger, move left/right and
 up/down while keeping that contact, then lift to finish it. Repeat if needed;
@@ -475,6 +478,43 @@ temperature observations of 35 degrees C. All-core saturation and physical
 thermal behavior remain unqualified. Rebuilt images and physical validation
 remain open; see [the validation record](requirements-validation.md#bounded-standard-cpu-stress).
 
+
+## Standalone Memory Stress
+
+Development source provides a separate `hhpt memory-stress` JSON diagnostic.
+It requests a fixed 30-minute load over one owned working set, with fresh
+availability and thermal admission, final verification and a shared 31-minute
+watchdog. It is not run by automatic boot, Quick or Standard.
+
+```sh
+hhpt memory-stress -output memory-stress.json
+hhpt memory-stress -bytes 16777216 -output memory-stress-16m.json
+```
+
+Automatic size selection uses at most one quarter of freshly observed available
+memory, capped at 64 MiB and rounded down to whole MiB. An explicit size must be
+4-64 MiB and fit within the same fraction. Unlike the quick worker, this command
+has no conservative fallback when availability cannot be established. It has
+no duration, pass-count, alternate-root or thermal-limit override.
+
+Choose a new output file. Exit 0 means valid diagnostic JSON was written;
+inspect `status` and `stop_reason` to determine the outcome. Exit 12 means
+cleanup was not confirmed and no normal diagnostic was emitted. A mismatch
+cannot become a pass because cancellation or heat followed it. See
+[the complete memory-stress guide](memory-stress.md) for the other exit codes,
+thermal requirements, timing and coverage limits.
+
+The `memory.stress` catalog row remains inactive, and this JSON does not provide
+signed-session authority. The catalog remains fifteen implemented/seven
+inactive rows. Quick v11/fourteen workers and Standard v12/fifteen workers with
+its 900-second budget are unchanged. A longer profile and its signed
+plan/journal/report integration remain separate work.
+
+Host fixture tests passed all 196 named cases without skips on each of Windows
+amd64 and 386. The full Windows suite and vet passed; Linux application and
+test artifacts were compiled only. Native Linux/race checks and an actual
+1,800-second run remain pending for this addition. Four-image,
+physical-memory/thermal, ten-PC pilot and release qualification remain open.
 
 ## Observe the Visible Exterior
 

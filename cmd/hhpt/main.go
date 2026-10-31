@@ -54,6 +54,8 @@ func run(ctx context.Context, arguments []string, stdin io.Reader, stdout, stder
 		return runInventory(ctx, arguments[1:], stdout, stderr)
 	case "keyboard":
 		return runKeyboard(ctx, arguments[1:], stdin, stdout, stderr)
+	case "memory-stress":
+		return runMemoryStress(ctx, arguments[1:], stdout, stderr)
 	case "memory":
 		return runMemory(ctx, arguments[1:], stdout, stderr)
 	case "network":
@@ -182,6 +184,7 @@ func usage(destination io.Writer) {
 	fmt.Fprintln(destination, "       hhpt deployment-key inspect PATH/hhpt-deployment-key.v1")
 	fmt.Fprintln(destination, "       hhpt deployment-key load-media -discovery-key FILE")
 	fmt.Fprintln(destination, "       hhpt display [-pattern-duration 5s] [-finding-timeout 15s] [-output FILE]")
+	fmt.Fprintln(destination, "       hhpt memory-stress [-bytes N] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt memory [-bytes N] [-passes 2] [-timeout 30s] [-thermal-limit-c 90] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt input [-duration 0] [-categories LIST] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt inspect-exterior [-timeout 45s] [-output FILE]")

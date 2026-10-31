@@ -285,8 +285,17 @@ func (monitor *safetyMonitor) fail(err error) {
 // cancelled. All callers receive the same frozen result; late readings cannot
 // rewrite a timed-out cleanup or previously returned evidence.
 func (monitor *safetyMonitor) stop() {
+	monitor.stopBefore(time.Time{})
+}
+
+// stopBefore gives the memory-stress owner an absolute join boundary. A zero
+// boundary preserves the existing quick/CPU stop window and ownership rules.
+func (monitor *safetyMonitor) stopBefore(absoluteDeadline time.Time) {
 	monitor.stopOnce.Do(func() {
 		deadline := time.Now().Add(monitor.stopTimeout)
+		if !absoluteDeadline.IsZero() && absoluteDeadline.Before(deadline) {
+			deadline = absoluteDeadline
+		}
 		close(monitor.stopRequested)
 		timer := time.NewTimer(time.Until(deadline))
 		defer timer.Stop()

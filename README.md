@@ -201,6 +201,17 @@ workflows passed.
 These checks cover an owned userspace working set, not all installed RAM or every
 hardware fault. Rebuilt-image and physical-memory validation remain open.
 
+Development source also implements `hhpt memory-stress`, a standalone JSON
+diagnostic requesting a fixed 30-minute load over a 4-64 MiB working set. It
+uses fresh availability and thermal admission, final verification and a shared
+31-minute watchdog. The `memory.stress` catalog row remains inactive; the
+command is not part of Quick or Standard and does not provide signed-session
+evidence. Host fixture tests passed on Windows amd64 and 386, alongside the full
+Windows suite, vet and Linux cross-builds. Native/race checks and real
+elapsed-duration qualification remain pending for this addition. See
+[memory stress guidance](docs/memory-stress.md) for invocation, result
+interpretation and remaining limits.
+
 Development source now also monitors temperatures throughout the quick session,
 including excluded-test runs, cleanup and final inventory. The v4 increment
 introduced initial, periodic and final observations and required both session
@@ -290,11 +301,14 @@ and [operator steps](docs/operator-guide.md#bounded-touchpad-check).
 The bounded single-contact touchscreen route is implemented across its command,
 current plan/menu, session, owned finalization and signed reports/views.
 Connected Windows software qualification passed in both focused architectures
-and the full suite. Twelve Linux command/test builds passed and provide
-compile-only evidence. The check covers movement and release; multi-touch,
-stylus, calibration and whole-panel coverage remain outside its scope. See the
+and the full suite. Twelve Linux command/test builds initially provided
+compile-only evidence. Selected native Linux amd64 and 386 fixtures have since
+passed 2,952 named outcomes without skips or failures. The check covers movement
+and release; multi-touch, stylus, calibration and whole-panel coverage remain
+outside its scope. Real evdev/devices, installed commands, ARM runtime, race,
+rebuilt images, physical testing, the pilot and release checks remain open. See the
 [touchscreen guide](docs/touchscreen-quick.md) for the supported interface,
-development command and remaining native, physical and release validation.
+development command and validation scope.
 
 The exterior-inspection check records an operator's finite observation of safely
 visible enclosure surfaces, without moving or opening the device. It does not

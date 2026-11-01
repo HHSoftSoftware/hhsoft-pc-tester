@@ -90,6 +90,9 @@ func (collector *linuxCollection) readProc(name string, role inventoryProcRole) 
 			err = budgetErr
 		} else {
 			observed = observationErr == nil
+			if !observed && (len(data) != 0 || !knownObservationAbsence(observationErr)) {
+				err = collector.acquisitionBudget.recordObservationFailure(limit)
+			}
 		}
 	}
 	if err != nil {

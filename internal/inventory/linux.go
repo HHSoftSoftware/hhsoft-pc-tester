@@ -40,15 +40,22 @@ func NewLinuxCollectorWithSource(source PathSource) *LinuxCollector {
 }
 
 func (collector *LinuxCollector) Collect(ctx context.Context) (Snapshot, error) {
+	snapshot, _, err := collector.CollectWithDiagnostics(ctx)
+	return snapshot, err
+}
+
+// CollectWithDiagnostics returns bounded read-failure counts from the same pass.
+// Diagnostics are separate from the schema-1 snapshot and are zero on failure.
+func (collector *LinuxCollector) CollectWithDiagnostics(ctx context.Context) (Snapshot, CollectionDiagnostics, error) {
 	if collector == nil || nilInventoryValue(collector.Source) {
-		return Snapshot{}, ErrNoPathSource
+		return Snapshot{}, CollectionDiagnostics{}, ErrNoPathSource
 	}
 	if ctx == nil {
-		return Snapshot{}, ErrInvalidContext
+		return Snapshot{}, CollectionDiagnostics{}, ErrInvalidContext
 	}
 	collection := collector.newCollection(ctx)
 	if !collection.check() {
-		return Snapshot{}, collection.err
+		return Snapshot{}, CollectionDiagnostics{}, collection.err
 	}
 	groups := []func() []Component{
 		collection.collectCPU, collection.collectMemory, collection.collectDMI,
@@ -60,15 +67,19 @@ func (collector *LinuxCollector) Collect(ctx context.Context) (Snapshot, error) 
 	var components []Component
 	for _, collect := range groups {
 		if !collection.check() {
-			return Snapshot{}, collection.err
+			return Snapshot{}, CollectionDiagnostics{}, collection.err
 		}
 		group := collect()
 		if !collection.check() {
-			return Snapshot{}, collection.err
+			return Snapshot{}, CollectionDiagnostics{}, collection.err
 		}
 		components = append(components, group...)
 	}
-	return collection.snapshot(components, NewSnapshot)
+	snapshot, err := collection.snapshot(components, NewSnapshot)
+	if err != nil {
+		return Snapshot{}, CollectionDiagnostics{}, err
+	}
+	return snapshot, collection.acquisitionBudget.diagnostics, nil
 }
 
 func (collector *linuxCollection) collectMemory() []Component {

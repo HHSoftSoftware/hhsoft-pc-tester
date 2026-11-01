@@ -99,7 +99,7 @@ func run(ctx context.Context, arguments []string, stdin io.Reader, stdout, stder
 }
 
 func runInventory(ctx context.Context, arguments []string, stdout, stderr io.Writer) int {
-	return runInventoryWith(ctx, arguments, stdout, stderr, inventory.NewLinuxCollector("/").Collect)
+	return runInventoryWithDiagnostics(ctx, arguments, stdout, stderr, inventory.NewLinuxCollector("/").CollectWithDiagnostics)
 }
 
 func runInventoryWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector) int {

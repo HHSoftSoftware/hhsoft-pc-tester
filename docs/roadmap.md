@@ -335,8 +335,26 @@ vet and six Linux amd64/386/AArch64 application and inventory-test builds passed
 Those artifacts were compiled only; no new Linux runtime, boot-image or
 physical-device qualification is claimed.
 
-Remaining parser expansion, aggregate/peak allocation, CPU time budgets and
-optional field-error visibility remain open. These logical limits exclude
+Optional file-read diagnostics now have a same-pass, fixed-size companion.
+Only `hhpt inventory` consumes it: a fixed stderr warning contains four bounded
+counts for scalar, CPU, memory and input read failures. Counts describe failed
+attempts, not distinct devices. Trusted clean absence and completed empty reads
+remain quiet; no path or provider error text enters the warning. Classifying
+these file errors does not invoke provider `Error`, `Is` or `Unwrap` callbacks.
+Fatal collection errors still return no partial snapshot or diagnostics. The
+schema-1 snapshot, component identities and fingerprint/correction inputs are
+unchanged. Regression tests cover privacy, count bounds, error/closure/cancellation
+precedence, fresh-call isolation, 325 instances and CLI output compatibility.
+
+The full Windows amd64 and 386 suites each passed 12,152 tests/subtests with the
+same 18 retained skips, including all 99 new names. Formatting, vet and six
+Linux amd64/386/AArch64 application and inventory-test builds passed. These
+Linux artifacts were compiled only; Linux runtime, rebuilt-image and
+physical-device qualification remain open.
+
+Remaining parser expansion, aggregate/peak allocation and CPU time budgets,
+along with field-specific diagnostics and warning coverage for other
+inventory/report consumers, remain open. These logical limits exclude
 allocator overhead, raw source storage, later downstream copies and provider
 allocations; they do not establish a whole-heap bound or kernel preemption.
 Cancellation cannot interrupt a blocked source call. This inventory increment

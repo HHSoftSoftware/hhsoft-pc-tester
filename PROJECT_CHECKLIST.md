@@ -730,8 +730,21 @@ the alpha still requires the separate documented release gates.
   time limit; completed other packages plus a fresh complete CLI run provide
   the 386 coverage. Formatting, vet and six Linux application/inventory-test
   builds passed. Linux artifacts were compiled only.
+- [x] Add a same-pass, fixed-size diagnostic companion for optional inventory
+  file reads. Only `hhpt inventory` consumes it, as one bounded stderr warning
+  with scalar, CPU, memory and input failure counts. Clean absence and completed
+  empty reads remain quiet; paths and provider error text are excluded. Schema-1
+  snapshots, component identities and fingerprint/correction inputs are retained.
+- [x] Validate the observation-diagnostic increment on Windows amd64 and 386:
+  12,152 test/subtest passes and the same 18 retained skips per architecture,
+  including all 99 new names. Regressions cover error classification without
+  provider callbacks, count limits, fatal/closure/cancellation precedence,
+  fresh-call reset, 325 instances and CLI output compatibility. Formatting, vet
+  and six Linux application/inventory-test builds passed; these Linux artifacts
+  were compiled only. Linux runtime and physical-device validation remain open.
 - [ ] Bound remaining parser expansion, aggregate/peak allocation and parser
-  CPU time; improve optional field-error visibility. Logical parser and
+  CPU time; add field-specific diagnostics and warning coverage for other
+  inventory/report consumers. Logical parser and
   acquisition budgets do not establish a whole-heap bound or kernel preemption.
   Legacy providers may allocate before returning, and cancellation cannot
   interrupt a blocked call. Broader Linux runtime, rebuilt-image, physical-device,

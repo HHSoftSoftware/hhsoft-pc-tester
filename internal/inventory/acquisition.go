@@ -25,8 +25,9 @@ const (
 // not allocations inside callbacks, parser expansion, peak heap use or time
 // spent inside a kernel operation.
 type inventoryAcquisitionBudget struct {
-	attempts int
-	bytes    int
+	attempts    int
+	bytes       int
+	diagnostics CollectionDiagnostics
 }
 
 func newInventoryAcquisitionBudget() inventoryAcquisitionBudget {
@@ -39,7 +40,8 @@ func newInventoryAcquisitionBudget() inventoryAcquisitionBudget {
 func (budget *inventoryAcquisitionBudget) valid() bool {
 	return budget != nil &&
 		budget.attempts >= 0 && budget.attempts <= maxInventoryFileAttempts &&
-		budget.bytes >= 0 && budget.bytes <= maxInventoryAcquisitionBytes
+		budget.bytes >= 0 && budget.bytes <= maxInventoryAcquisitionBytes &&
+		budget.diagnostics.Valid()
 }
 
 func (budget *inventoryAcquisitionBudget) chargeAttempt() error {
@@ -92,6 +94,11 @@ func readInventoryBytesWithBudget(ctx context.Context, name string, limit int, o
 		}
 		if err := ctx.Err(); err != nil {
 			return nil, false, err
+		}
+		if !knownObservationAbsence(openErr) {
+			if err := budget.recordObservationFailure(limit); err != nil {
+				return nil, false, err
+			}
 		}
 		return nil, false, nil
 	}
@@ -150,6 +157,10 @@ func readInventoryBytesWithBudget(ctx context.Context, name string, limit int, o
 			return nil, false, budgetErr
 		}
 		if readErr != nil && readErr != io.EOF {
+			// Absence is only a clean open outcome, never a failed owned read.
+			if err := budget.recordObservationFailure(limit); err != nil {
+				return nil, false, err
+			}
 			return nil, false, nil
 		}
 		if err := ctx.Err(); err != nil {

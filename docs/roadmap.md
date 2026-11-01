@@ -1138,8 +1138,19 @@ policy limit. See
   image for wipe and full write qualification.
 - Implement the adapter package/protocol/runtime contract, including burn-in
   support, and validate third-party adapter conformance.
-- Add signed correction/supersession history beyond the implemented one-hop
-  retest reference, preserving immutable originals and independent trust.
+- The standalone [signed display correction](corrections.md) source connects
+  addendum creation, verification, and an original/operator comparison for four
+  public System fields. Original observations, HMACs, fingerprints, and test
+  evidence remain unchanged. Both full Windows amd64 and 386 suites passed
+  12,300 tests/subtests with 18 retained skips, including the 148 initial
+  correction names. Five added parser-budget cases passed separately per
+  architecture with no production change. Formatting, vet, and Linux
+  amd64/386/AArch64 application and updated correction-test builds passed.
+  Linux compile checks do not establish runtime or installed-image behavior;
+  Linux runtime, physical-PC pilot, and release gates remain open.
+- Add complete signed correction/supersession history beyond the one-hop retest
+  reference and one selected display addendum, retaining immutable originals,
+  independent trust, and distinct revocation/custody semantics.
 - Add separately consented encrypted restricted-evidence export with the
   required privacy controls.
 - Expand BIOS and EFI device matrices in CI.

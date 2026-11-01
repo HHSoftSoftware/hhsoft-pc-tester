@@ -8,6 +8,7 @@ import (
 	"reflect"
 	"time"
 
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/correction"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/plan"
 )
 
@@ -19,6 +20,8 @@ const (
 	retestFingerprintKeyInput
 	retestSigningKeyInput
 	retestLaunchSelectionInput
+	retestCorrectionRequestInput
+	retestCorrectionArtifactInput
 )
 
 var (
@@ -65,6 +68,10 @@ func readRetestInputWithOperations(ctx context.Context, path string, kind retest
 		minimum, maximum = 64, 64
 	case retestLaunchSelectionInput:
 		minimum, maximum = 1, plan.MaximumLaunchSelectionBytes
+	case retestCorrectionRequestInput:
+		minimum, maximum = 1, correction.MaximumRequestBytes
+	case retestCorrectionArtifactInput:
+		minimum, maximum = 1, correction.MaximumArtifactBytes
 	default:
 		return nil, errRetestInput
 	}

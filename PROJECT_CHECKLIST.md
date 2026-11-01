@@ -1049,9 +1049,22 @@ the alpha still requires the separate documented release gates.
   packages and 698 selected native outcomes across eight suites, including
   all 110 required root executions on Linux amd64/386. Native runs had no
   failures or skips and confirmed cleanup. Image and physical-PC gates stay open.
-- [ ] Add explicit signed correction history, separate from retesting;
-  preserve finalized originals and distinguish correction, supersession,
-  revocation and custody semantics.
+- [x] Implement standalone signed display correction addenda with connected
+  `correction create`, `verify`, and `view` commands for four public System
+  fields. A separate comparison preserves original observations, identifiers,
+  fingerprints, and test evidence, with exact report binding and independent
+  signature trust. See [signed display corrections](docs/corrections.md).
+- [x] Validate signed display corrections on Windows amd64 and 386: full
+  suites each passed 12,300 tests/subtests with 18 retained skips, including
+  all 148 initial correction names. Five additional parser-budget cases passed
+  separately on each architecture without production changes. Formatting,
+  vet, and Linux amd64/386/AArch64 application and updated correction-test
+  builds passed; Linux artifacts were compiled only.
+- [ ] Qualify corrections on Linux at runtime and in installed images; complete
+  physical-PC pilot and release gates.
+- [ ] Add complete signed correction history beyond one selected addendum,
+  separate from retesting; preserve finalized originals and distinguish
+  correction, supersession, revocation and custody semantics.
 - [ ] Add explicitly consented encrypted restricted-evidence export while
   keeping raw identifiers out of normal reports, views, filenames, and logs.
 - [ ] Submit reports to an authenticated web service and/or network share.

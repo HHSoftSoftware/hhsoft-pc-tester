@@ -34,6 +34,8 @@ func run(ctx context.Context, arguments []string, stdin io.Reader, stdout, stder
 		return runCapture(ctx, arguments[1:], stdout, stderr)
 	case "compare":
 		return runCompare(ctx, arguments[1:], stdout, stderr)
+	case "correction":
+		return runCorrection(ctx, arguments[1:], stdout, stderr)
 	case "cpu-stress":
 		return runCPUStress(ctx, arguments[1:], stdout, stderr)
 	case "cpu":
@@ -208,5 +210,6 @@ func usage(destination io.Writer) {
 	fmt.Fprintln(destination, "       hhpt verify (-self-issued | -public-key FILE -key-id ID) REPORT.hhpcr")
 	fmt.Fprintln(destination, "       hhpt ui [-auto-start 15s] [-legacy] [-deployment-key-media] [-selection-output FILE]")
 	fmt.Fprintln(destination, "       session/finalize/verify: optional -previous-report FILE with either -previous-self-issued or both -previous-public-key FILE -previous-key-id ID")
+	fmt.Fprintln(destination, "       hhpt correction create|verify|view -h (separate signed public display correction; original report unchanged)")
 	fmt.Fprintln(destination, "       hhpt version")
 }

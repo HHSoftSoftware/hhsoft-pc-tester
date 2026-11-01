@@ -198,7 +198,7 @@ func usage(destination io.Writer) {
 	fmt.Fprintln(destination, "       hhpt graphics [-pattern-frames N] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt storage [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt safety [-output FILE] [-summary]")
-	fmt.Fprintln(destination, "       hhpt session -fingerprint-key FILE -plan PLAN.json [-evidence-dir DIR] [-profile quick|standard] [-timeout DURATION] -output REPORT.hhpcr")
+	fmt.Fprintln(destination, "       hhpt session -fingerprint-key FILE -plan PLAN.json [-evidence-dir DIR] [-profile quick|standard|extended] [-timeout DURATION] -output REPORT.hhpcr")
 	fmt.Fprintln(destination, "       hhpt usb [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt save -fingerprint-key FILE REPORT.hhpcr")
 	fmt.Fprintln(destination, "       hhpt verify (-self-issued | -public-key FILE -key-id ID) REPORT.hhpcr")

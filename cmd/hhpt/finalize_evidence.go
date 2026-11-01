@@ -51,6 +51,13 @@ func testEvidenceStatus(encoded []byte, expectedSchema string) (string, error) {
 		}
 		return string(value.Status), nil
 	}
+	if expectedSchema == quick.MemoryStressSchema {
+		value, _, err := quickevidence.DecodeMemoryStress(encoded)
+		if err != nil {
+			return "", err
+		}
+		return string(value.Status), nil
+	}
 	if expectedSchema == quick.CPUStressSchema {
 		value, _, err := quickevidence.DecodeCPUStress(encoded)
 		if err != nil {

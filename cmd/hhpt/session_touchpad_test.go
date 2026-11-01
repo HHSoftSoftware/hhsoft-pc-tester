@@ -138,14 +138,35 @@ func TestTouchpadCommandLayoutRejectsUnadmittedDefinitions(t *testing.T) {
 		{"unfrozen", func(p *plan.Plan, _ *plan.Profile) { p.Frozen = false }},
 		{"empty_plan_id", func(p *plan.Plan, _ *plan.Profile) { p.ID = "" }},
 		{"profile_mismatch", func(_ *plan.Plan, p *plan.Profile) { *p = plan.ProfileStandard }},
-		{"extended", func(p *plan.Plan, q *plan.Profile) { p.Profile = plan.ProfileExtended; *q = plan.ProfileExtended }},
+		{"extended", func(p *plan.Plan, _ *plan.Profile) {
+			for i := range p.Tests {
+				if p.Tests[i].ID == "memory.stress" {
+					if p.Tests[i].Version != 2 {
+						panic("current Extended memory definition prerequisite")
+					}
+					p.Tests[i].Version = 1
+					return
+				}
+			}
+			panic("explicit Extended memory fixture missing")
+		}},
 		{"destructive_profile", func(p *plan.Plan, q *plan.Profile) { p.Profile = plan.ProfileDestructive; *q = plan.ProfileDestructive }},
 		{"profile_alias", func(_ *plan.Plan, p *plan.Profile) { *p = "QUICK" }},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
-			frozen, _, _ := commandRouteCurrentPlan(t, plan.ProfileQuick)
 			profile := plan.ProfileQuick
+			if c.name == "extended" {
+				profile = plan.ProfileExtended
+			}
+			frozen, _, _ := commandRouteCurrentPlan(t, profile)
+			if c.name == "extended" {
+				layout, err := commandLayoutForPlan(frozen, profile)
+				wantWorkers := strings.Fields("cpu.quick memory.quick memory.stress audio.readiness.quick input.readiness.quick input.keyboard.quick input.pointer.quick input.touchpad.quick input.touchscreen.quick network.readiness.quick storage.readiness.quick usb.readiness.quick graphics.quick display.operator.quick inspection.exterior.quick")
+				if err != nil || layout.schema != "hhsoft.pc-tester.quick-session/v13" || !layout.memoryStress || !reflect.DeepEqual(layout.workerIDs, wantWorkers) {
+					t.Fatalf("admitted Extended layout prerequisite: %v", err)
+				}
+			}
 			c.change(&frozen, &profile)
 			if _, err := commandLayoutForPlan(frozen, profile); err == nil {
 				t.Fatal("unadmitted definition selected a route")

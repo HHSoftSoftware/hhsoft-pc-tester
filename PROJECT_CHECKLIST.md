@@ -9,8 +9,10 @@ complete; real-hardware requirements remain open until physically tested.
 
 The 2026-10-24 requirements audit compared the retained test matrix with the
 catalog and execution paths. Development source now contains fourteen
-implemented safe Quick definitions and fifteen implemented catalog rows,
+implemented safe Quick definitions and sixteen implemented catalog rows,
 subject to hardware, architecture and explicit operator applicability.
+The bounded Extended memory route is implemented and has passed corrected
+Windows host validation; native and full-duration integration remain open.
 The pointer movement/button and wheel-direction increments passed automated
 and native Linux software validation. Guided keyboard software qualification
 also passed; rebuilt-image and physical gates remain open for both. The bounded
@@ -348,10 +350,8 @@ the alpha still requires the separate documented release gates.
   admission, a fixed 1,800-second load request and a 1,860-second watchdog,
   checked cycle accounting, final verification and confirmed cleanup before
   diagnostic output. See [operator guidance](docs/memory-stress.md).
-- [x] Keep stress JSON distinct from quick-memory and signed-session evidence.
-  The `memory.stress` catalog row remains inactive. The catalog stays at fifteen
-  implemented and seven inactive rows; Quick v11/fourteen workers and Standard
-  v12/fifteen workers with a 900-second budget are unchanged.
+- [x] Keep standalone stress JSON distinct from quick-memory; a diagnostic file
+  alone does not supply signed-session authority.
 - [x] Validate this standalone addition with 19 host commands: formatting/checks
   for 13 Go files, 196 named fixture passes without skips on each of Windows
   amd64 and 386, and 11,434 full-suite passes with 18 retained platform skips.
@@ -362,14 +362,39 @@ the alpha still requires the separate documented release gates.
   all 330 declared-parent intervals checked and no failures or skips. All nine
   ownership cases, 32 archive cases and six postchecks passed; cleanup was
   confirmed. These controlled fixtures do not establish a real 1,800-second load.
-- [ ] Qualify the full Linux suite, race checks, ARM runtime, the installed CLI
-  and an actual 1,800-second load for this addition; separately qualify physical
-  memory and thermal behavior.
-- [ ] Integrate memory stress into an explicitly selected longer profile with
-  suitable budgets, frozen-plan authorization, versioned journals and strict
-  signed report/view/comparison consumers. Do not insert a 30-minute load into
-  the existing Standard budget. The four-image, physical-PC, ten-PC pilot and
-  release gates remain open.
+- [x] Qualify the standalone producer's real 1,800-second load on Linux amd64
+  and 386. Each API fixture used one 4 MiB working set and synthetic availability
+  and thermal inputs; final verification and cleanup passed. All nine ownership
+  cases, 32 archive cases and six postchecks passed. The earlier failed elapsed
+  attempt remains unqualified; this result does not qualify a full Extended
+  session or installed CLI.
+- [ ] Qualify the full Linux suite, race checks, ARM runtime and the installed
+  CLI for this addition; separately qualify physical memory and thermal behavior.
+- [x] Complete host validation of the implemented Extended memory route. Source
+  connects explicit selection, a frozen plan, the real coordinator/finalizer,
+  v13 journals and strict signed report/view/comparison consumers. Its fifteen
+  workers add memory stress after successful quick-memory checks; CPU stress
+  stays Standard-only. Quick v11/fourteen workers and Standard v12/fifteen
+  workers with a 900-second budget are unchanged. Extended uses 2,700 seconds
+  for work and a 2,750-second outer supervisor policy; these are cooperative
+  bounds, not a cleanup guarantee.
+- [x] Validate the corrected Extended route on Windows amd64 and 386: each
+  focused run passed 242 test/subtest cases across 41 roots. The full Windows
+  suite passed 11,641 cases with 18 platform skips; 33 packages passed and one
+  had no tests. Formatting, vet, three Linux application builds and twelve
+  Linux test-binary builds passed. The Linux artifacts were compiled only;
+  they supply no native or race execution evidence.
+- [x] Validate the updated startup scripts with two shell syntax checks and
+  all 22 mock-fixture methods, including 22 new subcases, without failures or
+  skips. The run used the standalone baseline plus the three startup/fixture
+  files; no product session or installed supervisor was executed. Ownership,
+  archive and all six postchecks passed with cleanup confirmed.
+- [ ] Qualify the installed Extended startup supervisors, native and
+  full-duration session, installed CLI/images and physical memory/thermal
+  behavior. The development
+  catalog has sixteen implemented rows and six inactive families; complete
+  profile coverage, the four images, physical-PC and ten-PC pilot, and release
+  approval remain open.
 - [x] Discover DRM cards, bound drivers, render nodes, connectors, and modes.
 - [x] Detect Mesa hardware acceleration versus software-rendering fallback.
 - [x] Run a bounded KMS display pattern on a connected display.
@@ -807,7 +832,7 @@ the alpha still requires the separate documented release gates.
   hybrid graphics, and video-codec engines.
 - [ ] Test CPU correctness, instruction coverage, performance, stability, power,
   and thermal behavior.
-- [ ] Extend the RAM quick worker to broader working-set coverage and extended testing.
+- [ ] Extend RAM coverage beyond the bounded Quick and Extended working sets.
 - [x] Implement finite Linux SMBIOS Type 17 memory-device inventory: capacity,
   memory type and form factor with explicit field states, private source strings,
   unavailable identity and ordinary graph/report/comparison integration.

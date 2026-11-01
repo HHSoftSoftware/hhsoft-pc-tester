@@ -32,6 +32,12 @@ func validateMemoryReport(payload InventoryPayload) error {
 	for _, row := range payload.TestResults {
 		anySession = anySession || hasReportClaim(row.Evidence, anySessionClaim)
 		strictSession = strictSession || HasSessionThermalClaim(row.Evidence)
+		if row.ID == "memory.stress" && HasMemoryStressClaim(row.Evidence) {
+			if !admittedMemoryStressObservation(row) {
+				return errors.New("invalid memory stress observation")
+			}
+			continue
+		}
 		if row.ID == "run.integrity.quick" && HasMemoryClaim(row.Evidence) && HasSessionThermalClaim(row.Evidence) {
 			claimed = true
 			continue

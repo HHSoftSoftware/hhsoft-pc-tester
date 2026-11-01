@@ -24,10 +24,18 @@ type journalV8Wire struct {
 	CPUStressSource *StressSource `json:"cpu_stress_source"`
 }
 
+type journalV13Wire struct {
+	legacyJournalWire
+	Profile            string        `json:"profile"`
+	MemoryStressSource *StressSource `json:"memory_stress_source"`
+}
+
 // MarshalJSON preserves the exact legacy field order and omission behavior.
 // A source cannot be silently discarded by changing the declared schema.
 func (j Journal) MarshalJSON() ([]byte, error) {
-	if !IsStandardSchema(j.Schema) && (j.Profile != "" || j.CPUStressSource != nil) {
+	if !IsStandardSchema(j.Schema) && !IsExtendedSchema(j.Schema) && j.Profile != "" ||
+		!IsStandardSchema(j.Schema) && j.CPUStressSource != nil ||
+		!IsExtendedSchema(j.Schema) && j.MemoryStressSource != nil {
 		return nil, ErrInvalid
 	}
 	switch j.Schema {
@@ -43,6 +51,11 @@ func (j Journal) MarshalJSON() ([]byte, error) {
 			return nil, ErrInvalid
 		}
 		return json.Marshal(journalV8Wire{legacyJournalWire: legacyJournalWire(j), Profile: j.Profile, CPUStressSource: j.CPUStressSource})
+	case SchemaV13:
+		if j.StorageSource != nil || j.Profile != "extended" {
+			return nil, ErrInvalid
+		}
+		return json.Marshal(journalV13Wire{legacyJournalWire: legacyJournalWire(j), Profile: j.Profile, MemoryStressSource: j.MemoryStressSource})
 	default:
 		return nil, ErrInvalid
 	}
@@ -96,6 +109,7 @@ func decodeJournalWire(raw []byte) (Journal, error) {
 	legacyRaw := raw
 	var source *StorageSource
 	var stressSource *StressSource
+	var memoryStressSource *StressSource
 	profile := ""
 	if IsStandardSchema(schema) {
 		encoded, present := fields["cpu_stress_source"]
@@ -111,6 +125,25 @@ func decodeJournalWire(raw []byte) (Journal, error) {
 		}
 		delete(fields, "profile")
 		delete(fields, "cpu_stress_source")
+		legacyRaw, err = json.Marshal(fields)
+		if err != nil {
+			return Journal{}, ErrInvalid
+		}
+	}
+	if IsExtendedSchema(schema) {
+		encoded, present := fields["memory_stress_source"]
+		if !present || json.Unmarshal(fields["profile"], &profile) != nil || profile != "extended" {
+			return Journal{}, ErrInvalid
+		}
+		if !bytes.Equal(bytes.TrimSpace(encoded), []byte("null")) {
+			var value StressSource
+			if evidencejson.ValidateShape(encoded, reflect.TypeOf(value)) != nil || json.Unmarshal(encoded, &value) != nil {
+				return Journal{}, ErrInvalid
+			}
+			memoryStressSource = &value
+		}
+		delete(fields, "profile")
+		delete(fields, "memory_stress_source")
 		legacyRaw, err = json.Marshal(fields)
 		if err != nil {
 			return Journal{}, ErrInvalid
@@ -142,6 +175,7 @@ func decodeJournalWire(raw []byte) (Journal, error) {
 	value.StorageSource = source
 	value.Profile = profile
 	value.CPUStressSource = stressSource
+	value.MemoryStressSource = memoryStressSource
 	return value, nil
 }
 

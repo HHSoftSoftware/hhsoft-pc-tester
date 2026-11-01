@@ -56,7 +56,7 @@ func DecodeLaunchSelection(data []byte, expectedProfile Profile, expectedArchite
 }
 
 func canonicalLaunchExclusions(profile Profile, architecture string, excluded []string) ([]string, error) {
-	if (profile != ProfileQuick && profile != ProfileStandard) || !validSelectionArchitecture(architecture) {
+	if (profile != ProfileQuick && profile != ProfileStandard && profile != ProfileExtended) || !validSelectionArchitecture(architecture) {
 		return nil, errors.New("invalid launch selection")
 	}
 	catalog, _, err := loadDefinitions(definitionData)

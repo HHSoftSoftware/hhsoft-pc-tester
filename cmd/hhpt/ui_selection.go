@@ -135,6 +135,9 @@ func (selection *quickMenuSelection) write(ctx context.Context, profile plan.Pro
 		encoded, err = plan.EncodeLaunchSelection(profile, selection.architecture, excluded)
 	} else {
 		if profile != plan.ProfileQuick {
+			if profile == plan.ProfileExtended {
+				return errors.New("extended profile requires a launch selection")
+			}
 			return errors.New("standard profile requires a launch selection")
 		}
 		payload := struct {

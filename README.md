@@ -145,7 +145,7 @@ boot and an omitted session profile remain quick; the development console requir
 explicit `S` to choose standard. Standard defaults to a
 900-second session budget and uses fifteen workers in journal v12, with stress
 immediately after a passing CPU quick check. Current Quick uses fourteen workers
-in v11. The 22-row catalog has fifteen implemented rows and seven inactive
+in v11. The 22-row catalog has sixteen implemented rows and six inactive
 families. The earlier CPU stress qualification below used Standard v8/thirteen
 and Quick v7/twelve.
 
@@ -204,24 +204,49 @@ hardware fault. Rebuilt-image and physical-memory validation remain open.
 Development source also implements `hhpt memory-stress`, a standalone JSON
 diagnostic requesting a fixed 30-minute load over a 4-64 MiB working set. It
 uses fresh availability and thermal admission, final verification and a shared
-31-minute watchdog. The `memory.stress` catalog row remains inactive; the
-command is not part of Quick or Standard and does not provide signed-session
-evidence. Host fixture tests passed on Windows amd64 and 386, alongside the full
+31-minute watchdog. The standalone command is not part of Quick or Standard,
+and its diagnostic file alone does not supply signed-session authority.
+Host fixture tests passed on Windows amd64 and 386, alongside the full
 Windows suite, vet and Linux cross-builds. That host step compiled the Linux
 artifacts without executing them. Subsequent selected Linux amd64/386 fixture
 runs passed 392 named outcomes across 62 roots and six package executions, with
 all 330 declared-parent intervals checked, no failures or skips, and confirmed
 cleanup. Ownership, archive and post-run checks also passed.
-These controlled fixtures do not establish a real 30-minute load. Race, full
-Linux suite, ARM runtime, installed-command, physical-memory/thermal, image,
-pilot and release qualification remain open. See
+Those controlled-clock results retain their fixture scope. A later standalone
+API test completed a real 1,800-second load on each of Linux amd64 and 386,
+using one 4 MiB working set with synthetic availability and thermal inputs.
+Both runs passed final verification and cleanup. Race, full Linux suite, ARM
+runtime, installed-command, physical-memory/thermal, image, pilot and release
+qualification remain open. See
 [memory stress guidance](docs/memory-stress.md) for invocation, result
 interpretation and remaining limits.
+
+Development source connects an explicitly selected Extended memory session:
+v13 has fifteen workers, with `memory.stress` after a successful `memory.quick`.
+Quick v11/fourteen workers and Standard v12/fifteen workers keep their schedules;
+CPU stress remains Standard-only. Extended has a 2,700-second work budget and a
+2,750-second startup-supervisor policy. The existing 1,800-second memory load
+and 1,860-second invocation watchdog remain fixed. Neither policy guarantees
+interruption of blocked kernel work or complete process cleanup.
+
+Extended owns its frozen plan, worker evidence and final safety gate before
+signing; reports, canonical views and comparisons validate the matching v13
+bindings. A standalone diagnostic cannot substitute for that owner. The
+22-row development catalog has sixteen implemented and six inactive rows.
+Corrected Extended host validation passed 242 focused test/subtest cases on
+each of Windows amd64 and 386, and 11,641 cases in the full Windows suite,
+with 18 platform skips. Vet and Linux compile-only builds passed. Earlier
+standalone host and native results retain their original scope. The startup
+scripts also passed two shell syntax checks and all 22 mock-fixture methods,
+including 22 new subcases, with no failures or skips. These checks did not run
+installed supervisors or the product session. Native and full-duration Extended
+integration, installed CLI/images, ARM runtime, physical systems, all four
+bootable images, the pilot and release approval remain separate gates.
 
 Development source now also monitors temperatures throughout the quick session,
 including excluded-test runs, cleanup and final inventory. The v4 increment
 introduced initial, periodic and final observations and required both session
-monitors to join before signing; current v11/v12 journals retain those rules.
+monitors to join before signing; current v11/v12/v13 journals retain those rules.
 Heat stops work without erasing earlier failures; missing
 telemetry remains a coverage limitation. That thermal increment passed Windows
 tests, vet, cross-builds, native Linux amd64/386 suites, race checks and all 15 CLI

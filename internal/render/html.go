@@ -36,6 +36,7 @@ type inventoryDocument struct {
 	Touchscreen         *touchscreenDocument
 	Storage             *storageDocument
 	CPUStress           *cpuStressDocument
+	MemoryStress        *memoryStressDocument
 	Inspection          *inspectionDocument
 }
 
@@ -110,7 +111,27 @@ table{background:var(--panel);border-collapse:collapse;border:1px solid var(--li
 </tbody>
 </table>
 </section>
-{{if .CPUStress}}<section class="section" aria-labelledby="cpu-stress-heading">
+{{if .MemoryStress}}<section class="section" aria-labelledby="memory-stress-heading">
+<h2 id="memory-stress-heading">MEMORY STRESS (EXTENDED PROFILE)</h2>
+<p>{{.MemoryStress.Scope}}</p>
+<table><tbody>
+<tr><th class="label" scope="row">Outcome</th><td>{{.MemoryStress.Outcome}}</td></tr>
+<tr><th class="label" scope="row">Stop reason</th><td>{{.MemoryStress.StopReason}}</td></tr>
+<tr><th class="label" scope="row">Requested load (ms)</th><td>{{.MemoryStress.Requested}}</td></tr>
+<tr><th class="label" scope="row">Observed load window (ms)</th><td>{{.MemoryStress.Observed}}</td></tr>
+<tr><th class="label" scope="row">Working-set bytes</th><td>{{.MemoryStress.Allocated}}</td></tr>
+<tr><th class="label" scope="row">Verified load cycles</th><td>{{.MemoryStress.LoadCycles}}</td></tr>
+<tr><th class="label" scope="row">Completed cycles including finishing cycle</th><td>{{.MemoryStress.CompletedCycles}}</td></tr>
+<tr><th class="label" scope="row">Completed cycle phases</th><td>{{.MemoryStress.CompletedPhases}}</td></tr>
+<tr><th class="label" scope="row">Accepted current-phase bytes</th><td>{{.MemoryStress.PhaseBytes}}</td></tr>
+<tr><th class="label" scope="row">Accepted cycle read / write bytes</th><td>{{.MemoryStress.ReadBytes}} / {{.MemoryStress.WrittenBytes}}</td></tr>
+<tr><th class="label" scope="row">Uncredited cycle prefix bytes</th><td>{{.MemoryStress.UncreditedBytes}}</td></tr>
+<tr><th class="label" scope="row">Accepted terminal read bytes</th><td>{{.MemoryStress.TerminalReadBytes}}</td></tr>
+<tr><th class="label" scope="row">Uncredited terminal prefix bytes</th><td>{{.MemoryStress.TerminalUncreditedBytes}}</td></tr>
+<tr><th class="label" scope="row">Mismatch</th><td>{{.MemoryStress.Mismatch}}</td></tr>
+<tr><th class="label" scope="row">Cleanup confirmed</th><td>{{.MemoryStress.Cleanup}}</td></tr>
+</tbody></table></section>
+{{end}}{{if .CPUStress}}<section class="section" aria-labelledby="cpu-stress-heading">
 <h2 id="cpu-stress-heading">CPU STRESS (STANDARD PROFILE)</h2>
 <p>{{.CPUStress.Scope}}</p>
 <table><tbody>
@@ -364,6 +385,10 @@ func renderInventoryHTMLWithPrevious(output io.Writer, payload app.InventoryPayl
 	if err := validateVersion(version); err != nil {
 		return err
 	}
+	memoryStress, err := memoryStressReportDocument(payload)
+	if err != nil {
+		return err
+	}
 	stress, err := cpuStressReportDocument(payload)
 	if err != nil {
 		return err
@@ -445,6 +470,7 @@ func renderInventoryHTMLWithPrevious(output io.Writer, payload app.InventoryPayl
 		Memory:              memory,
 		Storage:             storage,
 		CPUStress:           stress,
+		MemoryStress:        memoryStress,
 		Inspection:          inspection,
 	}
 	return inventoryTemplate.Execute(&limitedWriter{destination: output}, document)

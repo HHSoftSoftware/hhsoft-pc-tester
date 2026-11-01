@@ -580,9 +580,10 @@ logical work, and an explicit mismatch, including offset zero. Definition 2
 used the then-current eleven-worker v5 journal; historical memory v2 keeps its typed
 hash. Full Windows tests, vet and cross-builds passed; compiled x86 inspection
 confirmed buffer accesses and reverse indexing. Native Linux suites, race tests
-and signed direct, standalone and session workflows passed. Rebuilt images,
-physical memory, broader working sets, SPD/ECC, extended stress and Memtest86+
-remain open. The frozen alpha scope is unchanged.
+and signed direct, standalone and session workflows passed. At that milestone,
+rebuilt images, physical memory, broader working sets, SPD/ECC, extended stress
+and Memtest86+ remained open. The bounded stress increments below retain
+separate evidence. The frozen alpha scope is unchanged.
 
 A separate `hhpt memory-stress` command is implemented in development source.
 It requests a fixed 30-minute load over one 4-64 MiB working set selected against
@@ -601,18 +602,46 @@ amd64/386 runs executed six test binaries and passed 392 named outcomes across
 skips. All nine ownership cases, 32 archive cases and six postchecks passed;
 cleanup was confirmed.
 
-This closes only the selected native software-fixture gate. A real
-1,800-second load, race checks, the full Linux suite, ARM runtime,
-installed-command execution and physical-memory/thermal qualification remain
-open. The earlier RAM quick qualification above retains its original scope.
+Those controlled-clock runs qualify the selected native software fixtures.
+A later standalone API test completed a real 1,800-second load on each of
+Linux amd64 and 386 with one 4 MiB working set and synthetic availability and
+thermal inputs. Final verification, cleanup, nine ownership cases, 32 archive
+cases and six postchecks passed. The earlier failed elapsed attempt remains
+unqualified. Race checks, the full Linux suite, ARM runtime, installed-command
+execution and physical-memory/thermal qualification remain open. The earlier
+RAM quick qualification above retains its original scope.
 
-The `memory.stress` catalog row remains inactive, with fifteen implemented and
-seven inactive catalog rows overall. Quick v11/fourteen workers and Standard
-v12/fifteen workers retain their current schedules and the 900-second Standard
-budget. The next integration work is an explicitly selected longer profile,
-its frozen plan and versioned journal, and strict signed consumers and views.
-Broader working sets, SPD/ECC, Memtest86+, rebuilt images, physical systems,
-the ten-PC pilot and release approval remain open.
+Development source now connects an explicitly selected Extended memory profile.
+Its v13 journal has fifteen workers, adding memory stress after successful
+quick-memory checks while CPU stress stays Standard-only. The 2,700-second work
+budget and 2,750-second outer supervisor policy preserve the producer's fixed
+1,800-second load and 1,860-second watchdog; they are not a wall-clock or
+complete-cleanup guarantee. The real finalizer binds original evidence bytes,
+typed evidence, the frozen plan and journal before signing. Strict consumers,
+canonical views and comparisons retain those checks.
+
+Corrected Extended host validation passed 242 focused test/subtest cases
+on each of Windows amd64 and 386. The full Windows suite passed 11,641
+cases with 18 platform skips; formatting, vet and fifteen Linux compile-only
+builds passed. Earlier standalone host and native fixtures keep their original
+scope. Native and full-duration Extended execution remain separate gates.
+Quick v11/fourteen workers and Standard v12/fifteen workers with a 900-second
+budget are unchanged.
+The development catalog has sixteen implemented rows and six inactive families:
+`audio.quick`, `camera.quick`, `network.quick`, `storage.quick`,
+`storage.destructive` and `usb.quick`.
+
+The startup scripts separately passed two shell syntax checks and all 22
+mock-fixture methods, including 22 new subcases, without failures or skips.
+These checks used the standalone baseline plus three startup/fixture files;
+they did not execute installed supervisors or a product session. Ownership,
+archive and six postchecks passed with cleanup confirmed.
+
+Installed startup and native/full-duration Extended integration, broader
+working sets, SPD/ECC, Memtest86+, ARM runtime, all four rebuilt images, physical
+systems, complete profiles, the ten-PC pilot and release approval remain open.
+See the
+[Extended contract](requirements-validation.md#bounded-extended-memory-session).
 
 The audio readiness acquisition increment checks closure of its owned root,
 registry and attribute handles, bounds metadata reads and retains earlier
@@ -920,8 +949,9 @@ This bounded inventory slice added no worker or catalog row. At that increment,
 nine functional families were inactive, and Quick v7 and explicit Standard v8
 retained their schedules and budgets. Broader SPD, ECC, topology, speed,
 firmware/OS capacity
-reconciliation, RAM correctness, extended testing and pre-boot Memtest86+
-requirements remain open. Selected firmware observations establish neither
+reconciliation, RAM correctness beyond the bounded memory workers, and
+pre-boot Memtest86+ requirements remain open. Selected firmware observations
+establish neither
 usable OS RAM nor module health or physical continuity. Image/sysfs availability,
 the physical-PC pilot, all four release images, installed-command/image behavior,
 race/durability and release approval still require their documented qualification.
@@ -999,7 +1029,8 @@ policy limit. See
 
 ## Phase 3 — complete profiles
 
-- Add Memtest86+ boot integration, standard, extended, and burn-in profiles,
+- Complete Standard and Extended matrix coverage beyond their bounded
+  implemented routes; add Memtest86+ boot integration and burn-in scheduling,
   calibrated storage self-tests, sensors, battery, optical media, card reader,
   modem, and optional remote submission.
 - Complete the remaining matrix coverage for SPD/ECC, Bluetooth, power and

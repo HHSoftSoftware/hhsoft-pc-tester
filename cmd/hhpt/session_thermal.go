@@ -64,6 +64,33 @@ func sourceFileDigest(raw []byte) string {
 func sameSessionJournal(a, b sessionJournal) bool { return reflect.DeepEqual(a, b) }
 
 func retainLocalThermalSource(journal *sessionJournal, worker sessionWorkerRecord, raw []byte, readErr error) error {
+	if worker.ID == "memory.stress" {
+		if !sessionevidence.IsExtendedSchema(journal.Schema) || journal.Profile != "extended" || journal.MemoryStressSource != nil ||
+			readErr != nil || worker.Timing == nil {
+			return errors.New("memory stress source cannot be retained")
+		}
+		value, digest, err := quickevidence.DecodeMemoryStress(raw)
+		if err != nil {
+			return err
+		}
+		if worker.Timing.StartedMilliseconds < 0 || worker.Timing.FinishedMilliseconds < worker.Timing.StartedMilliseconds ||
+			value.FinishedMilliseconds > worker.Timing.FinishedMilliseconds-worker.Timing.StartedMilliseconds {
+			return errors.New("memory stress elapsed time exceeds its worker interval")
+		}
+		journal.MemoryStressSource = &sessionevidence.StressSource{
+			WorkerID: worker.ID, EvidenceSchema: quick.MemoryStressSchema,
+			EvidenceFileSHA256: sourceFileDigest(raw), EvidenceTypedSHA256: digest,
+		}
+		if value.Safety.ThermalSamples > 0 && value.Safety.PeakMilliCelsius >= thermal.LimitMilliCelsius {
+			journal.LocalThermalSources = append(journal.LocalThermalSources, sessionevidence.LocalThermalSource{
+				WorkerID: worker.ID, EvidenceSchema: value.Schema,
+				EvidenceFileSHA256: sourceFileDigest(raw), EvidenceTypedSHA256: digest,
+				PeakMilliCelsius: value.Safety.PeakMilliCelsius, LimitMilliCelsius: value.Safety.ThermalLimitMilliCelsius,
+				StartedMilliseconds: worker.Timing.StartedMilliseconds, FinishedMilliseconds: worker.Timing.FinishedMilliseconds,
+			})
+		}
+		return nil
+	}
 	if worker.ID == "cpu.stress" {
 		if !sessionevidence.IsStandardSchema(journal.Schema) || journal.Profile != "standard" || journal.CPUStressSource != nil ||
 			readErr != nil || worker.Timing == nil {

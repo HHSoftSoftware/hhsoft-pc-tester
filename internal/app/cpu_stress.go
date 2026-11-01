@@ -37,6 +37,12 @@ func ValidatedCPUStress(payload InventoryPayload) (*quick.CPUStressResult, error
 func validateCPUStressReport(payload InventoryPayload) error {
 	claimed := false
 	for _, row := range payload.TestResults {
+		if row.ID == "memory.stress" && HasMemoryStressClaim(row.Evidence) {
+			if !admittedMemoryStressObservation(row) {
+				return errors.New("invalid memory stress observation")
+			}
+			continue
+		}
 		observedStatus := strings.EqualFold(row.ID, "cpu.stress") && (row.Status == TestPass || row.Status == TestFail || row.Status == TestInconclusive && row.PlannedStatus == PlannedScheduled ||
 			(row.Status == TestError || row.Status == TestAborted) && !legacyCPUStressFailureNote(row))
 		if !HasCPUStressClaim(row.Evidence) && !observedStatus {

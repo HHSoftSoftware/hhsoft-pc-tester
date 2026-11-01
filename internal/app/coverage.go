@@ -23,6 +23,9 @@ const (
 // historical report against today's test catalog. Reports predating these
 // fields retain their existing representation and verification behavior.
 func ValidateCoverage(payload InventoryPayload) error {
+	if err := validateMemoryStressReport(payload); err != nil {
+		return err
+	}
 	if err := validateCPUStressReport(payload); err != nil {
 		return err
 	}

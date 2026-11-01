@@ -89,7 +89,46 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 			j.Schema == SchemaV4 && binding.ID == "input.pointer.quick" && binding.Version != 1 {
 			return ErrInvalid
 		}
-		stressObservation := HasCPUStressClaim(binding.Evidence)
+		memoryStressObservation := HasMemoryStressClaim(binding.Evidence)
+		if memoryStressObservation {
+			if !IsExtendedSchema(j.Schema) || binding.ID != "memory.stress" || binding.Version != 2 {
+				return ErrInvalid
+			}
+			// Only a complete strict memory-stress record can disambiguate shared
+			// load fields and the byte-pattern suite from CPU stress and memory.quick.
+			// Mixed, duplicate, nested or future claims fail this decoder first.
+			if _, _, err := quickevidence.DecodeMemoryStress(binding.Evidence); err != nil {
+				return err
+			}
+		}
+		if strings.EqualFold(binding.ID, "memory.stress") {
+			if binding.ID != "memory.stress" || binding.Version != 1 && binding.Version != 2 {
+				return ErrInvalid
+			}
+			if binding.Version == 2 && !IsExtendedSchema(j.Schema) {
+				// Current Quick and Standard reports retain the full catalog,
+				// including memory stress's frozen non-scheduled disposition.
+				// This note grants no worker, source or observed stress authority.
+				if j.Schema != SchemaV11 && j.Schema != SchemaV12 {
+					return ErrInvalid
+				}
+				switch binding.PlannedStatus {
+				case "excluded", "not_present", "unsupported", "missing_driver":
+				default:
+					return ErrInvalid
+				}
+				var note executionNote
+				if evidencejson.ValidateShape(binding.Evidence, reflect.TypeOf(note)) != nil ||
+					json.Unmarshal(binding.Evidence, &note) != nil ||
+					note.Schema != "hhsoft.pc-tester.execution-note/v1" ||
+					binding.ReportStatus != reportStatus(binding.PlannedStatus) ||
+					note.Status != binding.ReportStatus || note.SourceStatus != binding.PlannedStatus ||
+					note.Detail != "not run; disposition recorded in the frozen plan" {
+					return ErrInvalid
+				}
+			}
+		}
+		stressObservation := !memoryStressObservation && HasCPUStressClaim(binding.Evidence)
 		if stressObservation {
 			if !IsStandardSchema(j.Schema) || binding.ID != "cpu.stress" || binding.Version != 1 {
 				return ErrInvalid
@@ -102,7 +141,7 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 			binding.ID == "cpu.quick" && (binding.Version < 0 || binding.Version > 2 || j.Schema == SchemaV4 && binding.Version == 2) {
 			return ErrInvalid
 		}
-		if hasNewMemoryClaim(binding.Evidence) && (binding.ID != "memory.quick" || binding.Version != 2 || !supportsCurrentWorkerEvidence(j.Schema)) ||
+		if !memoryStressObservation && hasNewMemoryClaim(binding.Evidence) && (binding.ID != "memory.quick" || binding.Version != 2 || !supportsCurrentWorkerEvidence(j.Schema)) ||
 			binding.ID == "memory.quick" && (binding.Version < 0 || binding.Version > 2 || j.Schema == SchemaV4 && binding.Version == 2) {
 			return ErrInvalid
 		}
@@ -120,6 +159,16 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 		}
 		if len(binding.Evidence) == 0 || len(binding.Evidence) > 1<<20 || !json.Valid(binding.Evidence) {
 			return ErrInvalid
+		}
+		if worker.ID == "memory.stress" {
+			hot, err := validateMemoryStressBinding(j, worker, binding, localSources)
+			if err != nil {
+				return err
+			}
+			if hot {
+				wanted++
+			}
+			continue
 		}
 		if worker.ID == "cpu.stress" {
 			hot, err := validateStressBinding(j, worker, binding, localSources)

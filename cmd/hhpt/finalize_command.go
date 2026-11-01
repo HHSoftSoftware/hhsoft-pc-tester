@@ -55,14 +55,17 @@ var quickResultDefinitions = []quickResultDefinition{
 	{id: "usb.readiness.quick", filename: "usb.json", schema: "hhsoft.pc-tester.usb-readiness/v1"},
 }
 
-// Return a fresh definition slice so selecting standard cannot mutate quick.
+// Return a fresh definition slice; profile selection cannot mutate Quick.
 func executionResultDefinitions(profile plan.Profile) ([]quickResultDefinition, error) {
-	if profile != "" && profile != plan.ProfileQuick && profile != plan.ProfileStandard {
+	if profile != "" && profile != plan.ProfileQuick && profile != plan.ProfileStandard && profile != plan.ProfileExtended {
 		return nil, errors.New("unsupported execution profile")
 	}
 	definitions := make([]quickResultDefinition, 0, len(quickResultDefinitions)+1)
 	for _, definition := range quickResultDefinitions {
 		definitions = append(definitions, definition)
+		if profile == plan.ProfileExtended && definition.id == "memory.quick" {
+			definitions = append(definitions, quickResultDefinition{id: "memory.stress", filename: "memory-stress.json", schema: quick.MemoryStressSchema})
+		}
 		if profile == plan.ProfileStandard && definition.id == "cpu.quick" {
 			definitions = append(definitions, quickResultDefinition{id: "cpu.stress", filename: "cpu-stress.json", schema: quick.CPUStressSchema})
 		}
@@ -93,7 +96,7 @@ func runFinalizeOwnedDestinationWithPrevious(ctx context.Context, arguments []st
 
 func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, random io.Reader, now func() time.Time, gate sessionFinalGate, writeOutput destinationWriter, previous *verifiedPreviousReport, readInput retestInputReader, executionProfile plan.Profile) (result sessionFinalizationResult) {
 	resultDefinitions, profileErr := executionResultDefinitions(executionProfile)
-	if profileErr != nil || executionProfile == plan.ProfileStandard && gate == nil {
+	if profileErr != nil || (executionProfile == plan.ProfileStandard || executionProfile == plan.ProfileExtended) && gate == nil {
 		fmt.Fprintln(stderr, "finalize: execution profile requires its live coordinator")
 		return sessionFinalizationResult{Code: 1}
 	}
@@ -205,7 +208,7 @@ func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, argu
 			fmt.Fprintf(stderr, "validate frozen plan: %v\n", err)
 			return 1
 		}
-		if executionProfile == "" && frozenPlan.Profile == plan.ProfileStandard ||
+		if executionProfile == "" && (frozenPlan.Profile == plan.ProfileStandard || frozenPlan.Profile == plan.ProfileExtended) ||
 			executionProfile != "" && frozenPlan.Profile != executionProfile {
 			fmt.Fprintln(stderr, "finalize: plan does not match its execution profile")
 			return 1
@@ -312,6 +315,10 @@ func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, argu
 				continue
 			}
 			if readErr != nil {
+				if definition.schema == quick.MemoryStressSchema && readErr != os.ErrNotExist {
+					fmt.Fprintln(stderr, "validate memory stress evidence: existing evidence is unreadable")
+					return 1
+				}
 				if definition.schema == quick.CPUStressSchema && readErr != os.ErrNotExist {
 					fmt.Fprintln(stderr, "validate CPU stress evidence: existing evidence is unreadable")
 					return 1
@@ -344,6 +351,16 @@ func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, argu
 					return 1
 				}
 				evidenceSourceStatus, statusErr := testEvidenceStatus(encoded, definition.schema)
+				if definition.schema == quick.MemoryStressSchema {
+					if errors.Is(statusErr, quick.ErrMemoryStressCleanupUnconfirmed) {
+						fmt.Fprintln(stderr, "validate memory stress evidence: cleanup unconfirmed")
+						return workerCleanupUncertainExitCode
+					}
+					if statusErr != nil || evidenceSourceStatus != sourceStatus || gate == nil || executionProfile != plan.ProfileExtended {
+						fmt.Fprintln(stderr, "validate memory stress evidence: invalid observations or session binding")
+						return 1
+					}
+				}
 				if definition.schema == quick.CPUStressSchema {
 					if errors.Is(statusErr, quick.ErrCPUStressCleanupUnconfirmed) {
 						fmt.Fprintln(stderr, "validate CPU stress evidence: cleanup unconfirmed")
@@ -573,6 +590,13 @@ func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, argu
 				raw, present := retainedEvidence[source.WorkerID]
 				if !present || sourceFileDigest(raw) != source.EvidenceFileSHA256 {
 					fmt.Fprintln(stderr, "local thermal evidence file binding changed")
+					return 1
+				}
+			}
+			if value.MemoryStressSource != nil {
+				raw, present := retainedEvidence["memory.stress"]
+				if !present || sourceFileDigest(raw) != value.MemoryStressSource.EvidenceFileSHA256 {
+					fmt.Fprintln(stderr, "memory stress evidence file binding changed")
 					return 1
 				}
 			}

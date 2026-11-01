@@ -1064,7 +1064,7 @@ func TestTouchscreenAppSessionRejectsForgedIntervalsAndSources(t *testing.T) {
 				oldSchema := []byte(`"schema":"hhsoft.pc-tester.quick-session/v11"`)
 				newSchema := []byte(`"schema":"hhsoft.pc-tester.quick-session/v9"`)
 				if name == "future_session" {
-					newSchema = []byte(`"schema":"hhsoft.pc-tester.quick-session/v13"`)
+					newSchema = []byte(`"schema":"hhsoft.pc-tester.quick-session/v14"`)
 				}
 				if bytes.Count(row.Evidence, oldSchema) != 1 {
 					t.Fatal("wire mutation must target one session schema")

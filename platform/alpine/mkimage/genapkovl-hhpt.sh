@@ -89,6 +89,7 @@ fi
 case \$ui_status in
 	0|10) profile=quick; session_timeout=5m; session_outer_timeout=350 ;;
 	11) profile=standard; session_timeout=15m; session_outer_timeout=950 ;;
+	12) profile=extended; session_timeout=45m; session_outer_timeout=2750 ;;
 	*) printf 'HHPT_FAILED user-interface\n' > /dev/console; exit 1 ;;
 esac
 if ! test -f /run/hhpt/launch-selection.json || test -L /run/hhpt/launch-selection.json || ! chmod 0400 /run/hhpt/launch-selection.json; then
@@ -100,7 +101,7 @@ key_mode=ephemeral
 key_id=ephemeral-session
 fixture_flag=
 case \$ui_status in
-	0|11)
+	0|11|12)
 		head -c 32 /dev/urandom > /run/hhpt/fingerprint.key
 		;;
 	10)

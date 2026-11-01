@@ -1,4 +1,4 @@
-"""Exercise real startup scripts with an inert quick/standard session boundary.
+"""Exercise real startup scripts with an inert quick/standard/extended session boundary.
 
 The fixture checks arguments and files. It does not schedule workers, inspect
 hardware, sign reports, or reproduce Go coordinator safety decisions. No VM,
@@ -19,7 +19,9 @@ ALPINE = ROOT / "platform/alpine/mkimage/genapkovl-hhpt.sh"
 LEGACY = ROOT / "platform/buildroot/board/legacy-x86/rootfs-overlay/etc/init.d/S50hhpt"
 SELECTABLE_IDS = (
     "audio.readiness.quick", "cpu.quick", "display.operator.quick", "graphics.quick",
-    "input.keyboard.quick", "input.pointer.quick", "input.readiness.quick", "inspection.exterior.quick", "memory.quick", "network.readiness.quick",
+    "input.keyboard.quick", "input.pointer.quick", "input.readiness.quick",
+    "input.touchpad.quick", "input.touchscreen.quick", "inspection.exterior.quick",
+    "memory.quick", "network.readiness.quick",
     "storage.readiness.quick", "usb.readiness.quick",
 )
 LEGACY_UNSUPPORTED = {"graphics.quick", "display.operator.quick"}
@@ -95,7 +97,7 @@ if command == "ui":
                            "profile": configuration.get("document_profile", profile),
                            "architecture": configuration.get("document_architecture", architecture),
                            "excluded_tests": configuration.get("excluded_tests", [])}, stream)
-    sys.exit(configuration.get("ui_status", 10 if configuration.get("deployment_key") else (11 if profile == "standard" else 0)))
+    sys.exit(configuration.get("ui_status", 10 if configuration.get("deployment_key") else (12 if profile == "extended" else 11 if profile == "standard" else 0)))
 elif command == "deployment-key":
     assert not configuration["legacy"]
     assert arguments == ["load-media", "-discovery-key", str(run / "media-discovery.key"),
@@ -130,7 +132,7 @@ elif command == "plan":
     if type(decoded["schema_version"]) is not int or decoded["schema_version"] != 1 or decoded["profile"] != profile or decoded["architecture"] != architecture:
         sys.exit(2)
     exclusions = decoded["excluded_tests"]
-    if profile == "standard" and exclusions != []:
+    if profile in ("standard", "extended") and exclusions != []:
         sys.exit(2)
     if not isinstance(exclusions, list) or any(not isinstance(name, str) or name not in SELECTABLE_IDS for name in exclusions):
         sys.exit(2)
@@ -165,7 +167,7 @@ elif command == "safety":
           (" writable_block_mounts=1" if failure else ""))
 elif command == "session":
     assert arguments == common + ["-profile", profile, "-plan", str(run / "plan.json"), "-evidence-dir", str(run),
-                                 "-timeout", "15m" if profile == "standard" else "5m", "-output", str(run / "session.hhpcr")]
+                                 "-timeout", {"quick": "5m", "standard": "15m", "extended": "45m"}[profile], "-output", str(run / "session.hhpcr")]
     frozen = run / "plan.json"
     assert frozen.is_file() and not frozen.is_symlink()
     assert stat.S_IMODE(frozen.stat().st_mode) == 0o400, "plan must be frozen before session entry"
@@ -206,7 +208,7 @@ arguments = sys.argv[1:]
 assert len(arguments) >= 5 and arguments[:2] == ["-s", "KILL"]
 assert arguments[3] == str(root / "tools/hhpt")
 command = arguments[4]
-expected = "950" if configuration.get("profile") == "standard" else "350"
+expected = {"quick": "350", "standard": "950", "extended": "2750"}[configuration.get("profile", "quick")]
 assert arguments[2] == (expected if command == "session" else "5")
 assert command in ("safety", "session")
 effective = list(arguments)
@@ -298,7 +300,7 @@ class RuntimeSafetySupervisorTests(unittest.TestCase):
         profile = json.loads((root / "configuration.json").read_text()).get("profile", "quick")
         timing = [json.loads(line) for line in (root / "timeout-arguments.jsonl").read_text().splitlines()]
         self.assertEqual([(row["requested"][2], row["requested"][4]) for row in timing],
-                         [("5", "safety"), ("950" if profile == "standard" else "350", "session"), ("5", "safety")])
+                         [("5", "safety"), ({"quick": "350", "standard": "950", "extended": "2750"}[profile], "session"), ("5", "safety")])
         self.assertTrue(all(row["requested"] == row["effective"] for row in timing))
         self.assertIn("mode=safe-" + profile, console)
         self.assertIn("profile=" + profile, console)
@@ -315,6 +317,8 @@ class RuntimeSafetySupervisorTests(unittest.TestCase):
     def test_custom_and_all_exclusions_survive_the_session_handoff(self):
         for legacy in (False, True):
             selectable = [name for name in SELECTABLE_IDS if not legacy or name not in LEGACY_UNSUPPORTED]
+            self.assertEqual(len(selectable), 12 if legacy else 14)
+            self.assertTrue({"input.touchpad.quick", "input.touchscreen.quick"} <= set(selectable))
             for exclusions in (["memory.quick", "cpu.quick"], ["network.readiness.quick", "storage.readiness.quick"], selectable):
                 with self.subTest(legacy=legacy, exclusions=exclusions):
                     root, result, events, console = self.run_supervisor(legacy, excluded_tests=exclusions)
@@ -466,7 +470,7 @@ class RuntimeSafetySupervisorTests(unittest.TestCase):
 
     def test_unknown_status_never_reaches_inventory_or_session(self):
         for legacy in (False, True):
-            for status in (2, 12, 99, 255):
+            for status in (2, 13, 99, 255):
                 with self.subTest(legacy=legacy, status=status):
                     _, result, events, console = self.run_supervisor(legacy, ui_status=status)
                     self.assertNotEqual(result.returncode, 0)
@@ -514,6 +518,65 @@ class RuntimeSafetySupervisorTests(unittest.TestCase):
                 self.assertEqual((root / "run/session.hhpcr").read_bytes(), REPORT_FIXTURE)
                 calls = [json.loads(line) for line in (root / "timeout-arguments.jsonl").read_text().splitlines()]
                 self.assertEqual(calls[-1]["requested"][2], "950")
+                self.assertEqual(calls[-1]["effective"][2], "1")
+
+
+    def test_extended_handoff_preserves_ephemeral_identity_and_exact_bounds(self):
+        for legacy, architecture in ((False, "x86_64"), (False, "x86"), (False, "aarch64"), (True, "legacy-x86")):
+            with self.subTest(legacy=legacy, architecture=architecture):
+                root, result, events, console = self.run_supervisor(legacy, profile="extended", architecture=architecture)
+                self.assert_ready(root, result, events, console)
+                self.assertEqual(json.loads((root / "run/launch-selection.json").read_text()), self.expected_launch(legacy, profile="extended", architecture=architecture))
+                for command in ("inventory", "plan", "session"):
+                    arguments = json.loads((root / (command + "-arguments.json")).read_text())
+                    self.assertEqual(arguments[arguments.index("-key-epoch") + 1], "ephemeral-session")
+                    self.assertFalse(any(value.startswith("-fixture-components=") for value in arguments))
+                    if command != "inventory":
+                        self.assertEqual(arguments[arguments.index("-profile") + 1], "extended")
+                self.assertNotIn("deployment-key", events)
+                self.assertFalse((root / "run/media-discovery.key").exists())
+                arguments = json.loads((root / "session-arguments.json").read_text())
+                self.assertEqual(arguments[arguments.index("-timeout") + 1], "45m")
+                calls = [json.loads(line) for line in (root / "timeout-arguments.jsonl").read_text().splitlines()]
+                self.assertEqual(calls[1]["requested"][2], "2750")
+
+    def test_extended_mismatched_or_excluded_launch_never_enters_session(self):
+        cases = ({"document_profile": "quick"}, {"document_profile": "standard"},
+                 {"document_architecture": "wrong"}, {"excluded_tests": ["memory.quick"]})
+        for legacy in (False, True):
+            for configuration in cases:
+                with self.subTest(legacy=legacy, configuration=configuration):
+                    _, result, events, console = self.run_supervisor(legacy, profile="extended", **configuration)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertEqual(events, ["ui", "inventory", "safety safety-preflight", "plan"])
+                    self.assertNotIn("HHPT_READY", console)
+
+    def test_extended_failures_never_publish_ready_or_save(self):
+        cases = ({"selection_kind": "malformed"}, {"session_exit": 12},
+                 {"phase": "final", "kind": "mount"}, {"ready_kind": "missing"})
+        for legacy in (False, True):
+            for configuration in cases:
+                with self.subTest(legacy=legacy, configuration=configuration):
+                    _, result, events, console = self.run_supervisor(legacy, profile="extended", **configuration)
+                    self.assertNotEqual(result.returncode, 0)
+                    self.assertNotIn("save", events)
+                    self.assertNotIn("HHPT_READY", console)
+                    if "session_exit" in configuration:
+                        self.assertIn("HHPT_FAILED extended-session exit=12", console)
+
+    def test_extended_outer_policy_preserves_diagnostics_without_claiming_cleanup(self):
+        for legacy in (False, True):
+            with self.subTest(legacy=legacy):
+                root, result, events, console = self.run_supervisor(legacy, profile="extended", outer_timeout=True)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertEqual(events, ["ui", "inventory", "safety safety-preflight", "plan", "session"])
+                self.assertIn("HHPT_FAILED extended-session", console)
+                self.assertIn("cleanup=unconfirmed", console)
+                self.assertNotIn("HHPT_READY", console)
+                self.assertTrue((root / "run/session-diagnostic.json").is_file())
+                self.assertEqual((root / "run/session.hhpcr").read_bytes(), REPORT_FIXTURE)
+                calls = [json.loads(line) for line in (root / "timeout-arguments.jsonl").read_text().splitlines()]
+                self.assertEqual(calls[-1]["requested"][2], "2750")
                 self.assertEqual(calls[-1]["effective"][2], "1")
 
     def test_save_failure_preserves_completed_report(self):

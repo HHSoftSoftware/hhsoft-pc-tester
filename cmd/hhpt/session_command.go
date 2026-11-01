@@ -102,7 +102,7 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 	fixture := flags.String("fixture-components", "", "selected deployment fixture component IDs")
 	directory := flags.String("evidence-dir", "/run/hhpt", "direct directory for fresh worker evidence")
 	output := flags.String("output", "", "new signed report file")
-	profile := flags.String("profile", "quick", "quick or standard session")
+	profile := flags.String("profile", "quick", "quick, standard or extended session")
 	budget := flags.Duration("timeout", 5*time.Minute, "immutable cooperative session budget")
 	var parentOptions previousReportFlags
 	parentOptions.register(flags)
@@ -112,14 +112,18 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 	}
 	parentOptions.recordPresence(flags)
 	executionProfile := plan.Profile(*profile)
-	if executionProfile != plan.ProfileQuick && executionProfile != plan.ProfileStandard {
+	if executionProfile != plan.ProfileQuick && executionProfile != plan.ProfileStandard && executionProfile != plan.ProfileExtended {
 		fmt.Fprintln(stderr, "session: unsupported execution profile")
 		return 2
 	}
 	timeoutSet := false
 	flags.Visit(func(value *flag.Flag) { timeoutSet = timeoutSet || value.Name == "timeout" })
-	if executionProfile == plan.ProfileStandard && !timeoutSet {
-		*budget = 15 * time.Minute
+	maximumBudget := 15 * time.Minute
+	if executionProfile == plan.ProfileExtended {
+		maximumBudget = 45 * time.Minute
+	}
+	if !timeoutSet && (executionProfile == plan.ProfileStandard || executionProfile == plan.ProfileExtended) {
+		*budget = maximumBudget
 	}
 	resultDefinitions, definitionsErr := executionResultDefinitions(executionProfile)
 	if definitionsErr != nil {
@@ -132,13 +136,21 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 		ids := sessionevidence.StandardWorkerIDs()
 		workerIDs = ids[:]
 		journalSchema = sessionevidence.SchemaV12
+	} else if executionProfile == plan.ProfileExtended {
+		ids := sessionevidence.ExtendedWorkerIDs()
+		workerIDs = ids[:]
+		journalSchema = sessionevidence.SchemaV13
 	}
 	if !parentOptions.valid() {
 		fmt.Fprintln(stderr, "session: invalid predecessor options")
 		return 2
 	}
-	if flags.NArg() != 0 || *planPath == "" || *keyPath == "" || *output == "" || *output == "-" || *budget < 10*time.Millisecond || *budget > 15*time.Minute {
-		fmt.Fprintln(stderr, "session requires -plan, -fingerprint-key, -output, and a 10ms-15m timeout")
+	if flags.NArg() != 0 || *planPath == "" || *keyPath == "" || *output == "" || *output == "-" || *budget < 10*time.Millisecond || *budget > maximumBudget {
+		if executionProfile == plan.ProfileExtended {
+			fmt.Fprintln(stderr, "session requires -plan, -fingerprint-key, -output, and a 10ms-45m timeout")
+		} else {
+			fmt.Fprintln(stderr, "session requires -plan, -fingerprint-key, -output, and a 10ms-15m timeout")
+		}
 		return 2
 	}
 	if ctx == nil || dependencies.RunWorker == nil || dependencies.ObserveSafety == nil || dependencies.StartMonitor == nil || dependencies.StartThermal == nil || dependencies.Finalize == nil || dependencies.FinishInput == nil || dependencies.Now == nil {
@@ -195,6 +207,11 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 		fmt.Fprintln(stderr, "scheduled CPU stress requires scheduled CPU quick checks")
 		return 1
 	}
+	if executionProfile == plan.ProfileExtended && planned["memory.stress"].Status == plan.TestScheduled &&
+		planned["memory.quick"].Status != plan.TestScheduled {
+		fmt.Fprintln(stderr, "scheduled memory stress requires scheduled memory quick checks")
+		return 1
+	}
 	journalPath := filepath.Join(*directory, "session-journal.json")
 	monitorPath := filepath.Join(*directory, "session-safety-monitor.json")
 	thermalPath := filepath.Join(*directory, "session-thermal-monitor.json")
@@ -202,8 +219,8 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 	freshPaths := []string{journalPath, monitorPath, thermalPath, readyPath, filepath.Join(*directory, "session-safety-pre-sign.json"), *output, filepath.Join(*directory, "session-safety-preflight.json"), filepath.Join(*directory, "session-safety-final.json")}
 	journal := sessionJournal{Schema: journalSchema, PlanID: frozen.ID,
 		StopReason: "completed", BudgetMilliseconds: budget.Milliseconds(), LocalThermalSources: []sessionevidence.LocalThermalSource{}}
-	if executionProfile == plan.ProfileStandard {
-		journal.Profile = "standard"
+	if executionProfile == plan.ProfileStandard || executionProfile == plan.ProfileExtended {
+		journal.Profile = string(executionProfile)
 	}
 	scheduled := 0
 	for _, id := range workerIDs {
@@ -408,7 +425,7 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 		outcome, state, evidenceErr := sessionWorkerOutcomeEvidence(workerEvidence, workerReadErr, definitions[record.ID].schema, code, reason != "")
 		if evidenceErr != nil {
 			fmt.Fprintf(stderr, "session worker evidence: %v\n", evidenceErr)
-			if errors.Is(evidenceErr, errQuickCleanupUnconfirmed) || errors.Is(evidenceErr, keyboardevidence.ErrCleanupUnconfirmed) || errors.Is(evidenceErr, quick.ErrCPUStressCleanupUnconfirmed) || touchpadCleanupError(evidenceErr) || touchscreenCleanupError(evidenceErr) {
+			if errors.Is(evidenceErr, errQuickCleanupUnconfirmed) || errors.Is(evidenceErr, keyboardevidence.ErrCleanupUnconfirmed) || errors.Is(evidenceErr, quick.ErrCPUStressCleanupUnconfirmed) || errors.Is(evidenceErr, quick.ErrMemoryStressCleanupUnconfirmed) || touchpadCleanupError(evidenceErr) || touchscreenCleanupError(evidenceErr) {
 				fmt.Fprintf(stderr, "HHPT_SESSION_FAILED worker=%s reason=cleanup_unconfirmed\n", record.ID)
 				return workerCleanupUncertainExitCode
 			}
@@ -464,7 +481,7 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 			journal.StopReason = reason
 			break
 		}
-		if outcome == "fail" || outcome == "aborted" || (record.ID == "cpu.quick" || record.ID == "cpu.stress" || record.ID == "memory.quick") && outcome != "pass" {
+		if outcome == "fail" || outcome == "aborted" || (record.ID == "cpu.quick" || record.ID == "cpu.stress" || record.ID == "memory.quick" || record.ID == "memory.stress") && outcome != "pass" {
 			journal.StopReason = "worker_stop"
 			break
 		}
@@ -495,8 +512,8 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 	journal.PreparationStartedMilliseconds = dependencies.Now().Sub(started).Milliseconds()
 	gateCalled, gatePassed := false, false
 	request := sessionFinalization{Previous: previous, PlanPath: *planPath, EvidenceDirectory: *directory, FingerprintKeyPath: *keyPath, KeyEpoch: *keyEpoch, FixtureComponents: *fixture, OutputPath: *output}
-	if executionProfile == plan.ProfileStandard {
-		request.Profile = plan.ProfileStandard
+	if executionProfile == plan.ProfileStandard || executionProfile == plan.ProfileExtended {
+		request.Profile = executionProfile
 	}
 	request.Gate = func(gateContext context.Context) (sessionJournal, error) {
 		if gateCalled {
@@ -561,7 +578,7 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 }
 
 func printSessionWorkerResult(output io.Writer, record sessionWorkerRecord) {
-	labels := map[string]string{"cpu.quick": "CPU", "cpu.stress": "CPU_STRESS", "memory.quick": "MEMORY", "audio.readiness.quick": "AUDIO_READINESS",
+	labels := map[string]string{"cpu.quick": "CPU", "cpu.stress": "CPU_STRESS", "memory.quick": "MEMORY", "memory.stress": "MEMORY_STRESS", "audio.readiness.quick": "AUDIO_READINESS",
 		"input.readiness.quick": "INPUT_READINESS", "input.keyboard.quick": "KEYBOARD", "input.pointer.quick": "POINTER", touchpadExecutionID: "TOUCHPAD", touchscreenExecutionID: "TOUCHSCREEN", "network.readiness.quick": "NETWORK_READINESS", "storage.readiness.quick": "STORAGE_READINESS",
 		"usb.readiness.quick": "USB_READINESS", "graphics.quick": "GRAPHICS", "display.operator.quick": "DISPLAY", "inspection.exterior.quick": "EXTERIOR_INSPECTION"}
 	fmt.Fprintf(output, "HHPT_%s status=%s\n", labels[record.ID], record.Outcome)
@@ -589,6 +606,23 @@ func sessionWorkerOutcomeEvidence(encoded []byte, readErr error, schema string, 
 	}
 	if schema == inputtest.TouchscreenSchema {
 		return touchscreenWorkerOutcomeEvidence(encoded, readErr, code, interrupted)
+	}
+	if schema == quick.MemoryStressSchema {
+		if code == workerCleanupUncertainExitCode {
+			return "", "", quick.ErrMemoryStressCleanupUnconfirmed
+		}
+		if readErr != nil || code != 0 {
+			return "", "", errors.New("dispatched memory stress requires valid emitted evidence")
+		}
+		status, err := testEvidenceStatus(encoded, schema)
+		if err != nil {
+			return "", "", err
+		}
+		state := "completed"
+		if interrupted && (status == "aborted" || status == "error") {
+			state = "interrupted"
+		}
+		return status, state, nil
 	}
 	if schema == quick.CPUStressSchema {
 		if code == workerCleanupUncertainExitCode {

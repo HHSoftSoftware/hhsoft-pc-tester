@@ -88,6 +88,9 @@ func writeSessionReady(path, reportPath, keyEpoch string, frozen plan.Plan, jour
 	if sessionevidence.IsStandardSchema(journal.Schema) {
 		marker += " profile=standard cpu_stress=" + outcomes["cpu.stress"]
 	}
+	if sessionevidence.IsExtendedSchema(journal.Schema) {
+		marker += " profile=extended memory_stress=" + outcomes["memory.stress"]
+	}
 	if sessionevidence.SupportsTouchpad(journal.Schema) {
 		marker += " touchpad=" + outcomes[touchpadExecutionID]
 	}

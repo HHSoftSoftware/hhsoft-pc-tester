@@ -42,6 +42,9 @@ func HasCPUStressClaim(raw []byte) bool {
 
 func validStressSourceStructure(j Journal) bool {
 	if !IsStandardSchema(j.Schema) {
+		if IsExtendedSchema(j.Schema) {
+			return j.Profile == "extended" && j.CPUStressSource == nil
+		}
 		return j.Profile == "" && j.CPUStressSource == nil
 	}
 	if j.Profile != "standard" || j.StorageSource != nil {

@@ -112,7 +112,7 @@ func TestLaunchSelectionRejectsTargetMismatch(t *testing.T) {
 	}{
 		{"profile_mismatch", quick, ProfileStandard, "x86_64"},
 		{"architecture_mismatch", quick, ProfileQuick, "x86"},
-		{"unsupported_profile", strings.Replace(quick, "quick", "extended", 1), ProfileExtended, "x86_64"},
+		{"unsupported_profile", strings.Replace(quick, "quick", "destructive", 1), ProfileDestructive, "x86_64"},
 		{"unknown_architecture", strings.Replace(quick, "x86_64", "amd64", 1), ProfileQuick, "amd64"},
 		{"profile_whitespace", strings.Replace(quick, "quick", " quick", 1), ProfileQuick, "x86_64"},
 		{"architecture_whitespace", strings.Replace(quick, "x86_64", "x86_64 ", 1), ProfileQuick, "x86_64"},
@@ -138,7 +138,7 @@ func TestLaunchSelectionRejectsUnsafeChoices(t *testing.T) {
 		{"nonquick", ProfileQuick, "x86_64", []string{"cpu.stress"}},
 		{"legacy_graphics", ProfileQuick, "legacy-x86", []string{"graphics.quick"}},
 		{"legacy_display", ProfileQuick, "legacy-x86", []string{"display.operator.quick"}},
-		{"unsupported_profile", ProfileExtended, "x86_64", nil},
+		{"unsupported_profile", ProfileDestructive, "x86_64", nil},
 		{"unknown_architecture", ProfileQuick, "amd64", nil},
 	} {
 		t.Run(test.name, func(t *testing.T) {

@@ -402,8 +402,9 @@ the executable coverage. See
 [the validation scope and remaining gates](test-strategy.md#memory-device-inventory-validation).
 
 SPD, ECC deltas, topology and slot locations, speed/rate/voltage/rank,
-firmware/OS capacity reconciliation, RAM correctness, broader working sets,
-extended stress and pre-boot Memtest86+ remain open. Image/sysfs exposure and
+firmware/OS capacity reconciliation, RAM correctness beyond the bounded memory
+workers, broader working sets and pre-boot Memtest86+ remain open. Image/sysfs
+exposure and
 permissions, physical-PC observations, installed-command/image behavior,
 race/durability qualification, all four release images, the physical pilot and
 required release approval remain separate gates. Actual 600-second Standard
@@ -417,14 +418,16 @@ attestation or physical-continuity conclusion follows from this inventory.
 Implementation is present across the standard coordinator, strict evidence,
 finalization, signed bundles, canonical views and comparison. The earlier CPU
 increment passed host, selected native and bounded real elapsed-window
-qualification; current integrated-route gates remain below. Current Quick v9
-remains the default with thirteen workers. Explicit `session -profile standard`
-requires a matching frozen standard plan and uses fourteen workers with v10. Its default and maximum
-session budget are 900 seconds. The 22-row catalog has fourteen implemented
-rows and eight inactive families: `audio.quick`, `camera.quick`,
-`input.touchscreen.quick`, `memory.stress`, `network.quick`, `storage.quick`,
-`storage.destructive` and `usb.quick`. Standard-only CPU stress does not
-activate those families or complete the broader matrix.
+qualification; later integrated-route gates remain below. At the touchpad
+activation stage, Quick v9 was the default with thirteen workers. Explicit
+`session -profile standard` required a matching frozen standard plan and used
+fourteen workers with v10, with a 900-second default and maximum work budget.
+That 22-row catalog had fourteen implemented rows and eight inactive families:
+`audio.quick`, `camera.quick`, `input.touchscreen.quick`, `memory.stress`,
+`network.quick`, `storage.quick`, `storage.destructive` and `usb.quick`.
+Standard-only CPU stress did not activate those families or complete the
+broader matrix. The current layouts are recorded in the
+[Extended memory contract](#bounded-extended-memory-session).
 
 The fixed request is a 600-second shared elapsed load window after all launched
 workers have completed initial integer/SHA-256/scalar work and reached readiness.
@@ -445,11 +448,11 @@ to finite precedence. Unconfirmed cleanup and invalid clock/counter/accounting
 cannot produce signable evidence. Sample availability does not identify CPU
 sensor coverage or detect every same-count sensor substitution.
 
-Every dispatched Standard stress row, historical v8 or current v10, requires
+Every dispatched Standard stress row, including historical v8 and v10, requires
 strict persisted bytes, file and typed digests and a bound worker interval,
 including valid no-load or non-pass results. Null source is limited to
-undispatched rows. Current Standard finalization needs the actual fresh v10
-gate even when stress never starts. Historical Quick contracts and exact old
+undispatched rows. At the touchpad activation stage, Standard finalization
+required the actual fresh v10 gate even when stress never started. Historical Quick contracts and exact old
 supervisor notes remain readable, but opaque observed error/aborted objects
 and re-signed no-view forgeries must fail semantic admission.
 
@@ -2667,18 +2670,20 @@ reconciled all 16 formatted candidates and confirmed 639 other source members
 unchanged. Those measurements qualify the app increment before catalog
 activation.
 
-Current touchpad definition 2 uses the exact derived `touchpad_candidate=true`
-provider marker; category text alone grants no worker authority. Quick v9
-contains thirteen workers and Standard v10 fourteen, with touchpad once after
-pointer. Modern Quick selection has thirteen choices and legacy x86 eleven.
+At touchpad activation, definition 2 used the exact derived
+`touchpad_candidate=true` provider marker; category text alone granted no
+worker authority. Quick v9 contained thirteen workers and Standard v10
+fourteen, with touchpad once after pointer. Modern Quick selection had
+thirteen choices and legacy x86 eleven.
 Explicit exclusions remain Quick-only. Absent or unsupported candidates retain
 their finite dispositions, and cleanup uncertainty prevents a pass.
 
 Execution still requires `Plan.Decode` and validation against the current
 catalog. Stale plans remain rejected even if rehashed. Historical v4-v8 signed
 reports and journals retain their original interpretation; they are not a
-fallback for current execution or live-owner finalization. Extended and
-Destructive profile names do not introduce new session coordinators.
+fallback for current execution or live-owner finalization. At that stage,
+Extended and Destructive profile names did not introduce session coordinators.
+The later bounded Extended implementation is described below.
 
 With Go 1.27.2, the connected activation fixtures passed focused Windows
 amd64/386 runs: each had 4,838 passes and six permitted skips. The full amd64
@@ -2694,3 +2699,106 @@ installed-image or physical qualification for the later integrated route.
 Broader touch/gesture coverage, the physical pilot, complete beta matrix and
 release gates remain open. See
 [tests](test-strategy.md#touchpad-inventory-and-evidence-host-validation).
+
+## Bounded Extended Memory Session
+
+Development source implements an explicitly selected Extended profile with a
+v13 journal and fifteen workers. It retains the current Quick sequence and
+adds `memory.stress` immediately after `memory.quick`; successful scheduled
+quick-memory checks are a prerequisite. CPU stress remains Standard-only.
+Quick v11/fourteen workers and Standard v12/fifteen workers retain their
+schedules, and Standard retains its 900-second work budget.
+
+The memory-stress definition is version 2 and Extended-only. The development
+catalog has sixteen implemented rows and six inactive families:
+`audio.quick`, `camera.quick`, `network.quick`, `storage.quick`,
+`storage.destructive` and `usb.quick`. Readiness evidence does not activate
+these remaining functional families or complete the broader profiles.
+
+### Selection and budget
+
+Both the frozen plan and `hhpt session -profile extended` must select Extended.
+The default and maximum work budget are 2,700 seconds (`-timeout 45m`).
+The console's explicit `E` selection requires an owned profile/architecture
+launch record with no exclusions; automatic and ordinary Quick choices remain
+Quick. Both startup supervisors use a separate 2,750-second outer policy.
+The conservative 2,744-second budget ledger retains the existing preparation,
+finalization and joined-cleanup rules. This is not a hard wall-clock deadline
+or a guarantee that blocked kernel work or every descendant can be stopped.
+
+The producer still requests 1,800 seconds of load within its original
+1,860-second invocation watchdog. It reuses one 4-64 MiB allocation selected
+against fresh available memory, at most one quarter of that observation.
+Preparation, active-cycle completion, final read and monitor cleanup share
+that watchdog. Short available time cannot turn a reduced load into a pass.
+The bound covers the owned working set, not the entire heap, installed RAM,
+physical traffic or DIMM health.
+
+### Owned evidence and compatibility
+
+The live finalizer separately binds the original evidence-file SHA-256 and
+strict typed digest to the current frozen plan, hardware graph, result and v13
+journal. It rereads owned evidence before signing. Dispatched work requires
+matching evidence; unstarted work retains a finite note. Cleanup uncertainty
+prevents signing and a ready marker. Mismatch facts survive cancellation and
+heat, and local thermal-source presence must agree with the observed result.
+
+Strict report, bundle, copied-accessor, comparison and HTML/PDF consumers reject
+malformed, stripped or mixed memory/CPU claims and mismatched source, plan or
+journal bindings. Canonical views preserve the complete bounded-memory scope
+warning across PDF line wrapping. Exact non-scheduled definition-2 catalog
+notes remain admissible in current Quick and Standard without acquiring
+observed memory-stress authority. Historical v4-v12 wire layouts and typed-plan
+bindings retain their original interpretation; current `Plan.Decode` still
+rejects stale catalogs, even when rehashed.
+
+The regression requirements include valid real-finalizer prerequisites,
+different original serializations with independently bound file and typed
+digests, missing dispatched evidence, cleanup nonpublication, local heat
+consistency, forged non-scheduled notes and unchanged Quick/Standard authority.
+See the [connected finalizer fixtures](../cmd/hhpt/extended_memory_finalizer_test.go),
+[signed consumers](../cmd/hhpt/extended_memory_signed_test.go) and
+[journal bindings](../internal/sessionevidence/memory_stress_test.go).
+
+### Validation status
+
+Corrected Extended host validation passed all 242 declared focused test/subtest
+names on Windows amd64 and 386, including 41 roots and 201 source-declared
+parent relations in each run. The full Windows suite closed all 11,659
+outcomes: 11,641 passes and 18 retained platform skips, with 33 passing
+packages and one package without tests. Exact names, declared parents,
+lifecycle closure and the retained skip/fuzz/parallel policy were reconciled.
+
+All 22 recorded commands completed, including formatting, vet, three Linux
+application builds and twelve Linux test-binary builds across amd64, 386
+and AArch64. The fifteen Linux artifacts were compiled, not executed.
+All seven final postchecks passed. Both earlier failed attempts remain
+failed evidence and supply no qualification.
+
+Earlier standalone host and selected native memory fixtures keep their
+original scope. These Windows fixtures qualify the connected session software
+without establishing native startup behavior or a real elapsed load.
+
+A separate standalone API qualification completed one real 1,800-second load
+on each of Linux amd64 and 386. Its 703-file source overlay adds only the
+elapsed-test fixture to the 702-file standalone baseline; it does not execute
+the later Extended integration. The real allocator, byte kernel, availability
+reader and thermal sampler used one 4 MiB working set with synthetic
+availability and fixed 35-degree-Celsius inputs. Both roots passed the strict
+decoder, independent cycle/typed-digest checks, final verification and cleanup.
+All nine ownership cases, 32 archive cases and six postchecks passed. The
+earlier failed elapsed attempt remains unqualified.
+
+The three updated startup/fixture files were separately tested against that
+702-file standalone baseline. Both shell syntax checks and all 22 mock-fixture
+methods passed, including the exact 22 new subcase outcomes, with no failures
+or skips. Ownership, archive and six postchecks passed with cleanup confirmed.
+These checks used owned command stubs and executed neither installed
+supervisors nor product workers.
+
+Installed startup supervisors, native and full-duration Extended execution,
+installed CLI and image behavior, race/ARM qualification, physical memory and
+thermal coverage, all four bootable images, the ten-PC pilot and release
+approval remain separate gates. Broader working sets, SPD/ECC, Memtest86+ and
+complete profile coverage remain planned work. See
+[operator guidance](memory-stress.md) and the [checklist](../PROJECT_CHECKLIST.md).

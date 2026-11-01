@@ -1,14 +1,18 @@
-# Memory stress diagnostic
+# Memory stress diagnostic and Extended session
 
 Development source implements `hhpt memory-stress`, a standalone JSON
 diagnostic requesting a fixed 30-minute load over one bounded working set.
-It is separate from `memory.quick` and is not included in automatic boot,
-Quick or Standard. Its output does not supply signed-session test authority.
+An explicitly selected Extended session now connects the same producer to a
+frozen plan and strict signed evidence. A standalone diagnostic file alone
+does not supply that session authority.
 
-The `memory.stress` catalog row remains inactive. The 22-row catalog still has
-fifteen implemented and seven inactive rows. Quick v11 has fourteen workers;
-Standard v12 has fifteen and retains its 900-second session budget. An explicitly
-selected longer profile and its signed integration remain separate work.
+The `memory.stress` definition is version 2 and applies only to Extended.
+The 22-row development catalog has sixteen implemented and six inactive rows.
+Quick v11 has fourteen workers; Standard v12 has fifteen and retains its
+900-second work budget. Extended v13 has fifteen workers: the Quick sequence
+with memory stress immediately after quick memory. CPU stress stays
+Standard-only. Automatic boot and ordinary Quick selection do not start
+Extended.
 
 ## Run the diagnostic
 
@@ -26,6 +30,43 @@ The production command uses Linux availability and thermal observations.
 Missing or unusable observations prevent admission; there is no alternate-root
 command-line option for substituting them. There are also no duration,
 pass-count or thermal-limit overrides.
+
+## Run an Extended session
+
+Use the same existing 32-byte fingerprint key and explicit key epoch for
+planning and execution. Use a fresh, writable evidence directory and a new
+report path; retain the evidence until finalization completes.
+
+```sh
+hhpt plan -fingerprint-key fingerprint.key -key-epoch local-1 \
+  -profile extended -output extended-plan.json
+hhpt session -fingerprint-key fingerprint.key -key-epoch local-1 \
+  -plan extended-plan.json -profile extended -timeout 45m \
+  -evidence-dir extended-evidence -output extended-report.hhpcr
+```
+
+The matching key epoch is deliberate: the plan and session commands have
+different defaults. The session checks the current catalog and matching
+profile before dispatch. A stale or rehashed historical plan is not an
+execution fallback.
+
+The console offers `E` when it has an owned launch-selection output. Restore
+Quick exclusions with `C`, then `A`, before choosing Extended. The launch
+record binds profile, architecture and an empty exclusion list; both startup
+supervisors carry that same profile into planning and execution. Automatic
+start, Enter, `1` and the modern deployment-key choice remain Quick.
+
+The default and maximum Extended session work budget are 45 minutes
+(2,700 seconds). A smaller explicit timeout does not shorten the required
+memory load into a pass. The startup supervisors use a separate 2,750-second
+outer policy; do not pass that value as the session timeout. Finalization and
+joined cleanup retain their separate checks. These policies cannot guarantee
+a hard wall-clock deadline or termination of blocked kernel work.
+
+Memory stress starts only after scheduled quick-memory checks pass. A
+quick-memory failure, missing prerequisite, thermal stop or cancellation
+prevents later work. The session uses the producer's default working-set
+selection; it does not expose the standalone `-bytes` override.
 
 ## Working set and timing
 
@@ -91,6 +132,22 @@ keeps memory-stress evidence separate from quick-memory evidence. Its typed
 digest identifies the decoded result; it does not authenticate the original
 file bytes or turn the diagnostic into signed-session authority.
 
+For Extended, the real session finalizer binds both the original evidence-file
+SHA-256 and the strict typed digest to the frozen plan, hardware graph,
+worker result and v13 journal. A dispatched worker needs its matching evidence;
+an honest not-started note is not an observation. Unconfirmed cleanup prevents
+signing and publication of the ready marker. Mismatches remain failures through
+cancellation or heat, and local thermal evidence must agree with the journal.
+
+Signed reports, HTML/PDF views, bundles without views, copied accessors and
+comparisons reject malformed or mixed memory/CPU claims and mismatched bindings.
+Views retain the bounded-working-set warning; they do not claim full-RAM,
+DIMM, cache-bypass or physical-traffic coverage. Current Quick and Standard
+can retain exact non-scheduled memory-stress catalog notes without gaining
+observed stress authority. Historical v4-v12 reports and typed journals keep
+their versioned interpretation, while live execution still requires a current
+plan.
+
 ## Validation and remaining integration
 
 Implementation and source review are complete for this standalone slice.
@@ -108,16 +165,39 @@ intervals checked. No outcome failed, skipped or used pause/continue. All nine
 process-ownership cases, 32 archive cases and six postchecks passed, and cleanup
 was confirmed. This closes the selected native software-fixture gate.
 
-These controlled-clock fixtures do not establish a real 1,800-second load.
-An actual full-duration run, race checks, the full Linux suite, ARM runtime,
-installed-command execution and physical-memory/thermal qualification remain
-open. Earlier quick-memory and CPU-stress results remain evidence for those
-earlier implementations.
+Those controlled-clock fixtures retain their original scope. A later standalone
+API test completed a real 1,800-second load on each of Linux amd64 and 386,
+using the production allocator, memory kernel, availability reader and thermal
+sampler with one 4 MiB working set and fixed synthetic input files. Both runs
+passed the strict decoder, checked cycle accounting, final verification and
+cleanup. Nine process-ownership cases, 32 archive cases and six postchecks
+passed. The earlier failed elapsed attempt remains unqualified.
 
-Connecting `memory.stress` requires an explicitly selected longer profile
-with suitable budgets, frozen-plan authorization, versioned journals and
-strict signed report, view and comparison consumers. It must not silently
-extend Quick or the current 900-second Standard session.
+This closes the standalone elapsed-window fixture gate. It does not qualify
+the installed command, a full Extended session, larger working sets or physical
+memory and thermal behavior. Race checks, the full Linux suite and ARM runtime
+remain open. Earlier quick-memory and CPU-stress results remain evidence for
+those earlier implementations.
+
+The connected Extended implementation and source review are complete.
+Corrected Extended host validation passed 242 focused test/subtest cases on
+each of Windows amd64 and 386. The full Windows suite passed 11,641 cases
+with 18 platform skips, 33 passing packages and one package without tests.
+Formatting and vet passed. Three application builds and twelve test-binary
+builds passed across Linux amd64, 386 and AArch64; those artifacts were
+compiled, not executed. These host fixtures cover the connected coordinator
+and signed-consumer route without establishing a real elapsed load.
+
+The updated startup scripts separately passed two shell syntax checks and all
+22 mock-fixture methods, including 22 new subcases, with no failures or skips.
+The run used the standalone source baseline plus the two startup scripts and
+their fixture suite. It executed owned command stubs, not an installed
+supervisor or product session. Ownership, archive and six postchecks passed
+with cleanup confirmed.
+
+The standalone and auxiliary results retain those scopes. Native and
+full-duration Extended execution, installed supervisors and CLI, race/ARM
+runtime and installed image behavior remain separate validation gates.
 
 Broader working sets, SPD/ECC, the separate Memtest86+ boot path, physical
 memory and thermal behavior, all four bootable images, the ten-PC pilot and

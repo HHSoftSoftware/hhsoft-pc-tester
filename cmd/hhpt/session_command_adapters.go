@@ -13,6 +13,8 @@ import (
 func runSessionWorker(ctx context.Context, worker sessionWorker, input io.Reader, stdout, stderr io.Writer) int {
 	arguments := []string{"-output", worker.OutputPath}
 	switch worker.ID {
+	case "memory.stress":
+		return runMemoryStress(ctx, arguments, stdout, stderr)
 	case "cpu.stress":
 		return runCPUStress(ctx, arguments, stdout, stderr)
 	case "cpu.quick":

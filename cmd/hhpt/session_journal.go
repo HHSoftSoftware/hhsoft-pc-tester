@@ -85,9 +85,12 @@ func validateSessionJournal(journal sessionJournal, frozen plan.Plan, outcomes m
 
 func currentSessionProfile(journal sessionJournal, profile plan.Profile) bool {
 	if profile == plan.ProfileStandard {
-		return journal.Schema == sessionevidence.SchemaV12 && journal.Profile == "standard"
+		return journal.Schema == sessionevidence.SchemaV12 && journal.Profile == "standard" && journal.MemoryStressSource == nil
 	}
-	return (profile == "" || profile == plan.ProfileQuick) && journal.Schema == sessionJournalSchema && journal.Profile == "" && journal.CPUStressSource == nil
+	if profile == plan.ProfileExtended {
+		return journal.Schema == sessionevidence.SchemaV13 && journal.Profile == "extended" && journal.CPUStressSource == nil
+	}
+	return (profile == "" || profile == plan.ProfileQuick) && journal.Schema == sessionJournalSchema && journal.Profile == "" && journal.CPUStressSource == nil && journal.MemoryStressSource == nil
 }
 
 func validateSessionJournalForProfile(journal sessionJournal, frozen plan.Plan, outcomes map[string]string, stopReason, evidenceDirectory string, profile plan.Profile) error {
@@ -165,6 +168,21 @@ func validateSessionWorkerEvidence(journal *sessionJournal, id string, encoded [
 		if worker.State == "not_started" || worker.State == "not_scheduled" {
 			if !errors.Is(readErr, os.ErrNotExist) {
 				return errors.New("evidence appeared for an unstarted session worker")
+			}
+			return nil
+		}
+		if id == "memory.stress" {
+			if !sessionevidence.IsExtendedSchema(journal.Schema) || readErr != nil || statusErr != nil || sourceStatus != worker.Outcome ||
+				worker.Timing == nil || journal.MemoryStressSource == nil {
+				return errors.New("dispatched memory stress lacks its persisted source")
+			}
+			value, digest, err := quickevidence.DecodeMemoryStress(encoded)
+			source := journal.MemoryStressSource
+			if err != nil || source.WorkerID != id || source.EvidenceSchema != value.Schema ||
+				source.EvidenceTypedSHA256 != digest || source.EvidenceFileSHA256 != sourceFileDigest(encoded) ||
+				worker.Timing.StartedMilliseconds < 0 || worker.Timing.FinishedMilliseconds < worker.Timing.StartedMilliseconds ||
+				value.FinishedMilliseconds > worker.Timing.FinishedMilliseconds-worker.Timing.StartedMilliseconds {
+				return errors.New("memory stress source or elapsed time changed")
 			}
 			return nil
 		}

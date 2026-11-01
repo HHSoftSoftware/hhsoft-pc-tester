@@ -21,11 +21,12 @@ const touchpadExecutionID = "input.touchpad.quick"
 const touchpadExecutionLimitMilliseconds = 30000
 
 type commandExecutionLayout struct {
-	definitions []quickResultDefinition
-	workerIDs   []string
-	schema      string
-	touchpad    bool
-	touchscreen bool
+	definitions  []quickResultDefinition
+	workerIDs    []string
+	schema       string
+	touchpad     bool
+	touchscreen  bool
+	memoryStress bool
 }
 
 // Call only after the owner has checked the frozen plan. This finite selector
@@ -37,7 +38,7 @@ func commandLayoutForPlan(frozen plan.Plan, profile plan.Profile) (commandExecut
 	}
 	definitions, err := executionResultDefinitions(profile)
 	if err != nil || requestedProfile != "" && frozen.Profile != profile ||
-		requestedProfile == "" && frozen.Profile == plan.ProfileStandard {
+		requestedProfile == "" && (frozen.Profile == plan.ProfileStandard || frozen.Profile == plan.ProfileExtended) {
 		return commandExecutionLayout{}, touchpadevidence.ErrInvalid
 	}
 	layout := commandExecutionLayout{definitions: definitions, schema: sessionevidence.SchemaV7}
@@ -54,6 +55,27 @@ func commandLayoutForPlan(frozen plan.Plan, profile plan.Profile) (commandExecut
 			return commandExecutionLayout{}, touchpadevidence.ErrInvalid
 		}
 		seen[test.ID] = true
+		if test.ID == "memory.stress" {
+			if profile != plan.ProfileExtended {
+				if test.Status == plan.TestScheduled {
+					return commandExecutionLayout{}, touchpadevidence.ErrInvalid
+				}
+				continue
+			}
+			if test.Version != 2 || frozen.Profile != profile || !frozen.Frozen ||
+				frozen.SchemaVersion != plan.SchemaVersion || frozen.ID == "" ||
+				test.Capability != "memory" || test.Destructive ||
+				test.EstimatedSeconds != 1800 || test.TimeoutSeconds != 1860 {
+				return commandExecutionLayout{}, touchpadevidence.ErrInvalid
+			}
+			switch test.Status {
+			case plan.TestScheduled, plan.TestExcluded, plan.TestNotPresent, plan.TestUnsupported, plan.TestMissingDriver:
+			default:
+				return commandExecutionLayout{}, touchpadevidence.ErrInvalid
+			}
+			layout.memoryStress = true
+			continue
+		}
 		if test.ID == touchscreenExecutionID {
 			if test.Version == 1 {
 				if test.Status == plan.TestScheduled {
@@ -124,6 +146,15 @@ func commandLayoutForPlan(frozen plan.Plan, profile plan.Profile) (commandExecut
 			layout.schema = sessionevidence.SchemaV12
 		}
 	}
+	if profile == plan.ProfileExtended {
+		// Extended is a new complete layout, never a fallback for a stale plan.
+		if !layout.memoryStress || !layout.touchpad || !layout.touchscreen {
+			return commandExecutionLayout{}, touchpadevidence.ErrInvalid
+		}
+		extended := sessionevidence.WorkerIDsV13()
+		layout.workerIDs = append([]string(nil), extended[:]...)
+		layout.schema = sessionevidence.SchemaV13
+	}
 	return layout, nil
 }
 
@@ -165,9 +196,12 @@ func currentSessionProfileForPlan(journal sessionJournal, frozen plan.Plan, prof
 		return currentSessionProfile(journal, profile)
 	}
 	if frozen.Profile == plan.ProfileStandard {
-		return journal.Profile == "standard"
+		return journal.Profile == "standard" && journal.MemoryStressSource == nil
 	}
-	return journal.Profile == "" && journal.CPUStressSource == nil
+	if frozen.Profile == plan.ProfileExtended {
+		return journal.Profile == "extended" && journal.CPUStressSource == nil
+	}
+	return journal.Profile == "" && journal.CPUStressSource == nil && journal.MemoryStressSource == nil
 }
 
 // Standalone frozen-plan binding is allowed without a session-monitoring claim.

@@ -38,7 +38,11 @@ func HasHeat(value Journal) bool {
 }
 
 func ValidateStructure(j Journal) error {
-	if !IsStrictSchema(j.Schema) || !validDigest(j.PlanID) || j.BudgetMilliseconds < 10 || j.BudgetMilliseconds > 900000 || j.ElapsedMilliseconds < 0 || j.ElapsedMilliseconds > 3600000 {
+	maximumBudget := int64(900000)
+	if IsExtendedSchema(j.Schema) {
+		maximumBudget = 2700000
+	}
+	if !IsStrictSchema(j.Schema) || !validDigest(j.PlanID) || j.BudgetMilliseconds < 10 || j.BudgetMilliseconds > maximumBudget || j.ElapsedMilliseconds < 0 || j.ElapsedMilliseconds > 3600000 {
 		return ErrInvalid
 	}
 	if j.PreparationStartedMilliseconds < 0 || j.InventoryPreparedMilliseconds < j.PreparationStartedMilliseconds || j.StopRequestedMilliseconds < j.InventoryPreparedMilliseconds || j.ElapsedMilliseconds < j.StopRequestedMilliseconds || j.ElapsedMilliseconds-j.StopRequestedMilliseconds > 2000 {
@@ -60,7 +64,7 @@ func ValidateStructure(j Journal) error {
 	}
 	ids := workerIDs(j.Schema)
 	maximumSources := 2
-	if IsStandardSchema(j.Schema) {
+	if IsStandardSchema(j.Schema) || IsExtendedSchema(j.Schema) {
 		maximumSources = 3
 	}
 	if len(j.Workers) != len(ids) || j.Safety == nil || j.LocalThermalSources == nil || len(j.LocalThermalSources) > maximumSources {
@@ -111,7 +115,7 @@ func ValidateStructure(j Journal) error {
 				default:
 					return ErrInvalid
 				}
-				if worker.Outcome == "fail" || worker.Outcome == "aborted" || (worker.ID == "cpu.quick" || worker.ID == "memory.quick" || IsStandardSchema(j.Schema) && worker.ID == "cpu.stress") && worker.Outcome != "pass" {
+				if worker.Outcome == "fail" || worker.Outcome == "aborted" || (worker.ID == "cpu.quick" || worker.ID == "memory.quick" || IsStandardSchema(j.Schema) && worker.ID == "cpu.stress" || IsExtendedSchema(j.Schema) && worker.ID == "memory.stress") && worker.Outcome != "pass" {
 					if j.StopReason == "completed" {
 						return ErrInvalid
 					}
@@ -135,7 +139,7 @@ func ValidateStructure(j Journal) error {
 			return ErrInvalid
 		}
 	}
-	if !validStorageSourceStructure(j) || !validStressSourceStructure(j) {
+	if !validStorageSourceStructure(j) || !validStressSourceStructure(j) || !validMemoryStressSourceStructure(j) {
 		return ErrInvalid
 	}
 	previousSource := -1
@@ -161,6 +165,11 @@ func ValidateStructure(j Journal) error {
 				return ErrInvalid
 			}
 			index, schema = 1, quick.CPUStressSchema
+		case "memory.stress":
+			if !IsExtendedSchema(j.Schema) {
+				return ErrInvalid
+			}
+			index, schema = 2, quick.MemoryStressSchema
 		default:
 			return ErrInvalid
 		}
@@ -174,6 +183,10 @@ func ValidateStructure(j Journal) error {
 }
 
 func CloneJournal(j Journal) Journal {
+	if j.MemoryStressSource != nil {
+		value := *j.MemoryStressSource
+		j.MemoryStressSource = &value
+	}
 	if j.CPUStressSource != nil {
 		value := *j.CPUStressSource
 		j.CPUStressSource = &value
@@ -214,6 +227,8 @@ func ThermalViewOf(j Journal) ThermalView {
 	scope := Scope
 	if IsStandardSchema(j.Schema) {
 		scope = StandardScope
+	} else if IsExtendedSchema(j.Schema) {
+		scope = ExtendedScope
 	}
 	finding := "no_limit_observed"
 	if HasHeat(j) {

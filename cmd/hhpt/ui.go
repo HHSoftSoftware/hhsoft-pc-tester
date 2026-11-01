@@ -18,6 +18,7 @@ const defaultAutomaticStart = 15 * time.Second
 
 const deploymentKeySelectionExitCode = 10
 const standardSelectionExitCode = 11
+const extendedSelectionExitCode = 12
 
 type interactionWaiter func(context.Context, time.Duration, io.Reader) (bool, error)
 
@@ -40,7 +41,7 @@ func runUIWithSelectionOutput(ctx context.Context, arguments []string, input io.
 	legacyMode := flags.Bool("legacy", false, "show the reduced-coverage BIOS/CSM fallback label")
 	deploymentKeyMedia := flags.Bool("deployment-key-media", false, "offer an explicitly selected read-only deployment-key token")
 	selectionOutput := flags.String("selection-output", "", "new file recording the chosen safe quick tests")
-	launchOutput := flags.String("launch-selection-output", "", "new file binding quick or standard profile and selected tests")
+	launchOutput := flags.String("launch-selection-output", "", "new file binding quick, standard or extended profile and selected tests")
 	if err := flags.Parse(arguments); err != nil {
 		return 2
 	}
@@ -130,6 +131,8 @@ func readMenu(ctx context.Context, input io.Reader, stdout, stderr io.Writer, de
 			if chosen.launchSelection {
 				fmt.Fprintln(stdout, "[S]          Start standard profile with ephemeral identity")
 				fmt.Fprintln(stdout, "             Includes a 600-second sustained CPU load; 15-minute cooperative session budget.")
+				fmt.Fprintln(stdout, "[E]          Start extended profile with ephemeral identity")
+				fmt.Fprintln(stdout, "             Includes an 1800-second bounded memory load; 45-minute cooperative session budget.")
 			}
 		}
 		if deploymentKeyMedia {
@@ -172,6 +175,21 @@ func readMenu(ctx context.Context, input io.Reader, stdout, stderr io.Writer, de
 			}
 			fmt.Fprintln(stdout, "Starting operator-selected standard profile with ephemeral identity.")
 			return standardSelectionExitCode
+		case "e":
+			if chosen == nil || !chosen.launchSelection {
+				fmt.Fprintln(stderr, "Extended profile needs -launch-selection-output; no test started.")
+				continue
+			}
+			if chosen.hasExclusions() {
+				fmt.Fprintln(stderr, "Extended profile requires all defaults; use C then A to restore them. Choices unchanged; no test started.")
+				continue
+			}
+			if err := chosen.write(ctx, plan.ProfileExtended); err != nil {
+				fmt.Fprintf(stderr, "save test selection: %v; no test started\n", err)
+				return 1
+			}
+			fmt.Fprintln(stdout, "Starting operator-selected extended profile with ephemeral identity.")
+			return extendedSelectionExitCode
 		case "w":
 			fmt.Fprintln(stdout, "Automatic start remains disabled.")
 		case "k":

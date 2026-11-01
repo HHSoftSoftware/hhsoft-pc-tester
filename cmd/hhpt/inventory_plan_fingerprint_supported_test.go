@@ -85,7 +85,7 @@ func TestInventoryPlanFingerprintSupportedDefaultFiles(t *testing.T) {
 				if test.accepted {
 					want, size := "eed5302c9ef92a0eafb9df1a5f0b378196ddbf95503697852af07fb03f3d635b", 2588
 					if command.name == "plan" {
-						want, size = "c098f579c456545d7dbf6eb197b07ecafda55a96edd81dc8335785c9a4fa593d", 7135
+						want, size = "bafc819f70e8b8e0a09504b657247e3147e9f8508a97139cc85db453bc264dda", 7135
 					}
 					if code != 0 || stderr.Len() != 0 || collects != 1 || outputs != 1 || callbacks != 1 ||
 						stdout.Len() != size || fmt.Sprintf("%x", sha256.Sum256(stdout.Bytes())) != want {

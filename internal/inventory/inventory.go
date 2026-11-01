@@ -115,5 +115,33 @@ func (component Component) Attribute(name string) (string, bool) {
 }
 
 func normalizeValue(value string) string {
-	return strings.Join(strings.Fields(value), " ")
+	first := ""
+	multiple := false
+	remaining := len(value)
+	for word := range strings.FieldsSeq(value) {
+		if first == "" {
+			first = word
+		} else {
+			multiple = true
+			remaining--
+		}
+		remaining -= len(word)
+	}
+	if !multiple {
+		// Fields are nonempty: preserve the old empty result or one-word sharing.
+		return first
+	}
+
+	// Each output separator replaces at least one input byte. Subtracting from
+	// the input length keeps the exact byte count in range without adding lengths.
+	// Multiple words always get owned storage, even for already-canonical input.
+	var normalized strings.Builder
+	normalized.Grow(len(value) - remaining)
+	for word := range strings.FieldsSeq(value) {
+		if normalized.Len() > 0 {
+			normalized.WriteByte(' ')
+		}
+		normalized.WriteString(word)
+	}
+	return normalized.String()
 }

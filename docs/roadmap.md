@@ -317,6 +317,24 @@ including formatting, vet and six Linux amd64/386/AArch64 application and
 inventory-test builds. Those artifacts were compiled only; this increment adds
 no Linux runtime or physical-device qualification.
 
+Inventory value normalization now iterates over words and allocates only the
+normalized multiword output buffer. Empty results need no allocation and
+single-word results reuse storage; multiword output keeps its own storage even
+when already normalized. Unicode whitespace, raw non-whitespace bytes and
+fingerprint inputs remain unchanged. Regression checks cover zero allocations
+for empty/single-word values, one allocation for multiword values, and a small
+output from a large padded input. These checks use the pinned SDK; aggregate
+heap and CPU bounds remain open.
+
+Normalization validation covers 12,053 test/subtest passes and 18 retained
+skips on each of Windows amd64 and 386, with all 49 new names passing. The full
+amd64 run passed. The initial full 386 command reached the CLI package time
+limit while making progress; completed other packages and a fresh complete CLI
+run supply the 386 coverage. No partial CLI results are credited. Formatting,
+vet and six Linux amd64/386/AArch64 application and inventory-test builds passed.
+Those artifacts were compiled only; no new Linux runtime, boot-image or
+physical-device qualification is claimed.
+
 Remaining parser expansion, aggregate/peak allocation, CPU time budgets and
 optional field-error visibility remain open. These logical limits exclude
 allocator overhead, raw source storage, later downstream copies and provider

@@ -720,6 +720,16 @@ the alpha still requires the separate documented release gates.
   platform skip, including all 113 new names without skips. All 14 commands
   passed, including formatting, vet and six Linux amd64/386/AArch64 application
   and inventory-test builds. Those Linux artifacts were compiled only.
+- [x] Remove temporary word arrays from inventory value normalization.
+  Preserve Unicode whitespace, raw non-whitespace bytes and fingerprint inputs.
+  Empty and single-word results need no allocation; multiword results own a
+  buffer sized to the normalized value. Large-padding regressions pass.
+- [x] Validate normalization across Windows amd64 and 386: 12,053 test/subtest
+  passes and 18 retained skips per architecture, including all 49 new names.
+  The full amd64 run passed. The initial full 386 run reached its CLI package
+  time limit; completed other packages plus a fresh complete CLI run provide
+  the 386 coverage. Formatting, vet and six Linux application/inventory-test
+  builds passed. Linux artifacts were compiled only.
 - [ ] Bound remaining parser expansion, aggregate/peak allocation and parser
   CPU time; improve optional field-error visibility. Logical parser and
   acquisition budgets do not establish a whole-heap bound or kernel preemption.

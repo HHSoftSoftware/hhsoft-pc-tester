@@ -148,7 +148,7 @@ func ClassifyInput(name, handlers, keyCapabilities, relativeCapabilities, absolu
 func ClassifyInputWithBitmapWidth(name, handlers, keyCapabilities, relativeCapabilities, absoluteCapabilities, properties string, wordBits int) string {
 	identity := strings.ToLower(name + " " + handlers)
 	propertyWordBits := wordBits
-	if wordBits != 32 && wordBits != 64 && len(strings.Fields(properties)) == 1 {
+	if wordBits != 32 && wordBits != 64 && inputHasSingleWord(properties) {
 		// A single 32-bit property word has the same low property bits on
 		// both kernel layouts. This discovery hint does not establish the
 		// kernel width required to validate functional keyboard evidence.
@@ -194,21 +194,45 @@ func keyboardKeyMapWidth(value string, wordBits int) bool {
 	return matches >= 2
 }
 
+// inputHasSingleWord stops after the second field without retaining a token slice.
+func inputHasSingleWord(value string) bool {
+	found := false
+	for range strings.FieldsSeq(value) {
+		if found {
+			return false
+		}
+		found = true
+	}
+	return found
+}
+
 func inputCapabilityBitWidth(value string, code, wordBits int) bool {
 	if wordBits != 32 && wordBits != 64 || code < 0 {
 		return false
 	}
-	words := strings.Fields(value)
 	wordIndex := code / wordBits
-	if wordIndex >= len(words) {
+	words := 0
+	for range strings.FieldsSeq(value) {
+		words++
+	}
+	if wordIndex >= words {
 		return false
 	}
-	word, err := strconv.ParseUint(words[len(words)-1-wordIndex], 16, wordBits)
-	return err == nil && word&(1<<uint(code%wordBits)) != 0
+	// Kernel bitmaps place the most significant word first. Count, then locate
+	// from the right without a token slice; only the selected word is parsed.
+	selected := words - 1 - wordIndex
+	for word := range strings.FieldsSeq(value) {
+		if selected == 0 {
+			bits, err := strconv.ParseUint(word, 16, wordBits)
+			return err == nil && bits&(1<<uint(code%wordBits)) != 0
+		}
+		selected--
+	}
+	return false
 }
 
 func handlerHas(handlers, wanted string) bool {
-	for _, handler := range strings.Fields(handlers) {
+	for handler := range strings.FieldsSeq(handlers) {
 		if handler == wanted {
 			return true
 		}
@@ -217,7 +241,7 @@ func handlerHas(handlers, wanted string) bool {
 }
 
 func handlerHasPrefix(handlers, wanted string) bool {
-	for _, handler := range strings.Fields(handlers) {
+	for handler := range strings.FieldsSeq(handlers) {
 		if strings.HasPrefix(handler, wanted) {
 			return true
 		}

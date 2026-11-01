@@ -303,6 +303,20 @@ cases, 32 archive cases, six postchecks and cleanup passed. Installed
 command/supervisor behavior, the full Linux suite, race checks, ARM runtime
 and a full elapsed Extended session remain separate gates.
 
+Input handler and capability scans now iterate over words without temporary
+token arrays. Unicode boundaries, 32/64-bit bitmap ordering, selected-word
+parsing and existing classification precedence are preserved. Valid token scans
+have zero-allocation regression checks with prebuilt large inputs; classifier
+name copies, malformed-number errors, aggregate memory and CPU limits remain
+outside that claim.
+
+The input token increment passed 4,209 affected-package and caller test/subtest
+cases on each of Windows amd64 and 386, with one retained platform skip per
+architecture. All 113 new names passed on both. All 14 commands passed,
+including formatting, vet and six Linux amd64/386/AArch64 application and
+inventory-test builds. Those artifacts were compiled only; this increment adds
+no Linux runtime or physical-device qualification.
+
 Remaining parser expansion, aggregate/peak allocation, CPU time budgets and
 optional field-error visibility remain open. These logical limits exclude
 allocator overhead, raw source storage, later downstream copies and provider

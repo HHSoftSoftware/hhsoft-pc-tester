@@ -712,6 +712,14 @@ the alpha still requires the separate documented release gates.
   cleanup was confirmed. This covers the connected fixture paths, with
   installed commands/supervisors, ARM runtime, the full Linux suite, race checks
   and a full elapsed Extended session still open.
+- [x] Remove temporary token arrays from input handler and capability scans.
+  Preserve Unicode word boundaries, 32/64-bit bitmap ordering, selected-word
+  parsing and existing keyboard, pointer and touchscreen discovery decisions.
+- [x] Validate input token iteration on Windows amd64 and 386: each passed
+  4,209 affected-package and caller test/subtest cases with one retained
+  platform skip, including all 113 new names without skips. All 14 commands
+  passed, including formatting, vet and six Linux amd64/386/AArch64 application
+  and inventory-test builds. Those Linux artifacts were compiled only.
 - [ ] Bound remaining parser expansion, aggregate/peak allocation and parser
   CPU time; improve optional field-error visibility. Logical parser and
   acquisition budgets do not establish a whole-heap bound or kernel preemption.

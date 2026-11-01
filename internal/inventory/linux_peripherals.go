@@ -81,54 +81,60 @@ func (collector *linuxCollection) collectInputDevices() []Component {
 }
 
 func (collector *linuxCollection) parseInputDevices(content string) []Component {
-	content = strings.ReplaceAll(content, "\r\n", "\n")
 	var components []Component
-	for recordIndex, block := range collectionItems(collector, strings.Split(content, "\n\n")) {
-		if !collector.check() {
-			return nil
-		}
+	for recordIndex, block := range collector.procBlocks(content) {
 		attributes := make(map[string]string)
-		for _, line := range collectionItems(collector, strings.Split(block, "\n")) {
-			if !collector.check() {
-				return nil
-			}
+		for line := range collector.procLines(block) {
 			line = strings.TrimSpace(line)
+			name, value, suffix := "", "", ""
+			lower, found := false, true
 			switch {
 			case strings.HasPrefix(line, "I:"):
-				for _, field := range collectionItems(collector, strings.Fields(strings.TrimSpace(strings.TrimPrefix(line, "I:")))) {
-					if !collector.check() {
+				for field := range collector.procWords(strings.TrimSpace(strings.TrimPrefix(line, "I:"))) {
+					key, value, present := strings.Cut(field, "=")
+					if present && !collector.storeProcText(attributes, key, value, true, "", false) {
 						return nil
 					}
-					name, value, found := strings.Cut(field, "=")
-					if found {
-						attributes[strings.ToLower(name)] = value
-					}
 				}
+				continue
 			case strings.HasPrefix(line, "N: Name="):
-				attributes["name"] = strings.Trim(strings.TrimPrefix(line, "N: Name="), "\"")
+				name, value = "name", strings.Trim(strings.TrimPrefix(line, "N: Name="), "\"")
 			case strings.HasPrefix(line, "P: Phys="):
-				attributes["physical_location"] = strings.TrimPrefix(line, "P: Phys=")
+				name, value = "physical_location", strings.TrimPrefix(line, "P: Phys=")
 			case strings.HasPrefix(line, "S: Sysfs="):
-				attributes["kernel_path"] = strings.TrimPrefix(line, "S: Sysfs=")
+				name, value = "kernel_path", strings.TrimPrefix(line, "S: Sysfs=")
 			case strings.HasPrefix(line, "U: Uniq="):
-				attributes["unique_id"] = strings.TrimPrefix(line, "U: Uniq=")
+				name, value = "unique_id", strings.TrimPrefix(line, "U: Uniq=")
 			case strings.HasPrefix(line, "H: Handlers="):
-				attributes["handlers"] = strings.TrimPrefix(line, "H: Handlers=")
+				name, value = "handlers", strings.TrimPrefix(line, "H: Handlers=")
 			case strings.HasPrefix(line, "B:"):
-				name, value, found := strings.Cut(strings.TrimSpace(strings.TrimPrefix(line, "B:")), "=")
-				if found {
-					attributes[strings.ToLower(name)+"_capabilities"] = value
-				}
+				name, value, found = strings.Cut(strings.TrimSpace(strings.TrimPrefix(line, "B:")), "=")
+				lower, suffix = true, "_capabilities"
+			default:
+				found = false
 			}
+			if found && !collector.storeProcText(attributes, name, value, lower, suffix, false) {
+				return nil
+			}
+		}
+		if !collector.check() {
+			return nil
 		}
 		if len(attributes) == 0 {
 			continue
 		}
-		attributes["category"] = ClassifyInput(attributes["name"], attributes["handlers"], attributes["key_capabilities"], attributes["rel_capabilities"], attributes["abs_capabilities"], attributes["prop_capabilities"])
-		if !collector.check() {
+		category := ClassifyInput(attributes["name"], attributes["handlers"], attributes["key_capabilities"], attributes["rel_capabilities"], attributes["abs_capabilities"], attributes["prop_capabilities"])
+		if !collector.storeProcText(attributes, "category", category, false, "", false) {
 			return nil
 		}
-		components = append(components, NewComponent(ComponentInput, "input:"+strconv.Itoa(recordIndex), attributes))
+		id, valid := collector.procIndex(recordIndex)
+		if !valid || !collector.reserveProcComponent("input:", id, attributes) {
+			return nil
+		}
+		components = append(components, NewComponent(ComponentInput, "input:"+id, attributes))
+	}
+	if !collector.check() {
+		return nil
 	}
 	return components
 }

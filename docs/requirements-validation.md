@@ -2007,13 +2007,58 @@ in the full Windows suite, which passed 10,441 cases with 18 platform skips,
 386 and AArch64 production builds passed. Native Linux runtime, rebuilt-image
 and physical-device qualification remain open.
 
-Parser expansion, aggregate/peak allocation, parser CPU budgets and optional
-field-error visibility remain open. Legacy aggregate providers may allocate
-before returning, and cancellation cannot interrupt a blocked source call.
-These budgets do not establish a whole-heap bound or kernel preemption.
-Inactive catalog entries remain inactive. Native Linux runtime for this
-increment, rebuilt images, physical devices, sampled-media reads, the physical
-pilot and release approval remain separate gates.
+The proc parser-budget increment shares 65,536 raw record blocks, 262,144
+field-work units and 16 MiB of cumulative retained-text accounting across CPU,
+memory and proc input-device parsing in one collection. CPU/input raw blocks
+include empty and trailing blocks; an observed memory file counts as one
+record. Missing files still count toward acquisition attempts, not parser
+records. Field work counts visited lines, including malformed or empty lines,
+input identity tokens and value words; repeated normalization visits count
+again. Duplicate, overwritten and discarded work receives no refund.
+
+Text admission precedes selected lowercase-key, normalized-value and map
+allocations. Input values retain their original spelling for classification.
+CPU aliases and first component projections are charged again, including
+generated IDs. Record admission precedes parsed record maps. Counters reset
+for each collection. Exhaustion returns
+`inventory: primary observation parser budget exceeded` and no partial
+snapshot. Below-limit duplicate, malformed/truncated and index behavior,
+source overrides, acquisition errors, checked closure and cancellation retain
+their existing semantics.
+
+Complete inventory-package tests passed on Windows amd64 and 386. Each run
+recorded 1,673 passes and one retained platform skip,
+`TestLinuxCollectorReadsInventoryFixture`. All 48 new names across 14 roots
+and 34 declared-parent relations passed without skips on each architecture.
+The fixtures exercise exact limits and one-over failures, raw-block and field
+floods below acquisition caps, distinct-field and duplicate growth, retained
+copies, aggregate CPU/memory/input exhaustion, fresh-call ownership,
+cancellation at iterator exits, complete 325-instance inventories and no-drive
+systems.
+
+All nine commands passed, including formatting/checks for five Go files, both
+package suites, vet and Linux amd64/386/AArch64 inventory test-binary builds.
+The three Linux artifacts were compiled, not executed. All seven final
+postchecks passed. These runs cover the 704-file inventory slice; they did
+not execute the later combined source.
+
+The combined 714-file source, including 698 Go files, then passed all three
+host commands. The full Windows amd64 suite recorded 11,689 passes and 18
+retained platform skips across 11,707 names. The Windows 386 affected-family
+suite passed all 290 names across 55 roots, 235 declared-parent intervals
+and five packages. Vet and all seven postchecks passed. The Windows 386
+result covers only those selected families. This combined run comprised
+the two Windows commands and vet; it added no Linux compile or runtime
+evidence. Earlier component builds retain their compile-only scope.
+
+Remaining parser expansion, aggregate/peak allocation, CPU time budgets and
+optional field-error visibility remain open. These logical limits exclude
+allocator overhead, raw source storage, later downstream copies and provider
+allocations; they do not establish a whole-heap bound or kernel preemption.
+Cancellation cannot interrupt a blocked source call. This inventory increment
+does not activate catalog entries. Native Linux runtime, rebuilt images,
+physical devices, sampled-media reads, the physical pilot and release approval
+remain separate gates.
 
 The inactive storage result reader validates storage-sample/v1 metadata and
 explicit v6 session claims through the existing signed-report verification,

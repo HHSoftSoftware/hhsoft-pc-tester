@@ -276,13 +276,38 @@ full Windows suite. Vet and Linux amd64, 386 and AArch64 production builds
 passed. Native Linux runtime, rebuilt-image and physical-device qualification
 remain open.
 
-Parser expansion, aggregate/peak allocation, parser CPU budgets and optional
-field-error visibility remain open. Legacy aggregate providers may allocate
-before returning, and cancellation cannot interrupt a blocked source call.
-These budgets do not establish a whole-heap bound or kernel preemption.
-Inactive catalog entries remain inactive. Native Linux runtime for this
-increment, rebuilt images, physical devices, sampled-media reads, the physical
-pilot and release approval remain separate gates.
+The proc parser-budget increment implements one shared allowance for CPU,
+memory and proc input-device parsing in each collection: 65,536 raw record
+blocks, 262,144 units of visited line/word work and 16 MiB of cumulative
+retained-text accounting. Empty, malformed, duplicate and overwritten work
+keeps its charges. Selected record, field, CPU-alias and first component
+allocations require admission first; exhaustion returns a fixed error and no
+partial snapshot. Fresh collections reset the counters. Existing acquisition,
+source overrides, cancellation and checked closure remain in force.
+
+The parser increment passed complete inventory-package tests on Windows
+amd64 and 386: each recorded 1,673 passes and one retained platform skip.
+All 48 new named cases passed on each architecture. All nine commands passed,
+covering formatting/checks for five Go files, both package suites, vet and
+three Linux amd64/386/AArch64 test-binary builds. Those artifacts were compiled
+only. These results qualify this inventory slice.
+
+A subsequent three-command check of the combined Extended memory and
+inventory source passed the full Windows amd64 suite with 11,689 passes
+and 18 retained platform skips, all 290 selected Windows 386 names across
+55 roots and 235 declared-parent intervals in five packages, and vet.
+All seven postchecks passed. Native Linux execution of this combined source,
+installed command/supervisor behavior, ARM runtime and a full elapsed
+Extended session remain separate gates.
+
+Remaining parser expansion, aggregate/peak allocation, CPU time budgets and
+optional field-error visibility remain open. These logical limits exclude
+allocator overhead, raw source storage, later downstream copies and provider
+allocations; they do not establish a whole-heap bound or kernel preemption.
+Cancellation cannot interrupt a blocked source call. This inventory increment
+does not activate catalog entries. Native Linux runtime, rebuilt images,
+physical devices, sampled-media reads, the physical pilot and release approval
+remain separate gates.
 
 The inactive storage result reader now checks complete typed topology and fixture
 facts, finite read observations and accepted versus diagnostic counters. Explicit

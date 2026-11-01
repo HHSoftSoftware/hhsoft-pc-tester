@@ -6,7 +6,6 @@ import (
 	"iter"
 	"path"
 	"regexp"
-	"strconv"
 	"strings"
 )
 
@@ -74,32 +73,37 @@ func (collector *LinuxCollector) Collect(ctx context.Context) (Snapshot, error) 
 
 func (collector *linuxCollection) collectMemory() []Component {
 	data, ok := collector.readProc(path.Join(collector.Paths.Proc, "meminfo"), procMemory)
-	if !ok {
+	if !ok || !collector.chargeProc(1, 0, 0) {
 		return nil
 	}
 	attributes := make(map[string]string)
-	for sourceName, targetName := range map[string]string{
-		"memtotal":     "total_kib",
-		"memavailable": "available_kib",
-	} {
-		if !collector.check() {
-			return nil
+	totalSeen, availableSeen := false, false
+	for line := range collector.procLines(string(data)) {
+		name, value, found := strings.Cut(line, ":")
+		if !found {
+			continue
 		}
-		for _, line := range collectionItems(collector, strings.Split(string(data), "\n")) {
-			if !collector.check() {
+		target := ""
+		switch {
+		case !totalSeen && strings.EqualFold(strings.TrimSpace(name), "memtotal"):
+			totalSeen, target = true, "total_kib"
+		case !availableSeen && strings.EqualFold(strings.TrimSpace(name), "memavailable"):
+			availableSeen, target = true, "available_kib"
+		}
+		if target != "" {
+			if !collector.storeProcText(attributes, target, value, false, "", true) {
 				return nil
 			}
-			name, value, found := strings.Cut(line, ":")
-			if found && strings.EqualFold(strings.TrimSpace(name), sourceName) {
-				attributes[targetName] = strings.TrimSuffix(normalizeValue(value), " kB")
-				break
-			}
+			attributes[target] = strings.TrimSuffix(attributes[target], " kB")
+		}
+		if totalSeen && availableSeen {
+			break
 		}
 	}
-	if attributes["total_kib"] == "" {
+	if !collector.check() || attributes["total_kib"] == "" {
 		return nil
 	}
-	if !collector.check() {
+	if !collector.reserveProcComponent("", "memory:system", attributes) {
 		return nil
 	}
 	return []Component{NewComponent(ComponentMemory, "memory:system", attributes)}
@@ -114,14 +118,20 @@ func (collector *linuxCollection) collectCPU() []Component {
 			}
 			logicalIndex := record["processor"]
 			if logicalIndex == "" {
-				logicalIndex = strconv.Itoa(recordIndex)
+				var valid bool
+				logicalIndex, valid = collector.procIndex(recordIndex)
+				if !valid {
+					return nil
+				}
 			}
 			attributes := processors[logicalIndex]
 			if attributes == nil {
 				attributes = make(map[string]string)
 				processors[logicalIndex] = attributes
 			}
-			attributes["logical_index"] = logicalIndex
+			if !collector.storeProcText(attributes, "logical_index", logicalIndex, false, "", false) {
+				return nil
+			}
 			collector.copyAliases(attributes, record, []alias{
 				{from: "vendor_id", to: "vendor"},
 				{from: "model name", to: "model"},
@@ -173,9 +183,12 @@ func (collector *linuxCollection) collectCPU() []Component {
 		})
 	}
 
-	components := make([]Component, 0, len(processors))
+	var components []Component
 	for logicalIndex, attributes := range processors {
 		if !collector.check() {
+			return nil
+		}
+		if !collector.reserveProcComponent("cpu:", logicalIndex, attributes) {
 			return nil
 		}
 		components = append(components, NewComponent(ComponentCPU, "cpu:"+logicalIndex, attributes))
@@ -297,27 +310,20 @@ func (collector *linuxCollection) readValue(name string) (string, bool) {
 
 func (collector *linuxCollection) parseRecords(content string) iter.Seq2[int, map[string]string] {
 	return func(yield func(int, map[string]string) bool) {
-		// CPU fallback IDs used the compacted nonempty-record slice index.
-		// Preserve that contract rather than exposing raw split-block indices.
+		// Fallback IDs count nonempty parsed records, not raw blocks.
 		recordIndex := 0
-		for _, block := range collectionItems(collector, strings.Split(strings.ReplaceAll(content, "\r\n", "\n"), "\n\n")) {
+		for _, block := range collector.procBlocks(content) {
+			record := make(map[string]string)
+			for line := range collector.procLines(block) {
+				name, value, found := strings.Cut(line, ":")
+				if found && !collector.storeProcText(record, strings.TrimSpace(name), value, true, "", true) {
+					return
+				}
+			}
 			if !collector.check() {
 				return
 			}
-			record := make(map[string]string)
-			for _, line := range collectionItems(collector, strings.Split(block, "\n")) {
-				if !collector.check() {
-					return
-				}
-				name, value, found := strings.Cut(line, ":")
-				if found {
-					record[strings.ToLower(strings.TrimSpace(name))] = normalizeValue(value)
-				}
-			}
 			if len(record) > 0 {
-				if !collector.check() {
-					return
-				}
 				keepGoing := yield(recordIndex, record)
 				recordIndex++
 				if !collector.check() || !keepGoing {
@@ -334,7 +340,9 @@ func (collector *linuxCollection) copyAliases(destination, source map[string]str
 			return
 		}
 		if value := source[item.from]; value != "" {
-			destination[item.to] = value
+			if !collector.storeProcText(destination, item.to, value, false, "", false) {
+				return
+			}
 		}
 	}
 }

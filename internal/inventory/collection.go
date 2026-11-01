@@ -15,6 +15,7 @@ type linuxCollection struct {
 	err               error
 	directoryBudget   inventoryDirectoryBudget
 	acquisitionBudget inventoryAcquisitionBudget
+	procBudget        inventoryProcBudget
 }
 
 // The yielded callback is the production range-loop body. Recheck after the
@@ -40,6 +41,7 @@ func (collector *LinuxCollector) newCollection(ctx context.Context) *linuxCollec
 		ctx:               ctx,
 		directoryBudget:   newInventoryDirectoryBudget(),
 		acquisitionBudget: newInventoryAcquisitionBudget(),
+		procBudget:        newInventoryProcBudget(),
 	}
 }
 

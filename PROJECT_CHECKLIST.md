@@ -689,12 +689,30 @@ the alpha still requires the separate documented release gates.
   All 61 new names passed on Windows amd64 and 386 and in the full Windows
   suite. Vet and Linux amd64, 386 and AArch64 production builds passed.
   Native runtime, image, physical-device and release gates remain open.
-- [ ] Bound parser expansion, aggregate/peak allocation and parser CPU use;
-  improve optional field-error visibility. These acquisition budgets do not
-  establish a whole-heap bound or kernel preemption. Legacy aggregate providers
-  can allocate before returning, and cancellation cannot interrupt a blocked
-  call. Native Linux runtime, rebuilt-image, physical-device and release gates
-  for this increment remain open.
+- [x] Implement shared proc parser budgets for CPU, memory and input discovery:
+  65,536 raw record blocks, 262,144 units of visited line/word work and 16 MiB
+  of cumulative retained-text accounting per collection. Empty, malformed,
+  duplicate and overwritten work keeps its charges. Reserve before selected
+  record, field, alias and first component allocations; reset each collection.
+  Exhaustion returns a fixed error and no partial snapshot.
+- [x] Validate the proc parser-budget increment with complete inventory-package
+  tests on Windows amd64 and 386: each passed 1,673 cases with one retained
+  platform skip, including all 48 new names without skips. All nine commands
+  passed: five-file formatting/checks, both package suites, vet and three Linux
+  amd64/386/AArch64 test-binary builds. The Linux binaries were compiled only.
+- [x] Validate the combined Extended memory and inventory source with three
+  host commands. The full Windows amd64 suite passed 11,689 cases with 18
+  retained platform skips; the Windows 386 affected-family suite passed all
+  290 names across 55 roots and 235 declared-parent intervals in five packages.
+  Vet and all seven postchecks passed. Native Linux execution, installed
+  commands/supervisors, ARM runtime and a full elapsed Extended session remain
+  open; physical and release gates remain separate.
+- [ ] Bound remaining parser expansion, aggregate/peak allocation and parser
+  CPU time; improve optional field-error visibility. Logical parser and
+  acquisition budgets do not establish a whole-heap bound or kernel preemption.
+  Legacy providers may allocate before returning, and cancellation cannot
+  interrupt a blocked call. Native Linux runtime, rebuilt-image, physical-device,
+  pilot and release gates for this increment remain open.
 - [ ] Qualify storage readiness, replacement and cancellation in rebuilt images
   and on physical devices. Matching kernel numbers do not prove persistent
   physical identity or detect every same-number replacement.

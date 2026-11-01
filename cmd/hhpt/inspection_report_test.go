@@ -42,22 +42,33 @@ func (f *inspectionCoordinatorInput) Read([]byte) (int, error) {
 func (f *inspectionCoordinatorInput) DiscardUnpromptedInput(ctx context.Context) error {
 	f.discards++
 	f.events = append(f.events, "discard")
-	if ctx.Err() != nil || f.reads != 0 || strings.Contains(f.h.stderr.String(), inspectionPrompt) {
+	if ctx.Err() != nil || f.reads != 0 || strings.Contains(f.h.stderr.String(), "Visible exterior condition") {
 		f.t.Fatal("actual coordinator handoff did not precede prompt/read")
 	}
 	return f.discardErr
 }
-func (f *inspectionCoordinatorInput) ReadFindingLine(ctx context.Context, limit int) (string, error) {
+func (f *inspectionCoordinatorInput) ReadInspectionConditions(ctx context.Context, prompt func() error) ([]exteriorinspection.ConditionResponseV2, error) {
 	f.reads++
 	f.events = append(f.events, "read")
 	_, bounded := ctx.Deadline()
-	if f.discards != 1 || f.finishes != 0 || limit != 4096 || !bounded || !strings.Contains(f.h.stderr.String(), inspectionPrompt) {
+	if f.discards != 1 || f.finishes != 0 || !bounded || prompt == nil {
 		f.t.Fatal("actual command did not consume the bounded borrowed owner")
+	}
+	if err := prompt(); err != nil {
+		return nil, err
+	}
+	if !strings.Contains(f.h.stderr.String(), "Visible exterior condition") {
+		f.t.Fatal("single four-criterion prompt missing")
 	}
 	if f.cancel != nil {
 		f.cancel()
 	}
-	return f.line, f.readErr
+	responses := []exteriorinspection.ConditionResponseV2{{Text: f.line, Complete: true}}
+	if f.readErr == nil {
+		responses = append(responses, exteriorinspection.ConditionResponseV2{Text: "A", Complete: true},
+			exteriorinspection.ConditionResponseV2{Text: "N", Complete: true}, exteriorinspection.ConditionResponseV2{Text: "N", Complete: true})
+	}
+	return responses, f.readErr
 }
 
 func newInspectionCoordinator(t *testing.T) (*sessionHarness, *inspectionCoordinatorInput) {
@@ -76,7 +87,7 @@ func newInspectionCoordinator(t *testing.T) (*sessionHarness, *inspectionCoordin
 	f := &inspectionCoordinatorInput{t: t, h: h, line: "N"}
 	h.dependencies.Now = func() time.Time { h.clock = time.Now(); return h.clock }
 	h.dependencies.RunWorker = func(ctx context.Context, worker sessionWorker, input io.Reader, out, diagnostic io.Writer) int {
-		if worker.ID != "inspection.exterior.quick" || input != f || len(h.calls) != 0 {
+		if worker.ID != "inspection.exterior.quick" || worker.Version != 2 || filepath.Base(worker.OutputPath) != "exterior-condition.json" || worker.Timeout != 45*time.Second || input != f || len(h.calls) != 0 {
 			t.Fatal("unrelated or duplicate worker entered")
 		}
 		h.calls = append(h.calls, worker.ID)
@@ -94,7 +105,7 @@ func newInspectionCoordinator(t *testing.T) (*sessionHarness, *inspectionCoordin
 	return h, f
 }
 
-func inspectSignedCoordinator(t *testing.T, h *sessionHarness, wantStatus, wantFinding, wantStop string, complete bool) {
+func inspectSignedCoordinator(t *testing.T, h *sessionHarness, wantStatus, wantFinding, wantStop string, wantCount int) {
 	t.Helper()
 	raw, err := os.ReadFile(filepath.Join(h.directory, "session.hhpcr"))
 	if err != nil {
@@ -108,11 +119,18 @@ func inspectSignedCoordinator(t *testing.T, h *sessionHarness, wantStatus, wantF
 	if json.Unmarshal(artifact.InventoryJSON, &payload) != nil || len(payload.TestResults) != 23 {
 		t.Fatal("full current catalog not signed")
 	}
-	got, err := app.ValidatedExteriorInspection(payload)
-	if err != nil || got == nil || got.Status != wantStatus || got.Finding != wantFinding || got.StopReason != wantStop || got.ResponseComplete != complete {
+	got, err := app.ValidatedExteriorCondition(payload)
+	if err != nil || got == nil || got.Status != wantStatus || got.Findings.EnclosureIntegrity != wantFinding || got.StopReason != wantStop || got.ResponsesCompleted != wantCount {
 		t.Fatal("signed finite inspection changed", err)
 	}
-	evidence, err := os.ReadFile(filepath.Join(h.directory, "exterior-inspection.json"))
+	if wantCount == 4 {
+		if got.Findings.HingeMountCondition != "not_applicable" || got.Findings.PortExteriorCondition != "no_issue_observed" || got.Findings.SurfaceFinishCondition != "no_issue_observed" {
+			t.Fatal("completed criteria changed")
+		}
+	} else if got.Findings.HingeMountCondition != "unobserved" || got.Findings.PortExteriorCondition != "unobserved" || got.Findings.SurfaceFinishCondition != "unobserved" {
+		t.Fatal("partial response invented later observations")
+	}
+	evidence, err := os.ReadFile(filepath.Join(h.directory, "exterior-condition.json"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -120,17 +138,17 @@ func inspectSignedCoordinator(t *testing.T, h *sessionHarness, wantStatus, wantF
 	for _, row := range payload.TestResults {
 		if row.ID == "inspection.exterior.quick" {
 			found = true
-			var signed, worker exteriorinspection.Result
+			var signed, worker exteriorinspection.ResultV2
 			if json.Unmarshal(row.Evidence, &signed) != nil || json.Unmarshal(evidence, &worker) != nil || signed != worker ||
-				row.Version != 1 || row.PlannedStatus != app.PlannedScheduled || string(row.Status) != wantStatus {
+				row.Version != 2 || row.PlannedStatus != app.PlannedScheduled || string(row.Status) != wantStatus {
 				t.Fatal("worker evidence lost at finalizer")
 			}
 		}
 		if row.ID == "run.integrity.quick" {
 			integrity = true
 			value, err := sessionevidence.DecodeIntegrity(row.Evidence)
-			if err != nil || value.Session == nil || value.Session.Schema != sessionevidence.SchemaV11 || len(value.Session.Workers) != 14 {
-				t.Fatal("actual v11 session absent", err)
+			if err != nil || value.Session == nil || value.Session.Schema != sessionevidence.SchemaV14 || len(value.Session.Workers) != 14 {
+				t.Fatal("actual v14 session absent", err)
 			}
 			last := value.Session.Workers[13]
 			if last.ID != "inspection.exterior.quick" || last.Outcome != wantStatus || last.Timing == nil ||
@@ -165,13 +183,13 @@ func TestInspectionRealCoordinatorSignsFiniteWorkerEvidence(t *testing.T) {
 		readErr                           error
 		cancel                            bool
 	}{
-		{"pass", "N", "pass", "no_defect_observed", "completed", nil, false},
-		{"defect", "D", "fail", "defect_observed", "completed", nil, false},
-		{"uncertain", "I", "inconclusive", "not_inspected", "not_inspected", nil, false},
-		{"cancel_favorable", "N", "aborted", "not_inspected", "operator_cancelled", context.Canceled, true},
-		{"cancel_defect", "D", "fail", "defect_observed", "operator_cancelled", context.Canceled, true},
-		{"hard_defect", "D", "error", "defect_observed", "input_error", errors.New("hard fixture input"), false},
-		{"hard_cancel_defect", "D", "error", "defect_observed", "input_error", errors.Join(errors.New("hard fixture input"), context.Canceled), true},
+		{"pass", "N", "pass", "no_issue_observed", "completed", nil, false},
+		{"defect", "D", "fail", "issue_present", "completed", nil, false},
+		{"uncertain", "I", "inconclusive", "unobserved", "completed", nil, false},
+		{"cancel_favorable", "N", "aborted", "unobserved", "operator_cancelled", context.Canceled, true},
+		{"cancel_defect", "D", "fail", "issue_present", "operator_cancelled", context.Canceled, true},
+		{"hard_defect", "D", "error", "issue_present", "input_error", errors.New("hard fixture input"), false},
+		{"hard_cancel_defect", "D", "error", "issue_present", "input_error", errors.Join(errors.New("hard fixture input"), context.Canceled), true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			h, f := newInspectionCoordinator(t)
@@ -213,7 +231,11 @@ func TestInspectionRealCoordinatorSignsFiniteWorkerEvidence(t *testing.T) {
 				!reflect.DeepEqual(f.events, []string{"discard", "read", "finish", "finalize", "collect"}) {
 				t.Fatalf("complete coordinator chain failed code=%d: %s", code, &h.stderr)
 			}
-			inspectSignedCoordinator(t, h, test.status, test.finding, test.stop, true)
+			wantCount := 4
+			if test.readErr != nil {
+				wantCount = 1
+			}
+			inspectSignedCoordinator(t, h, test.status, test.finding, test.stop, wantCount)
 		})
 	}
 }
@@ -258,18 +280,18 @@ func TestInspectionFinalizerRejectsExistingForgeryAfterValidPrerequisite(t *test
 		{"malformed", func([]byte) []byte { return []byte("{") }, "error"},
 		{"oversized", func([]byte) []byte { return bytes.Repeat([]byte(" "), 4097) }, "error"},
 		{"directory", func(b []byte) []byte { return bytes.Clone(b) }, "error"},
-		{"unknown_schema", func(b []byte) []byte { return bytes.Replace(b, []byte("inspection/v1"), []byte("inspection/v9"), 1) }, "error"},
+		{"unknown_schema", func(b []byte) []byte { return bytes.Replace(b, []byte("inspection/v2"), []byte("inspection/v9"), 1) }, "error"},
 		{"duplicate_finding", func(b []byte) []byte {
-			return bytes.Replace(b, []byte("\"finding\":"), []byte("\"finding\":\"not_inspected\",\"finding\":"), 1)
+			return bytes.Replace(b, []byte("\"enclosure_integrity\":"), []byte("\"enclosure_integrity\":\"unobserved\",\"enclosure_integrity\":"), 1)
 		}, "error"},
 		{"defect_promoted", func(b []byte) []byte {
-			return bytes.Replace(b, []byte("no_defect_observed"), []byte("defect_observed"), 1)
+			return bytes.Replace(b, []byte("no_issue_observed"), []byte("issue_present"), 1)
 		}, "pass"},
 		{"wrong_supervisor_status", func(b []byte) []byte { return bytes.Clone(b) }, "error"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			f := newJournalFixture(t, "inspection.exterior.quick")
-			value := exteriorinspection.Result{Schema: exteriorinspection.Schema, Source: "operator_reported", Scope: "whole_device", Criterion: "visible_exterior_enclosure_damage", Finding: "no_defect_observed", ResponseComplete: true, StopReason: "completed", Status: "pass", ObservationMilliseconds: 1}
+			value := inspectionCurrentConditionValue(t, "no_issue_observed", "pass")
 			f.worker(t, "inspection.exterior.quick", "completed", "pass", value)
 			encoded, err := json.Marshal(value)
 			if err != nil {
@@ -285,7 +307,12 @@ func TestInspectionFinalizerRejectsExistingForgeryAfterValidPrerequisite(t *test
 			}
 			collect := func(context.Context) (inventory.Snapshot, error) { return f.snapshot, nil }
 			var out, diagnostic bytes.Buffer
-			if code := runFinalizeTestWith(t, t.Context(), args, &out, &diagnostic, collect, bytes.NewReader(bytes.Repeat([]byte{0x55}, 128)), time.Now); code != 0 {
+			gateCalls := 0
+			gate := func(context.Context) (sessionJournal, error) {
+				gateCalls++
+				return sessionevidence.CloneJournal(f.journal), nil
+			}
+			if code := runFinalizeTestOwned(t, t.Context(), args, &out, &diagnostic, collect, bytes.NewReader(bytes.Repeat([]byte{0x55}, 128)), time.Now, gate).Code; code != 0 || gateCalls != 1 {
 				t.Fatalf("positive full finalizer prerequisite failed: %d %s", code, &diagnostic)
 			}
 			valid, err := os.ReadFile(positive)
@@ -299,7 +326,7 @@ func TestInspectionFinalizerRejectsExistingForgeryAfterValidPrerequisite(t *test
 			if test.name != "wrong_supervisor_status" && test.name != "directory" && bytes.Equal(changed, encoded) {
 				t.Fatal("fixture mutation missed target")
 			}
-			path := filepath.Join(f.directory, "exterior-inspection.json")
+			path := filepath.Join(f.directory, "exterior-condition.json")
 			if test.name == "directory" {
 				if err := os.Remove(path); err != nil {
 					t.Fatal(err)
@@ -318,9 +345,10 @@ func TestInspectionFinalizerRejectsExistingForgeryAfterValidPrerequisite(t *test
 			args = f.args(t)
 			out.Reset()
 			diagnostic.Reset()
+			gateCalls = 0
 			entropy := bytes.NewReader(bytes.Repeat([]byte{0x56}, 128))
-			if code := runFinalizeTestWith(t, t.Context(), args, &out, &diagnostic, collect, entropy, time.Now); code != 1 ||
-				!strings.Contains(diagnostic.String(), "validate inspection evidence:") || entropy.Len() != 128 {
+			if code := runFinalizeTestOwned(t, t.Context(), args, &out, &diagnostic, collect, entropy, time.Now, gate).Code; code != 1 ||
+				!strings.Contains(diagnostic.String(), "validate inspection evidence:") || entropy.Len() != 128 || gateCalls != 0 {
 				t.Fatal("present forgery became a generic supervisor fallback", code)
 			}
 			if _, err := os.Lstat(f.reportPath); !errors.Is(err, os.ErrNotExist) {
@@ -426,20 +454,19 @@ func TestInspectionLinkedFinalizerAndPairVerifyUseExactIndependentParent(t *test
 		name, finding, status string
 		selfParent            bool
 	}{
-		{"trusted_pass", "no_defect_observed", "pass", false},
-		{"trusted_defect", "defect_observed", "fail", false},
-		{"self_issued_pass", "no_defect_observed", "pass", true},
-		{"self_issued_defect", "defect_observed", "fail", true},
+		{"trusted_pass", "no_issue_observed", "pass", false},
+		{"trusted_defect", "issue_present", "fail", false},
+		{"self_issued_pass", "no_issue_observed", "pass", true},
+		{"self_issued_defect", "issue_present", "fail", true},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			f := newJournalFixture(t, "inspection.exterior.quick")
-			value := exteriorinspection.Result{Schema: exteriorinspection.Schema, Source: "operator_reported", Scope: "whole_device", Criterion: "visible_exterior_enclosure_damage", Finding: test.finding, ResponseComplete: true, StopReason: "completed", Status: test.status, ObservationMilliseconds: 1}
+			value := inspectionCurrentConditionValue(t, test.finding, test.status)
 			f.worker(t, "inspection.exterior.quick", "completed", test.status, value)
 			private := ed25519.NewKeyFromSeed(bytes.Repeat([]byte{0x73}, 32))
 			public := private.Public().(ed25519.PublicKey)
-			parentValue := value
-			parentValue.Finding = "no_defect_observed"
-			parentValue.Status = "pass"
+			// Independent historical v1 parent remains unchanged by current child authority.
+			parentValue := exteriorinspection.Result{Schema: exteriorinspection.Schema, Source: "operator_reported", Scope: "whole_device", Criterion: "visible_exterior_enclosure_damage", Finding: "no_defect_observed", ResponseComplete: true, StopReason: "completed", Status: "pass", ObservationMilliseconds: 1}
 			parentEvidence, err := json.Marshal(parentValue)
 			if err != nil {
 				t.Fatal(err)
@@ -496,9 +523,13 @@ func TestInspectionLinkedFinalizerAndPairVerifyUseExactIndependentParent(t *test
 			}
 			args = append(args, parentArgs...)
 			var out, diagnostic bytes.Buffer
-			collects := 0
+			collects, gates := 0, 0
+			gate := func(context.Context) (sessionJournal, error) {
+				gates++
+				return sessionevidence.CloneJournal(f.journal), nil
+			}
 			collect := func(context.Context) (inventory.Snapshot, error) { collects++; return f.snapshot, nil }
-			if code := runFinalizeTestWith(t, t.Context(), args, &out, &diagnostic, collect, bytes.NewReader(bytes.Repeat([]byte{0x74}, 128)), time.Now); code != 0 || collects != 1 {
+			if code := runFinalizeTestOwned(t, t.Context(), args, &out, &diagnostic, collect, bytes.NewReader(bytes.Repeat([]byte{0x74}, 128)), time.Now, gate).Code; code != 0 || collects != 1 || gates != 1 {
 				t.Fatalf("linked full finalizer failed: code=%d %s", code, &diagnostic)
 			}
 			childRaw, err := os.ReadFile(f.reportPath)
@@ -517,12 +548,12 @@ func TestInspectionLinkedFinalizerAndPairVerifyUseExactIndependentParent(t *test
 			if json.Unmarshal(child.InventoryJSON, &payload) != nil {
 				t.Fatal("child payload")
 			}
-			got, err := app.ValidatedExteriorInspection(payload)
+			got, err := app.ValidatedExteriorCondition(payload)
 			if err != nil || got == nil || *got != value {
 				t.Fatal("child inherited prior finding instead of its own evidence", err)
 			}
-			if app.HasSessionThermalClaim(child.InventoryJSON) {
-				t.Fatal("ordinary linked finalization invented a live session")
+			if !app.HasSessionThermalClaim(child.InventoryJSON) {
+				t.Fatal("current observed child lost its matching session")
 			}
 			for _, view := range [][]byte{child.RenderedReport, child.RenderedPDF} {
 				if !bytes.Contains(view, []byte(test.finding)) || !bytes.Contains(view, []byte(want.ManifestDigest)) || !bytes.Contains(view, []byte(want.BundleSHA256)) {
@@ -564,4 +595,21 @@ func TestInspectionLinkedFinalizerAndPairVerifyUseExactIndependentParent(t *test
 			}
 		})
 	}
+}
+
+func inspectionCurrentConditionValue(t *testing.T, finding, status string) exteriorinspection.ResultV2 {
+	t.Helper()
+	value := exteriorinspection.ResultV2{
+		Schema: "hhsoft.pc-tester.exterior-inspection/v2",
+		Source: "operator_reported", Scope: "visible_exterior_condition",
+		Findings: exteriorinspection.ConditionFindingsV2{
+			EnclosureIntegrity: finding, HingeMountCondition: "not_applicable",
+			PortExteriorCondition: "no_issue_observed", SurfaceFinishCondition: "no_issue_observed",
+		},
+		ResponsesCompleted: 4, StopReason: "completed", Status: status, ObservationMilliseconds: 1,
+	}
+	if exteriorinspection.ValidateV2(value) != nil {
+		t.Fatal("independent current inspection prerequisite")
+	}
+	return value
 }

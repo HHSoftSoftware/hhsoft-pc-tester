@@ -20,6 +20,53 @@ At each feature milestone and before publication:
 
 ## Bounded Exterior Inspection
 
+### Current four-criterion implementation
+
+Exterior definition 2 records enclosure integrity, visible hinge/mount condition,
+port exterior condition and surface finish as four required fixed fields. Each
+starts unobserved. A manual pass requires three explicit no-issue observations
+and a no-issue hinge observation or an explicit no-hinge not-applicable answer.
+Hidden or uninspected hinges remain unobserved. Any observed issue stays adverse.
+No free-text condition, operator identity or automatic hardware pass is collected.
+
+The real `inspect-exterior-condition` command emits `exterior-condition.json`
+with fixed operator-reported/visual-only scope. One prompt lists all four
+criteria, and one owned batch accepts four bounded LF/CRLF lines within one
+shared 45-second deadline. Bare CR is incomplete; clean completed prefixes
+survive a stop between lines. Prompt failure cannot admit observations, and
+final owner cleanup must succeed before output or signing.
+
+Current schema-3 plans select exterior definition 2. Quick v14, Standard v15
+and Extended v16 keep fourteen/fifteen/fifteen workers. Actual observations
+require their matching current journal; exact fixed error/aborted nonexecution
+notes expose no conditions and retain their limited journal-free compatibility.
+Malformed present evidence fails before fallback. All-profile signed positives,
+independent malformed signed bundles, HTML/PDF views, no-view bundles, copied
+accessors and current/history plan regressions are included in the source tests.
+
+Corrected current host validation passed all 27 commands: 11,891 test/subtest
+passes and 18 retained platform skips in the full Windows amd64 suite; 593
+focused passes and no skips on Windows 386; formatting and vet; and 21 Linux
+compile-only builds. The Linux outputs were three application and eighteen
+test binaries across amd64, 386 and arm64. All seven postchecks passed. The
+tested candidate contained 726 source files, including 710 Go files. This host
+run did not execute Linux binaries or installed commands.
+
+A preceding full-run attempt failed fixture regressions and remains
+unqualified. Subsequent selected native input-owner and broker fixtures passed on Linux
+amd64/386: 1,296 outcomes across 12 streams, 162 root executions and
+1,134 declared parent intervals, with no failures or skips. Nine ownership
+cases, 32 archive cases, six postchecks and cleanup also passed. One separate
+synthetic standalone inspection CLI exercise passed. Installed CLI, full Linux
+suite, ARM runtime and physical qualification remain open.
+The older v1 results below and the later combined 580-outcome Linux cohort
+retain their original source scope. That combined cohort used 714 source files,
+698 Go files and v11/v12/v13 journals; it does not qualify inspection v2.
+Installed commands/images, physical observations, hinge/port function, cooling
+noise, battery condition, the ten-PC pilot and release approval remain open.
+
+### Historical v1 implementation and qualification
+
 The implemented check records a finite operator assertion about safely visible
 exterior enclosure surfaces without moving or opening the device. It does not
 verify physical truth or complete chassis coverage. D reports cracks, broken
@@ -31,12 +78,12 @@ Hard prompt/input errors retain error status.
 The consumed path includes the standalone Linux console command, Quick-test
 menu and coordinator, finalization, signed bundles without optional views,
 HTML/PDF rendering and linked retesting/comparison. Plan schema 3 makes the
-row applicable to an operator rather than a discovered component. Current
-Quick v9 has thirteen ordered workers and Standard v10 has fourteen; the
-catalog has 22 rows plus run integrity. Modern Quick selection offers thirteen
-checks and legacy x86 offers eleven. Direct capture retains its seven-check
-subset. Historical v4-v8 reports and journals retain their version-specific
-read rules; that compatibility does not admit stale plans for current execution.
+row applicable to an operator rather than a discovered component. The later
+v1 touchpad stage used Quick v9/thirteen workers and Standard v10/fourteen,
+with 22 catalog rows plus run integrity. Its modern Quick selection offered
+thirteen checks and legacy x86 eleven. Direct capture retained its seven-check
+subset. Those historical layouts retain their version-specific read rules;
+compatibility does not admit stale plans for current execution.
 Storage sampling remains inactive.
 
 Observation time starts at prompt attempt and ends at the response or stop
@@ -2051,12 +2098,21 @@ result covers only those selected families. This combined run comprised
 the two Windows commands and vet; it added no Linux compile or runtime
 evidence. Earlier component builds retain their compile-only scope.
 
+A subsequent run built and executed ten test binaries from that same combined
+source, covering the selected command, app, inventory, plan and session-evidence
+fixtures on Linux amd64 and 386. All 580 named outcomes passed across 110 roots
+and 470 source-declared parent intervals, without failures or skips. All nine
+ownership cases, 32 archive cases and six postchecks passed, with cleanup
+confirmed. Exact test names and parent intervals were reconciled in every
+stream. This qualifies the selected connected Extended and proc parser
+fixtures; it does not establish a full elapsed session or installed CLI behavior.
+
 Remaining parser expansion, aggregate/peak allocation, CPU time budgets and
 optional field-error visibility remain open. These logical limits exclude
 allocator overhead, raw source storage, later downstream copies and provider
 allocations; they do not establish a whole-heap bound or kernel preemption.
 Cancellation cannot interrupt a blocked source call. This inventory increment
-does not activate catalog entries. Native Linux runtime, rebuilt images,
+does not activate catalog entries. Broader Linux runtime, rebuilt images,
 physical devices, sampled-media reads, the physical pilot and release approval
 remain separate gates.
 
@@ -2748,11 +2804,13 @@ release gates remain open. See
 ## Bounded Extended Memory Session
 
 Development source implements an explicitly selected Extended profile with a
-v13 journal and fifteen workers. It retains the current Quick sequence and
+current v16 journal and fifteen workers. It retains the current Quick sequence and
 adds `memory.stress` immediately after `memory.quick`; successful scheduled
 quick-memory checks are a prerequisite. CPU stress remains Standard-only.
-Quick v11/fourteen workers and Standard v12/fifteen workers retain their
-schedules, and Standard retains its 900-second work budget.
+Quick v14/fourteen workers and Standard v15/fifteen workers retain their
+schedules, and Standard retains its 900-second work budget. The completed
+Extended and combined records below belong to the preceding v11/v12/v13
+source, before exterior definition 2; they do not qualify the new inspection.
 
 The memory-stress definition is version 2 and Extended-only. The development
 catalog has sixteen implemented rows and six inactive families:
@@ -2782,7 +2840,7 @@ physical traffic or DIMM health.
 ### Owned evidence and compatibility
 
 The live finalizer separately binds the original evidence-file SHA-256 and
-strict typed digest to the current frozen plan, hardware graph, result and v13
+strict typed digest to the current frozen plan, hardware graph, result and v16
 journal. It rereads owned evidence before signing. Dispatched work requires
 matching evidence; unstarted work retains a finite note. Cleanup uncertainty
 prevents signing and a ready marker. Mismatch facts survive cancellation and
@@ -2793,7 +2851,7 @@ malformed, stripped or mixed memory/CPU claims and mismatched source, plan or
 journal bindings. Canonical views preserve the complete bounded-memory scope
 warning across PDF line wrapping. Exact non-scheduled definition-2 catalog
 notes remain admissible in current Quick and Standard without acquiring
-observed memory-stress authority. Historical v4-v12 wire layouts and typed-plan
+observed memory-stress authority. Historical v4-v13 wire layouts and typed-plan
 bindings retain their original interpretation; current `Plan.Decode` still
 rejects stale catalogs, even when rehashed.
 
@@ -2841,8 +2899,14 @@ or skips. Ownership, archive and six postchecks passed with cleanup confirmed.
 These checks used owned command stubs and executed neither installed
 supervisors nor product workers.
 
-Installed startup supervisors, native and full-duration Extended execution,
-installed CLI and image behavior, race/ARM qualification, physical memory and
+The later combined source also passed the selected Linux amd64/386 session
+and parser fixtures: 580 outcomes across ten package executions, including
+all 110 roots and 470 declared-parent intervals, with no failures or skips.
+Ownership, archive, six postchecks and cleanup passed. These fixture results
+exercise the connected software without establishing an elapsed Extended load.
+
+Installed startup supervisors, full-duration Extended execution,
+installed CLI and image behavior, the full Linux suite, race/ARM qualification, physical memory and
 thermal coverage, all four bootable images, the ten-PC pilot and release
 approval remain separate gates. Broader working sets, SPD/ECC, Memtest86+ and
 complete profile coverage remain planned work. See

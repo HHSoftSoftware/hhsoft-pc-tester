@@ -39,19 +39,19 @@ func (j Journal) MarshalJSON() ([]byte, error) {
 		return nil, ErrInvalid
 	}
 	switch j.Schema {
-	case SchemaV4, SchemaV5, SchemaV7, SchemaV9, SchemaV11:
+	case SchemaV4, SchemaV5, SchemaV7, SchemaV9, SchemaV11, SchemaV14:
 		if j.StorageSource != nil {
 			return nil, ErrInvalid
 		}
 		return json.Marshal(legacyJournalWire(j))
 	case SchemaV6:
 		return json.Marshal(journalV6Wire{legacyJournalWire: legacyJournalWire(j), StorageSource: j.StorageSource})
-	case SchemaV8, SchemaV10, SchemaV12:
+	case SchemaV8, SchemaV10, SchemaV12, SchemaV15:
 		if j.StorageSource != nil || j.Profile != "standard" {
 			return nil, ErrInvalid
 		}
 		return json.Marshal(journalV8Wire{legacyJournalWire: legacyJournalWire(j), Profile: j.Profile, CPUStressSource: j.CPUStressSource})
-	case SchemaV13:
+	case SchemaV13, SchemaV16:
 		if j.StorageSource != nil || j.Profile != "extended" {
 			return nil, ErrInvalid
 		}

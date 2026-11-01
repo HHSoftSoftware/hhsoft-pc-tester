@@ -8,8 +8,8 @@ does not supply that session authority.
 
 The `memory.stress` definition is version 2 and applies only to Extended.
 The 22-row development catalog has sixteen implemented and six inactive rows.
-Quick v11 has fourteen workers; Standard v12 has fifteen and retains its
-900-second work budget. Extended v13 has fifteen workers: the Quick sequence
+Quick v14 has fourteen workers; Standard v15 has fifteen and retains its
+900-second work budget. Extended v16 has fifteen workers: the Quick sequence
 with memory stress immediately after quick memory. CPU stress stays
 Standard-only. Automatic boot and ordinary Quick selection do not start
 Extended.
@@ -134,7 +134,7 @@ file bytes or turn the diagnostic into signed-session authority.
 
 For Extended, the real session finalizer binds both the original evidence-file
 SHA-256 and the strict typed digest to the frozen plan, hardware graph,
-worker result and v13 journal. A dispatched worker needs its matching evidence;
+worker result and current v16 journal. A dispatched worker needs its matching evidence;
 an honest not-started note is not an observation. Unconfirmed cleanup prevents
 signing and publication of the ready marker. Mismatches remain failures through
 cancellation or heat, and local thermal evidence must agree with the journal.
@@ -144,11 +144,20 @@ comparisons reject malformed or mixed memory/CPU claims and mismatched bindings.
 Views retain the bounded-working-set warning; they do not claim full-RAM,
 DIMM, cache-bypass or physical-traffic coverage. Current Quick and Standard
 can retain exact non-scheduled memory-stress catalog notes without gaining
-observed stress authority. Historical v4-v12 reports and typed journals keep
+observed stress authority. Historical v4-v13 reports and typed journals keep
 their versioned interpretation, while live execution still requires a current
 plan.
 
 ## Validation and remaining integration
+
+The records below retain their original source scope. Extended and combined
+results used v11/v12/v13 journals before the four-criterion exterior update.
+The selected combined native cohort's 580 outcomes belong to that earlier
+714-source/698-Go source. The corrected current v14/v15/v16 inspection source
+passed Windows host validation and subsequently passed 1,296 selected Linux
+fixture outcomes across 12 amd64/386 streams, with no skips or failures. One
+separate synthetic standalone inspection CLI exercise also passed. Installed
+CLI and physical inspection qualification remain open.
 
 Implementation and source review are complete for this standalone slice.
 All 19 host-validation commands passed. Focused tests on Windows amd64 and 386
@@ -195,9 +204,15 @@ their fixture suite. It executed owned command stubs, not an installed
 supervisor or product session. Ownership, archive and six postchecks passed
 with cleanup confirmed.
 
-The standalone and auxiliary results retain those scopes. Native and
-full-duration Extended execution, installed supervisors and CLI, race/ARM
-runtime and installed image behavior remain separate validation gates.
+The later combined Extended and proc parser source passed 580 selected
+test/subtest outcomes on Linux amd64 and 386, with no failures or skips.
+The ten package executions covered all 110 roots and 470 declared-parent
+intervals; ownership, archive, six postchecks and cleanup passed. These fixtures
+exercise connected session and signed-consumer paths without a real elapsed load.
+
+The standalone and auxiliary results retain their earlier scopes. Full-duration
+Extended execution, installed supervisors and CLI, the full Linux suite,
+race/ARM runtime and installed image behavior remain separate validation gates.
 
 Broader working sets, SPD/ECC, the separate Memtest86+ boot path, physical
 memory and thermal behavior, all four bootable images, the ten-PC pilot and

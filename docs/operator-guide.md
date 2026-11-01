@@ -327,8 +327,8 @@ media sector works.
 
 ## Bounded Touchpad Check
 
-Development source runs the touchpad check after pointer in Quick v11 and
-Standard v12. A detected candidate may still be unsupported; the implemented
+Development source runs the touchpad check after pointer in Quick v14 and
+Standard v15. A detected candidate may still be unsupported; the implemented
 subset is legacy single-contact absolute-event input, not multi-touch or
 gesture coverage. Quick's `C` menu can exclude the check. Standard requires
 the default set and rejects nonempty Quick exclusions.
@@ -447,8 +447,8 @@ hhpt session -profile standard -plan standard-plan.json -fingerprint-key fingerp
 ```
 
 Standard defaults to a 900-second session budget, the existing maximum. It adds
-one worker after a passing CPU quick check. Current Standard v12 has fifteen
-workers and Quick v11 has fourteen.
+one worker after a passing CPU quick check. Current Standard v15 has fifteen
+workers and Quick v14 has fourteen.
 CPU stress requests 600 seconds of shared elapsed load
 following preparation, within a 660-second local watchdog that starts at invocation.
 A shorter remaining session budget may prevent load or leave an incomplete result;
@@ -504,11 +504,12 @@ cannot become a pass because cancellation or heat followed it. See
 [the complete memory-stress guide](memory-stress.md) for the other exit codes,
 thermal requirements, timing and coverage limits.
 
-The `memory.stress` catalog row remains inactive, and this JSON does not provide
-signed-session authority. The catalog remains fifteen implemented/seven
-inactive rows. Quick v11/fourteen workers and Standard v12/fifteen workers with
-its 900-second budget are unchanged. A longer profile and its signed
-plan/journal/report integration remain separate work.
+At the initial standalone checkpoint, `memory.stress` remained inactive and the
+catalog had fifteen implemented/seven inactive rows. Current source connects it
+only through explicitly selected Extended v16; the catalog has sixteen
+implemented/six inactive rows. Quick v14/fourteen workers and Standard
+v15/fifteen workers with its 900-second budget retain their schedules. This
+standalone JSON still does not provide signed-session authority.
 
 Host fixture tests passed all 196 named cases without skips on each of Windows
 amd64 and 386. The full Windows suite and vet passed; that host step only
@@ -524,46 +525,73 @@ physical-memory/thermal, ten-PC pilot and release qualification remain open.
 
 ## Observe the Visible Exterior
 
-The quick-test menu includes an operator-reported exterior-enclosure check.
-Look only at safely visible surfaces, without moving or opening the device.
-The check covers only the surfaces you actually inspect. It does not certify
-the whole chassis, hinges, port function, cooling noise, battery condition or
-repairs.
+The current menu includes **Visible exterior condition (operator reported)**.
+One prompt lists four criteria in this order:
 
-At the prompt, type one letter and press Enter:
+1. Enclosure integrity.
+2. Visible hinge and mount condition.
+3. Visible port exterior condition.
+4. Visible surface finish.
 
-- `D`: you observed cracks, broken or missing enclosure pieces, or deformation.
-- `N`: you observed none of those defects on the inspected surfaces.
-- `I`: you did not inspect, or are uncertain. Enter without a letter also
-  records no observation.
+Enter one answer and press Enter for each criterion: `D` for an observed issue,
+`N` for no issue observed, or `I` for unobserved or uncertain. Empty answers also
+remain unobserved. Only the hinge answer accepts `A`, meaning you explicitly
+report that the device has no hinge. A hidden or uninspected hinge stays
+unobserved; the software never infers not-applicable from the device type.
 
-There is no free-text, name or photograph field. Incomplete or invalid input
-cannot pass. A completed defect response remains adverse after a stop; an
-input fault remains an error.
+All four answers share one 45-second window, shortened by a parent deadline.
+The timer does not restart for each criterion. A manual pass requires explicit
+`N` for enclosure, port exterior and surface finish, plus `N` or `A` for the
+hinge. Any issue remains adverse; any unobserved criterion prevents a pass.
+Completed observations survive a stop between answers, and a completed issue
+remains adverse after cancellation. Hard input or owner-cleanup faults retain
+their error behavior. No free text, operator name or photograph is collected.
 
-For a standalone development check on Linux:
+This is a visual observation of the surfaces actually inspected, without moving
+or opening the device. It is not an automated hardware pass, a check of hinge
+movement or port function, or a verdict on hidden damage, cooling noise, battery
+condition or repairs.
+
+For the current standalone development check on Linux:
+
+```sh
+hhpt inspect-exterior-condition -timeout 45s -output exterior-condition.json
+```
+
+The default timeout is 45 seconds; accepted values are `10ms` through `45s`.
+Input uses LF or CRLF line endings; a bare CR is incomplete. The JSON diagnostic
+has schema v2 and fixed operator-reported visual scope. It is not a signed
+hardware report. Exit 0 means the record was emitted, not that the device passed
+inspection. An existing output file is not replaced. The real console path is
+Linux-only; Windows companion verification supplies no Windows console reader.
+
+The unchanged legacy command emits the original one-answer v1 diagnostic:
 
 ```sh
 hhpt inspect-exterior -timeout 45s -output exterior-inspection.json
 ```
 
-The default timeout is 45 seconds; accepted values are `10ms` through `45s`.
-A shorter parent deadline also applies. The JSON file is a bounded observation
-record, not a signed hardware report. Exit 0 means the record was emitted,
-not that the device passed inspection. An existing output file is not replaced.
-The real console path is Linux-only; Windows companion report verification
-does not provide a Windows console-inspection implementation.
+Current session plans use exterior definition 2 and Quick v14, Standard v15 or
+Extended v16 journals. Historical v1 observations retain their original meaning.
+A fixed error/aborted nonexecution note has no condition observations; it cannot
+substitute for the matching current journal required by actual v2 evidence.
 
-Reports label the value **Bounded observation time (ms)**. It covers prompt
-attempt through the response or stop decision, capped at the effective
-deadline. Preparation and cleanup are excluded. A decision at or after the
-deadline cannot pass; this is not a promise that input or cleanup returns by
-that instant. Unconfirmed input cleanup prevents output or signing and retains
-exit 12.
+Reports label the value **Bounded observation time (ms)**. It covers the one
+prompt attempt through the last response or stop decision, capped at the
+effective deadline. Preparation and final cleanup are excluded. Decisions at
+or after the deadline cannot pass; this is not a return-time guarantee.
+Unconfirmed input cleanup prevents output or signing and retains exit 12.
 
-Full host validation and selected native Linux fixtures passed. See
+Earlier exterior qualification belongs to the legacy v1 source. The corrected
+v2 source passed Windows host tests, formatting, vet and Linux cross-builds.
+The host-stage Linux builds were compile-only. Subsequent selected Linux
+amd64/386 inspection fixtures passed 1,296 outcomes across 12 streams with
+no skips or failures, and one separate synthetic standalone CLI exercise
+passed. Installed-command and physical inspection qualification remain open.
+See
 [validation details](requirements-validation.md#bounded-exterior-inspection).
-The physical-PC pilot, rebuilt images and release approval remain open.
+Installed-command behavior, the physical-PC pilot, rebuilt images and release
+approval remain open.
 
 ## Read Power-Supply Inventory
 
@@ -856,7 +884,7 @@ checks before started workers, final observations, and a fresh check before
 signing. The periodic-monitor increment introduced a journal v3 summary while retaining
 the same ten worker outcomes. It samples read-only mount and network metadata
 once per second, allows one second per observation and at most 2,500 milliseconds
-between observations. As in the qualified v4/v5 workflows, current v11/v12
+between observations. As in the qualified v4/v5 workflows, current v14/v15/v16
 monitoring remains active through final inventory and the final gate.
 Its first unsafe,
 unknown, timed-out, or excessively delayed observation stops active work and
@@ -881,7 +909,7 @@ before session launch and after report creation remain separate operational gate
 capture and direct finalization without a session journal retain their older
 limited scope and do not claim this session history.
 
-Reports using supported v4-v12 journals also show run-wide thermal coverage
+Reports using supported v4-v16 journals also show run-wide thermal coverage
 and any observed limit.
 The initial and final thermal readings are required even in a sub-second or all-off
 session. `thermal_finding=limit_reached` means a valid global or local CPU/RAM
@@ -942,9 +970,9 @@ Supported functional claims also pass shared schema and binding checks, even
 when views are omitted. This includes explicit v6 storage evidence read support;
 accepted work stays distinct from diagnostics, and unconfirmed cleanup rejects
 the report. The utility does not rerun hardware tests or reconstruct original
-collection events. Current development commands emit Quick v11 with fourteen
-workers or Standard v12 with fifteen, without sampled storage reads.
-Historical v4-v10 reports remain readable under their own rules. This offline
+collection events. Current development commands emit Quick v14 with fourteen
+workers, Standard v15 with fifteen, or Extended v16 with fifteen, without
+sampled storage reads. Historical v4-v13 reports remain readable under their own rules. This offline
 compatibility does not authorize an old plan for current execution; freeze a
 new plan against the current catalog.
 

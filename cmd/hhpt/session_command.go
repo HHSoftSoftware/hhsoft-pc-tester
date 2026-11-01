@@ -23,6 +23,7 @@ import (
 
 type sessionWorker struct {
 	ID, Architecture, OutputPath string
+	Version                      int
 	Timeout                      time.Duration
 }
 
@@ -135,11 +136,11 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 	if executionProfile == plan.ProfileStandard {
 		ids := sessionevidence.StandardWorkerIDs()
 		workerIDs = ids[:]
-		journalSchema = sessionevidence.SchemaV12
+		journalSchema = sessionevidence.SchemaV15
 	} else if executionProfile == plan.ProfileExtended {
 		ids := sessionevidence.ExtendedWorkerIDs()
 		workerIDs = ids[:]
-		journalSchema = sessionevidence.SchemaV13
+		journalSchema = sessionevidence.SchemaV16
 	}
 	if !parentOptions.valid() {
 		fmt.Fprintln(stderr, "session: invalid predecessor options")
@@ -406,7 +407,7 @@ func runSessionWith(ctx context.Context, arguments []string, input io.Reader, st
 			workerDeadline = deadline
 		}
 		workerContext, stopWorker := context.WithDeadline(runContext, workerDeadline)
-		worker := sessionWorker{ID: record.ID, Architecture: frozen.Architecture,
+		worker := sessionWorker{ID: record.ID, Version: test.Version, Architecture: frozen.Architecture,
 			OutputPath: filepath.Join(*directory, definitions[record.ID].filename), Timeout: time.Duration(test.TimeoutSeconds) * time.Second}
 		fmt.Fprintf(stdout, "HHPT_SESSION_WORKER id=%s completed=%d scheduled=%d elapsed_ms=%d remaining_ms=%d\n",
 			record.ID, completed, scheduled, workerStart.Sub(started).Milliseconds(), max(0, deadline.Sub(workerStart).Milliseconds()))
@@ -640,6 +641,35 @@ func sessionWorkerOutcomeEvidence(encoded []byte, readErr error, schema string, 
 			state = "interrupted"
 		}
 		return status, state, nil
+	}
+	if schema == exteriorinspection.SchemaV2 {
+		if readErr != nil {
+			if readErr != os.ErrNotExist {
+				return "", "", exteriorinspection.ErrEvidence
+			}
+			if interrupted {
+				return "aborted", "interrupted", nil
+			}
+			return "error", "completed", nil
+		}
+		value, err := exteriorinspection.DecodeV2(encoded)
+		if err != nil {
+			return "", "", err
+		}
+		wantCode := 0
+		if value.Status == "error" {
+			wantCode = 1
+		}
+		if code != wantCode {
+			return "", "", exteriorinspection.ErrEvidence
+		}
+		if value.Status == "fail" {
+			return "fail", "completed", nil
+		}
+		if interrupted && (value.Status == "aborted" || value.Status == "error") {
+			return value.Status, "interrupted", nil
+		}
+		return value.Status, "completed", nil
 	}
 	if schema == exteriorinspection.Schema {
 		if readErr != nil {

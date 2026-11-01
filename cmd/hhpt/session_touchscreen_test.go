@@ -188,10 +188,10 @@ func TestTouchscreenProfileAndJournalClaimsRejectAliases(t *testing.T) {
 	for _, name := range []string{"old_schema", "wrong_profile", "quick_has_stress", "standard_lacks_profile", "worker_duplicate", "worker_missing", "outcome_changed", "planned_status_changed", "version_changed"} {
 		t.Run(name, func(t *testing.T) {
 			profile := plan.ProfileQuick
-			schema, ids := "hhsoft.pc-tester.quick-session/v11", touchscreenRouteTouchscreenQuickWorkers
+			schema, ids := "hhsoft.pc-tester.quick-session/v14", touchscreenRouteTouchscreenQuickWorkers
 			if name == "standard_lacks_profile" {
 				profile = plan.ProfileStandard
-				schema, ids = "hhsoft.pc-tester.quick-session/v12", touchscreenRouteTouchscreenStandardWorkers
+				schema, ids = "hhsoft.pc-tester.quick-session/v15", touchscreenRouteTouchscreenStandardWorkers
 			}
 			frozen, _, _ := touchscreenRouteCurrentPlan(t, profile)
 			for i := range frozen.Tests {
@@ -284,20 +284,25 @@ func TestTouchscreenCommandCurrentAndHistoricalLayoutContracts(t *testing.T) {
 		name                     string
 		profile                  plan.Profile
 		schema, workers, results string
-		current                  bool
+		touchscreen, current     bool
 	}{
-		{"quick_v9", plan.ProfileQuick, "hhsoft.pc-tester.quick-session/v9", commandRouteTouchpadQuickWorkers, commandRouteTouchpadQuickResults, false},
-		{"standard_v10", plan.ProfileStandard, "hhsoft.pc-tester.quick-session/v10", commandRouteTouchpadStandardWorkers, commandRouteTouchpadStandardResults, false},
-		{"quick_v11", plan.ProfileQuick, "hhsoft.pc-tester.quick-session/v11", touchscreenRouteTouchscreenQuickWorkers, touchscreenRouteTouchscreenQuickResults, true},
-		{"standard_v12", plan.ProfileStandard, "hhsoft.pc-tester.quick-session/v12", touchscreenRouteTouchscreenStandardWorkers, touchscreenRouteTouchscreenStandardResults, true},
+		{"quick_v9", plan.ProfileQuick, "hhsoft.pc-tester.quick-session/v9", commandRouteTouchpadQuickWorkers, commandRouteTouchpadQuickResults, false, false},
+		{"standard_v10", plan.ProfileStandard, "hhsoft.pc-tester.quick-session/v10", commandRouteTouchpadStandardWorkers, commandRouteTouchpadStandardResults, false, false},
+		{"quick_v11", plan.ProfileQuick, "hhsoft.pc-tester.quick-session/v11", touchscreenRouteTouchscreenQuickWorkers, touchscreenRouteTouchscreenQuickResults, true, false},
+		{"standard_v12", plan.ProfileStandard, "hhsoft.pc-tester.quick-session/v12", touchscreenRouteTouchscreenStandardWorkers, touchscreenRouteTouchscreenStandardResults, true, false},
+		{"quick_v14", plan.ProfileQuick, "hhsoft.pc-tester.quick-session/v14", touchscreenRouteTouchscreenQuickWorkers, touchscreenRouteTouchscreenQuickResults, true, true},
+		{"standard_v15", plan.ProfileStandard, "hhsoft.pc-tester.quick-session/v15", touchscreenRouteTouchscreenStandardWorkers, touchscreenRouteTouchscreenStandardResults, true, true},
 	} {
 		t.Run(row.name, func(t *testing.T) {
 			frozen, _, _ := touchscreenRouteCurrentPlan(t, row.profile)
 			if !row.current {
+				commandRouteHistoricalInspection(t, &frozen)
+			}
+			if !row.touchscreen {
 				touchscreenRouteChangeTest(&frozen, func(v *plan.Test) { v.Version = 1; v.Status = plan.TestUnsupported })
 			}
 			layout, err := commandLayoutForPlan(frozen, row.profile)
-			if err != nil || !layout.touchpad || layout.touchscreen != row.current ||
+			if err != nil || !layout.touchpad || layout.touchscreen != row.touchscreen || layout.inspectionV2 != row.current ||
 				layout.schema != row.schema || !reflect.DeepEqual(layout.workerIDs, strings.Fields(row.workers)) {
 				t.Fatal("literal typed layout changed", err)
 			}
@@ -332,8 +337,8 @@ func TestTouchscreenCommandCurrentAndHistoricalLayoutContracts(t *testing.T) {
 			}
 		})
 	}
-	if sessionevidence.Schema != "hhsoft.pc-tester.quick-session/v11" || sessionJournalSchema != "hhsoft.pc-tester.quick-session/v11" {
-		t.Fatal("current default schema is not v11")
+	if sessionevidence.Schema != "hhsoft.pc-tester.quick-session/v14" || sessionJournalSchema != "hhsoft.pc-tester.quick-session/v14" {
+		t.Fatal("current default schema is not v14")
 	}
 }
 
@@ -380,8 +385,8 @@ func TestTouchscreenCheckedJournalAndReadyMarkerRequireCurrentBinding(t *testing
 		profile     plan.Profile
 		schema, ids string
 	}{
-		{"quick", plan.ProfileQuick, "hhsoft.pc-tester.quick-session/v11", touchscreenRouteTouchscreenQuickWorkers},
-		{"standard", plan.ProfileStandard, "hhsoft.pc-tester.quick-session/v12", touchscreenRouteTouchscreenStandardWorkers},
+		{"quick", plan.ProfileQuick, "hhsoft.pc-tester.quick-session/v14", touchscreenRouteTouchscreenQuickWorkers},
+		{"standard", plan.ProfileStandard, "hhsoft.pc-tester.quick-session/v15", touchscreenRouteTouchscreenStandardWorkers},
 	} {
 		t.Run(row.name, func(t *testing.T) {
 			frozen, _, _ := touchscreenRouteCurrentPlan(t, row.profile)
@@ -441,7 +446,7 @@ func touchscreenRouteJournal(t *testing.T, schema, ids string) sessionJournal {
 	switch schema {
 	case "hhsoft.pc-tester.quick-session/v6":
 		raw += `,"storage_source":null`
-	case "hhsoft.pc-tester.quick-session/v8", "hhsoft.pc-tester.quick-session/v10", "hhsoft.pc-tester.quick-session/v12":
+	case "hhsoft.pc-tester.quick-session/v8", "hhsoft.pc-tester.quick-session/v10", "hhsoft.pc-tester.quick-session/v12", "hhsoft.pc-tester.quick-session/v15":
 		raw += `,"profile":"standard","cpu_stress_source":null`
 	}
 	value, err := sessionevidence.Decode([]byte(raw + "}"))

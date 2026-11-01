@@ -603,7 +603,7 @@ func loadDefinitions(data []byte) (definitions, string, error) {
 		if (definition.ID == "inspection.exterior.quick") != (definition.Capability == "operator.exterior") {
 			return definitions{}, "", errors.New("invalid operator test identity")
 		}
-		if definition.Capability == "operator.exterior" && (definition.Version != 1 || !definition.Implemented || definition.Destructive ||
+		if definition.Capability == "operator.exterior" && (definition.Version != 2 || !definition.Implemented || definition.Destructive ||
 			definition.EstimatedSeconds != 20 || definition.TimeoutSeconds != 45 ||
 			!slices.Equal(definition.Profiles, []Profile{ProfileQuick, ProfileStandard, ProfileExtended, ProfileDestructive})) {
 			return definitions{}, "", errors.New("invalid operator test definition")

@@ -323,7 +323,7 @@ func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, argu
 					fmt.Fprintln(stderr, "validate CPU stress evidence: existing evidence is unreadable")
 					return 1
 				}
-				if definition.schema == exteriorinspection.Schema && readErr != os.ErrNotExist {
+				if (definition.schema == exteriorinspection.Schema || definition.schema == exteriorinspection.SchemaV2) && readErr != os.ErrNotExist {
 					fmt.Fprintln(stderr, "validate inspection evidence: existing evidence is unreadable")
 					return 1
 				}
@@ -392,7 +392,7 @@ func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, argu
 					return 1
 				}
 				evidenceStatus, normalized := normalizeOutcome(evidenceSourceStatus)
-				if definition.schema == exteriorinspection.Schema && (statusErr != nil || !normalized || evidenceStatus != normalizedStatus) {
+				if (definition.schema == exteriorinspection.Schema || definition.schema == exteriorinspection.SchemaV2) && (statusErr != nil || !normalized || evidenceStatus != normalizedStatus) {
 					fmt.Fprintln(stderr, "validate inspection evidence: observations do not match the supervisor outcome")
 					return 1
 				}

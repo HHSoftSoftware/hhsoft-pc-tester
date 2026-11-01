@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/exteriorinspection"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
 )
 
@@ -28,20 +29,20 @@ func (f *inspectionBrokerForwarder) Read(p []byte) (int, error) { return f.conso
 func (f *inspectionBrokerForwarder) DiscardUnpromptedInput(ctx context.Context) error {
 	return f.console.DiscardUnpromptedInput(ctx)
 }
-func (f *inspectionBrokerForwarder) ReadFindingLine(ctx context.Context, limit int) (string, error) {
+func (f *inspectionBrokerForwarder) ReadInspectionConditions(ctx context.Context, prompt func() error) ([]exteriorinspection.ConditionResponseV2, error) {
 	request, cancel := context.WithCancel(ctx)
 	defer cancel()
 	barrier := &inspectionSelectBarrier{Context: request, entered: make(chan struct{}), release: make(chan struct{})}
 	f.requests <- inspectionControlledRequest{barrier, cancel}
 	// Only the real broker receives the wrapper. Its first Done call is the
 	// outer select operand, after that select captured the original channel.
-	return f.console.ReadFindingLine(barrier, limit)
+	return f.console.ReadInspectionConditions(barrier, prompt)
 }
 
 func TestInspectionRealBrokerFaultReachesCoordinatorAndSignedReport(t *testing.T) {
 	for _, test := range []struct{ name, input, status, finding, stop string }{
-		{"queued_overflow", strings.Repeat("x", 4097), "error", "not_inspected", "input_error"},
-		{"queued_defect", "D\n", "fail", "defect_observed", "operator_cancelled"},
+		{"queued_overflow", strings.Repeat("x", 4097), "error", "unobserved", "input_error"},
+		{"queued_defect", "D\n", "fail", "issue_present", "operator_cancelled"},
 	} {
 		t.Run(test.name, func(t *testing.T) {
 			h, _ := newInspectionCoordinator(t)
@@ -81,7 +82,7 @@ func TestInspectionRealBrokerFaultReachesCoordinatorAndSignedReport(t *testing.T
 			select {
 			case control = <-forward.requests:
 			case <-time.After(3 * time.Second):
-				t.Fatal("actual adapter did not request a line")
+				t.Fatal("actual adapter did not request the four-line batch")
 			}
 			select {
 			case <-control.barrier.entered:
@@ -95,10 +96,10 @@ func TestInspectionRealBrokerFaultReachesCoordinatorAndSignedReport(t *testing.T
 				}
 			}()
 			console.mutex.Lock()
-			request := console.request
+			request := console.conditionRequest
 			valid := request != nil && request.ctx == control.barrier && console.failure == nil && !console.stopped && owned.Err() == nil && request.ctx.Err() == nil
-			var original chan sessionLineResult
-			replacement := make(chan sessionLineResult, 1)
+			var original chan sessionConditionResult
+			replacement := make(chan sessionConditionResult, 1)
 			if valid {
 				original = request.result
 				valid = len(original) == 0 && cap(original) == 1
@@ -113,13 +114,25 @@ func TestInspectionRealBrokerFaultReachesCoordinatorAndSignedReport(t *testing.T
 			if n, err := writer.WriteString(test.input); err != nil || n != len(test.input) {
 				t.Fatal("synthetic input failed")
 			}
+			if test.name == "queued_defect" {
+				inspectionAwait(t, func() bool {
+					console.mutex.Lock()
+					defer console.mutex.Unlock()
+					return console.conditionRequest == request && request.batch.completed == 1 && len(request.batch.text) == 0 &&
+						len(replacement) == 0 && len(original) == 0 && console.failure == nil && request.ctx.Err() == nil
+				})
+				// Cancel between lines only after the real owner consumed D+LF.
+				// The stopped result must preserve one issue, not invent four answers.
+				control.cancel()
+			}
 			inspectionAwait(t, func() bool {
 				console.mutex.Lock()
 				defer console.mutex.Unlock()
-				return console.request == nil && len(replacement) == 1 && len(original) == 0 && console.failure == nil && owned.Err() == nil && request.ctx.Err() == nil
+				return console.conditionRequest == nil && console.conditionPaused && len(replacement) == 1 &&
+					len(original) == 0 && console.failure == nil && owned.Err() == nil
 			})
 			console.mutex.Lock()
-			if test.name == "queued_overflow" && len(request.text) != 4096 {
+			if test.name == "queued_overflow" && len(request.batch.text) != 4096 {
 				t.Error("real bounded overflow was not reached")
 			}
 			console.mutex.Unlock()
@@ -137,7 +150,11 @@ func TestInspectionRealBrokerFaultReachesCoordinatorAndSignedReport(t *testing.T
 			case <-time.After(6 * time.Second):
 				t.Fatal("coordinator did not finish")
 			}
-			inspectSignedCoordinator(t, h, test.status, test.finding, test.stop, test.name == "queued_defect")
+			wantCount := 0
+			if test.name == "queued_defect" {
+				wantCount = 1
+			}
+			inspectSignedCoordinator(t, h, test.status, test.finding, test.stop, wantCount)
 			if inputFlags(t, reader) != flags {
 				t.Fatal("real owner did not restore descriptor flags")
 			}
@@ -182,7 +199,11 @@ func TestInspectionCoordinatorConsumesActualPersistentOwnerFailure(t *testing.T)
 			}
 			done := make(chan int, 1)
 			go func() { done <- runSessionWith(owned, h.arguments, console, &h.stdout, &h.stderr, h.dependencies) }()
-			pendingSessionLine(t, console)
+			inspectionAwait(t, func() bool {
+				console.mutex.Lock()
+				defer console.mutex.Unlock()
+				return console.conditionRequest != nil
+			})
 			if name == "eof" {
 				if err := writer.Close(); err != nil {
 					t.Fatal(err)

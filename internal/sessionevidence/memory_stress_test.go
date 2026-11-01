@@ -125,7 +125,7 @@ func extendedMemoryObserved(t *testing.T) (sessionevidence.Journal, []sessionevi
 
 func TestExtendedMemoryJournalOwnsLiteralLayoutAndPreservesAliases(t *testing.T) {
 	extended := sessionevidence.ExtendedWorkerIDs()
-	if sessionevidence.Schema != "hhsoft.pc-tester.quick-session/v11" || len(extended) != 15 ||
+	if sessionevidence.Schema != "hhsoft.pc-tester.quick-session/v14" || len(extended) != 15 ||
 		!reflect.DeepEqual(extended[:], strings.Fields(extendedMemoryOrder)) {
 		t.Fatal("new profile changed default or literal layout")
 	}
@@ -185,7 +185,7 @@ func TestExtendedMemoryJournalRejectsIndependentWireAndBudgetMutations(t *testin
 		{"missing_profile", `,"profile":"extended"`, ""},
 		{"case_profile", `"profile":`, `"Profile":`},
 		{"cpu_source", `"memory_stress_source":null`, `"memory_stress_source":null,"cpu_stress_source":null`},
-		{"future", "quick-session/v13", "quick-session/v14"},
+		{"future", "quick-session/v13", "quick-session/v17"},
 		{"over_budget", `"budget_milliseconds":2700000`, `"budget_milliseconds":2700001`},
 		{"wrong_order", `"id":"memory.stress"`, `"id":"cpu.stress"`},
 	} {

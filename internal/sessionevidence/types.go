@@ -17,9 +17,12 @@ const SchemaV10 = "hhsoft.pc-tester.quick-session/v10"
 const SchemaV11 = "hhsoft.pc-tester.quick-session/v11"
 const SchemaV12 = "hhsoft.pc-tester.quick-session/v12"
 const SchemaV13 = "hhsoft.pc-tester.quick-session/v13"
+const SchemaV14 = "hhsoft.pc-tester.quick-session/v14"
+const SchemaV15 = "hhsoft.pc-tester.quick-session/v15"
+const SchemaV16 = "hhsoft.pc-tester.quick-session/v16"
 
-// Schema selects current Quick touchscreen sessions; storage execution remains inactive.
-const Schema = SchemaV11
+// Schema selects current Quick exterior-condition sessions; storage execution remains inactive.
+const Schema = SchemaV14
 const IntegritySchema = "hhsoft.pc-tester.run-integrity/v1"
 const MaximumBytes = 64 << 10
 const Scope = "Quick-session execution, cleanup, final inventory and final safety gate; report encoding, output and saving are outside this monitoring window."
@@ -27,51 +30,51 @@ const StandardScope = "Standard-session execution, cleanup, final inventory and 
 const ExtendedScope = "Extended-session execution, cleanup, final inventory and final safety gate; report encoding, output and saving are outside this monitoring window."
 
 func IsStrictSchema(schema string) bool {
-	return schema == SchemaV4 || schema == SchemaV5 || schema == SchemaV6 || schema == SchemaV7 || schema == SchemaV8 || schema == SchemaV9 || schema == SchemaV10 || schema == SchemaV11 || schema == SchemaV12 || schema == SchemaV13
+	return schema == SchemaV4 || schema == SchemaV5 || schema == SchemaV6 || schema == SchemaV7 || schema == SchemaV8 || schema == SchemaV9 || schema == SchemaV10 || schema == SchemaV11 || schema == SchemaV12 || schema == SchemaV13 || schema == SchemaV14 || schema == SchemaV15 || schema == SchemaV16
 }
 
 func supportsCurrentWorkerEvidence(schema string) bool {
-	return schema == SchemaV5 || schema == SchemaV6 || schema == SchemaV7 || schema == SchemaV8 || schema == SchemaV9 || schema == SchemaV10 || schema == SchemaV11 || schema == SchemaV12 || schema == SchemaV13
+	return schema == SchemaV5 || schema == SchemaV6 || schema == SchemaV7 || schema == SchemaV8 || schema == SchemaV9 || schema == SchemaV10 || schema == SchemaV11 || schema == SchemaV12 || schema == SchemaV13 || schema == SchemaV14 || schema == SchemaV15 || schema == SchemaV16
 }
 
 // IsStandardSchema recognizes explicit historical and current Standard wire versions.
 func IsStandardSchema(schema string) bool {
-	return schema == SchemaV8 || schema == SchemaV10 || schema == SchemaV12
+	return schema == SchemaV8 || schema == SchemaV10 || schema == SchemaV12 || schema == SchemaV15
 }
 
 // IsExtendedSchema recognizes the separately versioned memory-stress profile.
 func IsExtendedSchema(schema string) bool {
-	return schema == SchemaV13
+	return schema == SchemaV13 || schema == SchemaV16
 }
 
 // SupportsInspection retains the bounded operator task only in its declared versions.
 func SupportsInspection(schema string) bool {
-	return schema == SchemaV7 || schema == SchemaV8 || schema == SchemaV9 || schema == SchemaV10 || schema == SchemaV11 || schema == SchemaV12 || schema == SchemaV13
+	return schema == SchemaV7 || schema == SchemaV8 || schema == SchemaV9 || schema == SchemaV10 || schema == SchemaV11 || schema == SchemaV12 || schema == SchemaV13 || schema == SchemaV14 || schema == SchemaV15 || schema == SchemaV16
 }
 
 // SupportsTouchpad recognizes only the versioned touchpad session contracts.
 func SupportsTouchpad(schema string) bool {
-	return schema == SchemaV9 || schema == SchemaV10 || schema == SchemaV11 || schema == SchemaV12 || schema == SchemaV13
+	return schema == SchemaV9 || schema == SchemaV10 || schema == SchemaV11 || schema == SchemaV12 || schema == SchemaV13 || schema == SchemaV14 || schema == SchemaV15 || schema == SchemaV16
 }
 
 // SupportsTouchscreen recognizes only the versioned DIRECT touchscreen contracts.
 func SupportsTouchscreen(schema string) bool {
-	return schema == SchemaV11 || schema == SchemaV12 || schema == SchemaV13
+	return schema == SchemaV11 || schema == SchemaV12 || schema == SchemaV13 || schema == SchemaV14 || schema == SchemaV15 || schema == SchemaV16
 }
 
 // WorkerIDs returns the current Quick worker sequence.
 func WorkerIDs() [14]string {
-	return WorkerIDsV11()
+	return WorkerIDsV14()
 }
 
 // StandardWorkerIDs returns the current Standard worker sequence.
 func StandardWorkerIDs() [15]string {
-	return WorkerIDsV12()
+	return WorkerIDsV15()
 }
 
 // ExtendedWorkerIDs returns the current Extended worker sequence.
 func ExtendedWorkerIDs() [15]string {
-	return WorkerIDsV13()
+	return WorkerIDsV16()
 }
 
 // WorkerIDsV7 preserves the historical Quick v7 worker sequence.
@@ -133,6 +136,15 @@ func workerIDs(schema string) []string {
 		return ids[:]
 	case SchemaV13:
 		ids := WorkerIDsV13()
+		return ids[:]
+	case SchemaV14:
+		ids := WorkerIDsV14()
+		return ids[:]
+	case SchemaV15:
+		ids := WorkerIDsV15()
+		return ids[:]
+	case SchemaV16:
+		ids := WorkerIDsV16()
 		return ids[:]
 	case SchemaV6:
 		return []string{"cpu.quick", "memory.quick", "audio.readiness.quick", "input.readiness.quick", "input.keyboard.quick", "input.pointer.quick", "network.readiness.quick", "storage.readiness.quick", "storage.quick", "usb.readiness.quick", "graphics.quick", "display.operator.quick"}
@@ -216,7 +228,7 @@ type ThermalView struct {
 	LocalSources                         []LocalThermalSource
 }
 
-// IntegrityEvidence preserves the graph-integrity v1 envelope. Strict v4-v13
+// IntegrityEvidence preserves the graph-integrity v1 envelope. Strict v4-v16
 // claims use its decoder; earlier evidence remains opaque.
 type IntegrityEvidence struct {
 	Schema                string                      `json:"schema"`

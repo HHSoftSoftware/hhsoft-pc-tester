@@ -115,7 +115,7 @@ func TestExtendedMemorySessionLiteralOrderBudgetAndOwnedSource(t *testing.T) {
 		ids = append(ids, row.ID)
 	}
 	if !reflect.DeepEqual(ids, strings.Fields(extendedMemoryWorkerOrder)) || !reflect.DeepEqual(h.calls, wantCalls) ||
-		h.journal.Schema != "hhsoft.pc-tester.quick-session/v13" || h.journal.Profile != "extended" ||
+		h.journal.Schema != "hhsoft.pc-tester.quick-session/v16" || h.journal.Profile != "extended" ||
 		h.journal.BudgetMilliseconds != 2700000 || h.request.Profile != plan.ProfileExtended || h.journal.CPUStressSource != nil {
 		t.Fatal("literal Extended order, budget or profile changed")
 	}

@@ -122,10 +122,10 @@ func TestTouchscreenActivatedSessionSignsCurrentProfile(t *testing.T) {
 		t.Run(row.name, func(t *testing.T) {
 			profile := row.profile
 			h := newSessionHarness(t, "x86_64", nil)
-			wantSchema, wantWorkers, count, index := "hhsoft.pc-tester.quick-session/v11", touchscreenRouteTouchscreenQuickWorkers, 14, 7
+			wantSchema, wantWorkers, count, index := "hhsoft.pc-tester.quick-session/v14", touchscreenRouteTouchscreenQuickWorkers, 14, 7
 			if profile == plan.ProfileStandard {
 				h = newStandardHarness(t, commandStressPass())
-				wantSchema, wantWorkers, count, index = "hhsoft.pc-tester.quick-session/v12", touchscreenRouteTouchscreenStandardWorkers, 15, 8
+				wantSchema, wantWorkers, count, index = "hhsoft.pc-tester.quick-session/v15", touchscreenRouteTouchscreenStandardWorkers, 15, 8
 			} else {
 				useRealSessionFinalizer(t, h, nil, nil)
 			}

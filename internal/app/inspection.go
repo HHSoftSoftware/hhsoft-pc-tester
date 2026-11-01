@@ -22,7 +22,7 @@ func ValidatedExteriorInspection(payload InventoryPayload) (*exteriorinspection.
 		return nil, err
 	}
 	for _, row := range payload.TestResults {
-		if row.ID == exteriorinspection.TestID && HasExteriorInspectionClaim(row.Evidence) {
+		if row.ID == exteriorinspection.TestID && row.Version == 1 && HasExteriorInspectionClaim(row.Evidence) {
 			value, err := exteriorinspection.Decode(row.Evidence)
 			if err != nil {
 				return nil, err
@@ -33,7 +33,7 @@ func ValidatedExteriorInspection(payload InventoryPayload) (*exteriorinspection.
 	return nil, nil
 }
 
-func validateInspectionReport(payload InventoryPayload) error {
+func validateInspectionReportV1(payload InventoryPayload) error {
 	claimed, anySession := false, false
 	integrityReference, excludedReference := false, false
 	for _, row := range payload.TestResults {
@@ -73,7 +73,7 @@ func validateInspectionReport(payload InventoryPayload) error {
 				continue
 			}
 			value, err := sessionevidence.DecodeIntegrity(row.Evidence)
-			if found || err != nil || value.Session == nil || !sessionevidence.SupportsInspection(value.Session.Schema) {
+			if found || err != nil || value.Session == nil || !sessionevidence.SupportsInspection(value.Session.Schema) || sessionevidence.SupportsInspectionV2(value.Session.Schema) {
 				return errors.New("inspection evidence requires a strict inspection session")
 			}
 			found = true

@@ -175,7 +175,7 @@ func sessionCompleteEvidence(id string) any {
 		return completeDisplayEvidence()
 	case "inspection.exterior.quick":
 		// Literal finite evidence; this fixture does not advance its clock.
-		return json.RawMessage(`{"schema":"hhsoft.pc-tester.exterior-inspection/v1","source":"operator_reported","scope":"whole_device","criterion":"visible_exterior_enclosure_damage","finding":"no_defect_observed","response_complete":true,"stop_reason":"completed","status":"pass","observation_milliseconds":0}`)
+		return json.RawMessage(`{"schema":"hhsoft.pc-tester.exterior-inspection/v2","source":"operator_reported","scope":"visible_exterior_condition","findings":{"enclosure_integrity":"no_issue_observed","hinge_mount_condition":"not_applicable","port_exterior_condition":"no_issue_observed","surface_finish_condition":"no_issue_observed"},"responses_completed":4,"stop_reason":"completed","status":"pass","observation_milliseconds":0}`)
 	}
 	panic("unknown synthetic session worker")
 }

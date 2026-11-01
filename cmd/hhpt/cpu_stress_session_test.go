@@ -109,7 +109,7 @@ func TestCPUStressStandardSessionPreservesOrderAndSource(t *testing.T) {
 		t.Fatalf("standard session failed: %d %s", code, &h.stderr)
 	}
 	want := []string{"cpu.quick", "cpu.stress", "memory.quick", "audio.readiness.quick", "input.readiness.quick", "input.keyboard.quick", "input.pointer.quick", "network.readiness.quick", "storage.readiness.quick", "usb.readiness.quick", "graphics.quick", "display.operator.quick", "inspection.exterior.quick"}
-	if !reflect.DeepEqual(h.calls, want) || h.journal.Schema != sessionevidence.SchemaV12 || len(h.journal.Workers) != 15 ||
+	if !reflect.DeepEqual(h.calls, want) || h.journal.Schema != sessionevidence.SchemaV15 || len(h.journal.Workers) != 15 ||
 		h.journal.Profile != "standard" || h.journal.BudgetMilliseconds != 900000 || h.request.Profile != plan.ProfileStandard {
 		t.Fatal("standard profile/order/default changed")
 	}

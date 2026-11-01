@@ -32,18 +32,20 @@ type sessionDiscardRequest struct {
 const maximumSessionDiscardBytes = 64 << 10
 
 type sessionConsole struct {
-	ctx        context.Context
-	cancel     context.CancelFunc
-	raw        syscall.RawConn
-	flags      uintptr
-	terminal   *syscall.Termios
-	mutex      sync.Mutex
-	request    *sessionLineRequest
-	discard    *sessionDiscardRequest
-	failure    error
-	stopped    bool
-	stop, done chan struct{}
-	stopOnce   sync.Once
+	ctx              context.Context
+	cancel           context.CancelFunc
+	raw              syscall.RawConn
+	flags            uintptr
+	terminal         *syscall.Termios
+	mutex            sync.Mutex
+	request          *sessionLineRequest
+	conditionRequest *sessionConditionRequest
+	conditionPaused  bool
+	discard          *sessionDiscardRequest
+	failure          error
+	stopped          bool
+	stop, done       chan struct{}
+	stopOnce         sync.Once
 }
 
 func prepareSessionConsole(ctx context.Context, input io.Reader) (context.Context, io.Reader, func() error, error) {
@@ -117,10 +119,11 @@ func (console *sessionConsole) ReadFindingLine(ctx context.Context, limit int) (
 	}
 	request := &sessionLineRequest{ctx: ctx, limit: limit, result: make(chan sessionLineResult, 1)}
 	console.mutex.Lock()
-	if console.stopped || console.failure != nil || console.request != nil || console.discard != nil || console.ctx.Err() != nil {
+	if console.stopped || console.failure != nil || console.request != nil || console.conditionRequest != nil || console.discard != nil || console.ctx.Err() != nil {
 		console.mutex.Unlock()
 		return "", errSessionInput
 	}
+	console.conditionPaused = false
 	console.request = request
 	console.mutex.Unlock()
 	select {
@@ -155,11 +158,12 @@ func (console *sessionConsole) DiscardUnpromptedInput(ctx context.Context) error
 	}
 	request := &sessionDiscardRequest{ctx: ctx, result: make(chan error, 1)}
 	console.mutex.Lock()
-	if console.stopped || console.failure != nil || console.request != nil || console.discard != nil || console.ctx.Err() != nil {
+	if console.stopped || console.failure != nil || console.request != nil || console.conditionRequest != nil || console.discard != nil || console.ctx.Err() != nil {
 		failure := errors.Join(errSessionInput, console.failure)
 		console.mutex.Unlock()
 		return failure
 	}
+	console.conditionPaused = false
 	console.discard = request
 	console.mutex.Unlock()
 	select {
@@ -204,6 +208,24 @@ func (console *sessionConsole) listen() {
 		count := 0
 		var readErr error
 		console.mutex.Lock()
+		if console.conditionPaused {
+			console.mutex.Unlock()
+			timer := time.NewTimer(10 * time.Millisecond)
+			select {
+			case <-console.stop:
+			case <-console.ctx.Done():
+			case <-timer.C:
+			}
+			timer.Stop()
+			continue
+		}
+		if console.conditionRequest != nil {
+			if stop := inspectionConditionContextStop(console.conditionRequest.ctx); stop != nil {
+				console.respondCondition(stop, true)
+				console.mutex.Unlock()
+				continue
+			}
+		}
 		if console.discard != nil && console.discard.ctx.Err() != nil {
 			console.respondDiscard(console.discard.ctx.Err())
 		}
@@ -226,6 +248,11 @@ func (console *sessionConsole) listen() {
 					console.fail()
 					return
 				}
+			}
+			if console.conditionRequest != nil {
+				console.consumeCondition(data[0])
+				console.mutex.Unlock()
+				continue
 			}
 			request := console.request
 			if request != nil {
@@ -285,6 +312,11 @@ func (console *sessionConsole) restore() {
 		console.failure = errors.Join(console.failure, errSessionInputCleanup)
 	}
 	console.stopped = true
+	conditionErr := errors.Join(console.ctx.Err(), console.failure)
+	if conditionErr == nil {
+		conditionErr = errSessionInput
+	}
+	console.respondCondition(conditionErr, true)
 	console.respond(sessionLineResult{err: errors.Join(console.ctx.Err(), errSessionInput, console.failure)})
 	console.respondDiscard(errors.Join(console.ctx.Err(), errSessionInput, console.failure))
 }

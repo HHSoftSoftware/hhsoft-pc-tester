@@ -162,7 +162,7 @@ func TestTouchpadSessionLiteralHistoryAndWire(t *testing.T) {
 }
 
 func TestTouchpadSessionCurrentAndHistoricalSelectorsAndOwnedArrays(t *testing.T) {
-	if sessionevidence.Schema != "hhsoft.pc-tester.quick-session/v11" {
+	if sessionevidence.Schema != "hhsoft.pc-tester.quick-session/v14" {
 		t.Fatal("current quick schema changed")
 	}
 	quick, standard := sessionevidence.WorkerIDs(), sessionevidence.StandardWorkerIDs()
@@ -197,7 +197,7 @@ func TestTouchpadSessionCurrentAndHistoricalSelectorsAndOwnedArrays(t *testing.T
 		{"v8", "hhsoft.pc-tester.quick-session/v8", true, true, true, false},
 		{"v9", "hhsoft.pc-tester.quick-session/v9", true, false, true, true},
 		{"v10", "hhsoft.pc-tester.quick-session/v10", true, true, true, true},
-		{"future", "hhsoft.pc-tester.quick-session/v14", false, false, false, false},
+		{"future", "hhsoft.pc-tester.quick-session/v17", false, false, false, false},
 		{"case_alias", "HHSOFT.PC-TESTER.QUICK-SESSION/V10", false, false, false, false},
 		{"numeric_alias", "hhsoft.pc-tester.quick-session/v010", false, false, false, false},
 		{"empty", "", false, false, false, false},
@@ -216,7 +216,7 @@ func TestTouchpadSessionWireRejectsAmbiguity(t *testing.T) {
 	for _, c := range []struct{ name, old, replacement string }{
 		{"duplicate_schema", `"schema":"hhsoft.pc-tester.quick-session/v10"`, `"schema":"hhsoft.pc-tester.quick-session/v8","schema":"hhsoft.pc-tester.quick-session/v10"`},
 		{"aliased_schema_key", `"schema":`, `"Schema":`},
-		{"future_schema", "quick-session/v10", "quick-session/v14"},
+		{"future_schema", "quick-session/v10", "quick-session/v17"},
 		{"unknown_member", `"stop_reason":`, `"unknown":false,"stop_reason":`},
 		{"duplicate_worker_id", `"id":"input.touchpad.quick"`, `"id":"input.pointer.quick","id":"input.touchpad.quick"`},
 		{"null_workers", `"workers":[`, `"workers":null,"unused":[`},

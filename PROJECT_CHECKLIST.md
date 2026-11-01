@@ -370,8 +370,8 @@ the alpha still requires the separate documented release gates.
   session or installed CLI.
 - [ ] Qualify the full Linux suite, race checks, ARM runtime and the installed
   CLI for this addition; separately qualify physical memory and thermal behavior.
-- [x] Complete host validation of the implemented Extended memory route. Source
-  connects explicit selection, a frozen plan, the real coordinator/finalizer,
+- [x] Complete host validation of the implemented Extended memory route before
+  exterior definition 2. That source connects explicit selection, a frozen plan, the real coordinator/finalizer,
   v13 journals and strict signed report/view/comparison consumers. Its fifteen
   workers add memory stress after successful quick-memory checks; CPU stress
   stays Standard-only. Quick v11/fourteen workers and Standard v12/fifteen
@@ -389,9 +389,9 @@ the alpha still requires the separate documented release gates.
   skips. The run used the standalone baseline plus the three startup/fixture
   files; no product session or installed supervisor was executed. Ownership,
   archive and all six postchecks passed with cleanup confirmed.
-- [ ] Qualify the installed Extended startup supervisors, native and
-  full-duration session, installed CLI/images and physical memory/thermal
-  behavior. The development
+- [ ] Qualify the installed Extended startup supervisors, full-duration session,
+  installed CLI/images and physical memory/thermal behavior. Selected native
+  session fixtures are qualified below. The development
   catalog has sixteen implemented rows and six inactive families; complete
   profile coverage, the four images, physical-PC and ten-PC pilot, and release
   approval remain open.
@@ -704,14 +704,19 @@ the alpha still requires the separate documented release gates.
   host commands. The full Windows amd64 suite passed 11,689 cases with 18
   retained platform skips; the Windows 386 affected-family suite passed all
   290 names across 55 roots and 235 declared-parent intervals in five packages.
-  Vet and all seven postchecks passed. Native Linux execution, installed
-  commands/supervisors, ARM runtime and a full elapsed Extended session remain
-  open; physical and release gates remain separate.
+  Vet and all seven postchecks passed.
+- [x] Qualify the selected combined Extended memory and proc parser fixtures on
+  Linux amd64 and 386: 580 named outcomes across 110 roots, 470 declared-parent
+  intervals and ten package executions passed without failures or skips.
+  All nine ownership cases, 32 archive cases and six postchecks passed;
+  cleanup was confirmed. This covers the connected fixture paths, with
+  installed commands/supervisors, ARM runtime, the full Linux suite, race checks
+  and a full elapsed Extended session still open.
 - [ ] Bound remaining parser expansion, aggregate/peak allocation and parser
   CPU time; improve optional field-error visibility. Logical parser and
   acquisition budgets do not establish a whole-heap bound or kernel preemption.
   Legacy providers may allocate before returning, and cancellation cannot
-  interrupt a blocked call. Native Linux runtime, rebuilt-image, physical-device,
+  interrupt a blocked call. Broader Linux runtime, rebuilt-image, physical-device,
   pilot and release gates for this increment remain open.
 - [ ] Qualify storage readiness, replacement and cancellation in rebuilt images
   and on physical devices. Matching kernel numbers do not prove persistent
@@ -911,25 +916,47 @@ the alpha still requires the separate documented release gates.
   hot-plug behavior with appropriate fixtures.
 - [ ] Measure RTC/monotonic discontinuities and drift against a trusted reference
   over a sufficient observation period.
-- [x] Implement bounded operator-reported exterior-enclosure observation,
+- [x] Implement the historical v1 bounded operator-reported exterior-enclosure observation,
   without moving or opening the device. Finite D/N/I responses, incomplete
   input and retained defects reach planning, the session coordinator,
   finalization, signed verification, HTML/PDF views and linked comparison.
   That qualification used v7 sessions with twelve workers; the catalog has
   22 test rows.
-- [x] Validate the complete exterior-inspection source with the full host suite:
+- [x] Validate the complete historical v1 exterior-inspection source with the full host suite:
   5,942 test/subtest passes across 30 packages, 17 platform test skips and one
   skipped package. Formatting, vet, Linux amd64/386/arm64 application builds
   and all eight postchecks passed.
-- [x] Qualify the selected exterior-inspection and regression fixtures on native
+- [x] Qualify the selected historical v1 exterior-inspection and regression fixtures on native
   Linux amd64/386: 4,580 named passes across 16 suites and 836 root executions,
   with no failures or skips and confirmed cleanup. Each architecture passed
   2,290 names and 418 roots, including the selected Linux-only cases. See
   [validation details](docs/requirements-validation.md#bounded-exterior-inspection).
   The broader inspection, ten-PC pilot, four-image and release gates remain open.
 
-- [ ] Add operator physical-inspection findings for chassis, hinges, ports,
-  damage, cooling noise, and battery swelling.
+- [x] Implement four fixed operator-reported visual criteria for enclosure
+  integrity, hinge/mount condition, port exterior condition and surface finish.
+  Each distinguishes unobserved, no issue observed and issue present. Only the
+  hinge accepts explicit not-applicable when no hinge exists; hidden or
+  uninspected hinges remain unobserved. One owned four-answer batch shares a
+  45-second bound, with no free text or operator identity.
+- [x] Connect exterior definition 2 through the real command, current planning,
+  menu/coordinator, strict finalization and signed HTML/PDF/report consumers.
+  Quick v14, Standard v15 and Extended v16 retain fourteen/fifteen/fifteen
+  workers. Preserve historical v1 evidence and v11/v12/v13 journal authority.
+- [x] Validate the connected four-criterion source on the host: 11,891 full
+  Windows amd64 test/subtest passes with 18 retained platform skips, and 593
+  focused Windows 386 passes with no skips. Formatting, vet, 21 Linux
+  compile-only builds and all seven postchecks passed.
+- [x] Validate selected current inspection fixtures on Linux amd64/386:
+  1,296 passes across 12 streams, with no skips or failures, covering 162 root
+  executions and 1,134 declared parent intervals. Nine ownership cases,
+  32 archive cases, six postchecks and cleanup passed. One separate synthetic
+  standalone inspection CLI exercise passed. Installed CLI and physical
+  qualification remain open; the earlier v1 and 580-outcome native evidence
+  retain their historical scope.
+- [ ] Complete broader physical findings and validation for hinge movement,
+  functional ports, hidden damage, cooling noise and battery swelling. Visual
+  operator assertions do not establish automated hardware passes.
 - [ ] Add short versus long variants and capability-based applicability for all
   completed test families.
 

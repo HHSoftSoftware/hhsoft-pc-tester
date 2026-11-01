@@ -854,7 +854,7 @@ func TestTouchpadAppHistoricalAndCurrentSessionVersions(t *testing.T) {
 			}
 		})
 	}
-	if sessionevidence.Schema != "hhsoft.pc-tester.quick-session/v11" {
+	if sessionevidence.Schema != "hhsoft.pc-tester.quick-session/v14" {
 		t.Fatal("current quick schema changed")
 	}
 }
@@ -868,7 +868,7 @@ func TestTouchpadAppSessionRejectsForgedIntervalsAndSources(t *testing.T) {
 			v.Session.Schema = "hhsoft.pc-tester.quick-session/v7"
 		}},
 		{"future_session", func(p *InventoryPayload, v *sessionevidence.IntegrityEvidence) {
-			v.Session.Schema = "hhsoft.pc-tester.quick-session/v14"
+			v.Session.Schema = "hhsoft.pc-tester.quick-session/v17"
 		}},
 		{"short_interval", func(p *InventoryPayload, v *sessionevidence.IntegrityEvidence) {
 			v.Session.Workers[6].Timing.FinishedMilliseconds = 1009
@@ -927,7 +927,7 @@ func TestTouchpadAppSessionRejectsForgedIntervalsAndSources(t *testing.T) {
 				// The strict serializer rejects this fixture; edit only its wire schema
 				// so coverage and thermal validation still receive the malformed claim.
 				oldSchema := []byte(`"schema":"hhsoft.pc-tester.quick-session/v9"`)
-				newSchema := []byte(`"schema":"hhsoft.pc-tester.quick-session/v14"`)
+				newSchema := []byte(`"schema":"hhsoft.pc-tester.quick-session/v17"`)
 				if bytes.Count(originalEvidence, oldSchema) != 1 {
 					t.Fatal("future-session fixture must have exactly one current session schema")
 				}

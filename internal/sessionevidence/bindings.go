@@ -72,7 +72,11 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 			}
 		}
 		if HasInspectionClaim(binding.Evidence) || strings.EqualFold(binding.ID, "inspection.exterior.quick") {
-			if !SupportsInspection(j.Schema) || binding.ID != "inspection.exterior.quick" || binding.Version != 1 {
+			version := 1
+			if SupportsInspectionV2(j.Schema) {
+				version = 2
+			}
+			if !SupportsInspection(j.Schema) || binding.ID != "inspection.exterior.quick" || binding.Version != version {
 				return ErrInvalid
 			}
 		}
@@ -109,7 +113,7 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 				// Current Quick and Standard reports retain the full catalog,
 				// including memory stress's frozen non-scheduled disposition.
 				// This note grants no worker, source or observed stress authority.
-				if j.Schema != SchemaV11 && j.Schema != SchemaV12 {
+				if j.Schema != SchemaV11 && j.Schema != SchemaV12 && j.Schema != SchemaV14 && j.Schema != SchemaV15 {
 					return ErrInvalid
 				}
 				switch binding.PlannedStatus {
@@ -181,7 +185,11 @@ func ValidateBindings(j Journal, bindings []ResultBinding) error {
 			continue
 		}
 		if worker.ID == "inspection.exterior.quick" {
-			if validateInspectionBinding(worker, binding) != nil {
+			validate := validateInspectionBinding
+			if SupportsInspectionV2(j.Schema) {
+				validate = validateInspectionConditionBinding
+			}
+			if validate(worker, binding) != nil {
 				return ErrInvalid
 			}
 			continue

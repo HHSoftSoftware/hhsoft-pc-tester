@@ -77,7 +77,7 @@ func TestInspectionSessionAdapterConsumesBorrowedInputAfterDiscard(t *testing.T)
 				f.cancel = cancel
 			}
 			path := filepath.Join(t.TempDir(), "inspection.json")
-			worker := sessionWorker{ID: "inspection.exterior.quick", Architecture: "x86_64", OutputPath: path, Timeout: 45 * time.Second}
+			worker := sessionWorker{ID: "inspection.exterior.quick", Version: 1, Architecture: "x86_64", OutputPath: path, Timeout: 45 * time.Second}
 			code := runSessionWorker(ctx, worker, f, &output, &prompt)
 			if code != test.code || f.discards != 1 || f.reads != test.reads {
 				t.Fatalf("real dispatch failed: code=%d discard=%d read=%d", code, f.discards, f.reads)

@@ -143,9 +143,9 @@ The development standard profile now adds an explicit bounded CPU stress step.
 Select `session -profile standard` with a matching frozen standard plan. Automatic
 boot and an omitted session profile remain quick; the development console requires
 explicit `S` to choose standard. Standard defaults to a
-900-second session budget and uses fifteen workers in journal v12, with stress
+900-second session budget and uses fifteen workers in journal v15, with stress
 immediately after a passing CPU quick check. Current Quick uses fourteen workers
-in v11. The 22-row catalog has sixteen implemented rows and six inactive
+in v14. The 22-row catalog has sixteen implemented rows and six inactive
 families. The earlier CPU stress qualification below used Standard v8/thirteen
 and Quick v7/twelve.
 
@@ -222,17 +222,19 @@ qualification remain open. See
 interpretation and remaining limits.
 
 Development source connects an explicitly selected Extended memory session:
-v13 has fifteen workers, with `memory.stress` after a successful `memory.quick`.
-Quick v11/fourteen workers and Standard v12/fifteen workers keep their schedules;
+v16 has fifteen workers, with `memory.stress` after a successful `memory.quick`.
+Quick v14/fourteen workers and Standard v15/fifteen workers keep their schedules;
 CPU stress remains Standard-only. Extended has a 2,700-second work budget and a
 2,750-second startup-supervisor policy. The existing 1,800-second memory load
 and 1,860-second invocation watchdog remain fixed. Neither policy guarantees
 interruption of blocked kernel work or complete process cleanup.
 
 Extended owns its frozen plan, worker evidence and final safety gate before
-signing; reports, canonical views and comparisons validate the matching v13
+signing; reports, canonical views and comparisons validate the matching v16
 bindings. A standalone diagnostic cannot substitute for that owner. The
 22-row development catalog has sixteen implemented and six inactive rows.
+The following Extended results used the earlier v11/v12/v13 source, before
+exterior definition 2; they do not qualify current v14/v15/v16 inspection.
 Corrected Extended host validation passed 242 focused test/subtest cases on
 each of Windows amd64 and 386, and 11,641 cases in the full Windows suite,
 with 18 platform skips. Vet and Linux compile-only builds passed. Earlier
@@ -246,7 +248,7 @@ bootable images, the pilot and release approval remain separate gates.
 Development source now also monitors temperatures throughout the quick session,
 including excluded-test runs, cleanup and final inventory. The v4 increment
 introduced initial, periodic and final observations and required both session
-monitors to join before signing; current v11/v12/v13 journals retain those rules.
+monitors to join before signing; current v14/v15/v16 journals retain those rules.
 Heat stops work without erasing earlier failures; missing
 telemetry remains a coverage limitation. That thermal increment passed Windows
 tests, vet, cross-builds, native Linux amd64/386 suites, race checks and all 15 CLI
@@ -318,7 +320,7 @@ Development source also connects the bounded legacy single-contact touchpad
 check to planning, Quick selection, session execution, signed reports and
 HTML/PDF views. The derived `touchpad_candidate=true` inventory marker can make
 definition 2 applicable; candidacy is not proof that the device is supported.
-The worker follows pointer in Quick v11 and Standard v12. Direct capture does
+The worker follows pointer in Quick v14 and Standard v15. Direct capture does
 not run guided touchpad actions.
 
 Windows software qualification passed with Go 1.27.2, including all 583
@@ -341,22 +343,34 @@ rebuilt images, physical testing, the pilot and release checks remain open. See 
 [touchscreen guide](docs/touchscreen-quick.md) for the supported interface,
 development command and validation scope.
 
-The exterior-inspection check records an operator's finite observation of safely
-visible enclosure surfaces, without moving or opening the device. It does not
-verify physical condition or imply coverage of unseen surfaces. The v7 increment
-appended this check after the earlier eleven workers. Current v11/v12 sessions
-retain exterior inspection, and finalized reports contain 22 catalog results
-plus run integrity.
-Direct capture retains its
-seven-check subset and does not acquire this observation.
+The exterior-condition update records four separate operator observations:
+enclosure integrity, visible hinge and mount condition, visible port exterior
+condition, and visible surface finish. Each starts unobserved. Only a device
+without a hinge may receive an explicit hinge not-applicable answer; hidden or
+uninspected hinges remain unobserved. No free text or operator identity is
+collected. All four answers share one 45-second bound.
 
-The complete implementation passed the host suite, formatting, vet and three
-Linux application cross-builds. The selected native Linux amd64/386 fixture
-suites also passed, with no failures or skips and confirmed cleanup. See the
+This visual assertion is not an automated hardware pass or a port-function
+check. Any issue stays adverse, and any unobserved criterion prevents a pass.
+Definition 2 uses Quick v14, Standard v15 and Extended v16 journals, with the
+same fourteen/fifteen/fifteen workers and fresh schema-3 plans. Signed reports
+and canonical views require matching current observation authority. Direct
+capture retains its seven-check subset and does not acquire this observation.
+
+`inspect-exterior-condition` emits the four-criterion v2 diagnostic. The earlier
+`inspect-exterior` command and historical v1 reports retain their original
+single-enclosure interpretation. Earlier exterior qualification belongs to that
+v1 source. The corrected v2 source passed 11,891 full Windows amd64 cases with
+18 retained platform skips and 593 focused Windows 386 cases with no skips.
+Formatting, vet and 21 Linux compile-only builds passed. Subsequent selected
+Linux amd64/386 validation passed 1,296 inspection fixture outcomes across
+12 streams with no skips or failures, plus one separate synthetic standalone
+inspection CLI exercise. Installed CLI and physical qualification remain open.
+See the
 [operator instructions](docs/operator-guide.md#observe-the-visible-exterior)
 and [validation scope](docs/requirements-validation.md#bounded-exterior-inspection).
-Broader inspection, rebuilt images, physical testing and release approval remain
-separate gates.
+Broader inspection, installed-command and image qualification, physical testing
+and release approval remain separate gates.
 
 The Linux power-supply inventory implementation reports eleven finite fields
 with explicit value states. It enumerates every reported supply without assuming
@@ -407,7 +421,7 @@ Broader SPD, ECC, topology, speed and firmware/OS reconciliation remain open.
 The periodic-monitor milestone introduced read-only mount/network sampling
 and a v3 session journal, without changing the catalog or ten worker outcomes.
 The v4 increment retained that monitor summary and added thermal evidence;
-current Quick v11 and Standard v12 keep those same monitoring requirements.
+current Quick v14, Standard v15 and Extended v16 keep those same monitoring requirements.
 Its first unsafe or uncertain observation stops active work and blocks signing.
 This is bounded periodic coverage, not continuous safety monitoring or kernel
 preemption. Automated tests, native Linux suites, race checks, and signed CLI
@@ -429,9 +443,10 @@ readiness result.
 Offline report reading additionally supports the finite storage sampling evidence
 and explicit v6 session format through verification, HTML/PDF views and
 comparison. This checks signed assertions and separates accepted work from
-diagnostics; it does not perform media reads. Current Quick sessions use v11
-with fourteen workers; explicit Standard uses v12 with fifteen. Historical
-v4-v10 reports retain their version-specific read rules, without authorizing
+diagnostics; it does not perform media reads. Current Quick sessions use v14
+with fourteen workers; explicit Standard uses v15 with fifteen, and Extended
+uses v16 with fifteen. Historical v4-v13 reports retain their version-specific
+read rules, without authorizing
 stale plans for current execution. The sampling catalog entry remains inactive.
 See [report integrity](docs/report-integrity.md) for the evidence and cleanup
 limits.

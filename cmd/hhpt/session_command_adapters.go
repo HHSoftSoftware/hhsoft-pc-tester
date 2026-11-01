@@ -47,7 +47,15 @@ func runSessionWorker(ctx context.Context, worker sessionWorker, input io.Reader
 	case "graphics.quick":
 		return runGraphics(ctx, append(arguments, "-pattern-frames", "120", "-timeout", worker.Timeout.String()), stdout, stderr)
 	case "inspection.exterior.quick":
-		return runInspectionOwned(ctx, append(arguments, "-timeout", worker.Timeout.String()), input, stdout, stderr)
+		switch worker.Version {
+		case 1:
+			return runInspectionOwned(ctx, append(arguments, "-timeout", worker.Timeout.String()), input, stdout, stderr)
+		case 2:
+			return runInspectionConditionOwned(ctx, append(arguments, "-timeout", worker.Timeout.String()), input, stdout, stderr)
+		default:
+			fmt.Fprintln(stderr, "session refuses an unknown inspection definition")
+			return 2
+		}
 	case "display.operator.quick":
 		return runDisplay(ctx, append(arguments, "-pattern-duration", "5s", "-finding-timeout", "15s", "-timeout", worker.Timeout.String()), input, stdout, stderr)
 	default:

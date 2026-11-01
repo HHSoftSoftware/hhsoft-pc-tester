@@ -21,7 +21,7 @@ func TestInspectionWholeDevicePlanNeedsNoInventedHardware(t *testing.T) {
 				test := findPlanTest(t, &value, "inspection.exterior.quick")
 				if value.SchemaVersion != 3 || capability.Status != CapabilityPresent ||
 					capability.Applicability != "whole_device_operator" || len(capability.ComponentIDs) != 0 ||
-					test.Version != 1 || test.Capability != "operator.exterior" || test.Applicability != "whole_device_operator" ||
+					test.Version != 2 || test.Capability != "operator.exterior" || test.Applicability != "whole_device_operator" ||
 					test.Status != TestScheduled || test.Destructive || len(test.ComponentIDs) != 0 ||
 					test.EstimatedSeconds != 20 || test.TimeoutSeconds != 45 || len(value.HardwareGraph.Components) != 0 {
 					t.Fatal("manual capability fabricated hardware or changed its finite scope")
@@ -71,7 +71,7 @@ func TestInspectionPlanScopeCannotBeForgedByRehashing(t *testing.T) {
 			findPlanTest(t, p, "inspection.exterior.quick").Applicability = "component"
 		}},
 		{"test_capability", func(t *testing.T, p *Plan) { findPlanTest(t, p, "inspection.exterior.quick").Capability = "cpu" }},
-		{"test_version", func(t *testing.T, p *Plan) { findPlanTest(t, p, "inspection.exterior.quick").Version = 2 }},
+		{"test_version", func(t *testing.T, p *Plan) { findPlanTest(t, p, "inspection.exterior.quick").Version = 1 }},
 		{"test_unsupported", func(t *testing.T, p *Plan) { findPlanTest(t, p, "inspection.exterior.quick").Status = TestUnsupported }},
 		{"test_destructive", func(t *testing.T, p *Plan) { findPlanTest(t, p, "inspection.exterior.quick").Destructive = true }},
 		{"test_estimate", func(t *testing.T, p *Plan) { findPlanTest(t, p, "inspection.exterior.quick").EstimatedSeconds = 1 }},
@@ -133,7 +133,7 @@ func TestInspectionCatalogExceptionIsExact(t *testing.T) {
 			case "wrong_capability":
 				test.Capability = "cpu"
 			case "wrong_version":
-				test.Version = 2
+				test.Version = 1
 			case "unimplemented":
 				test.Implemented = false
 			case "destructive":

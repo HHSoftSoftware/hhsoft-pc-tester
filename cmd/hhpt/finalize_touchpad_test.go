@@ -472,13 +472,14 @@ func TestTouchpadCurrentCatalogRequiresDecodedExecutionPlan(t *testing.T) {
 		t.Run(string(profile), func(t *testing.T) {
 			current, _, _ := commandRouteCurrentPlan(t, profile)
 			layout, err := commandLayoutForPlan(current, profile)
-			wantSchema, wantWorkers := "hhsoft.pc-tester.quick-session/v11", touchscreenRouteTouchscreenQuickWorkers
+			wantSchema, wantWorkers := "hhsoft.pc-tester.quick-session/v14", touchscreenRouteTouchscreenQuickWorkers
 			if profile == plan.ProfileStandard {
-				wantSchema, wantWorkers = "hhsoft.pc-tester.quick-session/v12", touchscreenRouteTouchscreenStandardWorkers
+				wantSchema, wantWorkers = "hhsoft.pc-tester.quick-session/v15", touchscreenRouteTouchscreenStandardWorkers
 			}
 			if err != nil || !layout.touchpad || layout.schema != wantSchema || !reflect.DeepEqual(layout.workerIDs, strings.Fields(wantWorkers)) {
 				t.Fatal("decoded current plan selected the wrong execution layout")
 			}
+			commandRouteHistoricalInspection(t, &current)
 			commandRouteChangeTest(&current, func(row *plan.Test) { row.Version = 1; row.Status = plan.TestUnsupported })
 			touchscreenRouteChangeTest(&current, func(row *plan.Test) { row.Version = 1; row.Status = plan.TestUnsupported })
 			if _, err := plan.Decode(commandRouteEncode(t, current)); err == nil {

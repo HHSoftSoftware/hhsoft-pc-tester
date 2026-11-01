@@ -65,6 +65,13 @@ func testEvidenceStatus(encoded []byte, expectedSchema string) (string, error) {
 		}
 		return string(value.Status), nil
 	}
+	if expectedSchema == exteriorinspection.SchemaV2 {
+		value, err := exteriorinspection.DecodeV2(encoded)
+		if err != nil {
+			return "", err
+		}
+		return value.Status, nil
+	}
 	if expectedSchema == exteriorinspection.Schema {
 		value, err := exteriorinspection.Decode(encoded)
 		if err != nil {
@@ -155,12 +162,19 @@ func testEvidenceStatus(encoded []byte, expectedSchema string) (string, error) {
 }
 
 func newValidatedQuickTestResult(id string, version int, status app.TestStatus, evidence any) (app.TestResult, error) {
-	if (id == "cpu.quick" || id == "memory.quick") && version != 2 || id == exteriorinspection.TestID && version != 1 {
+	if (id == "cpu.quick" || id == "memory.quick") && version != 2 || id == exteriorinspection.TestID && version != 1 && version != 2 {
 		return app.TestResult{}, errUnsupportedEvidence
 	}
 	encoded, err := json.Marshal(evidence)
 	if err != nil {
 		return app.TestResult{}, err
+	}
+	if id == exteriorinspection.TestID && version == 2 {
+		source, err := testEvidenceStatus(encoded, exteriorinspection.SchemaV2)
+		if err != nil || source != string(status) {
+			return app.TestResult{}, exteriorinspection.ErrEvidence
+		}
+		return app.NewEncodedTestResult(id, version, status, encoded)
 	}
 	for _, definition := range quickResultDefinitions {
 		if definition.id != id {

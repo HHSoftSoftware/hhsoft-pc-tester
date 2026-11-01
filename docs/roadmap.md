@@ -296,16 +296,19 @@ A subsequent three-command check of the combined Extended memory and
 inventory source passed the full Windows amd64 suite with 11,689 passes
 and 18 retained platform skips, all 290 selected Windows 386 names across
 55 roots and 235 declared-parent intervals in five packages, and vet.
-All seven postchecks passed. Native Linux execution of this combined source,
-installed command/supervisor behavior, ARM runtime and a full elapsed
-Extended session remain separate gates.
+All seven postchecks passed. The same combined source then passed 580 selected
+Linux amd64/386 outcomes across ten package executions, including all 110 roots
+and 470 declared-parent intervals, with no failures or skips. Nine ownership
+cases, 32 archive cases, six postchecks and cleanup passed. Installed
+command/supervisor behavior, the full Linux suite, race checks, ARM runtime
+and a full elapsed Extended session remain separate gates.
 
 Remaining parser expansion, aggregate/peak allocation, CPU time budgets and
 optional field-error visibility remain open. These logical limits exclude
 allocator overhead, raw source storage, later downstream copies and provider
 allocations; they do not establish a whole-heap bound or kernel preemption.
 Cancellation cannot interrupt a blocked source call. This inventory increment
-does not activate catalog entries. Native Linux runtime, rebuilt images,
+does not activate catalog entries. Broader Linux runtime, rebuilt images,
 physical devices, sampled-media reads, the physical pilot and release approval
 remain separate gates.
 
@@ -562,12 +565,13 @@ Activity alone cannot pass. Multi-touch, stylus, pressure, calibration and
 whole-panel coverage are outside this check; touchpad behavior is unchanged.
 
 The connected implementation makes touchscreen definition 2 applicable
-through the derived candidate marker. It places the worker once after touchpad
-in Quick v11/fourteen workers and Standard v12/fifteen. Its 22-row catalog has
-fifteen implemented rows and seven inactive rows; modern Quick selection has
-fourteen choices and legacy x86 has twelve. Current execution still requires a
-fresh schema-3 plan matching the catalog. Historical v4-v10 journals retain
-their own decoding rules without authorizing stale-plan execution.
+through the derived candidate marker. The initial activation used Quick
+v11/fourteen workers, Standard v12/fifteen and fifteen implemented/seven inactive
+catalog rows. Current Quick v14 and Standard v15 retain that worker position;
+the catalog now has sixteen implemented/six inactive rows. Modern Quick
+selection has fourteen choices and legacy x86 has twelve. Current execution
+requires a fresh schema-3 plan. Historical v4-v13 journals keep their own
+decoding rules without authorizing stale-plan execution.
 
 Earlier producer/discovery qualification passed 2,250 test/subtest outcomes
 with one existing platform skip on each focused Windows architecture, plus
@@ -637,7 +641,7 @@ execution and physical-memory/thermal qualification remain open. The earlier
 RAM quick qualification above retains its original scope.
 
 Development source now connects an explicitly selected Extended memory profile.
-Its v13 journal has fifteen workers, adding memory stress after successful
+Its current v16 journal has fifteen workers, adding memory stress after successful
 quick-memory checks while CPU stress stays Standard-only. The 2,700-second work
 budget and 2,750-second outer supervisor policy preserve the producer's fixed
 1,800-second load and 1,860-second watchdog; they are not a wall-clock or
@@ -645,13 +649,16 @@ complete-cleanup guarantee. The real finalizer binds original evidence bytes,
 typed evidence, the frozen plan and journal before signing. Strict consumers,
 canonical views and comparisons retain those checks.
 
-Corrected Extended host validation passed 242 focused test/subtest cases
+The following Extended and combined qualifications used the earlier
+v11/v12/v13 source, before exterior definition 2. They do not qualify current
+v14/v15/v16 inspection. Corrected Extended host validation passed 242 focused test/subtest cases
 on each of Windows amd64 and 386. The full Windows suite passed 11,641
 cases with 18 platform skips; formatting, vet and fifteen Linux compile-only
 builds passed. Earlier standalone host and native fixtures keep their original
-scope. Native and full-duration Extended execution remain separate gates.
-Quick v11/fourteen workers and Standard v12/fifteen workers with a 900-second
-budget are unchanged.
+scope. The later combined source also passed the selected Linux amd64/386
+session fixtures recorded above; a full elapsed Extended session remains open.
+Current Quick v14/fourteen workers and Standard v15/fifteen workers retain the
+same schedules; Standard keeps its 900-second budget.
 The development catalog has sixteen implemented rows and six inactive families:
 `audio.quick`, `camera.quick`, `network.quick`, `storage.quick`,
 `storage.destructive` and `usb.quick`.
@@ -662,7 +669,7 @@ These checks used the standalone baseline plus three startup/fixture files;
 they did not execute installed supervisors or a product session. Ownership,
 archive and six postchecks passed with cleanup confirmed.
 
-Installed startup and native/full-duration Extended integration, broader
+Installed startup and full-duration Extended integration, broader
 working sets, SPD/ECC, Memtest86+, ARM runtime, all four rebuilt images, physical
 systems, complete profiles, the ten-PC pilot and release approval remain open.
 See the
@@ -881,7 +888,7 @@ Exit: `0.2.0-beta.1` gives useful resale acceptance results in under 15 minutes.
 
 ### Bounded exterior-enclosure observation
 
-The finite operator-reported check is implemented through planning, the quick
+The historical v1 finite operator-reported check is implemented through planning, the quick
 coordinator, signed finalization, no-view verification, HTML/PDF rendering and
 linked comparison. It covers safely visible enclosure surfaces without moving
 or opening the device. N records no listed defect observed on inspected
@@ -898,10 +905,26 @@ across 16 suites and 836 root executions, with no failures or skips and confirme
 cleanup. Each architecture passed 2,290 names and 418 roots; see
 [the exact scope](requirements-validation.md#bounded-exterior-inspection).
 
-This bounded row does not complete the broader chassis, hinges, functional
-ports, cooling-noise or battery-swelling work. The ten-PC pilot, all four
-bootable images, installed-command qualification and release approval remain
-open. It adds no prerequisite to the already defined alpha gates.
+The current definition-2 increment separates enclosure integrity, visible
+hinge/mount condition, port exterior condition and surface finish. All start
+unobserved; only an explicit no-hinge answer permits hinge not-applicable.
+No free text or identity is collected. One prompt and one owned four-answer
+batch share the existing 45-second bound, preserving earlier adverse findings.
+The real command, catalog/plan, coordinator, signed finalizer, no-view readers,
+HTML/PDF views and comparisons use Quick v14, Standard v15 and Extended v16
+authority, with historical v1 and v11/v12/v13 interpretation preserved.
+
+Current host qualification passed 11,891 full Windows amd64 cases with 18
+retained platform skips and 593 focused Windows 386 cases with no skips.
+Formatting, vet and 21 Linux compile-only builds passed. Subsequent selected Linux amd64/386 validation passed 1,296 inspection
+fixture outcomes across 12 streams with no skips or failures, plus one
+separate synthetic standalone CLI exercise. Installed CLI and physical
+qualification remain open. The earlier v1 qualification and the combined
+714-source/698-Go native cohort of 580 outcomes retain their historical scope;
+neither qualifies current native inspection. Hinge movement,
+functional ports, hidden damage, cooling noise and battery swelling remain
+broader work. The ten-PC pilot, all four bootable images, installed-command
+qualification and release approval remain open. No alpha gate is removed.
 
 ### Finite power-supply inventory
 

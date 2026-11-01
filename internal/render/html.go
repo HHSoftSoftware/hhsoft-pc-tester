@@ -149,9 +149,11 @@ table{background:var(--panel);border-collapse:collapse;border:1px solid var(--li
 <h2 id="exterior-inspection-heading">Operator-reported exterior inspection</h2>
 <p>{{.Inspection.Scope}}</p>
 <table><tbody>
-<tr><th class="label" scope="row">Finding</th><td>{{.Inspection.Finding}}</td></tr>
+{{if .Inspection.Criteria}}{{range .Inspection.Criteria}}<tr><th class="label" scope="row">{{.Name}}</th><td>{{.Finding}}</td></tr>{{end}}
+<tr><th class="label" scope="row">Responses completed</th><td>{{.Inspection.ResponsesCompleted}} / 4</td></tr>
+{{else}}<tr><th class="label" scope="row">Finding</th><td>{{.Inspection.Finding}}</td></tr>{{end}}
 <tr><th class="label" scope="row">Status</th><td>{{.Inspection.Status}}</td></tr>
-<tr><th class="label" scope="row">Response complete</th><td>{{.Inspection.ResponseComplete}}</td></tr>
+{{if not .Inspection.Criteria}}<tr><th class="label" scope="row">Response complete</th><td>{{.Inspection.ResponseComplete}}</td></tr>{{end}}
 <tr><th class="label" scope="row">Stop reason</th><td>{{.Inspection.StopReason}}</td></tr>
 <tr><th class="label" scope="row">Bounded observation time (ms)</th><td>{{.Inspection.ObservationMilliseconds}}</td></tr>
 </tbody></table>

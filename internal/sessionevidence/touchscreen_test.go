@@ -88,18 +88,25 @@ func TestTouchscreenSessionVersionedSelectorsAndHistoricalPredicates(t *testing.
 	if sessionevidence.WorkerIDsV11()[0] != "cpu.quick" || sessionevidence.WorkerIDsV12()[0] != "cpu.quick" {
 		t.Fatal("selector storage alias")
 	}
-	for _, version := range []string{"v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "v12", "v13", "v14", "v011", "V11"} {
+	for _, version := range []string{"v4", "v5", "v6", "v7", "v8", "v9", "v10", "v11", "v12", "v13", "v14", "v15", "v16", "v17", "v011", "V11"} {
 		t.Run(version, func(t *testing.T) {
 			schema := "hhsoft.pc-tester.quick-session/" + version
 			strict := version == "v4" || version == "v5" || version == "v6" || version == "v7" || version == "v8" ||
-				version == "v9" || version == "v10" || version == "v11" || version == "v12" || version == "v13"
-			standard := version == "v8" || version == "v10" || version == "v12"
-			inspection := version == "v7" || version == "v8" || version == "v9" || version == "v10" || version == "v11" || version == "v12" || version == "v13"
-			touchpad := version == "v9" || version == "v10" || version == "v11" || version == "v12" || version == "v13"
-			touchscreen := version == "v11" || version == "v12" || version == "v13"
+				version == "v9" || version == "v10" || version == "v11" || version == "v12" || version == "v13" ||
+				version == "v14" || version == "v15" || version == "v16"
+			standard := version == "v8" || version == "v10" || version == "v12" || version == "v15"
+			inspection := version == "v7" || version == "v8" || version == "v9" || version == "v10" || version == "v11" || version == "v12" || version == "v13" ||
+				version == "v14" || version == "v15" || version == "v16"
+			touchpad := version == "v9" || version == "v10" || version == "v11" || version == "v12" || version == "v13" ||
+				version == "v14" || version == "v15" || version == "v16"
+			touchscreen := version == "v11" || version == "v12" || version == "v13" ||
+				version == "v14" || version == "v15" || version == "v16"
+			extended := version == "v13" || version == "v16"
+			inspectionV2 := version == "v14" || version == "v15" || version == "v16"
 			if sessionevidence.IsStrictSchema(schema) != strict || sessionevidence.IsStandardSchema(schema) != standard ||
 				sessionevidence.SupportsInspection(schema) != inspection || sessionevidence.SupportsTouchpad(schema) != touchpad ||
-				sessionevidence.SupportsTouchscreen(schema) != touchscreen {
+				sessionevidence.SupportsTouchscreen(schema) != touchscreen || sessionevidence.IsExtendedSchema(schema) != extended ||
+				sessionevidence.SupportsInspectionV2(schema) != inspectionV2 {
 				t.Fatal("version predicates drift")
 			}
 		})
@@ -164,7 +171,7 @@ func TestTouchscreenSessionHistoricalWireRemainsLiteral(t *testing.T) {
 func TestTouchscreenSessionWireRejectsAliasesAndWrongLayouts(t *testing.T) {
 	raw := touchscreenSessionLiteral(t, "v12")
 	for _, row := range []struct{ name, old, replacement string }{
-		{"future", "quick-session/v12", "quick-session/v14"},
+		{"future", "quick-session/v12", "quick-session/v17"},
 		{"schema_alias", `"schema":`, `"Schema":`},
 		{"duplicate_schema", `"schema":`, `"schema":"ignored","schema":`},
 		{"unknown", `"plan_id":`, `"raw_coordinate":1,"plan_id":`},

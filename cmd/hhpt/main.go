@@ -50,6 +50,8 @@ func run(ctx context.Context, arguments []string, stdin io.Reader, stdout, stder
 		return runInput(ctx, arguments[1:], stdout, stderr)
 	case "inspect-exterior":
 		return runInspection(ctx, arguments[1:], stdin, stdout, stderr)
+	case "inspect-exterior-condition":
+		return runInspectionCondition(ctx, arguments[1:], stdin, stdout, stderr)
 	case "inventory":
 		return runInventory(ctx, arguments[1:], stdout, stderr)
 	case "keyboard":
@@ -188,6 +190,8 @@ func usage(destination io.Writer) {
 	fmt.Fprintln(destination, "       hhpt memory [-bytes N] [-passes 2] [-timeout 30s] [-thermal-limit-c 90] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt input [-duration 0] [-categories LIST] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt inspect-exterior [-timeout 45s] [-output FILE]")
+	fmt.Fprintln(destination, "       hhpt inspect-exterior-condition [-timeout 45s] [-output FILE]")
+	fmt.Fprintln(destination, "       inspect-exterior-condition: four D/N/I answers; A only for a device without a hinge.")
 	fmt.Fprintln(destination, "       hhpt keyboard [-duration 30s] [-timeout 90s] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt pointer [-duration 30s] [-timeout 90s] [-output FILE]")
 	fmt.Fprintln(destination, "       hhpt touchpad [-duration 30s] [-timeout 90s] [-output FILE]")

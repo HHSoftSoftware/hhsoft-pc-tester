@@ -85,10 +85,10 @@ func validateSessionJournal(journal sessionJournal, frozen plan.Plan, outcomes m
 
 func currentSessionProfile(journal sessionJournal, profile plan.Profile) bool {
 	if profile == plan.ProfileStandard {
-		return journal.Schema == sessionevidence.SchemaV12 && journal.Profile == "standard" && journal.MemoryStressSource == nil
+		return journal.Schema == sessionevidence.SchemaV15 && journal.Profile == "standard" && journal.MemoryStressSource == nil
 	}
 	if profile == plan.ProfileExtended {
-		return journal.Schema == sessionevidence.SchemaV13 && journal.Profile == "extended" && journal.CPUStressSource == nil
+		return journal.Schema == sessionevidence.SchemaV16 && journal.Profile == "extended" && journal.CPUStressSource == nil
 	}
 	return (profile == "" || profile == plan.ProfileQuick) && journal.Schema == sessionJournalSchema && journal.Profile == "" && journal.CPUStressSource == nil && journal.MemoryStressSource == nil
 }

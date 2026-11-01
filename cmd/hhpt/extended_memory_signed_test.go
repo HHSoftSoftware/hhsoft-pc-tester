@@ -252,7 +252,7 @@ func TestExtendedMemorySignedConsumersRejectIndependentForgeries(t *testing.T) {
 					if app.ValidateCoverage(payload) != nil {
 						t.Fatal("canonical positive lost admission")
 					}
-					oldHeader := []byte(`"schema":"hhsoft.pc-tester.quick-session/v13"`)
+					oldHeader := []byte(`"schema":"hhsoft.pc-tester.quick-session/v16"`)
 					newHeader := []byte(`"schema":"hhsoft.pc-tester.quick-session/v12"`)
 					if mode == "journal_schema" {
 						value.Session.Schema = "hhsoft.pc-tester.quick-session/v12"
@@ -455,10 +455,10 @@ func TestExtendedMemoryQuickAndStandardKeepLiteralSessionAuthority(t *testing.T)
 		t.Run(profile, func(t *testing.T) {
 			h := newSessionHarness(t, "x86_64", nil)
 			useRealSessionFinalizer(t, h, nil, nil)
-			wantSchema, wantCount, wantBudget := "hhsoft.pc-tester.quick-session/v11", 14, int64(300000)
+			wantSchema, wantCount, wantBudget := "hhsoft.pc-tester.quick-session/v14", 14, int64(300000)
 			if profile == "standard" {
 				h = newStandardHarness(t, commandStressNoLoad())
-				wantSchema, wantCount, wantBudget = "hhsoft.pc-tester.quick-session/v12", 15, 900000
+				wantSchema, wantCount, wantBudget = "hhsoft.pc-tester.quick-session/v15", 15, 900000
 			}
 			artifact := verifyExtendedMemoryHarness(t, h)
 			payload := stressSignedPayload(t, artifact)

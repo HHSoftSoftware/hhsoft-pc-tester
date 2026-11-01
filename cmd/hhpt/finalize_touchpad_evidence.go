@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/app"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/exteriorinspection"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inputtest"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/plan"
@@ -27,6 +28,7 @@ type commandExecutionLayout struct {
 	touchpad     bool
 	touchscreen  bool
 	memoryStress bool
+	inspectionV2 bool
 }
 
 // Call only after the owner has checked the frozen plan. This finite selector
@@ -55,6 +57,20 @@ func commandLayoutForPlan(frozen plan.Plan, profile plan.Profile) (commandExecut
 			return commandExecutionLayout{}, touchpadevidence.ErrInvalid
 		}
 		seen[test.ID] = true
+		if test.ID == exteriorinspection.TestID {
+			if test.Version == 1 {
+				continue
+			}
+			if test.Version != 2 || frozen.Profile != profile || !frozen.Frozen ||
+				frozen.SchemaVersion != plan.SchemaVersion || frozen.ID == "" ||
+				test.Capability != "operator.exterior" || test.Applicability != plan.WholeDeviceOperator ||
+				len(test.ComponentIDs) != 0 || test.Destructive || test.EstimatedSeconds != 20 || test.TimeoutSeconds != 45 ||
+				(test.Status != plan.TestScheduled && test.Status != plan.TestExcluded) {
+				return commandExecutionLayout{}, exteriorinspection.ErrEvidence
+			}
+			layout.inspectionV2 = true
+			continue
+		}
 		if test.ID == "memory.stress" {
 			if profile != plan.ProfileExtended {
 				if test.Status == plan.TestScheduled {
@@ -154,6 +170,28 @@ func commandLayoutForPlan(frozen plan.Plan, profile plan.Profile) (commandExecut
 		extended := sessionevidence.WorkerIDsV13()
 		layout.workerIDs = append([]string(nil), extended[:]...)
 		layout.schema = sessionevidence.SchemaV13
+	}
+	if layout.inspectionV2 {
+		if !layout.touchpad || !layout.touchscreen {
+			return commandExecutionLayout{}, exteriorinspection.ErrEvidence
+		}
+		var err error
+		layout.definitions, err = definitionsWithInspectionCondition(layout.definitions)
+		if err != nil {
+			return commandExecutionLayout{}, err
+		}
+		quick := sessionevidence.WorkerIDsV14()
+		layout.workerIDs = append([]string(nil), quick[:]...)
+		layout.schema = sessionevidence.SchemaV14
+		if profile == plan.ProfileStandard {
+			standard := sessionevidence.WorkerIDsV15()
+			layout.workerIDs = append([]string(nil), standard[:]...)
+			layout.schema = sessionevidence.SchemaV15
+		} else if profile == plan.ProfileExtended {
+			extended := sessionevidence.WorkerIDsV16()
+			layout.workerIDs = append([]string(nil), extended[:]...)
+			layout.schema = sessionevidence.SchemaV16
+		}
 	}
 	return layout, nil
 }
@@ -427,4 +465,24 @@ func writeTouchpadFinalOutput(ctx context.Context, path string, stdout io.Writer
 		failure = errors.Join(failure, errTouchpadFinalizationInterrupted)
 	}
 	return failure
+}
+
+// Replace only the historical inspection member in an owned definition list.
+func definitionsWithInspectionCondition(before []quickResultDefinition) ([]quickResultDefinition, error) {
+	result := append([]quickResultDefinition(nil), before...)
+	found := 0
+	for index, definition := range result {
+		if definition.id != exteriorinspection.TestID {
+			continue
+		}
+		found++
+		if definition.filename != "exterior-inspection.json" || definition.schema != exteriorinspection.Schema {
+			return nil, exteriorinspection.ErrEvidence
+		}
+		result[index] = quickResultDefinition{id: exteriorinspection.TestID, filename: "exterior-condition.json", schema: exteriorinspection.SchemaV2}
+	}
+	if found != 1 {
+		return nil, exteriorinspection.ErrEvidence
+	}
+	return result, nil
 }

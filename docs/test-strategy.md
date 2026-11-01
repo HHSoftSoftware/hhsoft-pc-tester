@@ -1805,6 +1805,45 @@ installed-image behavior and physical media remain outside this increment.
 
 ## Bounded Exterior Inspection Validation
 
+### Current four-criterion regression requirements
+
+Current source tests require all four named criteria and their exact finite
+states, including hinge-only explicit not-applicable. Independent valid
+prerequisites precede missing/unknown members, duplicated and escaped keys,
+wrong versions, forged completion/status and timing mutations. Earlier v1
+producer and consumer meanings remain covered by literal historical fixtures.
+
+The real command and Linux owner cases cover four buffered answers, all-four
+CRLF input, cancellation at CR-before-LF and between lines, complete-prefix
+retention, coincident delimiter faults, overlong input, extra response arrays
+and owner join. The owner pauses after the batch; future bytes remain for an
+explicit next request. A single prompt error cannot invent earlier observations.
+All answers share the original deadline; raw input is not copied into diagnostics.
+
+Quick v14, Standard v15 and Extended v16 positives use actual coordinator and
+finalizer seams. Signed no-view and canonical HTML/PDF cases reject stripped
+references, mixed history/current authority, wrong worker/interval bindings
+and resigned malformed evidence. Exact error/aborted nonexecution notes retain
+their limited compatibility without supplying observations; a present wrong
+journal or malformed evidence still fails. Source-derived plan goldens change
+only the inspection version, catalog digest and plan ID, preserving inventory
+goldens, worker counts and sequence.
+
+The corrected connected source passed full Windows amd64 validation with
+11,891 passes and 18 retained platform skips, and 593 focused Windows 386
+checks with no skips. All five formerly failing test families were included
+in that focus; the earlier failed full run remains unqualified. Formatting,
+vet, 21 Linux compile-only builds and seven postchecks passed. Selected current inspection v2 broker/owner fixtures subsequently passed
+on Linux amd64/386: 1,296 outcomes across 12 streams, 162 root executions and
+1,134 declared parent intervals, with no failures or skips. Nine ownership
+cases, 32 archive cases, six postchecks and cleanup passed, as did one
+separate synthetic standalone CLI exercise. Installed CLI and physical
+qualification remain open. The earlier
+v1 evidence below and the 580-outcome selected native cohort on the preceding
+714-source/698-Go v11/v12/v13 source do not qualify current native inspection.
+
+### Historical v1 fixture qualification
+
 Core tests enumerate all 16 admitted finite evidence tuples and independent
 reducer cases. They reject ambiguous shape, invalid scalar types, out-of-range
 observation time and inconsistent completion/finding/status. Command tests
@@ -2400,3 +2439,24 @@ unknown members, and targets that change identity. Loss of the report/evidence
 destination pauses writes. Cancellation states whether data changed and never
 claims rollback. These are enforceable strategy requirements, not optional UI
 warnings.
+
+## Combined Extended memory and proc parser validation
+
+Validate the connected Extended coordinator, frozen plan, finalizer and signed
+consumers together with the shared proc parser budgets. Require exact declared
+test names and source-declared parent intervals for each package and
+architecture; names separated by slashes are not sufficient proof of parent
+execution. Reject missing, extra, duplicate, skipped or failed selected outcomes,
+unclosed lifecycle events and unexpected pause/continue events.
+
+The selected combined source passed 580 named outcomes across ten Linux amd64
+and 386 package executions: 110 roots and 470 declared-parent intervals.
+Command, app, inventory, plan and session-evidence fixtures all passed.
+Nine ownership cases, 32 archive cases and six final checks passed, with cleanup
+confirmed. These results cover the connected fixture paths and injected failure
+cases; controlled inputs do not establish elapsed load or installed behavior.
+
+Keep full elapsed Extended-session, installed command/supervisor, full Linux
+suite, race, ARM runtime, rebuilt-image and physical-PC qualification separate.
+See the [Extended contract](requirements-validation.md#bounded-extended-memory-session)
+and [operator scope](memory-stress.md).

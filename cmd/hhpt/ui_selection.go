@@ -225,7 +225,7 @@ func quickTestLabel(id string) string {
 		"audio.readiness.quick":     "Audio device readiness",
 		"cpu.quick":                 "CPU computation",
 		"display.operator.quick":    "Display inspection",
-		"inspection.exterior.quick": "Visible exterior enclosure observation",
+		"inspection.exterior.quick": "Visible exterior condition (operator reported)",
 		"graphics.quick":            "Graphics pattern",
 		"input.readiness.quick":     "Input device readiness",
 		"input.keyboard.quick":      "Keyboard shifts and arrow keys",

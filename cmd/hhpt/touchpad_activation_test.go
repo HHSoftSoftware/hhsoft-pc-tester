@@ -106,10 +106,10 @@ func TestTouchpadActivatedSessionSignsCurrentProfile(t *testing.T) {
 	for _, profile := range []plan.Profile{plan.ProfileQuick, plan.ProfileStandard} {
 		t.Run(string(profile), func(t *testing.T) {
 			h := newSessionHarness(t, "x86_64", nil)
-			wantSchema, wantWorkers, count, index := "hhsoft.pc-tester.quick-session/v11", commandRouteTouchpadQuickWorkers, 14, 6
+			wantSchema, wantWorkers, count, index := "hhsoft.pc-tester.quick-session/v14", commandRouteTouchpadQuickWorkers, 14, 6
 			if profile == plan.ProfileStandard {
 				h = newStandardHarness(t, commandStressPass())
-				wantSchema, wantWorkers, count, index = "hhsoft.pc-tester.quick-session/v12", commandRouteTouchpadStandardWorkers, 15, 7
+				wantSchema, wantWorkers, count, index = "hhsoft.pc-tester.quick-session/v15", commandRouteTouchpadStandardWorkers, 15, 7
 			} else {
 				useRealSessionFinalizer(t, h, nil, nil)
 			}

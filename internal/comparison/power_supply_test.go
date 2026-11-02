@@ -17,7 +17,12 @@ func powerComparisonReport(t *testing.T, after bool) Report {
 	if after {
 		capacity, state = "", "unavailable"
 	}
-	attributes := map[string]string{"supply_type": "Battery", "supply_type_state": "reported", "scope": "System", "scope_state": "reported", "capacity_percent_state": state}
+	attributes := map[string]string{"supply_type": "Battery", "supply_type_state": "reported", "scope": "System", "scope_state": "reported", "capacity_percent_state": state, "energy_now_uwh": "17", "energy_now_uwh_state": "reported", "charge_now_uah": "-19", "charge_now_uah_state": "reported"}
+	if after {
+		attributes["energy_now_uwh"] = "0"
+		delete(attributes, "charge_now_uah")
+		attributes["charge_now_uah_state"] = "malformed"
+	}
 	if capacity != "" {
 		attributes["capacity_percent"] = capacity
 	}
@@ -47,8 +52,8 @@ func powerComparisonReport(t *testing.T, after bool) Report {
 
 func powerComparisonExpected(before, after Report) Result {
 	control := Component{Type: inventory.ComponentBlock, ID: "block:sda", IdentitySource: "wwid", Identity: "hmac-sha256:166124c103a9f3460b95772ccc28cbdb015931924d8d021ebed574af73df01af", IdentityConfidence: "durable", Attributes: []inventory.Attribute{{Name: "model", Value: "Fixture disk"}}}
-	left := Component{Type: inventory.ComponentType("power_supply"), ID: "power_supply:1", IdentityConfidence: "unavailable", Attributes: []inventory.Attribute{{Name: "capacity_percent", Value: "50"}, {Name: "capacity_percent_state", Value: "reported"}, {Name: "scope", Value: "System"}, {Name: "scope_state", Value: "reported"}, {Name: "supply_type", Value: "Battery"}, {Name: "supply_type_state", Value: "reported"}}}
-	right := Component{Type: inventory.ComponentType("power_supply"), ID: "power_supply:1", IdentityConfidence: "unavailable", Attributes: []inventory.Attribute{{Name: "capacity_percent_state", Value: "unavailable"}, {Name: "scope", Value: "System"}, {Name: "scope_state", Value: "reported"}, {Name: "supply_type", Value: "Battery"}, {Name: "supply_type_state", Value: "reported"}}}
+	left := Component{Type: inventory.ComponentType("power_supply"), ID: "power_supply:1", IdentityConfidence: "unavailable", Attributes: []inventory.Attribute{{Name: "capacity_percent", Value: "50"}, {Name: "capacity_percent_state", Value: "reported"}, {Name: "charge_now_uah", Value: "-19"}, {Name: "charge_now_uah_state", Value: "reported"}, {Name: "energy_now_uwh", Value: "17"}, {Name: "energy_now_uwh_state", Value: "reported"}, {Name: "scope", Value: "System"}, {Name: "scope_state", Value: "reported"}, {Name: "supply_type", Value: "Battery"}, {Name: "supply_type_state", Value: "reported"}}}
+	right := Component{Type: inventory.ComponentType("power_supply"), ID: "power_supply:1", IdentityConfidence: "unavailable", Attributes: []inventory.Attribute{{Name: "capacity_percent_state", Value: "unavailable"}, {Name: "charge_now_uah_state", Value: "malformed"}, {Name: "energy_now_uwh", Value: "0"}, {Name: "energy_now_uwh_state", Value: "reported"}, {Name: "scope", Value: "System"}, {Name: "scope_state", Value: "reported"}, {Name: "supply_type", Value: "Battery"}, {Name: "supply_type_state", Value: "reported"}}}
 	return Result{Schema: "hhsoft.pc-tester.hardware-comparison/v1", Policy: "hhsoft.parts-swap.v1", Status: StatusInconclusive, Comparable: true, Complete: false, Before: before.Reference, After: after.Reference, Summary: Summary{Matched: 1, Unresolved: 1}, Matched: []Match{{Before: control, After: control, LocationChange: false}}, Unresolved: []UnresolvedChange{{Before: []Component{left}, After: []Component{right}, Reason: "stable identity is unavailable at the same observed location; continuity or replacement cannot be proven"}}}
 }
 
@@ -64,7 +69,7 @@ func TestPowerSupplyComparisonKeepsUnresolvedRowsAndExactReferences(t *testing.T
 		t.Fatal("comparison mutated its inputs")
 	}
 	// These literal names are the public field contract, not a producer list.
-	for _, name := range []string{"supply_type", "scope", "present", "online", "status", "capacity_percent", "cycle_count", "energy_full_uwh", "energy_full_design_uwh", "charge_full_uah", "charge_full_design_uah"} {
+	for _, name := range []string{"supply_type", "scope", "present", "online", "status", "capacity_percent", "cycle_count", "energy_full_uwh", "energy_full_design_uwh", "charge_full_uah", "charge_full_design_uah", "energy_now_uwh", "charge_now_uah"} {
 		for _, attribute := range []string{name, name + "_state"} {
 			base := Component{Type: inventory.ComponentType("power_supply"), ID: "power_supply:1"}
 			changed := base

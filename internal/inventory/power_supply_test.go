@@ -71,7 +71,7 @@ func TestPowerSupplyNumericBoundsAndUnavailableCycle(t *testing.T) {
 			}
 		})
 	}
-	for _, input := range []string{"energy_full", "energy_full_design", "charge_full", "charge_full_design"} {
+	for _, input := range []string{"energy_full", "energy_full_design", "charge_full", "charge_full_design", "energy_now", "charge_now"} {
 		for _, item := range []struct{ raw, value, state string }{
 			{"-2147483648", "-2147483648", "reported"},
 			{"-1", "-1", "reported"}, {"0", "0", "reported"},
@@ -133,12 +133,12 @@ func TestPowerSupplyRawGrammarPrecedesNormalization(t *testing.T) {
 
 func TestPowerSupplyObservationAttributeSetIsClosed(t *testing.T) {
 	// This literal list is independent of the production field descriptors.
-	for _, name := range []string{"supply_type", "scope", "present", "online", "status", "capacity_percent", "cycle_count", "energy_full_uwh", "energy_full_design_uwh", "charge_full_uah", "charge_full_design_uah"} {
+	for _, name := range []string{"supply_type", "scope", "present", "online", "status", "capacity_percent", "cycle_count", "energy_full_uwh", "energy_full_design_uwh", "charge_full_uah", "charge_full_design_uah", "energy_now_uwh", "charge_now_uah"} {
 		if !IsPowerSupplyObservationAttribute(name) || !IsPowerSupplyObservationAttribute(name+"_state") {
 			t.Fatalf("telemetry projection omitted %q", name)
 		}
 	}
-	for _, name := range []string{"", "type", "capacity", "serial_number", "name", "Supply_type", "energy_full", "online_state_state", "future_attribute"} {
+	for _, name := range []string{"", "type", "capacity", "serial_number", "name", "Supply_type", "energy_full", "online_state_state", "future_attribute", "energy_now", "charge_now", "energy_now_uwh_state_state", "charge_now_uwh", "Energy_now_uwh", "energy_now_uwh ", "energy_now_uwh.extra"} {
 		if IsPowerSupplyObservationAttribute(name) {
 			t.Fatalf("telemetry projection widened to %q", name)
 		}
@@ -152,6 +152,7 @@ func TestPowerSupplyRootCollectorKeepsFiniteRowsAndPrivateOrdinals(t *testing.T)
 		"online": "2\n", "status": "Not charging\n", "capacity": "100\n",
 		"cycle_count": "0\n", "energy_full": "-1\n", "energy_full_design": "0\n",
 		"charge_full": "2147483647\n", "charge_full_design": "1\n",
+		"energy_now": "17\n", "charge_now": "-19\n",
 	}
 	// Neither class entry is an approved public identifier.
 	names := []string{"z-hid-PRIVATE-ADDR-22-battery", "a-hid-PRIVATE-ADDR-11-battery"}
@@ -189,6 +190,8 @@ func TestPowerSupplyRootCollectorKeepsFiniteRowsAndPrivateOrdinals(t *testing.T)
 		"energy_full_design_uwh": "0", "energy_full_design_uwh_state": "reported",
 		"charge_full_uah": "2147483647", "charge_full_uah_state": "reported",
 		"charge_full_design_uah": "1", "charge_full_design_uah_state": "reported",
+		"energy_now_uwh": "17", "energy_now_uwh_state": "reported",
+		"charge_now_uah": "-19", "charge_now_uah_state": "reported",
 	}
 	for index, component := range snapshot.Components {
 		if component.Type != ComponentType("power_supply") || component.ID != []string{"power_supply:1", "power_supply:2"}[index] {
@@ -233,8 +236,9 @@ func TestPowerSupplyUnavailableFieldsKeepAnUnidentifiedRow(t *testing.T) {
 	}
 	want := []Attribute{
 		{"capacity_percent_state", "unavailable"}, {"charge_full_design_uah_state", "unavailable"},
-		{"charge_full_uah_state", "unavailable"}, {"cycle_count_state", "unavailable"},
+		{"charge_full_uah_state", "unavailable"}, {"charge_now_uah_state", "unavailable"}, {"cycle_count_state", "unavailable"},
 		{"energy_full_design_uwh_state", "unavailable"}, {"energy_full_uwh_state", "unavailable"},
+		{"energy_now_uwh_state", "unavailable"},
 		{"online_state", "unavailable"}, {"present_state", "unavailable"}, {"scope_state", "unavailable"},
 		{"status_state", "unavailable"}, {"supply_type_state", "unavailable"},
 	}
@@ -261,5 +265,50 @@ func TestPowerSupplyMissingAndEmptyClassPreserveHistoricalNoData(t *testing.T) {
 				t.Fatal("no-data bytes changed")
 			}
 		})
+	}
+}
+
+func TestPowerSupplyNowRawGrammarAndUnits(t *testing.T) {
+	// Literal raw grammar and units; no expectations are copied from descriptors.
+	for _, input := range []string{"energy_now", "charge_now"} {
+		for _, tc := range []struct{ name, raw, value, state string }{
+			{"empty", "", "", "malformed"},
+			{"zero", "0", "0", "reported"},
+			{"positive", "17", "17", "reported"},
+			{"negative", "-17", "-17", "reported"},
+			{"terminal_lf", "17\n", "17", "reported"},
+			{"zero_lf", "0\n", "0", "reported"},
+			{"crlf", "17\r\n", "", "malformed"},
+			{"bare_cr", "17\r", "", "malformed"},
+			{"lf_only", "\n", "", "malformed"},
+			{"repeated_lf", "17\n\n", "", "malformed"},
+			{"leading_space", " 17", "", "malformed"},
+			{"trailing_space", "17 ", "", "malformed"},
+			{"nonbreaking_space", "17\u00a0", "", "malformed"},
+			{"unicode_digits", "\uff11\uff17", "", "malformed"},
+			{"plus", "+17", "", "malformed"},
+			{"negative_zero", "-0", "", "malformed"},
+			{"leading_zero", "017", "", "malformed"},
+			{"negative_leading_zero", "-017", "", "malformed"},
+			{"minus_only", "-", "", "malformed"},
+			{"fraction", "1.7", "", "malformed"},
+			{"exponent", "17e0", "", "malformed"},
+			{"hex", "0x11", "", "malformed"},
+			{"nul", "17\x00", "", "malformed"},
+			{"tab", "17\t", "", "malformed"},
+			{"delete", "17\x7f", "", "malformed"},
+			{"invalid_utf8", "17\xff", "", "malformed"},
+			{"internal_lf", "1\n7", "", "malformed"},
+			{"long_overflow", "184467440737095516160", "", "out_of_range"},
+		} {
+			t.Run(input+"/"+tc.name, func(t *testing.T) {
+				raw := []byte(tc.raw)
+				original := append([]byte(nil), raw...)
+				value, state := parsePowerSupplyScalar(powerSupplyTestField(t, input), raw)
+				if value != tc.value || state != tc.state || !bytes.Equal(raw, original) {
+					t.Fatal("present energy/charge raw grammar, units, or byte ownership changed")
+				}
+			})
+		}
 	}
 }

@@ -10,6 +10,7 @@ import (
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/app"
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/report"
 )
 
 func powerViewPayload(t *testing.T, state string) app.InventoryPayload {
@@ -26,7 +27,7 @@ func powerViewPayload(t *testing.T, state string) app.InventoryPayload {
 		if err := os.MkdirAll(directory, 0700); err != nil {
 			t.Fatal(err)
 		}
-		for name, value := range map[string]string{"type": "Battery\n", "scope": "Device\n", "online": "2\n", "status": "Not charging\n", "capacity": "101\n", "cycle_count": "0\n", "energy_full": "-1\n", "energy_full_design": "0\n", "charge_full": "11\n", "charge_full_design": "10\n", "serial_number": "FORBIDDEN-VIEW-SERIAL", "model_name": "FORBIDDEN-VIEW-MODEL"} {
+		for name, value := range map[string]string{"type": "Battery\n", "scope": "Device\n", "online": "2\n", "status": "Not charging\n", "capacity": "101\n", "cycle_count": "0\n", "energy_full": "-1\n", "energy_full_design": "0\n", "charge_full": "11\n", "charge_full_design": "10\n", "energy_now": "-17\n", "charge_now": "0\n", "serial_number": "FORBIDDEN-VIEW-SERIAL", "model_name": "FORBIDDEN-VIEW-MODEL"} {
 			if err := os.WriteFile(filepath.Join(directory, name), []byte(value), 0600); err != nil {
 				t.Fatal(err)
 			}
@@ -52,9 +53,11 @@ func TestPowerSupplyViewsRetainFiniteUnitsStatesAndUnavailableIdentity(t *testin
 		{Name: "capacity_percent_state", Value: "out_of_range"},
 		{Name: "charge_full_design_uah", Value: "10"}, {Name: "charge_full_design_uah_state", Value: "reported"},
 		{Name: "charge_full_uah", Value: "11"}, {Name: "charge_full_uah_state", Value: "reported"},
+		{Name: "charge_now_uah", Value: "0"}, {Name: "charge_now_uah_state", Value: "reported"},
 		{Name: "cycle_count_state", Value: "unavailable"},
 		{Name: "energy_full_design_uwh", Value: "0"}, {Name: "energy_full_design_uwh_state", Value: "reported"},
 		{Name: "energy_full_uwh", Value: "-1"}, {Name: "energy_full_uwh_state", Value: "reported"},
+		{Name: "energy_now_uwh", Value: "-17"}, {Name: "energy_now_uwh_state", Value: "reported"},
 		{Name: "online", Value: "2"}, {Name: "online_state", Value: "reported"},
 		{Name: "present_state", Value: "unavailable"},
 		{Name: "scope", Value: "Device"}, {Name: "scope_state", Value: "reported"},
@@ -130,5 +133,77 @@ func TestPowerSupplyMissingAndEmptyViewsUseExactHistoricalPayload(t *testing.T) 
 				}
 			}
 		})
+	}
+}
+
+func TestPowerSupplyNowAllViewRoutesKeepUnitsAndUnavailableIdentity(t *testing.T) {
+	payload := powerViewPayload(t, "present")
+	prior, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+	previous := report.PreviousReport{ManifestDigest: "sha256:1111111111111111111111111111111111111111111111111111111111111111", BundleSHA256: "sha256:2222222222222222222222222222222222222222222222222222222222222222"}
+	for _, tc := range []struct {
+		name                 string
+		current, linked, pdf bool
+	}{
+		{"legacy_html", false, false, false}, {"legacy_pdf", false, false, true},
+		{"legacy_linked_html", false, true, false}, {"legacy_linked_pdf", false, true, true},
+		{"current_html", true, false, false}, {"current_pdf", true, false, true},
+		{"current_linked_html", true, true, false}, {"current_linked_pdf", true, true, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			var raw []byte
+			var err error
+			switch {
+			case tc.current && tc.linked && tc.pdf:
+				raw, err = InventoryMemoryCapacityRetestPDFForVersion(payload, "0.0.1-fixture", previous)
+			case tc.current && tc.linked:
+				raw, err = InventoryMemoryCapacityRetestHTMLForVersion(payload, "0.0.1-fixture", previous)
+			case tc.current && tc.pdf:
+				raw, err = InventoryMemoryCapacityPDFForVersion(payload, "0.0.1-fixture")
+			case tc.current:
+				raw, err = InventoryMemoryCapacityHTMLForVersion(payload, "0.0.1-fixture")
+			case tc.linked && tc.pdf:
+				raw, err = InventoryRetestPDFForVersion(payload, "0.0.1-fixture", previous)
+			case tc.linked:
+				raw, err = InventoryRetestHTMLForVersion(payload, "0.0.1-fixture", previous)
+			case tc.pdf:
+				raw, err = InventoryPDFForVersion(payload, "0.0.1-fixture")
+			default:
+				raw, err = InventoryHTMLForVersion(payload, "0.0.1-fixture")
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			for _, field := range []struct{ name, value string }{
+				{"energy_now_uwh", "-17"}, {"energy_now_uwh_state", "reported"},
+				{"charge_now_uah", "0"}, {"charge_now_uah_state", "reported"},
+			} {
+				literal := `<th scope="row">` + field.name + `</th><td>` + field.value + `</td>`
+				if tc.pdf {
+					literal = "    " + field.name + ": " + field.value
+				}
+				if bytes.Count(raw, []byte(literal)) != 1 {
+					t.Fatal("view lost the literal present observation or units")
+				}
+			}
+			confidence, identity := "Confidence</th><td>unavailable</td>", "Fingerprint</th><td class=\"fingerprint\">Unavailable</td>"
+			if tc.pdf {
+				confidence, identity = "Confidence: unavailable", "Fingerprint: Unavailable"
+			}
+			if !bytes.Contains(raw, []byte(confidence)) || !bytes.Contains(raw, []byte(identity)) {
+				t.Fatal("observation invented identifying evidence")
+			}
+			for _, forbidden := range []string{"hid-PRIVATE-AA-BB-CC-DD-EE-FF", "FORBIDDEN-VIEW-SERIAL", "FORBIDDEN-VIEW-MODEL", "battery health", "zero wear", "estimated runtime", "mWh", "mAh", "current_now"} {
+				if bytes.Contains(raw, []byte(forbidden)) {
+					t.Fatal("view inferred physical truth or changed units")
+				}
+			}
+		})
+	}
+	after, err := json.Marshal(payload)
+	if err != nil || !bytes.Equal(prior, after) {
+		t.Fatal("a view route mutated authenticated payload input")
 	}
 }

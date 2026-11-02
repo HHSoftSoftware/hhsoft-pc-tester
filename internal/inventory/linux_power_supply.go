@@ -23,6 +23,8 @@ var powerSupplyFields = [...]powerSupplyField{
 	{"energy_full_design", "energy_full_design_uwh", false, -2147483648, 2147483647},
 	{"charge_full", "charge_full_uah", false, -2147483648, 2147483647},
 	{"charge_full_design", "charge_full_design_uah", false, -2147483648, 2147483647},
+	{"energy_now", "energy_now_uwh", false, -2147483648, 2147483647},
+	{"charge_now", "charge_now_uah", false, -2147483648, 2147483647},
 }
 
 // IsPowerSupplyObservationAttribute identifies the closed telemetry projection.

@@ -970,19 +970,28 @@ the alpha still requires the separate documented release gates.
 - [ ] Test Bluetooth discovery, pairing, services, data exchange, and temporary
   pairing cleanup with known-good fixtures.
 - [ ] Test cameras, microphones, rotation/other sensors, and supported modems.
-- [x] Implement finite Linux power-supply inventory: eleven fields with explicit
+- [x] Implement finite Linux power-supply inventory: thirteen fields with explicit
   reported, unavailable, unsupported, malformed or out-of-range states. Use
   nonpersistent ordinal rows with unavailable identity and no raw supply names
   or serial export; missing or empty supply enumeration reports no data.
-- [x] Qualify the integrated power-supply collector, graph policy, signed reports,
-  views and comparison: the full host suite passed 6,239 test/subtest outcomes
-  across 30 packages; selected native Linux amd64/386 fixtures passed 3,100
-  named outcomes across 14 suites and 582 root executions, with no failures
-  or skips and confirmed cleanup. The implementation
-  adds no test worker and does not qualify battery health or power transitions.
-  See [the bounded contract](docs/requirements-validation.md#power-supply-inventory).
-- [ ] Collect adapter/battery health and charge telemetry and test AC/battery
-  transitions where supported.
+  Present energy (`energy_now_uwh`, µWh) and charge (`charge_now_uah`, µAh)
+  retain independent signed driver observations, including zero and negative
+  values, without inferring health, electrical current or an atomic sample.
+- [x] Qualify the original eleven-field power-supply collector, graph policy,
+  signed reports, views and comparison: the full host suite passed 6,239
+  test/subtest outcomes across 30 packages; selected native Linux amd64/386
+  fixtures passed 3,100 named outcomes across 14 suites and 582 root executions,
+  with no failures or skips and confirmed cleanup. These results retain their
+  historical eleven-field scope. No test worker was added.
+- [x] Qualify the present-energy/charge extension in the full Windows amd64 and
+  386 suites: each passed 13,492 outcomes across 35 packages with 18 retained
+  skips, including 189 added names. Formatting, vet and 24 Linux compile-only
+  builds passed. Existing signed profiles, identity rules and stable graph/plan
+  policy are unchanged; missing/empty no-data declarations remain exact.
+  This does not qualify current native Linux execution, images or physical power
+  hardware. See [the bounded contract](docs/requirements-validation.md#power-supply-inventory).
+- [ ] Complete broader adapter/battery telemetry and health checks, and test
+  AC/battery transitions where supported.
 - [ ] Monitor temperatures, fans, clocks, power, and throttling throughout a run
   and test cooling response under sustained load.
 - [x] Implement finite Linux firmware/TPM inventory: UEFI platform width,

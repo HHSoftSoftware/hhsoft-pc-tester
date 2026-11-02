@@ -40,7 +40,7 @@ func newPowerCommandFixture(t *testing.T) powerCommandFixture {
 	t.Helper()
 	f := powerCommandFixture{root: t.TempDir(), directory: t.TempDir()}
 	files := map[string]string{"sys/class/block/sda/wwid": "fixture-exterior-disk\n", "sys/class/block/sda/device/model": "Fixture disk\n"}
-	for name, value := range map[string]string{"type": "Battery\n", "scope": "System\n", "present": "1\n", "online": "2\n", "status": "Charging\n", "capacity": "50\n", "cycle_count": "0\n", "energy_full": "11\n", "energy_full_design": "10\n", "charge_full": "-1\n", "charge_full_design": "0\n", "serial_number": "FORBIDDEN-COMMAND-SERIAL", "manufacturer": "FORBIDDEN-COMMAND-MANUFACTURER", "uevent": "FORBIDDEN-COMMAND-UEVENT"} {
+	for name, value := range map[string]string{"type": "Battery\n", "scope": "System\n", "present": "1\n", "online": "2\n", "status": "Charging\n", "capacity": "50\n", "cycle_count": "0\n", "energy_full": "11\n", "energy_full_design": "10\n", "charge_full": "-1\n", "charge_full_design": "0\n", "energy_now": "17\n", "charge_now": "-19\n", "serial_number": "FORBIDDEN-COMMAND-SERIAL", "manufacturer": "FORBIDDEN-COMMAND-MANUFACTURER", "uevent": "FORBIDDEN-COMMAND-UEVENT"} {
 		files["sys/class/power_supply/"+powerCommandRawName+"/"+name] = value
 	}
 	for name, value := range files {
@@ -106,9 +106,11 @@ func powerCommandAttributes(capacity, online string) []inventory.Attribute {
 		{Name: "capacity_percent", Value: capacity}, {Name: "capacity_percent_state", Value: "reported"},
 		{Name: "charge_full_design_uah", Value: "0"}, {Name: "charge_full_design_uah_state", Value: "reported"},
 		{Name: "charge_full_uah", Value: "-1"}, {Name: "charge_full_uah_state", Value: "reported"},
+		{Name: "charge_now_uah", Value: "-19"}, {Name: "charge_now_uah_state", Value: "reported"},
 		{Name: "cycle_count_state", Value: "unavailable"},
 		{Name: "energy_full_design_uwh", Value: "10"}, {Name: "energy_full_design_uwh_state", Value: "reported"},
 		{Name: "energy_full_uwh", Value: "11"}, {Name: "energy_full_uwh_state", Value: "reported"},
+		{Name: "energy_now_uwh", Value: "17"}, {Name: "energy_now_uwh_state", Value: "reported"},
 		{Name: "online", Value: online}, {Name: "online_state", Value: "reported"},
 		{Name: "present", Value: "1"}, {Name: "present_state", Value: "reported"},
 		{Name: "scope", Value: "System"}, {Name: "scope_state", Value: "reported"},
@@ -117,12 +119,42 @@ func powerCommandAttributes(capacity, online string) []inventory.Attribute {
 	}
 }
 
+func powerCommandNowAttributes(capacity, online, energy, energyState, charge, chargeState string) []inventory.Attribute {
+	var result []inventory.Attribute
+	// The base is the literal fixture oracle, not a producer descriptor table.
+	for _, a := range powerCommandAttributes(capacity, online) {
+		switch a.Name {
+		case "energy_now_uwh":
+			if energyState != "reported" {
+				continue
+			}
+			a.Value = energy
+		case "energy_now_uwh_state":
+			a.Value = energyState
+		case "charge_now_uah":
+			if chargeState != "reported" {
+				continue
+			}
+			a.Value = charge
+		case "charge_now_uah_state":
+			a.Value = chargeState
+		}
+		result = append(result, a)
+	}
+	return result
+}
+
 func requirePowerCommandPayload(t *testing.T, p app.InventoryPayload, capacity, online string) {
+	t.Helper()
+	requirePowerCommandNowPayload(t, p, capacity, online, "17", "reported", "-19", "reported")
+}
+
+func requirePowerCommandNowPayload(t *testing.T, p app.InventoryPayload, capacity, online, energy, energyState, charge, chargeState string) {
 	t.Helper()
 	wantFingerprint := app.SystemFingerprint{Algorithm: "hmac-sha256", KeyEpoch: "power-fixture", KeyID: powerCommandKeyID, Value: powerCommandSystem, IdentifiedParts: 1, UnidentifiedParts: 1}
 	want := []app.ComponentRecord{
 		{Type: inventory.ComponentBlock, ID: "block:sda", Attributes: []inventory.Attribute{{Name: "kind", Value: "device"}, {Name: "model", Value: "Fixture disk"}, {Name: "name", Value: "sda"}}, Identity: app.ComponentIdentity{Algorithm: "hmac-sha256", KeyEpoch: "power-fixture", Source: "wwid", Value: powerCommandPart, Confidence: "durable"}},
-		{Type: inventory.ComponentType("power_supply"), ID: "power_supply:1", Attributes: powerCommandAttributes(capacity, online), Identity: app.ComponentIdentity{Algorithm: "hmac-sha256", KeyEpoch: "power-fixture", Confidence: "unavailable"}},
+		{Type: inventory.ComponentType("power_supply"), ID: "power_supply:1", Attributes: powerCommandNowAttributes(capacity, online, energy, energyState, charge, chargeState), Identity: app.ComponentIdentity{Algorithm: "hmac-sha256", KeyEpoch: "power-fixture", Confidence: "unavailable"}},
 	}
 	if p.SchemaVersion != 1 || p.SystemFingerprint != wantFingerprint || !reflect.DeepEqual(p.Components, want) {
 		t.Fatal("actual collector/signed payload differs from literal identity and finite row oracle")
@@ -178,7 +210,7 @@ func TestPowerSupplyRealFinalizerKeepsCurrentTelemetryAndIndependentParentTrust(
 			if err := os.Rename(oldDir, newDir); err != nil {
 				t.Fatal(err)
 			}
-			for name, value := range map[string]string{"capacity": "0\n", "online": "0\n"} {
+			for name, value := range map[string]string{"capacity": "0\n", "online": "0\n", "energy_now": "0\n", "charge_now": "-2147483648\n"} {
 				if err := os.WriteFile(filepath.Join(newDir, name), []byte(value), 0600); err != nil {
 					t.Fatal(err)
 				}
@@ -215,7 +247,7 @@ func TestPowerSupplyRealFinalizerKeepsCurrentTelemetryAndIndependentParentTrust(
 			if err := json.Unmarshal(child.InventoryJSON, &payload); err != nil {
 				t.Fatal(err)
 			}
-			requirePowerCommandPayload(t, payload, "0", "0")
+			requirePowerCommandNowPayload(t, payload, "0", "0", "0", "reported", "-2147483648", "reported")
 			integrity := false
 			for _, row := range payload.TestResults {
 				if strings.Contains(row.ID, "power") || strings.Contains(row.ID, "battery") {
@@ -388,10 +420,18 @@ func TestPowerSupplyRealCompareUsesSignedReferencesAndRejectsForgedIdentity(t *t
 }
 
 func TestPowerSupplyOwnedCollectionFailureStopsFinalizerSigningAndOutput(t *testing.T) {
-	for _, fault := range []string{"raw_limit", "nonregular_scalar"} {
-		t.Run(fault, func(t *testing.T) {
+	for _, tc := range []struct{ name, input, fault string }{
+		{"raw_limit", "charge_full_design", "raw_limit"},
+		{"nonregular_scalar", "charge_full_design", "nonregular_scalar"},
+		{"energy_now/raw_limit", "energy_now", "raw_limit"},
+		{"energy_now/nonregular_scalar", "energy_now", "nonregular_scalar"},
+		{"charge_now/raw_limit", "charge_now", "raw_limit"},
+		{"charge_now/nonregular_scalar", "charge_now", "nonregular_scalar"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			fault := tc.fault
 			f := newPowerCommandFixture(t)
-			field := filepath.Join(f.root, "sys", "class", "power_supply", powerCommandRawName, "charge_full_design")
+			field := filepath.Join(f.root, "sys", "class", "power_supply", powerCommandRawName, tc.input)
 			if fault == "raw_limit" {
 				if err := os.WriteFile(field, bytes.Repeat([]byte{'9'}, 65537), 0600); err != nil {
 					t.Fatal(err)
@@ -427,6 +467,100 @@ func TestPowerSupplyOwnedCollectionFailureStopsFinalizerSigningAndOutput(t *test
 			assertPowerCommandPrivacy(t, stderr.Bytes())
 			if _, err := os.Stat(output); !os.IsNotExist(err) {
 				t.Fatal("failed inventory created report", err)
+			}
+		})
+	}
+}
+
+func TestPowerSupplyNowCurrentOrdinaryCLIUsesAuthenticatedObservations(t *testing.T) {
+	for _, tc := range []struct{ name, energy, charge, chargeValue, chargeState string }{
+		{"reported", "0", "-2147483648", "-2147483648", "reported"},
+		{"malformed_peer", "0", "bad", "", "malformed"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newPowerCommandFixture(t)
+			private := ed25519.NewKeyFromSeed(bytes.Repeat([]byte{0x73}, 32))
+			public := private.Public().(ed25519.PublicKey)
+			produce := func(snapshot inventory.Snapshot, session string, second int64) ([]byte, bundle.Artifact, app.InventoryPayload) {
+				t.Helper()
+				raw, err := captureBundle(snapshot, nil, bytes.Repeat([]byte{0x39}, 32), "power-fixture", private, "power-now-key", session, time.Unix(second, 0), app.CoverageDirectCapture)
+				if err != nil {
+					t.Fatal("real current capture producer", err)
+				}
+				artifact, err := bundle.Verify(bytes.NewReader(raw), int64(len(raw)), report.Keyring{"power-now-key": public})
+				if err != nil || artifact.Envelope.KeyID != "power-now-key" || artifact.Envelope.SessionID != session || artifact.Manifest.ViewProfile != "hhsoft.pc-tester.memory-capacity-view/v1" || artifact.Manifest.PreviousReport != nil || len(artifact.RenderedReport) == 0 || len(artifact.RenderedPDF) == 0 {
+					t.Fatal("expected signer and current ordinary profile prerequisite", err)
+				}
+				var payload app.InventoryPayload
+				if err := json.Unmarshal(artifact.InventoryJSON, &payload); err != nil {
+					t.Fatal(err)
+				}
+				assertPowerCommandPrivacy(t, artifact.InventoryJSON)
+				assertPowerCommandPrivacy(t, artifact.RenderedReport)
+				assertPowerCommandPrivacy(t, artifact.RenderedPDF)
+				return raw, artifact, payload
+			}
+			left, l, before := produce(f.snapshot, "power-now-before", 1)
+			requirePowerCommandPayload(t, before, "50", "2")
+			for name, value := range map[string]string{"energy_now": tc.energy, "charge_now": tc.charge} {
+				if err := os.WriteFile(filepath.Join(f.root, "sys", "class", "power_supply", powerCommandRawName, name), []byte(value), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			current, err := inventory.NewLinuxCollector(f.root).Collect(t.Context())
+			if err != nil {
+				t.Fatal(err)
+			}
+			right, r, after := produce(current, "power-now-after", 2)
+			requirePowerCommandNowPayload(t, after, "50", "2", "0", "reported", tc.chargeValue, tc.chargeState)
+			if before.SystemFingerprint != after.SystemFingerprint || bytes.Equal(l.InventoryJSON, r.InventoryJSON) || l.Envelope.ManifestDigest == r.Envelope.ManifestDigest {
+				t.Fatal("observation change lost authenticated bytes or altered identity")
+			}
+			leftPath, rightPath := filepath.Join(f.directory, "now-before.hhpcr"), filepath.Join(f.directory, "now-after.hhpcr")
+			if err := os.WriteFile(leftPath, left, 0600); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(rightPath, right, 0600); err != nil {
+				t.Fatal(err)
+			}
+			keyPath := writeTestKey(t, f.directory, "now.pub", public)
+			wrong := ed25519.NewKeyFromSeed(bytes.Repeat([]byte{0x74}, 32)).Public().(ed25519.PublicKey)
+			wrongPath := writeTestKey(t, f.directory, "wrong-now.pub", wrong)
+			for _, path := range []string{leftPath, rightPath} {
+				var out, diagnostic bytes.Buffer
+				if code := runVerify(t.Context(), []string{"-public-key", keyPath, "-key-id", "power-now-key", path}, &out, &diagnostic); code != 0 {
+					t.Fatal("actual current CLI verification", code, diagnostic.String())
+				}
+				out.Reset()
+				diagnostic.Reset()
+				if code := runVerify(t.Context(), []string{"-public-key", wrongPath, "-key-id", "power-now-key", path}, &out, &diagnostic); code == 0 || out.Len() != 0 {
+					t.Fatal("same-mode wrong signer admitted current report")
+				}
+			}
+			ref := func(a bundle.Artifact, p app.InventoryPayload) comparison.ReportReference {
+				return comparison.ReportReference{SessionID: a.Envelope.SessionID, GeneratedTime: a.Envelope.GeneratedTime, SoftwareVersion: product.Version, SignerKeyID: "power-now-key", ManifestDigest: a.Envelope.ManifestDigest, SystemFingerprint: p.SystemFingerprint, ComponentCount: 2}
+			}
+			control := comparison.Component{Type: inventory.ComponentBlock, ID: "block:sda", IdentitySource: "wwid", Identity: powerCommandPart, IdentityConfidence: "durable", Attributes: []inventory.Attribute{{Name: "kind", Value: "device"}, {Name: "model", Value: "Fixture disk"}, {Name: "name", Value: "sda"}}}
+			oldPower := comparison.Component{Type: inventory.ComponentPowerSupply, ID: "power_supply:1", IdentityConfidence: "unavailable", Attributes: powerCommandAttributes("50", "2")}
+			newPower := comparison.Component{Type: inventory.ComponentPowerSupply, ID: "power_supply:1", IdentityConfidence: "unavailable", Attributes: powerCommandNowAttributes("50", "2", "0", "reported", tc.chargeValue, tc.chargeState)}
+			want := comparison.Result{Schema: "hhsoft.pc-tester.hardware-comparison/v1", Policy: "hhsoft.parts-swap.v1", Status: comparison.StatusInconclusive, Comparable: true, Complete: false, Before: ref(l, before), After: ref(r, after), Summary: comparison.Summary{Matched: 1, Unresolved: 1}, Matched: []comparison.Match{{Before: control, After: control}}, Unresolved: []comparison.UnresolvedChange{{Before: []comparison.Component{oldPower}, After: []comparison.Component{newPower}, Reason: "stable identity is unavailable at the same observed location; continuity or replacement cannot be proven"}}}
+			var out, diagnostic bytes.Buffer
+			if code := runCompare(t.Context(), []string{"-public-key", keyPath, "-key-id", "power-now-key", leftPath, rightPath}, &out, &diagnostic); code != 0 {
+				t.Fatal("actual current CLI comparison", code, diagnostic.String())
+			}
+			var got comparison.Result
+			if err := json.Unmarshal(out.Bytes(), &got); err != nil || !reflect.DeepEqual(got, want) {
+				t.Fatal("current comparison lost exact claims/references or invented continuity", err)
+			}
+			assertPowerCommandPrivacy(t, out.Bytes())
+			for _, expected := range []struct {
+				path  string
+				bytes []byte
+			}{{leftPath, left}, {rightPath, right}} {
+				actual, err := os.ReadFile(expected.path)
+				if err != nil || !bytes.Equal(actual, expected.bytes) {
+					t.Fatal("readonly consumer mutated current signed input")
+				}
 			}
 		})
 	}

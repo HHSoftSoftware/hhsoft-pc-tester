@@ -20,7 +20,7 @@ func powerBundlePayload(t *testing.T, withSupply bool) app.InventoryPayload {
 	root := t.TempDir()
 	files := map[string]string{"sys/class/block/sda/wwid": "fixture-exterior-disk\n", "sys/class/block/sda/device/model": "Fixture disk\n"}
 	if withSupply {
-		for name, value := range map[string]string{"type": "Battery\n", "scope": "Device\n", "online": "2\n", "status": "Full\n", "capacity": "100\n", "cycle_count": "0\n", "energy_full": "11\n", "energy_full_design": "10\n", "charge_full": "-1\n", "charge_full_design": "0\n", "serial_number": "BUNDLE-PRIVATE-SERIAL", "uevent": "BUNDLE-PRIVATE-UEVENT"} {
+		for name, value := range map[string]string{"type": "Battery\n", "scope": "Device\n", "online": "2\n", "status": "Full\n", "capacity": "100\n", "cycle_count": "0\n", "energy_full": "11\n", "energy_full_design": "10\n", "charge_full": "-1\n", "charge_full_design": "0\n", "energy_now": "17\n", "charge_now": "-19\n", "serial_number": "BUNDLE-PRIVATE-SERIAL", "uevent": "BUNDLE-PRIVATE-UEVENT"} {
 			files["sys/class/power_supply/hid-PRIVATE-AA-BB-CC-DD-EE-FF/"+name] = value
 		}
 	}
@@ -171,6 +171,134 @@ func TestPowerSupplyResignedViewsCannotReplaceReportedTelemetry(t *testing.T) {
 					t.Fatal("correctly signed substituted telemetry view accepted")
 				}
 			})
+		}
+	}
+}
+
+func TestPowerSupplyNowCurrentSignedProducersAndConsumers(t *testing.T) {
+	for _, mode := range capacityProfileModes() {
+		for _, views := range []string{"both", "html", "pdf"} {
+			t.Run(mode.name+"/"+views, func(t *testing.T) {
+				payload := powerBundlePayload(t, true)
+				attributes := make(map[string]string)
+				for _, a := range payload.Components[1].Attributes {
+					attributes[a.Name] = a.Value
+				}
+				for name, value := range map[string]string{"energy_now_uwh": "17", "energy_now_uwh_state": "reported", "charge_now_uah": "-19", "charge_now_uah_state": "reported"} {
+					if attributes[name] != value {
+						t.Fatal("literal collected unit prerequisite")
+					}
+				}
+				raw, err := json.Marshal(payload)
+				if err != nil {
+					t.Fatal(err)
+				}
+				previous := capacityProfilePrevious(mode.linked)
+				html, pdf := capacityProfileViews(t, payload, previous, true)
+				if views == "html" {
+					pdf = nil
+				}
+				if views == "pdf" {
+					html = nil
+				}
+				spec := capacityProfileSpec{current: true, self: mode.self, previous: previous}
+				encoded, envelope, keys := capacityProfileSigned(t, raw, html, pdf, spec)
+				artifact := capacityProfileAccepted(t, encoded, keys, mode.self)
+				if artifact.Manifest.Schema != capacityProfileSchema(true, mode.linked) || artifact.Manifest.ViewProfile != "hhsoft.pc-tester.memory-capacity-view/v1" || !bytes.Equal(artifact.InventoryJSON, raw) || !bytes.Equal(artifact.RenderedReport, html) || !bytes.Equal(artifact.RenderedPDF, pdf) {
+					t.Fatal("current authenticated members or fixed profile changed")
+				}
+				if mode.linked && (artifact.Manifest.PreviousReport == nil || *artifact.Manifest.PreviousReport != *previous) || !mode.linked && artifact.Manifest.PreviousReport != nil {
+					t.Fatal("exact signed relation changed")
+				}
+				var embedded []byte
+				if mode.self {
+					embedded = keys[envelope.KeyID]
+				}
+				digest, err := MemoryCapacityManifestDigestWithPDF(raw, html, pdf, embedded, previous)
+				if err != nil || digest != envelope.ManifestDigest {
+					t.Fatal("current manifest disagrees with independent encoder")
+				}
+				var actual bytes.Buffer
+				if err := WriteMemoryCapacityWithPDF(&actual, raw, envelope, html, pdf, embedded, previous); err != nil || !bytes.Equal(actual.Bytes(), encoded) {
+					t.Fatal("current producer differs from independent signed archive", err)
+				}
+				if mode.self {
+					if _, err := Verify(bytes.NewReader(encoded), int64(len(encoded)), nil); err == nil {
+						t.Fatal("self-issued bytes acquired independent trust")
+					}
+				} else {
+					wrong := ed25519.NewKeyFromSeed(bytes.Repeat([]byte{0x17}, 32)).Public().(ed25519.PublicKey)
+					if bytes.Equal(wrong, keys[envelope.KeyID]) {
+						t.Fatal("wrong signer prerequisite")
+					}
+					if _, err := Verify(bytes.NewReader(encoded), int64(len(encoded)), report.Keyring{envelope.KeyID: wrong}); err == nil {
+						t.Fatal("wrong trusted signer accepted current bytes")
+					}
+					if _, err := VerifySelfIssued(bytes.NewReader(encoded), int64(len(encoded))); err == nil {
+						t.Fatal("external bytes acquired embedded trust")
+					}
+				}
+				for _, forbidden := range []string{"hid-PRIVATE-AA-BB-CC-DD-EE-FF", "BUNDLE-PRIVATE-SERIAL", "BUNDLE-PRIVATE-UEVENT", "fixture-exterior-disk"} {
+					if bytes.Contains(encoded, []byte(forbidden)) {
+						t.Fatal("private fixture input reached current archive")
+					}
+				}
+			})
+		}
+	}
+}
+
+func TestPowerSupplyNowCurrentSignedViewSubstitutionRejected(t *testing.T) {
+	for _, mode := range capacityProfileModes() {
+		for _, field := range []struct{ name, value, changed string }{
+			{"energy_now_uwh", "17", "18"}, {"energy_now_uwh_state", "reported", "unavailable"},
+			{"charge_now_uah", "-19", "-18"}, {"charge_now_uah_state", "reported", "unavailable"},
+		} {
+			for _, format := range []string{"html", "pdf"} {
+				t.Run(mode.name+"/"+field.name+"/"+format, func(t *testing.T) {
+					payload := powerBundlePayload(t, true)
+					raw, err := json.Marshal(payload)
+					if err != nil {
+						t.Fatal(err)
+					}
+					previous := capacityProfilePrevious(mode.linked)
+					html, pdf := capacityProfileViews(t, payload, previous, true)
+					spec := capacityProfileSpec{current: true, self: mode.self, previous: previous}
+					good, _, keys := capacityProfileSigned(t, raw, html, pdf, spec)
+					capacityProfileAccepted(t, good, keys, mode.self)
+					h, p := bytes.Clone(html), bytes.Clone(pdf)
+					old := `<th scope="row">` + field.name + `</th><td>` + field.value + `</td>`
+					next := `<th scope="row">` + field.name + `</th><td>` + field.changed + `</td>`
+					if format == "html" {
+						if bytes.Count(h, []byte(old)) != 1 {
+							t.Fatal("unique HTML mutation prerequisite")
+						}
+						h = bytes.Replace(h, []byte(old), []byte(next), 1)
+					} else {
+						old, next = "    "+field.name+": "+field.value, "    "+field.name+": "+field.changed
+						if bytes.Count(p, []byte(old)) != 1 {
+							t.Fatal("unique PDF mutation prerequisite")
+						}
+						p = bytes.Replace(p, []byte(old), []byte(next), 1)
+					}
+					if bytes.Equal(h, html) && bytes.Equal(p, pdf) {
+						t.Fatal("ineffective view mutation")
+					}
+					bad, envelope, badKeys := capacityProfileSigned(t, raw, h, p, spec)
+					capacityProfileRejected(t, bad, badKeys, mode.self)
+					var embedded []byte
+					if mode.self {
+						embedded = badKeys[envelope.KeyID]
+					}
+					if _, err := MemoryCapacityManifestDigestWithPDF(raw, h, p, embedded, previous); err == nil {
+						t.Fatal("current digest admitted substituted observations")
+					}
+					var output bytes.Buffer
+					if err := WriteMemoryCapacityWithPDF(&output, raw, envelope, h, p, embedded, previous); err == nil || output.Len() != 0 {
+						t.Fatal("current writer published substituted observations")
+					}
+				})
+			}
 		}
 	}
 }

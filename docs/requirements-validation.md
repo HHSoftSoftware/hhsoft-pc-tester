@@ -129,8 +129,9 @@ This bounded implementation does not close the broader inspection checklist.
 ## Power-Supply Inventory
 
 The implemented Linux collector enumerates every validated supply entry and
-assigns one-based, nonpersistent `power_supply:N` IDs. It exports no raw entry
-name, serial or derived stable identifier. A missing class and a successfully
+projects thirteen finite driver-observation fields. It assigns one-based,
+nonpersistent `power_supply:N` IDs and exports no raw entry name, serial or
+derived stable identifier. A missing class and a successfully
 empty class both mean no reported rows, not proof of absent hardware. Every
 enumerated entry retains a row even when all fields are unavailable.
 
@@ -151,6 +152,8 @@ has a value. Exact documented `Unknown` labels are reported values.
 | `energy_full_design_uwh` | Signed 32-bit integer, micro-watt-hours |
 | `charge_full_uah` | Signed 32-bit integer, micro-amp-hours |
 | `charge_full_design_uah` | Signed 32-bit integer, micro-amp-hours |
+| `energy_now_uwh` | Signed 32-bit integer, present energy in micro-watt-hours (µWh) |
+| `charge_now_uah` | Signed 32-bit integer, present charge in micro-amp-hours (µAh) |
 
 Successful complete scalar reads are parsed before whitespace normalization.
 At most one terminal LF is removed. Enum text must be nonempty printable ASCII
@@ -163,6 +166,13 @@ signed-32-bit overflow or a field-domain violation is out of range. Negative,
 zero and full-greater-than-design energy or charge observations are retained
 within that integer range, without a health ratio or unit conversion.
 
+The present-energy and present-charge fields are independent driver claims.
+Supply type, scope, present/online flags and status do not infer either value.
+An ordinary failure or malformed peer does not suppress a valid observation.
+In-range zero and negative values remain reported; they do not establish health,
+physical accuracy, electrical current or a runtime estimate. The values retain
+their original µWh/µAh units and do not establish an atomic cross-field sample.
+
 Ordinary scalar open/read errors discard all returned bytes and become
 unavailable. This does not distinguish missing attributes, unavailable driver
 data, hotplug or I/O failure. Existing bounds, malformed-protocol, checked-close,
@@ -171,16 +181,22 @@ limit remains 65,536; this adds no total collection deadline or guarantee that
 a blocked kernel call returns promptly. Sysfs reads may trigger driver hardware
 queries. The observations are separate samples, not an atomic power state.
 
-The new power-specific volatility rule covers only the eleven values and their
-eleven states. Existing shared exclusions and other types retain their prior
-rules; unknown attributes do not gain a blanket exclusion. Power identity stays unavailable; ordinals
-can shift and same-count replacement can be undetectable. No-supply payload bytes,
-identified-component fingerprints and historical session contracts remain
-unchanged. That qualification used 22 catalog rows and v7 with twelve workers;
-storage sampling remains inactive.
+The closed power-supply-specific volatility rule covers the thirteen values and
+their thirteen states. Existing shared exclusions and other component types
+retain their rules; unknown attributes do not gain a blanket exclusion. Power
+identity stays unavailable; ordinals can shift and same-count replacement can be
+undetectable. Changes to the two present values or states do not change stable
+graph/plan bindings; membership and other component policies remain unchanged.
 
-**Qualification completed for the bounded software scope:** the complete
-collector, plan and downstream composition passed 6,239 host test/subtest
+Newly collected supply rows gain the two present-value states, plus values only
+when reported. Missing/empty no-data payload bytes, identified-component
+fingerprints and stored historical reports remain unchanged. Current ordinary
+and linked report schemas, canonical view profiles and signing rules are
+unchanged. The original eleven-field qualification used 22 catalog rows and v7
+with twelve workers; this extension adds no worker or storage activation.
+
+**Historical eleven-field software qualification:** the complete collector,
+plan and downstream composition passed 6,239 host test/subtest
 outcomes across 30 packages, with 17 platform test skips and one skipped
 package. Formatting checks, vet, Linux amd64/386/arm64 application builds,
 all eight commands and all eight postchecks passed. All 30 changed-file roots
@@ -192,15 +208,35 @@ and 291 roots, with no failures, skips, extra names or duplicates. The four
 Linux-only descriptor, normal-link and FIFO roots and the collector fixture
 skipped on the Windows host passed on both architectures. All nine ownership
 cases, 32 archive cases and six postchecks passed, with confirmed cleanup.
-These results qualify the selected software fixtures, not installed commands
-or physical power hardware. Fixture tests must cover real collection through signing, no/both views,
-linked verification and comparison, including private-name canaries and
-correctly re-signed forged identities after valid prerequisites.
+These historical results qualify the original selected software fixtures,
+not the present-value extension, installed commands or physical power hardware.
+Their no-view/both-view cases retain the original legacy-profile scope.
+
+**Present-energy/charge extension qualification:** the full Windows amd64 and
+386 suites each passed 13,492 test/subtest outcomes across 35 packages with the
+same 18 retained skips: 13,303 prior passes plus 189 added names from ten roots
+and 179 declared parent intervals. Each suite checked all 486 selected names
+from 40 roots and their 446 actual direct-parent intervals. All 31 commands
+passed, including formatting, vet and 24 Linux compile-only artifacts for
+amd64, 386 and arm64. All 760 source files, 743 Go files and compiled artifacts
+were rechecked. Compilation does not qualify native Linux execution.
+
+The fixtures exercise raw signed limits and states, owned acquisition and
+failure precedence, per-invocation diagnostics, late failures beyond 325
+supplies, exact no-data declarations, fixed identity/graph/plan expectations,
+all eight view routes, current ordinary/linked signed producers, verification
+and comparison. Correctly re-signed value/state view substitutions fail after
+valid prerequisites. Actual current CLI verification rejects a wrong trusted
+signer in the same mode; linked finalization retains independent parent trust.
+Canonical producer/view comparisons are relational tests, not new qualification
+of archived historical artifacts. No hardware-health or continuity verdict is
+inferred from these observations.
 
 This inventory does not test battery health, wear, capacity accuracy, AC/battery
-transitions or physical continuity. Unsupported-platform execution, installed
-commands, rebuilt images, output durability, the ten-PC pilot and release
-approval retain their separate gates.
+transitions or physical continuity. Broader telemetry, native Linux execution of
+the present-value extension, unsupported-platform execution, installed commands,
+rebuilt images, output durability, the ten-PC pilot, security and license checks,
+and release approval retain their separate gates.
 
 ## Firmware and TPM Inventory
 

@@ -1021,26 +1021,39 @@ qualification and release approval remain open. No alpha gate is removed.
 
 ### Finite power-supply inventory
 
-The Linux inventory implementation adds eleven finite driver-observation fields
-and five explicit value states. It enumerates all reported supplies, using
+The Linux inventory implementation provides thirteen finite driver-observation
+fields and five explicit value states. It enumerates all reported supplies, using
 nonpersistent ordinal rows and unavailable identity instead of exporting raw
 kernel names or serials. Missing or empty enumeration reports no data, not
 hardware absence. Ordinary scalar observation failures discard returned bytes;
 existing ownership, bounds, protocol and cancellation policy remains in force.
 
-The new-type-only volatility policy preserves the existing graph and comparison
-rules for other components. That increment added no worker or catalog entry:
-its qualification used v7 with twelve workers and 22 catalog rows, preserving
-historical contracts. The complete host suite passed 6,239 test/subtest outcomes
-across 30 packages, with 17 test skips and one skipped package. Selected native Linux
-amd64/386 fixtures passed 3,100 named outcomes across 14 suites and 582 root
-executions, with no failures or skips and confirmed cleanup;
-see [requirements and limits](requirements-validation.md#power-supply-inventory).
+Present energy (`energy_now_uwh`, µWh) and charge (`charge_now_uah`, µAh) retain
+independent signed 32-bit driver observations. Zero and negative values remain
+reported; they do not establish electrical current, health or an atomic sample.
+No conversion or derived estimate is added. Newly collected rows gain the two
+states, while missing/empty no-data bytes and stored historical artifacts remain
+unchanged. Changes to these values or states do not change stable graph/plan
+bindings; membership, other component types, identity and signed-profile rules
+retain their existing policy.
 
-These independent observations do not establish battery health, physical
-continuity or AC/battery transitions. Those broader features, the ten-PC pilot,
-installed-command and rebuilt-image qualification, durability and release
-approval remain open. This increment does not expand the approved alpha gates.
+The original eleven-field increment added no worker or catalog entry. Its
+qualification used v7 with twelve workers and 22 catalog rows. The complete host
+suite passed 6,239 test/subtest outcomes across 30 packages, with 17 test skips
+and one skipped package. Selected native Linux amd64/386 fixtures passed 3,100
+named outcomes across 14 suites and 582 root executions, with no failures or
+skips and confirmed cleanup. Those results retain their historical scope.
+
+For the present-energy/charge extension, the full Windows amd64 and 386 suites
+each passed 13,492 outcomes across 35 packages with 18 retained skips, including
+189 added names. Formatting, vet and 24 Linux compile-only builds passed;
+see [requirements and limits](requirements-validation.md#power-supply-inventory).
+The compile checks do not qualify native Linux execution of this extension.
+
+Broader telemetry, battery health, physical continuity and AC/battery transitions
+remain open, as do the ten-PC pilot, installed-command and rebuilt-image
+qualification, durability, security and license checks, and release approval.
+This increment does not expand the approved alpha gates.
 
 ### Finite firmware and TPM inventory
 

@@ -49,8 +49,8 @@ func TestPowerSupplyCollectorPayloadUsesOnlyFinitePublicOrdinals(t *testing.T) {
 	const first = "a-private-SERIAL-LOCATION-CANARY"
 	const second = "z-hid-AA-BB-CC-DD-EE-FF"
 	root := powerAppFixture(t, map[string]map[string]string{
-		first:  {"type": "Battery\n", "scope": "System\n", "present": "1\n", "online": "2\n", "status": "Not charging\n", "capacity": "0\n", "cycle_count": "0\n", "energy_full": "-1\n", "energy_full_design": "0\n", "charge_full": "2147483647\n", "charge_full_design": "-2147483648\n", "serial_number": "FORBIDDEN-SERIAL-CANARY", "model_name": "FORBIDDEN-MODEL-CANARY", "uevent": "FORBIDDEN-UEVENT-CANARY"},
-		second: {"type": "FUTURE-ENUM-CANARY\n", "scope": "Device\n", "status": "Not  charging\n", "capacity": "101\n", "online": "01\n", "manufacturer": "FORBIDDEN-MANUFACTURER-CANARY"},
+		first:  {"type": "Battery\n", "scope": "System\n", "present": "1\n", "online": "2\n", "status": "Not charging\n", "capacity": "0\n", "cycle_count": "0\n", "energy_full": "-1\n", "energy_full_design": "0\n", "charge_full": "2147483647\n", "charge_full_design": "-2147483648\n", "energy_now": "17\n", "charge_now": "-19\n", "serial_number": "FORBIDDEN-SERIAL-CANARY", "model_name": "FORBIDDEN-MODEL-CANARY", "uevent": "FORBIDDEN-UEVENT-CANARY"},
+		second: {"type": "FUTURE-ENUM-CANARY\n", "scope": "Device\n", "status": "Not  charging\n", "capacity": "101\n", "online": "01\n", "energy_now": "2147483648\n", "charge_now": "-0\n", "manufacturer": "FORBIDDEN-MANUFACTURER-CANARY"},
 	})
 	snapshot, err := inventory.NewLinuxCollector(root).Collect(t.Context())
 	if err != nil {
@@ -67,9 +67,11 @@ func TestPowerSupplyCollectorPayloadUsesOnlyFinitePublicOrdinals(t *testing.T) {
 			{Name: "capacity_percent", Value: "0"}, {Name: "capacity_percent_state", Value: "reported"},
 			{Name: "charge_full_design_uah", Value: "-2147483648"}, {Name: "charge_full_design_uah_state", Value: "reported"},
 			{Name: "charge_full_uah", Value: "2147483647"}, {Name: "charge_full_uah_state", Value: "reported"},
+			{Name: "charge_now_uah", Value: "-19"}, {Name: "charge_now_uah_state", Value: "reported"},
 			{Name: "cycle_count_state", Value: "unavailable"},
 			{Name: "energy_full_design_uwh", Value: "0"}, {Name: "energy_full_design_uwh_state", Value: "reported"},
 			{Name: "energy_full_uwh", Value: "-1"}, {Name: "energy_full_uwh_state", Value: "reported"},
+			{Name: "energy_now_uwh", Value: "17"}, {Name: "energy_now_uwh_state", Value: "reported"},
 			{Name: "online", Value: "2"}, {Name: "online_state", Value: "reported"},
 			{Name: "present", Value: "1"}, {Name: "present_state", Value: "reported"},
 			{Name: "scope", Value: "System"}, {Name: "scope_state", Value: "reported"},
@@ -77,7 +79,7 @@ func TestPowerSupplyCollectorPayloadUsesOnlyFinitePublicOrdinals(t *testing.T) {
 			{Name: "supply_type", Value: "Battery"}, {Name: "supply_type_state", Value: "reported"},
 		}},
 		{Type: inventory.ComponentType("power_supply"), ID: "power_supply:2", Identity: unavailable, Attributes: []inventory.Attribute{
-			{Name: "capacity_percent_state", Value: "out_of_range"}, {Name: "charge_full_design_uah_state", Value: "unavailable"}, {Name: "charge_full_uah_state", Value: "unavailable"}, {Name: "cycle_count_state", Value: "unavailable"}, {Name: "energy_full_design_uwh_state", Value: "unavailable"}, {Name: "energy_full_uwh_state", Value: "unavailable"}, {Name: "online_state", Value: "malformed"}, {Name: "present_state", Value: "unavailable"}, {Name: "scope", Value: "Device"}, {Name: "scope_state", Value: "reported"}, {Name: "status_state", Value: "unsupported"}, {Name: "supply_type_state", Value: "unsupported"},
+			{Name: "capacity_percent_state", Value: "out_of_range"}, {Name: "charge_full_design_uah_state", Value: "unavailable"}, {Name: "charge_full_uah_state", Value: "unavailable"}, {Name: "charge_now_uah_state", Value: "malformed"}, {Name: "cycle_count_state", Value: "unavailable"}, {Name: "energy_full_design_uwh_state", Value: "unavailable"}, {Name: "energy_full_uwh_state", Value: "unavailable"}, {Name: "energy_now_uwh_state", Value: "out_of_range"}, {Name: "online_state", Value: "malformed"}, {Name: "present_state", Value: "unavailable"}, {Name: "scope", Value: "Device"}, {Name: "scope_state", Value: "reported"}, {Name: "status_state", Value: "unsupported"}, {Name: "supply_type_state", Value: "unsupported"},
 		}},
 	}}
 	if !reflect.DeepEqual(payload, want) {
@@ -118,6 +120,74 @@ func TestPowerSupplyMissingAndEmptyClassPreserveLiteralPayload(t *testing.T) {
 			raw, err := json.Marshal(payload)
 			if err != nil || string(raw) != legacy {
 				t.Fatal("no-supply historical payload changed", err, string(raw))
+			}
+		})
+	}
+}
+
+func TestPowerSupplyNowPayloadAuthenticatesObservationsWithoutIdentity(t *testing.T) {
+	for _, tc := range []struct{ name, energy, charge, energyValue, energyState, chargeValue, chargeState string }{
+		{"both", "17", "-19", "17", "reported", "-19", "reported"},
+		{"zero", "0", "0", "0", "reported", "0", "reported"},
+		{"energy_missing", "", "-19", "", "unavailable", "-19", "reported"},
+		{"charge_malformed", "17", " 1", "17", "reported", "", "malformed"},
+		{"energy_out_of_range", "2147483648", "7", "", "out_of_range", "7", "reported"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			fields := map[string]string{"type": "Battery\n"}
+			if tc.energy != "" {
+				fields["energy_now"] = tc.energy
+			}
+			if tc.charge != "" {
+				fields["charge_now"] = tc.charge
+			}
+			root := powerAppFixture(t, map[string]map[string]string{"synthetic-supply": fields})
+			snapshot, err := inventory.NewLinuxCollector(root).Collect(t.Context())
+			if err != nil {
+				t.Fatal(err)
+			}
+			before, err := json.Marshal(snapshot)
+			if err != nil {
+				t.Fatal(err)
+			}
+			payload, err := BuildInventoryPayload(snapshot, bytes.Repeat([]byte{0x39}, 32), "power-fixture")
+			if err != nil {
+				t.Fatal(err)
+			}
+			wantFingerprint := SystemFingerprint{Algorithm: "hmac-sha256", KeyEpoch: "power-fixture", KeyID: powerAppKeyHMAC, Value: powerAppSystemHMAC, IdentifiedParts: 1, UnidentifiedParts: 1}
+			if payload.SystemFingerprint != wantFingerprint || len(payload.Components) != 2 || !reflect.DeepEqual(payload.Components[0], powerAppControl()) {
+				t.Fatal("present energy/charge changed independently fixed identities")
+			}
+			power := payload.Components[1]
+			if power.Type != inventory.ComponentPowerSupply || power.ID != "power_supply:1" || power.Identity != (ComponentIdentity{Algorithm: "hmac-sha256", KeyEpoch: "power-fixture", Confidence: "unavailable"}) {
+				t.Fatal("observations invented a durable supply identity")
+			}
+			attributes := make(map[string]string)
+			for _, a := range power.Attributes {
+				if _, exists := attributes[a.Name]; exists {
+					t.Fatal("duplicate attribute")
+				}
+				attributes[a.Name] = a.Value
+			}
+			wantCount := 14 // Thirteen states and the reported type, independent of descriptors.
+			for _, want := range []struct{ name, value, state string }{
+				{"energy_now_uwh", tc.energyValue, tc.energyState},
+				{"charge_now_uah", tc.chargeValue, tc.chargeState},
+			} {
+				value, exists := attributes[want.name]
+				if value != want.value || exists != (want.state == "reported") || attributes[want.name+"_state"] != want.state {
+					t.Fatal("payload lost independent units or finite state")
+				}
+				if want.state == "reported" {
+					wantCount++
+				}
+			}
+			if len(attributes) != wantCount {
+				t.Fatal("present observations invented derived attributes")
+			}
+			after, err := json.Marshal(snapshot)
+			if err != nil || !bytes.Equal(before, after) {
+				t.Fatal("payload builder changed source ownership")
 			}
 		})
 	}

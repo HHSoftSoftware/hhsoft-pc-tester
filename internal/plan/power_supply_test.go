@@ -31,6 +31,7 @@ func TestPowerSupplyTelemetryDoesNotChangeGraphOrPlan(t *testing.T) {
 		"status": "Charging", "capacity_percent": "99", "cycle_count": "2",
 		"energy_full_uwh": "100", "energy_full_design_uwh": "200",
 		"charge_full_uah": "10", "charge_full_design_uah": "20",
+		"energy_now_uwh": "17", "charge_now_uah": "-19",
 	}
 	attributes := make(map[string]string)
 	for name, value := range values {
@@ -63,6 +64,7 @@ func TestPowerSupplyTelemetryDoesNotChangeGraphOrPlan(t *testing.T) {
 		{"status", "Discharging"}, {"capacity_percent", "0"}, {"cycle_count", "1"},
 		{"energy_full_uwh", "-1"}, {"energy_full_design_uwh", "0"},
 		{"charge_full_uah", "2147483647"}, {"charge_full_design_uah", "1"},
+		{"energy_now_uwh", "0"}, {"charge_now_uah", "-2147483648"},
 	} {
 		for _, stateChange := range []bool{false, true} {
 			name := item.name
@@ -103,9 +105,11 @@ func TestPowerSupplyProjectionDoesNotWidenOtherTypes(t *testing.T) {
 	for _, name := range []string{
 		"supply_type", "scope", "present", "online", "status", "capacity_percent", "cycle_count",
 		"energy_full_uwh", "energy_full_design_uwh", "charge_full_uah", "charge_full_design_uah",
+		"energy_now_uwh", "charge_now_uah",
 		"supply_type_state", "scope_state", "present_state", "online_state", "status_state",
 		"capacity_percent_state", "cycle_count_state", "energy_full_uwh_state", "energy_full_design_uwh_state",
 		"charge_full_uah_state", "charge_full_design_uah_state",
+		"energy_now_uwh_state", "charge_now_uah_state",
 	} {
 		t.Run(name, func(t *testing.T) {
 			before := inventory.NewSnapshot([]inventory.Component{inventory.NewComponent(inventory.ComponentCPU, "cpu:0", map[string]string{name: "first"})})
@@ -272,5 +276,97 @@ func TestPowerSupplyAddsNoCatalogWorkerOrStorageActivation(t *testing.T) {
 	if states["storage.quick"] != TestUnsupported || states["storage.destructive"] != TestExcluded ||
 		states["storage.readiness.quick"] != TestScheduled || states["inspection.exterior.quick"] != TestScheduled {
 		t.Fatal("planned storage or current inspection policy changed")
+	}
+}
+
+func TestPowerSupplyNowActualCollectionLeavesStableGraphAndPlan(t *testing.T) {
+	collect := func(energy, charge string) inventory.Snapshot {
+		t.Helper()
+		root := t.TempDir()
+		files := map[string]string{
+			"sys/class/dmi/id/product_uuid":                "11111111-2222-3333-4444-555555555555",
+			"sys/class/power_supply/synthetic-supply/type": "Battery",
+		}
+		if energy != "" {
+			files["sys/class/power_supply/synthetic-supply/energy_now"] = energy
+		}
+		if charge != "" {
+			files["sys/class/power_supply/synthetic-supply/charge_now"] = charge
+		}
+		for name, value := range files {
+			p := filepath.Join(root, filepath.FromSlash(name))
+			if err := os.MkdirAll(filepath.Dir(p), 0700); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(p, []byte(value), 0600); err != nil {
+				t.Fatal(err)
+			}
+		}
+		snapshot, err := inventory.NewLinuxCollector(root).Collect(t.Context())
+		if err != nil {
+			t.Fatal(err)
+		}
+		return snapshot
+	}
+	before := collect("17", "-19")
+	key := bytes.Repeat([]byte{'p'}, 32)
+	graph, err := ObserveHardwareGraph(before, key, "power-test")
+	if err != nil || graph.Value != "hmac-sha256:a3548e918a2b878a22dbc856adc06dd01347bcf56c758f446a0cdc34bcaace72" {
+		t.Fatal("fixed graph prerequisite", err)
+	}
+	frozen, err := Build(before, ProfileQuick, "x86_64", key, "power-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	frozenBytes, err := json.Marshal(frozen)
+	if err != nil {
+		t.Fatal(err)
+	}
+	beforeBytes, err := json.Marshal(before)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct{ name, energy, charge, energyValue, energyState, chargeValue, chargeState string }{
+		{"energy_change", "-2147483648", "-19", "-2147483648", "reported", "-19", "reported"},
+		{"charge_change", "17", "2147483647", "17", "reported", "2147483647", "reported"},
+		{"energy_missing", "", "-19", "", "unavailable", "-19", "reported"},
+		{"charge_malformed", "17", " 1", "17", "reported", "", "malformed"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			after := collect(tc.energy, tc.charge)
+			found := 0
+			for _, component := range after.Components {
+				if component.Type != inventory.ComponentPowerSupply {
+					continue
+				}
+				found++
+				for _, want := range []struct{ name, value, state string }{
+					{"energy_now_uwh", tc.energyValue, tc.energyState},
+					{"charge_now_uah", tc.chargeValue, tc.chargeState},
+				} {
+					value, exists := component.Attribute(want.name)
+					state, hasState := component.Attribute(want.name + "_state")
+					if value != want.value || exists != (want.state == "reported") || !hasState || state != want.state {
+						t.Fatal("actual changed observation prerequisite")
+					}
+				}
+			}
+			encoded, err := json.Marshal(after)
+			if err != nil || found != 1 || bytes.Equal(encoded, beforeBytes) {
+				t.Fatal("effective collected update prerequisite")
+			}
+			nextGraph, err := ObserveHardwareGraph(after, key, "power-test")
+			if err != nil || !reflect.DeepEqual(nextGraph, graph) || !reflect.DeepEqual(CompareHardwareGraphs(graph, nextGraph), HardwareDelta{}) {
+				t.Fatal("present energy/charge changed stable graph policy")
+			}
+			next, err := Build(after, ProfileQuick, "x86_64", key, "power-test")
+			if err != nil {
+				t.Fatal(err)
+			}
+			nextBytes, err := json.Marshal(next)
+			if err != nil || !bytes.Equal(nextBytes, frozenBytes) {
+				t.Fatal("volatile observation changed canonical plan bytes")
+			}
+		})
 	}
 }

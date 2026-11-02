@@ -734,7 +734,7 @@ the alpha still requires the separate documented release gates.
   the 386 coverage. Formatting, vet and six Linux application/inventory-test
   builds passed. Linux artifacts were compiled only.
 - [x] Add a same-pass, fixed-size diagnostic companion for optional inventory
-  file reads. Only `hhpt inventory` consumes it, as one bounded stderr warning
+  file reads. `hhpt inventory` consumes it as one bounded stderr warning
   with scalar, CPU, memory and input failure counts. Clean absence and completed
   empty reads remain quiet; paths and provider error text are excluded. Schema-1
   snapshots, component identities and fingerprint/correction inputs are retained.
@@ -745,6 +745,15 @@ the alpha still requires the separate documented release gates.
   fresh-call reset, 325 instances and CLI output compatibility. Formatting, vet
   and six Linux application/inventory-test builds passed; these Linux artifacts
   were compiled only. Linux runtime and physical-device validation remain open.
+- [x] Connect `hhpt plan` to the same-pass aggregate diagnostics without changing
+  canonical plan bytes, hardware-graph inputs or selection behavior. Deliver the
+  bounded warning before destination acquisition and retain key/output ownership.
+- [x] Validate the plan-warning increment with the full Windows amd64 and 386
+  suites: 12,965 test/subtest passes and 18 retained skips per architecture.
+  All 56 new names across ten roots and 46 direct-parent intervals passed
+  without skips. Formatting, vet and 15 Linux compile-only artifacts passed.
+- [ ] Qualify this plan-warning route on native Linux, in installed images and
+  on physical PCs; retain the pilot and release gates.
 - [ ] Bound remaining parser expansion, aggregate/peak allocation and parser
   CPU time; add field-specific diagnostics and warning coverage for other
   inventory/report consumers. Logical parser and

@@ -21,8 +21,8 @@ func runInventoryWithDiagnostics(ctx context.Context, arguments []string, stdout
 }
 
 // The existing command still owns key admission, fixture exclusions, payload
-// construction and destination closure. Only this inventory CLI consumes the
-// companion; plan, capture and report callers retain the legacy Collect API.
+// construction and destination closure. Inventory and plan CLI commands consume
+// the companion; capture and report callers retain the legacy Collect API.
 func runInventoryWithDiagnosticInput(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect inventoryDiagnosticCollector, writeOutput destinationWriter, readInput retestInputReader) int {
 	if stderr == nil {
 		return 1
@@ -55,6 +55,46 @@ func runInventoryWithDiagnosticInput(ctx context.Context, arguments []string, st
 		}
 	}
 	return runInventoryWithInput(ctx, arguments, stdout, stderr, snapshotOnly, destination, readInput)
+}
+
+func runPlanWithDiagnostics(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect inventoryDiagnosticCollector) int {
+	return runPlanWithDiagnosticInput(ctx, arguments, stdout, stderr, collect, writeDestination, readRetestInput)
+}
+
+// Keep plan admission, graph construction and canonical output in the existing
+// command. The warning is delivered before the destination can be acquired.
+func runPlanWithDiagnosticInput(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect inventoryDiagnosticCollector, writeOutput destinationWriter, readInput retestInputReader) int {
+	if stderr == nil {
+		return 1
+	}
+	var diagnostics inventory.CollectionDiagnostics
+	var snapshotOnly snapshotCollector
+	if collect != nil {
+		snapshotOnly = func(ctx context.Context) (inventory.Snapshot, error) {
+			snapshot, observed, err := collect(ctx)
+			if err != nil {
+				return inventory.Snapshot{}, err
+			}
+			if !observed.Valid() {
+				return inventory.Snapshot{}, errInventoryDiagnostics
+			}
+			diagnostics = observed
+			return snapshot, nil
+		}
+	}
+	var destination destinationWriter
+	if writeOutput != nil {
+		destination = func(path string, stdout io.Writer, write func(io.Writer) error) error {
+			if err := writeInventoryObservationWarning(stderr, diagnostics); err != nil {
+				return err
+			}
+			if err := ctx.Err(); err != nil {
+				return err
+			}
+			return writeOutput(path, stdout, write)
+		}
+	}
+	return runPlanWithInput(ctx, arguments, stdout, stderr, snapshotOnly, destination, readInput)
 }
 
 func writeInventoryObservationWarning(destination io.Writer, diagnostics inventory.CollectionDiagnostics) error {

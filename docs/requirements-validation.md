@@ -1190,6 +1190,38 @@ race/durability, physical-PC qualification, the ten-PC beta pilot and all four
 release-image gates remain open for this increment. The initial alpha retains
 its separate release requirements.
 
+## Plan Observation Diagnostics
+
+`hhpt plan` now consumes the inventory collector's same-pass diagnostic companion.
+Its four bounded counters describe failed scalar, CPU, memory and input read
+attempts, not distinct devices. Clean absence and completed empty reads remain
+quiet. The diagnostic counts stay outside canonical inventory, hardware graphs,
+plan identities and plan JSON; collection is not repeated to obtain them.
+
+The adapter validates counters before retaining a successful snapshot. After
+existing plan admission and construction, the fixed warning must be delivered
+to stderr before destination acquisition. A warning error, short or invalid
+write count, or observed cancellation prevents successful output. Existing
+fatal collection, owned key closure and owned output closure handling remain
+in place. Paths and raw provider error text are excluded from the warning.
+Provider read errors are classified inside acquisition; arbitrary errors from
+injected collector implementations retain the command's existing formatting
+behavior. This is not a blanket callback-safety claim for every injected error.
+
+The full Windows amd64 and 386 suites each recorded 12,965 test/subtest passes
+and 18 retained skips. All 56 new names across ten roots and 46 direct-parent
+completion intervals passed without skips. The exact 12,909 prior pass names,
+18 skip names and package membership remained unchanged on each architecture.
+The added cases cover real fixture providers, canonical plan equality,
+selection, fresh counters, warning failure, cancellation and owned input/output
+closure; the 56-case Windows amd64 preflight also passed.
+
+Formatting and vet passed. Fifteen application and inventory, app, render and
+command test binaries compiled for Linux amd64, 386 and arm64; they were not
+executed. Field-specific diagnostics and other inventory/report consumers remain
+separate work. Native Linux, installed-image, physical-PC, pilot and release
+qualification remain open.
+
 ## Small Regular-file Input Closure
 
 The shared small-document reader returns bytes only after successful readable

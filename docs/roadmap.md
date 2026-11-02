@@ -336,7 +336,7 @@ Those artifacts were compiled only; no new Linux runtime, boot-image or
 physical-device qualification is claimed.
 
 Optional file-read diagnostics now have a same-pass, fixed-size companion.
-Only `hhpt inventory` consumes it: a fixed stderr warning contains four bounded
+`hhpt inventory` consumes it: a fixed stderr warning contains four bounded
 counts for scalar, CPU, memory and input read failures. Counts describe failed
 attempts, not distinct devices. Trusted clean absence and completed empty reads
 remain quiet; no path or provider error text enters the warning. Classifying
@@ -351,6 +351,18 @@ same 18 retained skips, including all 99 new names. Formatting, vet and six
 Linux amd64/386/AArch64 application and inventory-test builds passed. These
 Linux artifacts were compiled only; Linux runtime, rebuilt-image and
 physical-device qualification remain open.
+
+`hhpt plan` now consumes the same-pass diagnostic companion too. Counts remain
+outside canonical plan JSON and keyed hardware-graph inputs. The fixed warning
+must be delivered before a destination is acquired; key closure, collection
+failure and cancellation retain their existing precedence. This connection is
+implemented and passed the full Windows amd64 and 386 suites: 12,965 test/subtest
+passes and 18 retained skips per architecture, including all 56 new names
+without skips. The prior pass and skip sets remained exact. Formatting, vet
+and 15 Linux application/test-binary compile checks passed; those artifacts
+were not executed. Native Linux, installed images, physical PCs, the pilot and
+release qualification remain open. Earlier inventory-command evidence retains
+its historical scope.
 
 Remaining parser expansion, aggregate/peak allocation and CPU time budgets,
 along with field-specific diagnostics and warning coverage for other

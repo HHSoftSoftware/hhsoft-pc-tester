@@ -15,7 +15,7 @@ import (
 
 func runPlan(ctx context.Context, arguments []string, stdout, stderr io.Writer) int {
 	collector := inventory.NewLinuxCollector("/")
-	return runPlanWith(ctx, arguments, stdout, stderr, collector.Collect)
+	return runPlanWithDiagnostics(ctx, arguments, stdout, stderr, collector.CollectWithDiagnostics)
 }
 
 func runPlanWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector) int {

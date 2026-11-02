@@ -45,7 +45,7 @@ func runCapture(ctx context.Context, arguments []string, stdout, stderr io.Write
 	probe := func(ctx context.Context, frames int) graphics.Result {
 		return graphics.Probe(ctx, "/", frames, graphics.NewExecRunner("/run/hhpt", 20*time.Second, 64<<10))
 	}
-	return runCaptureWith(ctx, arguments, stdout, stderr, collector.Collect, probe, quick.RunCPU, quick.RunMemory, inputtest.Run, networktest.Run, storage.Run, usbtest.Run, cryptorand.Reader, time.Now)
+	return runCaptureWithDiagnosticDestination(ctx, arguments, stdout, stderr, collector.CollectWithDiagnostics, probe, quick.RunCPU, quick.RunMemory, inputtest.Run, networktest.Run, storage.Run, usbtest.Run, cryptorand.Reader, time.Now, writeDestination, readRetestInput)
 }
 
 func runCaptureWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, probeGraphics graphicsCollector, probeCPU cpuCollector, probeMemory memoryCollector, probeInput inputCollector, probeNetwork networkCollector, probeStorage storageCollector, probeUSB usbCollector, random io.Reader, now func() time.Time) int {

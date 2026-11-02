@@ -1218,9 +1218,45 @@ closure; the 56-case Windows amd64 preflight also passed.
 
 Formatting and vet passed. Fifteen application and inventory, app, render and
 command test binaries compiled for Linux amd64, 386 and arm64; they were not
-executed. Field-specific diagnostics and other inventory/report consumers remain
-separate work. Native Linux, installed-image, physical-PC, pilot and release
+executed. Field-specific diagnostics and finalization/session warning coverage
+remain separate work. Native Linux, installed-image, physical-PC, pilot and release
 qualification remain open.
+
+## Capture Observation Diagnostics
+
+Direct `hhpt capture` collects the four bounded scalar, CPU, memory and input
+failure counters with its single inventory pass. Counts describe failed read
+attempts, not devices; clean absence and completed empty reads remain quiet.
+The fixed stderr warning excludes paths, raw values and provider error text.
+Counters reset per invocation and stay outside canonical inventory, report
+payloads, identities, views and signatures.
+
+Existing key admission and optional session-ID entropy precede collection.
+After successful collection and counter validation, warning delivery must finish
+before any worker, clock use, signing or output. Fatal collection and closure
+errors retain precedence. Warning errors, short or invalid write counts and
+observed cancellation stop later effects. Owned input/output closure and worker
+cleanup checks remain in force.
+
+Real provider errors are classified without calling their `Error`, `Is` or
+`Unwrap` methods. Arbitrary errors returned by injected collector implementations
+still receive the legacy command's formatting; this is not a blanket callback-
+safety claim for injected errors.
+
+Using Go 1.27.2, the full Windows amd64 and 386 suites each passed 13,026
+tests/subtests across 35 packages, retaining the exact 12,965 prior pass names
+and 18 skip names. All 61 new names across eleven roots and 50 direct-parent
+intervals passed without skips. Tests cover real fixture providers, quiet/reset
+behavior, key/entropy ownership, failure precedence and cleanup. Fixed-input
+bundles match the legacy route byte for byte and pass expected-signer verification
+with independent wrong-signer rejection. This relational check does not qualify
+historical archives.
+
+Formatting and vet passed. Fifteen application and inventory, app, render and
+command test binaries compiled for Linux amd64, 386 and arm64; none were executed.
+Finalization/session warning coverage and field-specific diagnostics remain open.
+Native Linux, installed images, physical PCs, the ten-PC beta pilot and release,
+security and licensing gates remain separate requirements.
 
 ## Small Regular-file Input Closure
 

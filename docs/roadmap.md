@@ -364,9 +364,24 @@ were not executed. Native Linux, installed images, physical PCs, the pilot and
 release qualification remain open. Earlier inventory-command evidence retains
 its historical scope.
 
+Direct `hhpt capture` now consumes the same-pass companion before any workers,
+clock use, signing or output. Existing key admission and optional session-ID
+entropy remain earlier. Failed warning delivery or cancellation stops later
+effects; clean absence stays quiet. Diagnostic counts and raw provider error
+text stay outside canonical report data. Fixed-input signed bundles remain byte-identical to the
+legacy route, with expected-signer verification; this does not qualify historical
+archives.
+
+The full Windows amd64 and 386 suites each passed 13,026 tests/subtests across
+35 packages, retaining all 12,965 prior passes and the same 18 skips. All 61 new
+names across eleven roots and 50 direct-parent intervals passed. Formatting,
+vet and 15 Linux amd64/386/arm64 compile-only artifacts passed. Native Linux,
+installed images, physical PCs, the ten-PC pilot and release gates remain open.
+
 Remaining parser expansion, aggregate/peak allocation and CPU time budgets,
-along with field-specific diagnostics and warning coverage for other
-inventory/report consumers, remain open. These logical limits exclude
+along with field-specific diagnostics and warning coverage for remaining
+inventory/report consumers, including finalization and sessions, remain open.
+These logical limits exclude
 allocator overhead, raw source storage, later downstream copies and provider
 allocations; they do not establish a whole-heap bound or kernel preemption.
 Cancellation cannot interrupt a blocked source call. This inventory increment

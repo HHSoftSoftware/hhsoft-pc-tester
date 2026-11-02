@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"time"
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
 )
@@ -21,8 +22,8 @@ func runInventoryWithDiagnostics(ctx context.Context, arguments []string, stdout
 }
 
 // The existing command still owns key admission, fixture exclusions, payload
-// construction and destination closure. Inventory and plan CLI commands consume
-// the companion; capture and report callers retain the legacy Collect API.
+// construction and destination closure. Inventory, plan and direct capture
+// consume the companion; finalization/session callers retain Collect.
 func runInventoryWithDiagnosticInput(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect inventoryDiagnosticCollector, writeOutput destinationWriter, readInput retestInputReader) int {
 	if stderr == nil {
 		return 1
@@ -95,6 +96,37 @@ func runPlanWithDiagnosticInput(ctx context.Context, arguments []string, stdout,
 		}
 	}
 	return runPlanWithInput(ctx, arguments, stdout, stderr, snapshotOnly, destination, readInput)
+}
+
+// Capture keeps key admission and optional session-ID entropy in the existing
+// command. A successful warning must precede every worker and report effect.
+func runCaptureWithDiagnosticDestination(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect inventoryDiagnosticCollector, probeGraphics graphicsCollector, probeCPU cpuCollector, probeMemory memoryCollector, probeInput inputCollector, probeNetwork networkCollector, probeStorage storageCollector, probeUSB usbCollector, random io.Reader, now func() time.Time, writeOutput destinationWriter, readInput retestInputReader) int {
+	if stderr == nil {
+		return 1
+	}
+	snapshotOnly := func(ctx context.Context) (inventory.Snapshot, error) {
+		if collect == nil {
+			return inventory.Snapshot{}, errInventoryDiagnostics
+		}
+		snapshot, observed, err := collect(ctx)
+		if err != nil {
+			return inventory.Snapshot{}, err
+		}
+		if !observed.Valid() {
+			return inventory.Snapshot{}, errInventoryDiagnostics
+		}
+		if err := ctx.Err(); err != nil {
+			return inventory.Snapshot{}, err
+		}
+		if err := writeInventoryObservationWarning(stderr, observed); err != nil {
+			return inventory.Snapshot{}, err
+		}
+		if err := ctx.Err(); err != nil {
+			return inventory.Snapshot{}, err
+		}
+		return snapshot, nil
+	}
+	return runCaptureWithDestination(ctx, arguments, stdout, stderr, snapshotOnly, probeGraphics, probeCPU, probeMemory, probeInput, probeNetwork, probeStorage, probeUSB, random, now, writeOutput, readInput)
 }
 
 func writeInventoryObservationWarning(destination io.Writer, diagnostics inventory.CollectionDiagnostics) error {

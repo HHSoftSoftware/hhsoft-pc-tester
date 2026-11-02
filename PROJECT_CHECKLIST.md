@@ -754,9 +754,22 @@ the alpha still requires the separate documented release gates.
   without skips. Formatting, vet and 15 Linux compile-only artifacts passed.
 - [ ] Qualify this plan-warning route on native Linux, in installed images and
   on physical PCs; retain the pilot and release gates.
+- [x] Connect direct `hhpt capture` to the same-pass aggregate diagnostics.
+  Deliver the fixed warning before workers, clock use, signing and output;
+  existing key admission and optional session-ID generation remain earlier.
+  Clean absence stays quiet; counts do not enter canonical report data.
+- [x] Validate capture diagnostics with the full Windows amd64 and 386 suites:
+  13,026 test/subtest passes and the same 18 retained skips across 35 packages
+  per architecture. All 61 new names across eleven roots and 50 direct-parent
+  intervals passed. Formatting, vet and 15 Linux compile-only artifacts passed.
+  Fixed-input signed bundles match the legacy route byte for byte; this is
+  relational compatibility, not historical-archive qualification.
+- [ ] Qualify capture diagnostics on native Linux, in installed images and on
+  physical PCs; retain the ten-PC beta pilot and release gates. See
+  [the capture contract](docs/requirements-validation.md#capture-observation-diagnostics).
 - [ ] Bound remaining parser expansion, aggregate/peak allocation and parser
-  CPU time; add field-specific diagnostics and warning coverage for other
-  inventory/report consumers. Logical parser and
+  CPU time; add field-specific diagnostics and warning coverage for remaining
+  inventory/report consumers, including finalization and sessions. Logical parser and
   acquisition budgets do not establish a whole-heap bound or kernel preemption.
   Legacy providers may allocate before returning, and cancellation cannot
   interrupt a blocked call. Broader Linux runtime, rebuilt-image, physical-device,

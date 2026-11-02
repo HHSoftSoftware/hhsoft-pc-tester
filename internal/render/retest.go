@@ -20,3 +20,29 @@ func InventoryRetestHTMLForVersion(payload app.InventoryPayload, version string,
 func InventoryRetestPDFForVersion(payload app.InventoryPayload, version string, previous report.PreviousReport) ([]byte, error) {
 	return inventoryPDFWithPrevious(payload, version, &previous)
 }
+
+// These explicit entry points belong to the authenticated capacity view profile.
+// Legacy entry points above retain their complete historical output bytes.
+func InventoryMemoryCapacityHTMLForVersion(payload app.InventoryPayload, version string) ([]byte, error) {
+	var output bytes.Buffer
+	if err := renderInventoryHTMLWithCapacity(&output, payload, version, nil, true); err != nil {
+		return nil, err
+	}
+	return output.Bytes(), nil
+}
+
+func InventoryMemoryCapacityPDFForVersion(payload app.InventoryPayload, version string) ([]byte, error) {
+	return inventoryPDFWithCapacity(payload, version, nil, true)
+}
+
+func InventoryMemoryCapacityRetestHTMLForVersion(payload app.InventoryPayload, version string, previous report.PreviousReport) ([]byte, error) {
+	var output bytes.Buffer
+	if err := renderInventoryHTMLWithCapacity(&output, payload, version, &previous, true); err != nil {
+		return nil, err
+	}
+	return output.Bytes(), nil
+}
+
+func InventoryMemoryCapacityRetestPDFForVersion(payload app.InventoryPayload, version string, previous report.PreviousReport) ([]byte, error) {
+	return inventoryPDFWithCapacity(payload, version, &previous, true)
+}

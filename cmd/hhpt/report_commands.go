@@ -237,7 +237,7 @@ func captureBundle(snapshot inventory.Snapshot, testResults []app.TestResult, fi
 	if err != nil {
 		return nil, err
 	}
-	manifestDigest, err := bundle.ManifestDigestWithPDF(inventoryJSON, html, pdf)
+	manifestDigest, err := bundle.MemoryCapacityManifestDigestWithPDF(inventoryJSON, html, pdf, nil, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -255,7 +255,7 @@ func captureBundle(snapshot inventory.Snapshot, testResults []app.TestResult, fi
 		return nil, err
 	}
 	var encoded bytes.Buffer
-	if err := bundle.WriteWithPDF(&encoded, inventoryJSON, envelope, html, pdf); err != nil {
+	if err := bundle.WriteMemoryCapacityWithPDF(&encoded, inventoryJSON, envelope, html, pdf, nil, nil); err != nil {
 		return nil, err
 	}
 	return encoded.Bytes(), nil
@@ -278,12 +278,7 @@ func captureSelfIssuedBundleWithPrevious(snapshot inventory.Snapshot, testResult
 	if err != nil {
 		return nil, err
 	}
-	var manifestDigest string
-	if previous == nil {
-		manifestDigest, err = bundle.SelfIssuedManifestDigestWithPDF(inventoryJSON, html, pdf, publicKey)
-	} else {
-		manifestDigest, err = bundle.RetestManifestDigestWithPDF(inventoryJSON, html, pdf, *previous, publicKey)
-	}
+	manifestDigest, err := bundle.MemoryCapacityManifestDigestWithPDF(inventoryJSON, html, pdf, publicKey, previous)
 	if err != nil {
 		return nil, err
 	}
@@ -300,11 +295,7 @@ func captureSelfIssuedBundleWithPrevious(snapshot inventory.Snapshot, testResult
 		return nil, err
 	}
 	var encoded bytes.Buffer
-	if previous == nil {
-		err = bundle.WriteSelfIssuedWithPDF(&encoded, inventoryJSON, envelope, html, pdf, publicKey)
-	} else {
-		err = bundle.WriteRetestWithPDF(&encoded, inventoryJSON, envelope, html, pdf, *previous, publicKey)
-	}
+	err = bundle.WriteMemoryCapacityWithPDF(&encoded, inventoryJSON, envelope, html, pdf, publicKey, previous)
 	if err != nil {
 		return nil, err
 	}
@@ -334,17 +325,17 @@ func renderSerializedInventoryWithPrevious(payload app.InventoryPayload, previou
 		return nil, nil, nil, fmt.Errorf("decode serialized inventory: %w", err)
 	}
 	if previous == nil {
-		html, err = render.InventoryHTML(serialized)
+		html, err = render.InventoryMemoryCapacityHTMLForVersion(serialized, product.Version)
 	} else {
-		html, err = render.InventoryRetestHTMLForVersion(serialized, product.Version, *previous)
+		html, err = render.InventoryMemoryCapacityRetestHTMLForVersion(serialized, product.Version, *previous)
 	}
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("render report: %w", err)
 	}
 	if previous == nil {
-		pdf, err = render.InventoryPDF(serialized)
+		pdf, err = render.InventoryMemoryCapacityPDFForVersion(serialized, product.Version)
 	} else {
-		pdf, err = render.InventoryRetestPDFForVersion(serialized, product.Version, *previous)
+		pdf, err = render.InventoryMemoryCapacityRetestPDFForVersion(serialized, product.Version, *previous)
 	}
 	if err != nil {
 		return nil, nil, nil, fmt.Errorf("render PDF: %w", err)

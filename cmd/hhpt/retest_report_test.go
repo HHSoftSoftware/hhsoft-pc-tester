@@ -496,7 +496,7 @@ func TestRetestStandaloneFinalizationSignsNewCurrentEvidence(t *testing.T) {
 		t.Fatal(err)
 	}
 	want := commandRetestReference(parent)
-	if artifact.Manifest.PreviousReport == nil || *artifact.Manifest.PreviousReport != want || !report.ValidRetestID(artifact.Envelope.SessionID) || artifact.Envelope.SessionID == parent.artifact.Envelope.SessionID || bytes.Contains(artifact.InventoryJSON, []byte("parent-only-no-inherited-results")) {
+	if artifact.Manifest.Schema != bundle.MemoryCapacityRetestManifestSchema || artifact.Manifest.ViewProfile != bundle.MemoryCapacityViewProfile || artifact.Manifest.PreviousReport == nil || *artifact.Manifest.PreviousReport != want || !report.ValidRetestID(artifact.Envelope.SessionID) || artifact.Envelope.SessionID == parent.artifact.Envelope.SessionID || bytes.Contains(artifact.InventoryJSON, []byte("parent-only-no-inherited-results")) {
 		t.Fatal("finalizer lost exact parent reference, fresh ID or evidence isolation")
 	}
 	var payload app.InventoryPayload
@@ -905,7 +905,7 @@ func TestRetestComparisonAndPersistenceConsumeVerifiedCurrentBundle(t *testing.T
 	if err != nil {
 		t.Fatalf("comparison fixture is not verified: %v", err)
 	}
-	if artifact.Manifest.Schema != bundle.RetestManifestSchema || artifact.Manifest.PreviousReport == nil || *artifact.Manifest.PreviousReport != commandRetestReference(parent) {
+	if artifact.Manifest.Schema != bundle.MemoryCapacityRetestManifestSchema || artifact.Manifest.ViewProfile != bundle.MemoryCapacityViewProfile || artifact.Manifest.PreviousReport == nil || *artifact.Manifest.PreviousReport != commandRetestReference(parent) {
 		t.Fatal("comparison fixture is not the intended linked report")
 	}
 	var payload app.InventoryPayload
@@ -928,7 +928,7 @@ func TestRetestComparisonAndPersistenceConsumeVerifiedCurrentBundle(t *testing.T
 	out.Reset()
 	errOut.Reset()
 	if code := runCompare(t.Context(), []string{"-self-issued", output, output}, &out, &errOut); code != 0 || errOut.Len() != 0 {
-		t.Fatalf("verified v2 comparison failed: code=%d stderr=%q", code, errOut.String())
+		t.Fatalf("verified current-profile comparison failed: code=%d stderr=%q", code, errOut.String())
 	}
 	var compared comparison.Result
 	decoder := json.NewDecoder(&out)
@@ -971,13 +971,13 @@ func TestRetestComparisonAndPersistenceConsumeVerifiedCurrentBundle(t *testing.T
 	persist := func(_ context.Context, _ reporttarget.Options, _ reporttarget.Authorization, source *os.File, size int64, name string, digest [sha256.Size]byte) (reporttarget.Receipt, error) {
 		calls++
 		if source == nil || size != int64(len(encoded)) || digest != want {
-			t.Fatal("persist did not receive exact verified v2 bytes")
+			t.Fatal("persist did not receive exact verified current-profile bytes")
 		}
 		return reporttarget.Receipt{Schema: reporttarget.ReceiptSchema, File: name, Bytes: size, SHA256: fmt.Sprintf("sha256:%x", digest), FileSynced: true, ReadBackVerified: true, DirectorySynced: true}, nil
 	}
 	out.Reset()
 	errOut.Reset()
 	if code := runPersistWith(t.Context(), []string{"-authorization", path, "-fingerprint-key", args[1], "-self-issued", output}, &out, &errOut, readRetestInput, persist); code != 0 || calls != 1 {
-		t.Fatalf("verified v2 persistence bridge failed: %d %s", code, &errOut)
+		t.Fatalf("verified current-profile persistence bridge failed: %d %s", code, &errOut)
 	}
 }

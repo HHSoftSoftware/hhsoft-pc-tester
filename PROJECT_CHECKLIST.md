@@ -898,8 +898,20 @@ the alpha still requires the separate documented release gates.
   one package skip. Selected native runs recorded 5,268 named passes across
   14 package executions, with no skips or failures. Physical and release
   qualification remain separate.
-- [ ] Cross-check memory capacity, topology, speed, and exposed SPD data against
-  firmware and OS observations; monitor corrected and uncorrected ECC deltas.
+- [x] Add a derived memory-capacity summary to ordinary and linked HTML/PDF
+  reports, using only the original recorded firmware entries and OS observation.
+  Show exact bytes, distinct incomplete states and comparison eligibility;
+  preserve identities and test outcomes without claiming physical RAM coverage.
+- [x] Validate the memory-capacity view profile and manifest v3/v4 consumers with
+  the full Windows amd64/386 suites: 12,642 test/subtest passes and 18 retained
+  skips per architecture, including all 337 new cases without skips. Formatting,
+  vet and Linux amd64/386/arm64 compilation passed.
+- [ ] Qualify this profile on native Linux, installed images and physical PCs;
+  retain the pilot and release gates. Earlier inventory or linked-report native
+  results do not qualify this increment; see [the current scope](docs/requirements-validation.md#memory-capacity-report-view).
+- [ ] Cross-check memory topology, speed and exposed SPD data against firmware
+  and OS observations; monitor corrected and uncorrected ECC deltas. Independent
+  physical capacity validation and broader memory coverage remain open.
 - [ ] Add the separate Memtest86+ boot entry for complete memory coverage.
 - [ ] Test audio output, microphone input, channels, volume, and jack behavior.
 - [ ] Test keyboard, mouse, touchpad, touchscreen, pen, and buttons.

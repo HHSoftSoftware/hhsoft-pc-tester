@@ -38,6 +38,7 @@ type inventoryDocument struct {
 	CPUStress           *cpuStressDocument
 	MemoryStress        *memoryStressDocument
 	Inspection          *inspectionDocument
+	MemoryCapacity      *memoryCapacityDocument
 }
 
 type testDocument struct {
@@ -326,7 +327,23 @@ table{background:var(--panel);border-collapse:collapse;border:1px solid var(--li
 {{end}}
 {{else}}<p class="notice">No functional test evidence is included.</p>{{end}}
 </section>
-<section class="section" aria-labelledby="components-heading">
+{{with .MemoryCapacity}}<section class="section" aria-labelledby="memory-capacity-heading">
+<h2 id="memory-capacity-heading">Memory capacity observations</h2>
+<table><tbody>
+<tr><th scope="row">Firmware observation status</th><td>{{.FirmwareStatus}}</td></tr>
+<tr><th scope="row">{{.FirmwareLabel}}</th><td>{{.FirmwareCapacity}}</td></tr>
+<tr><th scope="row">Firmware entries</th><td>{{.Entries}}</td></tr>
+<tr><th scope="row">Reported populated / unpopulated entries</th><td>{{.Populated}} / {{.Unpopulated}}</td></tr>
+<tr><th scope="row">Unknown / unavailable capacities</th><td>{{.Unknown}} / {{.Unavailable}}</td></tr>
+<tr><th scope="row">Unsupported / malformed capacities</th><td>{{.Unsupported}} / {{.Malformed}}</td></tr>
+<tr><th scope="row">Invalid observations</th><td>{{.Invalid}}</td></tr>
+<tr><th scope="row">Populated memory types</th><td>{{.TypeStatus}}</td></tr>
+<tr><th scope="row">OS observation status</th><td>{{.OSStatus}}</td></tr>
+<tr><th scope="row">OS total (1 KiB = 1024 bytes)</th><td>{{.OSKiB}}; {{.OSCapacity}}</td></tr>
+<tr><th scope="row">Relationship</th><td>{{.Relationship}}</td></tr>
+</tbody></table><p class="notice">{{.Caveat}}</p>
+</section>
+{{end}}<section class="section" aria-labelledby="components-heading">
 <h2 id="components-heading">Components</h2>
 {{if .Components}}
 {{range $index, $component := .Components}}
@@ -381,6 +398,10 @@ func renderInventoryHTML(output io.Writer, payload app.InventoryPayload, version
 }
 
 func renderInventoryHTMLWithPrevious(output io.Writer, payload app.InventoryPayload, version string, previous *report.PreviousReport) error {
+	return renderInventoryHTMLWithCapacity(output, payload, version, previous, false)
+}
+
+func renderInventoryHTMLWithCapacity(output io.Writer, payload app.InventoryPayload, version string, previous *report.PreviousReport, capacity bool) error {
 	if previous != nil && previous.Validate() != nil {
 		return errors.New("invalid previous-report view reference")
 	}
@@ -474,6 +495,10 @@ func renderInventoryHTMLWithPrevious(output io.Writer, payload app.InventoryPayl
 		CPUStress:           stress,
 		MemoryStress:        memoryStress,
 		Inspection:          inspection,
+	}
+	if capacity {
+		summary := memoryCapacityReportDocument(components)
+		document.MemoryCapacity = &summary
 	}
 	return inventoryTemplate.Execute(&limitedWriter{destination: output}, document)
 }

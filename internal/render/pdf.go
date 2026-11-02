@@ -35,19 +35,17 @@ func InventoryPDFForVersion(payload app.InventoryPayload, version string) ([]byt
 }
 
 func inventoryPDFWithPrevious(payload app.InventoryPayload, version string, previous *report.PreviousReport) ([]byte, error) {
+	return inventoryPDFWithCapacity(payload, version, previous, false)
+}
+
+func inventoryPDFWithCapacity(payload app.InventoryPayload, version string, previous *report.PreviousReport, capacity bool) ([]byte, error) {
 	if previous != nil && previous.Validate() != nil {
 		return nil, errors.New("invalid previous-report view reference")
 	}
 	if err := validateVersion(version); err != nil {
 		return nil, err
 	}
-	var lines []string
-	var err error
-	if previous == nil {
-		lines, err = inventoryPDFLines(payload, version)
-	} else {
-		lines, err = inventoryPDFLinesWithPrevious(payload, version, previous)
-	}
+	lines, err := inventoryPDFLinesWithCapacity(payload, version, previous, capacity)
 	if err != nil {
 		return nil, err
 	}
@@ -110,6 +108,10 @@ func inventoryPDFLines(payload app.InventoryPayload, version string) ([]string, 
 }
 
 func inventoryPDFLinesWithPrevious(payload app.InventoryPayload, version string, previous *report.PreviousReport) ([]string, error) {
+	return inventoryPDFLinesWithCapacity(payload, version, previous, false)
+}
+
+func inventoryPDFLinesWithCapacity(payload app.InventoryPayload, version string, previous *report.PreviousReport, capacity bool) ([]string, error) {
 	memoryStress, err := memoryStressReportDocument(payload)
 	if err != nil {
 		return nil, err
@@ -234,6 +236,22 @@ func inventoryPDFLinesWithPrevious(payload app.InventoryPayload, version string,
 		if lines.err != nil {
 			return nil, lines.err
 		}
+	}
+	if capacity {
+		d := memoryCapacityReportDocument(components)
+		lines.add("", "MEMORY CAPACITY OBSERVATIONS")
+		lines.field("Firmware observation status", d.FirmwareStatus, "  ")
+		lines.field(d.FirmwareLabel, d.FirmwareCapacity, "  ")
+		lines.field("Firmware entries", fmt.Sprintf("%d", d.Entries), "  ")
+		lines.field("Reported populated / unpopulated entries", fmt.Sprintf("%d / %d", d.Populated, d.Unpopulated), "  ")
+		lines.field("Unknown / unavailable capacities", fmt.Sprintf("%d / %d", d.Unknown, d.Unavailable), "  ")
+		lines.field("Unsupported / malformed capacities", fmt.Sprintf("%d / %d", d.Unsupported, d.Malformed), "  ")
+		lines.field("Invalid observations", fmt.Sprintf("%d", d.Invalid), "  ")
+		lines.field("Populated memory types", d.TypeStatus, "  ")
+		lines.field("OS observation status", d.OSStatus, "  ")
+		lines.field("OS total (1 KiB = 1024 bytes)", d.OSKiB+"; "+d.OSCapacity, "  ")
+		lines.field("Relationship", d.Relationship, "  ")
+		lines.field("Limits of comparison", d.Caveat, "  ")
 	}
 	lines.add("", "COMPONENTS")
 	if len(components) == 0 {

@@ -38,12 +38,16 @@ func WriteRetestWithPDF(destination io.Writer, inventoryJSON []byte, envelope re
 // This runs independently of optional view validation: viewless v2 reports
 // must not bypass the linked profile's product, reference, or UUID rules.
 func validateRetestProfile(manifest Manifest, envelope report.Envelope) error {
+	current := manifest.Schema == MemoryCapacityManifestSchema || manifest.Schema == MemoryCapacityRetestManifestSchema
+	if current && manifest.ViewProfile != MemoryCapacityViewProfile || !current && manifest.ViewProfile != "" {
+		return fmt.Errorf("%w: invalid linked report profile", ErrInvalidBundle)
+	}
 	switch manifest.Schema {
-	case ManifestSchema:
+	case ManifestSchema, MemoryCapacityManifestSchema:
 		if manifest.PreviousReport == nil && manifest.RevisionKind == "" {
 			return nil
 		}
-	case RetestManifestSchema:
+	case RetestManifestSchema, MemoryCapacityRetestManifestSchema:
 		if manifest.PreviousReport != nil && manifest.PreviousReport.Validate() == nil &&
 			manifest.RevisionKind == "retest" && envelope.Product == product.Name && report.ValidRetestID(envelope.SessionID) {
 			return nil

@@ -110,7 +110,7 @@ func VerifySource(raw []byte, keys report.Keyring, selfIssued bool) (Source, err
 		artifact, err = bundle.Verify(bytes.NewReader(raw), int64(len(raw)), keys)
 	}
 	if err != nil || artifact.Envelope.Product != product.Name ||
-		(artifact.Manifest.Schema != bundle.ManifestSchema && artifact.Manifest.Schema != bundle.RetestManifestSchema) ||
+		(artifact.Manifest.Schema != bundle.ManifestSchema && artifact.Manifest.Schema != bundle.RetestManifestSchema && artifact.Manifest.Schema != bundle.MemoryCapacityManifestSchema && artifact.Manifest.Schema != bundle.MemoryCapacityRetestManifestSchema) ||
 		!boundedText(artifact.Envelope.SessionID, 256, false) {
 		return Source{}, ErrSource
 	}

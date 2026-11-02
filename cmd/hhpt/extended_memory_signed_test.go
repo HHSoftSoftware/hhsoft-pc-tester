@@ -52,9 +52,17 @@ func extendedMemorySignedArchive(t *testing.T, original bundle.Artifact, payload
 	}
 	members = append(members, member{bundle.SelfIssuedKeyName, bundle.SelfIssuedMediaType, public})
 	manifest := struct {
-		Schema string `json:"schema"`
-		Files  []file `json:"files"`
+		Schema      string                 `json:"schema"`
+		Files       []file                 `json:"files"`
+		Previous    *report.PreviousReport `json:"previous_report,omitempty"`
+		Kind        string                 `json:"revision_kind,omitempty"`
+		ViewProfile string                 `json:"view_profile,omitempty"`
 	}{Schema: "hhsoft.pc-tester.bundle-manifest/v1"}
+	// Nil-view probes deliberately remain legacy v1. Viewful mutations retain
+	// the verified source profile, so rejection must reach the intended views.
+	if html != nil || pdf != nil {
+		manifest.Schema, manifest.Previous, manifest.Kind, manifest.ViewProfile = original.Manifest.Schema, original.Manifest.PreviousReport, original.Manifest.RevisionKind, original.Manifest.ViewProfile
+	}
 	for _, entry := range members {
 		manifest.Files = append(manifest.Files, file{entry.name, entry.media, int64(len(entry.data)),
 			fmt.Sprintf("sha256:%x", sha256.Sum256(entry.data))})
@@ -134,7 +142,7 @@ func TestExtendedMemorySignedViewsAndCopiedAccessor(t *testing.T) {
 	h := newExtendedMemoryHarness(t, commandMemoryPass())
 	artifact := verifyExtendedMemoryHarness(t, h)
 	payload := stressSignedPayload(t, artifact)
-	if artifact.Envelope.Schema != report.EnvelopeSchemaV1 || artifact.Manifest.Schema != bundle.ManifestSchema ||
+	if artifact.Envelope.Schema != report.EnvelopeSchemaV1 || artifact.Manifest.Schema != bundle.MemoryCapacityManifestSchema || artifact.Manifest.ViewProfile != bundle.MemoryCapacityViewProfile ||
 		payload.CoverageScope != app.CoverageFrozenPlan || len(payload.TestResults) != 23 {
 		t.Fatal("ordinary envelope, catalog coverage or manifest changed")
 	}
@@ -187,8 +195,16 @@ func TestExtendedMemorySignedViewsAndCopiedAccessor(t *testing.T) {
 			html, pdf = artifact.RenderedReport, artifact.RenderedPDF
 		}
 		raw := extendedMemorySignedArchive(t, artifact, artifact.InventoryJSON, html, pdf)
-		if _, err := bundle.VerifySelfIssued(bytes.NewReader(raw), int64(len(raw))); err != nil {
+		verified, err := bundle.VerifySelfIssued(bytes.NewReader(raw), int64(len(raw)))
+		if err != nil {
 			t.Fatal("independent archive positive prerequisite", err)
+		}
+		wantSchema, wantProfile := bundle.ManifestSchema, ""
+		if views {
+			wantSchema, wantProfile = bundle.MemoryCapacityManifestSchema, bundle.MemoryCapacityViewProfile
+		}
+		if verified.Manifest.Schema != wantSchema || verified.Manifest.ViewProfile != wantProfile {
+			t.Fatal("viewless legacy or viewful current fixture profile changed")
 		}
 	}
 }
@@ -402,6 +418,11 @@ func TestExtendedMemoryNoViewCannotHideStrippedClaimFields(t *testing.T) {
 func TestExtendedMemoryCanonicalViewsRejectResignedTampering(t *testing.T) {
 	h := newExtendedMemoryHarness(t, commandMemoryPass())
 	artifact := verifyExtendedMemoryHarness(t, h)
+	positive := extendedMemorySignedArchive(t, artifact, artifact.InventoryJSON, artifact.RenderedReport, artifact.RenderedPDF)
+	admitted, err := bundle.VerifySelfIssued(bytes.NewReader(positive), int64(len(positive)))
+	if err != nil || admitted.Manifest.Schema != artifact.Manifest.Schema || admitted.Manifest.ViewProfile != artifact.Manifest.ViewProfile {
+		t.Fatal("unmodified current-view prerequisite failed", err)
+	}
 	for _, mode := range []string{"html", "pdf"} {
 		t.Run(mode, func(t *testing.T) {
 			html, pdf := append([]byte(nil), artifact.RenderedReport...), append([]byte(nil), artifact.RenderedPDF...)
@@ -433,7 +454,7 @@ func TestExtendedMemoryLinkedRetestOwnsItsOutcomeAndParent(t *testing.T) {
 	childHarness.arguments = append(childHarness.arguments, "-previous-report", parentPath, "-previous-self-issued")
 	child := verifyExtendedMemoryHarness(t, childHarness)
 	want := report.PreviousReport{ManifestDigest: parent.Envelope.ManifestDigest, BundleSHA256: fmt.Sprintf("sha256:%x", parent.BundleSHA256)}
-	if child.Manifest.Schema != bundle.RetestManifestSchema || child.Manifest.PreviousReport == nil ||
+	if child.Manifest.Schema != bundle.MemoryCapacityRetestManifestSchema || child.Manifest.ViewProfile != bundle.MemoryCapacityViewProfile || child.Manifest.PreviousReport == nil ||
 		*child.Manifest.PreviousReport != want || child.Manifest.RevisionKind != "retest" ||
 		child.Envelope.SessionID == parent.Envelope.SessionID {
 		t.Fatal("Extended revision lost its exact supplied parent")

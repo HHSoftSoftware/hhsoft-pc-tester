@@ -1046,16 +1046,38 @@ Earlier CPU and firmware results remain evidence for those earlier changes.
 This bounded inventory slice added no worker or catalog row. At that increment,
 nine functional families were inactive, and Quick v7 and explicit Standard v8
 retained their schedules and budgets. Broader SPD, ECC, topology, speed,
-firmware/OS capacity
-reconciliation, RAM correctness beyond the bounded memory workers, and
-pre-boot Memtest86+ requirements remain open. Selected firmware observations
-establish neither
-usable OS RAM nor module health or physical continuity. Image/sysfs availability,
+independent physical capacity validation, RAM correctness beyond the bounded
+memory workers, and pre-boot Memtest86+ requirements remain open. Selected
+firmware observations establish neither usable OS RAM nor module health or
+physical continuity. Image/sysfs availability,
 the physical-PC pilot, all four release images, installed-command/image behavior,
 race/durability and release approval still require their documented qualification.
 The later [Standard console qualification](requirements-validation.md#standard-console-launch)
 records completed native VM 600-second CPU loads with synthetic thermal
 observations; that evidence is separate from this inventory slice.
+
+### Memory-capacity report view
+
+The later report-view increment shows "Sum of reported firmware entries" or
+"Reported-entry subtotal (partial)" when valid reported capacities are available,
+beside the OS-visible memory observation. A partial subtotal requires at least
+one valid reported capacity; all-unknown data remains unavailable. Firmware and
+OS observations are checked independently, so an invalid side does not hide a
+valid other side. Only complete eligible inputs admit a relationship, and a
+difference produces no hardware pass/fail verdict or installed-RAM claim.
+
+Current ordinary and linked reports use manifest v3/v4 and the authenticated
+`hhsoft.pc-tester.memory-capacity-view/v1` profile. Historical v1/v2 bytes and
+viewless behavior remain supported. Original inventory JSON, HMAC identities,
+fingerprints and test outcomes are unchanged; correction addenda remain separate.
+
+The complete profile and CLI/consumer increment passed the full Windows amd64
+and 386 suites, with 12,642 test/subtest passes and 18 retained skips per
+architecture. All 337 new cases passed without skips, and the four original
+legacy artifacts remained byte-exact. Formatting, vet and 15 Linux application/
+test-binary compile checks passed. See the [current validation scope](requirements-validation.md#memory-capacity-report-view).
+Linux execution, installed images, physical-PC and release gates remain open;
+prior inventory or linked-report native results do not qualify this profile.
 
 ### Bounded standard CPU stress
 

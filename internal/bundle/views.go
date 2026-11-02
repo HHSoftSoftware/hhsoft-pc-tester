@@ -22,6 +22,14 @@ func validateViews(encoded, html, pdf []byte, productName, version string) error
 }
 
 func validateViewsWithPrevious(encoded, html, pdf []byte, productName, version string, previous *report.PreviousReport) error {
+	return validateViewsWithProfile(encoded, html, pdf, productName, version, previous, "")
+}
+
+func validateViewsWithProfile(encoded, html, pdf []byte, productName, version string, previous *report.PreviousReport, profile string) error {
+	// Profile selection precedes even the legacy optional-view fast path.
+	if err := validateMemoryCapacityViewSelection(profile, html, pdf); err != nil {
+		return err
+	}
 	if html == nil && pdf == nil && !hasCoverageMetadata(encoded) && !app.HasSessionThermalClaim(encoded) && !app.HasKeyboardClaim(encoded) && !app.HasPointerClaim(encoded) && !app.HasTouchpadClaim(encoded) && !app.HasTouchscreenClaim(encoded) && !app.HasCPUScalarClaim(encoded) && !app.HasMemoryClaim(encoded) && !app.HasStorageClaim(encoded) && !app.HasExteriorInspectionClaim(encoded) && !app.HasCPUStressClaim(encoded) && !app.HasCPUStressReference(encoded) && !app.HasMemoryStressClaim(encoded) && !app.HasMemoryStressReference(encoded) {
 		return nil
 	}
@@ -46,7 +54,13 @@ func validateViewsWithPrevious(encoded, html, pdf []byte, productName, version s
 	if html != nil {
 		var expected []byte
 		var err error
-		if previous == nil {
+		if profile == MemoryCapacityViewProfile {
+			if previous == nil {
+				expected, err = render.InventoryMemoryCapacityHTMLForVersion(payload, version)
+			} else {
+				expected, err = render.InventoryMemoryCapacityRetestHTMLForVersion(payload, version, *previous)
+			}
+		} else if previous == nil {
 			expected, err = render.InventoryHTMLForVersion(payload, version)
 		} else {
 			expected, err = render.InventoryRetestHTMLForVersion(payload, version, *previous)
@@ -58,7 +72,13 @@ func validateViewsWithPrevious(encoded, html, pdf []byte, productName, version s
 	if pdf != nil {
 		var expected []byte
 		var err error
-		if previous == nil {
+		if profile == MemoryCapacityViewProfile {
+			if previous == nil {
+				expected, err = render.InventoryMemoryCapacityPDFForVersion(payload, version)
+			} else {
+				expected, err = render.InventoryMemoryCapacityRetestPDFForVersion(payload, version, *previous)
+			}
+		} else if previous == nil {
 			expected, err = render.InventoryPDFForVersion(payload, version)
 		} else {
 			expected, err = render.InventoryRetestPDFForVersion(payload, version, *previous)

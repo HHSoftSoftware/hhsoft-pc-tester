@@ -161,7 +161,7 @@ func (previous previousReportFlags) load(ctx context.Context, readInput retestIn
 	if err != nil {
 		return nil, err
 	}
-	if !summary.verified || summary.product != product.Name || (summary.profile != bundle.ManifestSchema && summary.profile != bundle.RetestManifestSchema) {
+	if !summary.verified || summary.product != product.Name || (summary.profile != bundle.ManifestSchema && summary.profile != bundle.RetestManifestSchema && summary.profile != bundle.MemoryCapacityManifestSchema && summary.profile != bundle.MemoryCapacityRetestManifestSchema) {
 		return nil, errRetestVerification
 	}
 	parent := verifiedPreviousReport{verified: true, sessionID: summary.sessionID, reference: summary.reference}

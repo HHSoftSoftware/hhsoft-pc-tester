@@ -56,6 +56,7 @@ type Manifest struct {
 	Files          []ManifestFile         `json:"files"`
 	PreviousReport *report.PreviousReport `json:"previous_report,omitempty"`
 	RevisionKind   string                 `json:"revision_kind,omitempty"`
+	ViewProfile    string                 `json:"view_profile,omitempty"`
 }
 
 type ManifestFile struct {
@@ -146,13 +147,17 @@ func writeArchive(destination io.Writer, inventoryJSON []byte, envelope report.E
 }
 
 func writeArchiveWithPrevious(destination io.Writer, inventoryJSON []byte, envelope report.Envelope, renderedReport, renderedPDF, selfIssuedKey []byte, previous *report.PreviousReport) error {
+	return writeArchiveWithProfile(destination, inventoryJSON, envelope, renderedReport, renderedPDF, selfIssuedKey, previous, "")
+}
+
+func writeArchiveWithProfile(destination io.Writer, inventoryJSON []byte, envelope report.Envelope, renderedReport, renderedPDF, selfIssuedKey []byte, previous *report.PreviousReport, profile string) error {
 	if previous != nil && (previous.Validate() != nil || envelope.Product != product.Name || !report.ValidRetestID(envelope.SessionID)) {
 		return fmt.Errorf("%w: invalid linked report identity or reference", ErrInvalidBundle)
 	}
-	if err := validateViewsWithPrevious(inventoryJSON, renderedReport, renderedPDF, envelope.Product, envelope.Version, previous); err != nil {
+	if err := validateViewsWithProfile(inventoryJSON, renderedReport, renderedPDF, envelope.Product, envelope.Version, previous, profile); err != nil {
 		return err
 	}
-	_, manifestJSON, err := buildManifestWithPrevious(inventoryJSON, renderedReport, renderedPDF, selfIssuedKey, previous)
+	_, manifestJSON, err := buildManifestWithProfile(inventoryJSON, renderedReport, renderedPDF, selfIssuedKey, previous, profile)
 	if err != nil {
 		return err
 	}
@@ -296,7 +301,7 @@ func verify(source io.ReaderAt, size int64, keys report.Keyring, trustSelfIssued
 		SelfIssuedKey:  append([]byte(nil), selfIssuedKey...),
 	}
 	comparison := &canonicalComparisonWriter{source: source, size: size, digest: sha256.New()}
-	if err := writeArchiveWithPrevious(comparison, artifact.InventoryJSON, artifact.Envelope, artifact.RenderedReport, artifact.RenderedPDF, artifact.SelfIssuedKey, artifact.Manifest.PreviousReport); err != nil || comparison.offset != size {
+	if err := writeArchiveWithProfile(comparison, artifact.InventoryJSON, artifact.Envelope, artifact.RenderedReport, artifact.RenderedPDF, artifact.SelfIssuedKey, artifact.Manifest.PreviousReport, artifact.Manifest.ViewProfile); err != nil || comparison.offset != size {
 		return Artifact{}, fmt.Errorf("%w: noncanonical archive encoding", ErrInvalidBundle)
 	}
 	copy(artifact.BundleSHA256[:], comparison.digest.Sum(nil))
@@ -361,6 +366,13 @@ func buildManifest(inventoryJSON, renderedReport, renderedPDF, selfIssuedKey []b
 }
 
 func buildManifestWithPrevious(inventoryJSON, renderedReport, renderedPDF, selfIssuedKey []byte, previous *report.PreviousReport) (Manifest, []byte, error) {
+	return buildManifestWithProfile(inventoryJSON, renderedReport, renderedPDF, selfIssuedKey, previous, "")
+}
+
+func buildManifestWithProfile(inventoryJSON, renderedReport, renderedPDF, selfIssuedKey []byte, previous *report.PreviousReport, profile string) (Manifest, []byte, error) {
+	if err := validateMemoryCapacityViewSelection(profile, renderedReport, renderedPDF); err != nil {
+		return Manifest{}, nil, err
+	}
 	if previous != nil && previous.Validate() != nil {
 		return Manifest{}, nil, fmt.Errorf("%w: invalid previous-report reference", ErrInvalidBundle)
 	}
@@ -394,6 +406,13 @@ func buildManifestWithPrevious(inventoryJSON, renderedReport, renderedPDF, selfI
 		copy := *previous
 		manifest.Schema, manifest.PreviousReport, manifest.RevisionKind = RetestManifestSchema, &copy, "retest"
 	}
+	if profile != "" {
+		manifest.ViewProfile = profile
+		manifest.Schema = MemoryCapacityManifestSchema
+		if previous != nil {
+			manifest.Schema = MemoryCapacityRetestManifestSchema
+		}
+	}
 	for _, file := range files {
 		manifest.Files = append(manifest.Files, ManifestFile{
 			Name:      file.name,
@@ -416,17 +435,23 @@ func decodeManifest(encoded []byte) (Manifest, error) {
 	if json.Unmarshal(encoded, &probe) != nil {
 		return Manifest{}, fmt.Errorf("%w: manifest schema", ErrInvalidBundle)
 	}
-	names := []string{"schema", "files"}
-	if probe.Schema == RetestManifestSchema {
-		names = append(names, "previous_report", "revision_kind")
-	} else if probe.Schema != ManifestSchema {
+	linked := probe.Schema == RetestManifestSchema || probe.Schema == MemoryCapacityRetestManifestSchema
+	current := probe.Schema == MemoryCapacityManifestSchema || probe.Schema == MemoryCapacityRetestManifestSchema
+	if probe.Schema != ManifestSchema && probe.Schema != RetestManifestSchema && !current {
 		return Manifest{}, fmt.Errorf("%w: manifest schema", ErrInvalidBundle)
+	}
+	names := []string{"schema", "files"}
+	if linked {
+		names = append(names, "previous_report", "revision_kind")
+	}
+	if current {
+		names = append(names, "view_profile")
 	}
 	fields, err := exactObjectFields(encoded, names, names)
 	if err != nil {
 		return Manifest{}, fmt.Errorf("%w: manifest schema: %v", ErrInvalidBundle, err)
 	}
-	if probe.Schema == RetestManifestSchema {
+	if linked {
 		if _, err := exactObjectFields(fields["previous_report"], []string{"manifest_digest", "bundle_sha256"}, []string{"manifest_digest", "bundle_sha256"}); err != nil {
 			return Manifest{}, fmt.Errorf("%w: previous-report schema", ErrInvalidBundle)
 		}
@@ -444,7 +469,10 @@ func decodeManifest(encoded []byte) (Manifest, error) {
 	if err := decodeStrict(encoded, &manifest); err != nil || manifest.Schema != probe.Schema {
 		return Manifest{}, fmt.Errorf("%w: manifest schema", ErrInvalidBundle)
 	}
-	if manifest.Schema == RetestManifestSchema && (manifest.PreviousReport == nil || manifest.PreviousReport.Validate() != nil || manifest.RevisionKind != "retest") {
+	if current && manifest.ViewProfile != MemoryCapacityViewProfile || !current && manifest.ViewProfile != "" {
+		return Manifest{}, fmt.Errorf("%w: unsupported view profile", ErrInvalidBundle)
+	}
+	if linked && (manifest.PreviousReport == nil || manifest.PreviousReport.Validate() != nil || manifest.RevisionKind != "retest") {
 		return Manifest{}, fmt.Errorf("%w: invalid linked manifest", ErrInvalidBundle)
 	}
 	return manifest, nil

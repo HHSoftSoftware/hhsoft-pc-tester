@@ -58,11 +58,37 @@ creates a new report rather than editing the original. Explicit correction
 history, supersession, revocation and custody records remain separate planned
 work; a retest reference does not implement those policies.
 
+### Current Memory-Capacity View Profile
+
+Current ordinary bundles use `hhsoft.pc-tester.bundle-manifest/v3`, with exact
+root fields `schema`, `files` and `view_profile`. Current linked bundles use
+`hhsoft.pc-tester.bundle-manifest/v4`, with `schema`, `files`, `previous_report`,
+`revision_kind` and `view_profile`. Both require the exact profile
+`hhsoft.pc-tester.memory-capacity-view/v1`.
+
+The authenticated manifest schema/profile selects the complete canonical view
+format. Signed inventory and signed software version remain content inputs.
+Each profile fixes its canonical view semantics: future changes require a new
+profile, while existing signed bytes remain verifiable under their original
+profile.
+
+At least one canonical HTML or PDF view is required. HTML-only and PDF-only
+bundles are supported, but a mixed legacy/current pair is invalid. Verification
+reconstructs exact view bytes from the original signed inventory. Missing,
+null, aliased, duplicate, unknown or wrong-typed profiles fail, and no failure
+falls back to legacy rendering.
+
+Historical ordinary v1 and linked v2 manifests forbid `view_profile` and retain
+their exact archive/rendered bytes and optional-view or viewless behavior.
+A genuinely legacy-canonical artifact remains eligible even if newly signed;
+the profile does not establish chronology or downgrade prevention. The current
+profile changes no inventory JSON, HMAC identity, fingerprint or test outcome.
+Correction addenda are not inputs to the capacity summary.
+
 ### Implemented Linked Retest Profile
 
-Opt-in session/finalize uses `hhsoft.pc-tester.bundle-manifest/v2`. Its exact
-root fields are `schema`, `files`, `previous_report` and `revision_kind`;
-`revision_kind` is `retest`. `previous_report` has exactly two required fields:
+Opt-in session/finalize creates a current v4 linked report. `revision_kind` is
+`retest`. `previous_report` has exactly two required fields:
 
 | Field | Authenticated parent value |
 | --- | --- |
@@ -76,19 +102,21 @@ IDs, times or signing keys. Requiring the full canonical bundle digest also
 binds that distinction. No prior blob, raw identifier, result or key is copied
 into the child through this reference.
 
-The signature still uses the unchanged envelope-v1 signing domain. A linked
-v2 bundle requires a verifier with explicit v2 support; no released minimum
-version is claimed. Current session/finalize commands create self-issued
-children, independently of whether parent trust uses a provisioned key. V2 requires
-the HHSoft PC Tester product identity and a lowercase canonical UUIDv4 child
-session ID, including when optional HTML/PDF views are absent. The producer
-requires that ID to differ from the exact verified parent. An eligible parent
-may be v1 or v2; legacy v1 parent IDs need not be UUIDs. Existing generic v1
-verification and v1 archive/rendered bytes retain their historical rules.
+The signature still uses the unchanged envelope-v1 signing domain. Current
+v3/v4 bundles require a verifier with explicit schema/profile support; no
+released minimum version is claimed. Current session/finalize commands create
+self-issued children, independently of whether parent trust uses a provisioned
+key. Historical linked v2 and current linked v4 require the HHSoft PC Tester
+product identity and a lowercase canonical UUIDv4 child session ID. Product and
+reference checks precede view handling: historical v2 may be viewless, while
+current v4 requires at least one canonical view. The child ID must differ from
+the exact verified parent. A parent may use any supported v1/v2/v3/v4 profile
+and must pass its own full verification. Legacy v1 parent IDs need not be UUIDs;
+historical archive, rendering and trust rules remain intact.
 
 One-hop verification independently verifies the child and supplied parent
 under their explicit trust choices, matches both digests and rejects equal
-report IDs. A v2 child can also be verified alone: its signed reference is
+report IDs. A linked v2/v4 child can also be verified alone: its signed reference is
 shown, but the relationship remains unchecked. There is no recursive fetch,
 automatic parent discovery or transfer of trust, outcomes, hardware identity,
 chronology or complete-history claims. Static HTML/PDF views display the
@@ -660,15 +688,24 @@ policy; it does not match raw names or invent stable module aliases.
 
 Signatures bind recorded bytes and signer policy. They do not establish firmware
 truth, installed capacity, RAM health or attestation. The source label carries no
-authenticity assertion. The existing payload, signature, no-view, semantic-view
-and linked-report rules remain in force, including independently selected parent
-and child trust. This adds no strict evidence schema or generic finite-attribute
-semantic validator for arbitrary inventory input.
+authenticity assertion. Historical v1/v2 no-view rules and current v3/v4 profile
+requirements remain distinct, with independently selected parent and child trust.
+The memory-device inventory slice added no strict evidence schema or generic
+finite-attribute semantic validator for arbitrary inventory input.
 
-The addition preserves old snapshot, graph, payload and view bytes when it adds
-no rows. Host tests and selected native Linux amd64/386 fixtures passed for this
-addition; prior CPU and firmware results remain separate evidence. See
+That earlier inventory addition preserved old snapshot, graph, payload and view
+bytes when it added no rows. Its host tests and selected native Linux amd64/386
+fixtures passed; prior CPU and firmware results remain separate evidence. See
 [the finite contract](requirements-validation.md#memory-device-inventory).
+The later capacity view is a pure projection of the recorded firmware entries
+and OS observation. A partial subtotal requires at least one valid reported
+capacity; no valid reported capacities leaves the firmware amount unavailable.
+Invalid, ambiguous or overflowing firmware suppresses its aggregate; an invalid,
+ambiguous or overflowing OS observation suppresses its own amount. A valid
+other-side observation remains visible, but either defect prevents comparison.
+Type eligibility concerns populated entries, so an empty entry's unknown type
+does not itself block eligible populated entries. A difference is not a hardware
+failure. Full qualification of the new view profile remains pending.
 Physical-PC, installed-command/image, durability and release gates remain open
 where documented.
 
@@ -870,12 +907,14 @@ input and untrusted-payload diagnostics do not echo provider details. The
 actual command context also reaches the destination callback. Cancellation
 there may leave an empty new file, without adding rollback or durability.
 
-Canonical v1/v2 verification, global self-issued Boolean behavior, default or
-separate after-key trust, comparison schema and HMAC identity policy remain
-unchanged. Host and selected Linux amd64/386 software fixtures qualified this
-bounded command path. The separately qualified capture boundary is described
-above; remaining legacy key inputs and persistence's live source owner are not
-covered by this comparison increment.
+The earlier command-ownership qualification preserved canonical v1/v2
+verification, global self-issued Boolean behavior, default or separate after-key
+trust, comparison schema and HMAC identity policy. Current v3/v4 support also
+requires full schema/profile verification before comparison; it changes none of
+those trust or identity rules. Earlier host and selected Linux amd64/386 results
+qualify their original command scope, not the new capacity profile. The separately
+qualified capture boundary is described above; remaining legacy key inputs and
+persistence's live source owner were not covered by that comparison increment.
 
 CLI output completion is separate from signature verification and durable
 persistence. The shared inventory, plan, comparison, report and quick-test

@@ -102,6 +102,9 @@ func TestCaptureAndVerifyRoundTrip(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	if artifact.Manifest.Schema != bundle.MemoryCapacityManifestSchema || artifact.Manifest.ViewProfile != bundle.MemoryCapacityViewProfile {
+		t.Fatal("capture did not select its authenticated current view profile")
+	}
 	if artifact.Envelope.Schema != product.ReportSchema || artifact.Envelope.KeyID != "signer-7" {
 		t.Fatalf("unexpected envelope: %+v", artifact.Envelope)
 	}

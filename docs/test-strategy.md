@@ -1668,14 +1668,19 @@ Selection was derived from the completed source and host outcomes; it contains
 no nested groups. Ownership/archive checks and all six native postchecks passed,
 and cleanup was confirmed. The other-OS rejection root remains unexecuted.
 
-Positive cases must first establish valid authorization and independently verified
-current v1/v2 report fixtures in both self-issued and trusted modes. Compare the
-exact original context, literal paths, finite roles, complete authorization and
-fingerprint bytes, still-open source bytes/size/digest, explicit/default name and
-one complete receipt. Use an independent authorization HMAC vector; a permissive
-injected persister proves forwarding, not MAC or physical-target enforcement.
-Same-path trusted keys still require two acquisitions. Keep the original linked-
-report and receipt/durability-rejection caller assertions.
+Retained historical positive cases must first establish valid authorization and
+independently verified v1/v2 report fixtures in both self-issued and trusted modes.
+Current v3/v4 memory-capacity-profile persistence fixtures passed in the full
+Windows suites described in [the current profile qualification](requirements-validation.md#memory-capacity-report-view).
+The historical host and native counts above do not qualify that increment;
+current-profile native Linux and installed-media qualification remain open.
+Compare the exact original context, literal paths, finite roles, complete
+authorization and fingerprint bytes, still-open source bytes/size/digest,
+explicit/default name and one complete receipt. Use an independent authorization
+HMAC vector; a permissive injected persister proves forwarding, not MAC or
+physical-target enforcement. Same-path trusted keys still require two
+acquisitions. Keep the original linked-report and receipt/durability-rejection
+caller assertions.
 
 Exercise both key positions through the actual owned-input core with injected
 owners: readable and metadata Close faults, acquired-owner-plus-error returns,
@@ -2460,3 +2465,21 @@ Keep full elapsed Extended-session, installed command/supervisor, full Linux
 suite, race, ARM runtime, rebuilt-image and physical-PC qualification separate.
 See the [Extended contract](requirements-validation.md#bounded-extended-memory-session)
 and [operator scope](memory-stress.md).
+
+## Memory-Capacity View Profile Validation
+
+The current profile has 337 new named cases across 26 roots and 311 direct-parent
+relationships: 79 projection cases, 222 bundle/profile cases, eight correction
+source cases and 28 command-consumer cases. Independent expectations cover exact
+integer boundaries, incomplete and ambiguous observations, retained legacy bytes,
+correctly re-signed schema/profile/relation defects, independent parent/child
+trust, and capture, retest, correction and report consumers. Valid prerequisites
+precede negative cases; expected legacy artifacts were captured before the change.
+
+The full Go 1.27.2 Windows amd64 and 386 suites each passed 12,642 test/subtest
+cases with 18 retained skips. Every new name passed without skips, and all
+declared parent intervals reconciled. Formatting and vet passed. Application
+and render, bundle, correction and command test binaries compiled for each of
+Linux amd64, 386 and arm64; these 15 artifacts were not executed. Native Linux,
+installed-image, physical-PC, pilot and release gates remain separate. See
+[the field contract and evidence limits](requirements-validation.md#memory-capacity-report-view).

@@ -449,8 +449,8 @@ the executable coverage. See
 [the validation scope and remaining gates](test-strategy.md#memory-device-inventory-validation).
 
 SPD, ECC deltas, topology and slot locations, speed/rate/voltage/rank,
-firmware/OS capacity reconciliation, RAM correctness beyond the bounded memory
-workers, broader working sets and pre-boot Memtest86+ remain open. Image/sysfs
+independent physical capacity validation, RAM correctness beyond the bounded
+memory workers, broader working sets and pre-boot Memtest86+ remain open. Image/sysfs
 exposure and
 permissions, physical-PC observations, installed-command/image behavior,
 race/durability qualification, all four release images, the physical pilot and
@@ -633,14 +633,68 @@ claims, installed boot images and all four rebuilt images, the ten-PC pilot,
 complete-profile coverage, race/durability and release approval remain open.
 
 
+## Memory-Capacity Report View
+
+The shared HTML/PDF projection uses only the original signed inventory. It shows
+"Sum of reported firmware entries" or "Reported-entry subtotal (partial)" when
+valid reported capacities are available, alongside the OS-visible observation.
+Capacity values use canonical unsigned decimal and checked uint64 arithmetic;
+OS KiB conversion uses exactly 1,024 bytes per KiB. Neither an invalid value nor
+an absent observation becomes zero. An explicitly reported empty entry remains
+distinct from no firmware entries.
+
+Populated, unpopulated, unknown, unavailable, unsupported, malformed and invalid
+observations have distinct counts. A partial subtotal requires at least one
+valid reported capacity, including an explicit zero; if none exists, the firmware
+amount is unavailable. Invalid or ambiguous firmware observations and sum
+overflow suppress the firmware aggregate. An invalid or ambiguous OS observation,
+or KiB-conversion overflow, suppresses the OS amount. The valid other side stays
+visible, but either invalid side prevents comparison.
+
+An equal, OS-lower or OS-higher relationship requires complete eligible firmware
+rows with at least one populated supported memory type, the same type across
+populated rows, and a positive valid OS total. Mixed, nonvolatile, unknown or
+unsupported types in populated rows do not qualify. An empty row's unknown type
+does not itself block eligible populated rows. There is no tolerance threshold
+or automatic hardware pass/fail result. The summary proves neither installed/
+usable RAM, complete physical coverage nor health. Raw inventory, HMAC identities,
+fingerprints and test outcomes remain unchanged; correction addenda do not alter
+its source observations.
+
+Current ordinary manifest v3 and linked v4 require exact
+`view_profile=hhsoft.pc-tester.memory-capacity-view/v1` and at least one canonical
+HTML/PDF view. The authenticated schema/profile selects complete canonical view
+semantics; signed inventory and signed software version remain content inputs.
+Future canonical-view changes require a new profile while original signed bytes
+remain verifiable. HTML-only and PDF-only are supported, while mixed profiles
+and invalid selectors fail without legacy fallback. Historical v1/v2 archives,
+views and viewless support remain exact. A valid legacy-canonical re-signing does
+not prove its age.
+
+The complete candidate passed the full Go 1.27.2 Windows amd64 and 386 suites.
+Each architecture recorded 12,642 test/subtest passes and 18 retained skips. All
+337 new cases passed without skips: 79 projection, 222 bundle/profile, eight
+correction-source and 28 command-consumer cases. Their exact names, 26 roots and
+311 direct-parent completion intervals reconciled without missing, extra or
+duplicate outcomes. Four pre-change ordinary/linked, externally trusted/self-issued
+legacy artifacts and their member bytes remained exact.
+
+Formatting and vet passed. The application and render, bundle, correction and
+command test binaries compiled for Linux amd64, 386 and arm64: 15 compile-only
+artifacts. These binaries were not executed. Linux execution and device behavior,
+installed images, the physical-PC pilot and release qualification remain pending.
+Earlier inventory and linked-report native evidence does not qualify this profile.
+
 ## Linked Retest Contract
 
 The linked retest implementation is an opt-in report relationship, not a
-hardware-history verdict. It signs both the independently verified parent's
-manifest digest and exact canonical bundle SHA-256 in a v2 manifest, while
-preserving envelope-v1 signatures and generic v1 compatibility. A new linked
+hardware-history verdict. Current linked reports sign the independently verified
+parent's manifest digest and exact canonical bundle SHA-256 in a v4 manifest
+with the capacity view profile. Historical linked v2 and ordinary v1 remain
+supported with their original bytes and envelope-v1 signing domain. A new linked
 child has a distinct canonical UUIDv4. Product, ID and strict reference checks
-apply even without rendered views.
+precede view handling; historical v2 may be viewless, while current v4 requires
+at least one canonical HTML/PDF view.
 
 Review and validation cover correctly re-signed malformed metadata, two valid
 parents with equal manifests but different signed envelopes, separate child
@@ -651,7 +705,7 @@ composition must retain the consumed live gate, current failures, cleanup
 exit12 and the clean-stop integrity context. Independent legacy archive and
 render fixtures guard compatibility.
 
-The 2026-10-28 isolated Windows run passed 4,804 test/subtest outcomes
+Historical linked-v2 validation on 2026-10-28 passed 4,804 test/subtest outcomes
 across 29 packages, including all 56 selected roots; 17 tests were skipped
 and one package contained no tests. Formatting, vet and Linux amd64/386/arm64
 cross-builds passed, with all eight command and postcheck results successful.
@@ -667,12 +721,12 @@ These measurements used the isolated 491-file candidate; the prior committed
 473-file baseline remained separate from the compiled source.
 
 Implementation review, host tests, selected native software tests, installed
-images and physical-PC evidence are separate. Earlier qualification counts do
-not transfer to this report profile. Correction history, supersession,
-revocation, custody, durable storage and existing image/physical/release work
-remain separate; the reference does not close them. This cohort did not qualify
-an installed CLI, real report media, kernel-close faults, blocked-kernel
-deadlines or fsync durability.
+images and physical-PC evidence are separate. These historical linked-v2 results
+do not qualify the current v3/v4 capacity profile. Correction history,
+supersession, revocation, custody, durable storage and existing image/physical/
+release work remain separate; the reference does not close them. This cohort did
+not qualify an installed CLI, real report media, kernel-close faults,
+blocked-kernel deadlines or fsync durability.
 
 ## Comparison Input Ownership
 
@@ -687,9 +741,11 @@ errors and destination ownership retain their existing behavior.
 The global self-issued flag retains Boolean-value semantics, including explicit
 false in trusted mode. After-key trust defaults to the before key/ID, with a
 fresh acquisition even when the pathname repeats; complete overrides use their
-separately supplied key. Generic v1 and linked v2, HMAC key/epoch incompatibility
-and identity-ambiguity policy remain unchanged. A signed retest link does not
-establish hardware continuity.
+separately supplied key. Historical generic v1 and linked v2 remain supported;
+current v3/v4 artifacts must pass their complete profile verification before
+comparison. HMAC key/epoch incompatibility and identity-ambiguity policy remain
+unchanged. A signed retest link does not establish hardware continuity. The
+following earlier command-ownership results retain their historical scope.
 
 The 2026-10-28 isolated Windows run passed 4,875 test/subtest outcomes and 29
 packages, including all 36 selected roots; 17 tests and one package were

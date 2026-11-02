@@ -692,6 +692,39 @@ new configuration. Host tests and selected native Linux amd64/386 fixtures
 passed; physical systems and image availability need separate qualification. See
 [the field contract and remaining gaps](requirements-validation.md#memory-device-inventory).
 
+### Read the Memory-Capacity Summary
+
+Current report views show the exact decimal-byte "Sum of reported firmware
+entries", or "Reported-entry subtotal (partial)" when some observations are
+incomplete and at least one valid reported capacity exists. If none exists,
+the firmware amount is unavailable; all-unknown data does not become a zero
+subtotal. A valid reported zero remains an explicit unpopulated observation.
+The OS observation also shows its original KiB value; 1 KiB is 1,024 bytes.
+Populated, unpopulated, unknown, unavailable, unsupported, malformed and invalid
+counts stay distinct.
+
+An equal, OS-lower or OS-higher relationship appears only for complete,
+unambiguous eligible firmware observations and a positive valid OS total.
+Type eligibility applies to populated entries: mixed, nonvolatile, unknown or
+unsupported types there prevent comparison. An empty entry's unknown type does
+not itself disqualify eligible populated entries.
+
+Invalid, ambiguous or overflowing firmware data suppresses the firmware
+aggregate; an invalid or ambiguous OS observation, or OS conversion overflow,
+suppresses the OS amount. Either prevents comparison, while a valid observation
+on the other side stays visible. Missing values are never filled with zero.
+No firmware rows and a reported all-empty set remain different states, and
+neither establishes a comparison.
+
+These are recorded observations, not a measurement of installed or usable RAM,
+complete module coverage or health. Firmware scope, reserved memory and
+collection timing can differ from the OS view. The summary uses the original
+inventory, not a correction addendum, and does not change test outcomes.
+Windows fixture validation of this view profile passed. Linux execution,
+installed-image and physical-PC qualification remain open; see the
+[current validation scope](requirements-validation.md#memory-capacity-report-view).
+The memory-device inventory tests above retain their original scope.
+
 ## Save the Signed Report
 
 The only authoritative artifact is the `.hhpcr` bundle. Its HTML and PDF views
@@ -961,13 +994,18 @@ Success reads:
 `verified: contents/signature valid; signer is self-issued and does not prove operator identity`.
 The verifier checks the canonical outer bundle, manifest digests, signature,
 expected files, path safety, and size limits. Present HTML and PDF views must
-exactly match HHSoft's deterministic rendering of the signed inventory and
-software version. Custom views, empty view files, active content, and views
-from a different inventory are rejected even with a valid signature. A bundle
-may omit optional views. Use the matching report utility; an incompatible
-renderer format fails verification instead of accepting an unverified view.
-Supported functional claims also pass shared schema and binding checks, even
-when views are omitted. This includes explicit v6 storage evidence read support;
+exactly match canonical rendering of signed inventory and signed software
+version under the authenticated manifest schema/profile. Current ordinary v3 and linked v4 bundles
+require `view_profile=hhsoft.pc-tester.memory-capacity-view/v1` and at least one
+canonical HTML or PDF view. HTML-only and PDF-only bundles are supported;
+mixed legacy/current views, custom or empty views, active content and views
+from a different inventory fail even with a valid signature.
+
+Historical v1/v2 bundles retain their optional-view and viewless rules. A failed
+current profile cannot fall back to legacy verification. Use the matching
+report utility; no previously released compatible version is implied.
+Supported functional claims also pass shared schema and binding checks,
+including in historical viewless bundles. This includes explicit v6 storage evidence read support;
 accepted work stays distinct from diagnostics, and unconfirmed cleanup rejects
 the report. The utility does not rerun hardware tests or reconstruct original
 collection events. Current development commands emit Quick v14 with fourteen
@@ -1034,10 +1072,12 @@ controlled the corresponding key pair.
 
 Linked retesting is opt-in. It creates a new report from the current run and
 leaves the earlier bundle unchanged. The command-line options do not add a
-new automatic boot-menu workflow. Linked bundles require a verifier that
-supports manifest v2; no previously released version is implied. Legacy v1
-archive bytes and signatures retain their existing behavior. Image and
-physical-PC qualification remain separate.
+new automatic boot-menu workflow. Current linked reports use manifest v4 with
+the memory-capacity view profile; current ordinary reports use v3. Verification
+requires explicit support for that schema/profile, without implying a released
+minimum version. Historical ordinary v1 and linked v2 archive bytes, signatures
+and optional-view behavior remain supported. Parent and child trust remain
+independent. Image and physical-PC qualification remain separate.
 
 Add `-previous-report PRIOR.hhpcr` to an otherwise valid `session` or
 `finalize` command, together with exactly one independent parent trust mode:

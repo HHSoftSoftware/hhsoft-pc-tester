@@ -31,7 +31,7 @@ func stressSignedPayload(t *testing.T, artifact bundle.Artifact) app.InventoryPa
 func TestCPUStressSignedStandardViewsAndCopiedAccessor(t *testing.T) {
 	h := newStandardHarness(t, commandStressPass())
 	artifact := verifyStandardHarness(t, h)
-	if artifact.Envelope.Schema != report.EnvelopeSchemaV1 || artifact.Manifest.Schema != bundle.ManifestSchema {
+	if artifact.Envelope.Schema != report.EnvelopeSchemaV1 || artifact.Manifest.Schema != bundle.MemoryCapacityManifestSchema || artifact.Manifest.ViewProfile != bundle.MemoryCapacityViewProfile {
 		t.Fatal("ordinary envelope or manifest changed")
 	}
 	payload := stressSignedPayload(t, artifact)
@@ -119,7 +119,7 @@ func TestCPUStressLinkedStandardKeepsExactParentAndOwnOutcome(t *testing.T) {
 	childHarness.arguments = append(childHarness.arguments, "-previous-report", parentPath, "-previous-self-issued")
 	child := verifyStandardHarness(t, childHarness)
 	want := report.PreviousReport{ManifestDigest: parent.Envelope.ManifestDigest, BundleSHA256: fmt.Sprintf("sha256:%x", parent.BundleSHA256)}
-	if child.Envelope.Schema != report.EnvelopeSchemaV1 || child.Manifest.Schema != bundle.RetestManifestSchema ||
+	if child.Envelope.Schema != report.EnvelopeSchemaV1 || child.Manifest.Schema != bundle.MemoryCapacityRetestManifestSchema || child.Manifest.ViewProfile != bundle.MemoryCapacityViewProfile ||
 		child.Manifest.PreviousReport == nil || *child.Manifest.PreviousReport != want ||
 		child.Envelope.SessionID == parent.Envelope.SessionID || child.Manifest.RevisionKind != "retest" {
 		t.Fatal("linked standard manifest or exact parent changed")

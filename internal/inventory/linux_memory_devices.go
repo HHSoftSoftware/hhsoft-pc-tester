@@ -54,10 +54,12 @@ func memoryDeviceEntryName(name string) bool {
 
 func memoryDeviceStateAttributes(state string) map[string]string {
 	return map[string]string{
-		"observation_source":   "smbios_type17",
-		"capacity_bytes_state": state,
-		"memory_type_state":    state,
-		"form_factor_state":    state,
+		"observation_source":                 "smbios_type17",
+		"capacity_bytes_state":               state,
+		"memory_type_state":                  state,
+		"form_factor_state":                  state,
+		"maximum_transfer_rate_mts_state":    state,
+		"configured_transfer_rate_mts_state": state,
 	}
 }
 
@@ -97,7 +99,48 @@ func parseMemoryDeviceRecord(raw []byte) map[string]string {
 		}
 		attributes[field.name+"_state"] = state
 	}
+	for _, field := range []struct {
+		name           string
+		base, extended int
+	}{
+		{"maximum_transfer_rate_mts", 21, 84},
+		{"configured_transfer_rate_mts", 32, 88},
+	} {
+		value, state := memoryDeviceTransferRate(raw[:length], field.base, field.extended)
+		attributes[field.name+"_state"] = state
+		if state == "reported" {
+			attributes[field.name] = value
+		}
+	}
 	return attributes
+}
+
+// Decode a reported transfer rate in MT/s, without inferring a clock or health.
+// Only the selected field's extension can resolve its sentinel.
+func memoryDeviceTransferRate(formatted []byte, base, extended int) (string, string) {
+	if len(formatted) <= base {
+		return "", "unavailable"
+	}
+	if len(formatted) < base+2 {
+		return "", "malformed"
+	}
+	value := uint32(binary.LittleEndian.Uint16(formatted[base : base+2]))
+	if value == 0 {
+		return "", "unknown"
+	}
+	if value == 0xffff {
+		if len(formatted) <= extended {
+			return "", "unsupported"
+		}
+		if len(formatted) < extended+4 {
+			return "", "malformed"
+		}
+		value = binary.LittleEndian.Uint32(formatted[extended : extended+4])
+		if value&0x80000000 != 0 || value < 65535 {
+			return "", "unsupported"
+		}
+	}
+	return strconv.FormatUint(uint64(value), 10), "reported"
 }
 
 func memoryDeviceCapacity(formatted []byte) (string, string) {

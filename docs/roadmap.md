@@ -1073,22 +1073,22 @@ Standard v8 and their budgets.
 
 ### Finite memory device inventory
 
-The Linux inventory implements selected SMBIOS Type 17 capacity, memory-type
+The initial Linux inventory increment implements selected SMBIOS Type 17 capacity, memory-type
 and form-factor observations with explicit reported, unknown, unavailable,
 malformed and unsupported states. Raw source strings and identifiers stay
 private; nonpersistent ordinals retain unavailable identity. The observations
 participate in the configuration graph, signed reports and ordinary comparison,
 including signed failed-integrity diagnostics for changed configurations.
 
-Host tests and selected native Linux amd64/386 fixtures passed for this finite
-addition, including actual 32-bit capacity boundaries. The 34 new roots and
+Host tests and selected native Linux amd64/386 fixtures passed for that initial
+three-field addition, including actual 32-bit capacity boundaries. The 34 new roots and
 691 named source requirements are tracked separately from measured outcomes.
 See [the finite contract, results and remaining gates](requirements-validation.md#memory-device-inventory).
 Earlier CPU and firmware results remain evidence for those earlier changes.
 
 This bounded inventory slice added no worker or catalog row. At that increment,
 nine functional families were inactive, and Quick v7 and explicit Standard v8
-retained their schedules and budgets. Broader SPD, ECC, topology, speed,
+retained their schedules and budgets. Broader SPD, ECC, topology, rate-source cross-checks,
 independent physical capacity validation, RAM correctness beyond the bounded
 memory workers, and pre-boot Memtest86+ requirements remain open. Selected
 firmware observations establish neither usable OS RAM nor module health or
@@ -1098,6 +1098,28 @@ race/durability and release approval still require their documented qualificatio
 The later [Standard console qualification](requirements-validation.md#standard-console-launch)
 records completed native VM 600-second CPU loads with synthetic thermal
 observations; that evidence is separate from this inventory slice.
+
+### Reported memory transfer rates
+
+The Type 17 inventory now also reports maximum and configured transfer rates in
+MT/s, each with its own reported, unknown, unavailable, malformed or unsupported
+state. These are independent firmware claims: a configured value above the
+reported maximum is retained without clamping or a health verdict. Rates do not
+establish clock frequency, performance, installed-device presence or identity,
+and do not change the derived capacity summary.
+
+Older admitted records gain the two rate states; an absent registry adds no
+components or bytes. Historical reports retain their original bytes and remain
+verifiable. The existing graph policy and ordinary/linked signed consumers retain
+the rate observations without a schema, view-profile or identity change.
+
+The full Windows amd64 and 386 suites each passed 13,303 test/subtest names with
+18 retained skips across 35 packages, including all 174 new names. Formatting,
+vet and 24 Linux compile-only artifacts passed. Native Linux execution,
+installed-image and physical-PC qualification of this extension remain open,
+as do SPD acquisition and cross-checking, broader topology, ECC monitoring,
+physical memory coverage, the ten-PC pilot and security, licensing and release
+gates. See [the rate contract and validation](requirements-validation.md#memory-transfer-rates).
 
 ### Memory-capacity report view
 

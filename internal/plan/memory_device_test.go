@@ -129,3 +129,60 @@ func TestMemoryDeviceNoObservationPreservesHistoricalGraph(t *testing.T) {
 		})
 	}
 }
+
+func TestMemoryDeviceTransferRatesBindActualGraphAndPlan(t *testing.T) {
+	collect := func(maximum, configured uint16) inventory.Snapshot {
+		t.Helper()
+		root := t.TempDir()
+		path := filepath.Join(root, "sys/firmware/dmi/entries/17-0/raw")
+		if err := os.MkdirAll(filepath.Dir(path), 0700); err != nil {
+			t.Fatal(err)
+		}
+		raw := make([]byte, 36)
+		raw[0], raw[1], raw[12], raw[13], raw[14], raw[18] = 17, 34, 0, 0x40, 9, 34
+		raw[21], raw[22], raw[32], raw[33] = byte(maximum), byte(maximum>>8), byte(configured), byte(configured>>8)
+		if err := os.WriteFile(path, raw, 0600); err != nil {
+			t.Fatal(err)
+		}
+		snapshot, err := inventory.NewLinuxCollector(root).Collect(t.Context())
+		if err != nil || len(snapshot.Components) != 1 {
+			t.Fatal("actual raw prerequisite", err)
+		}
+		return snapshot
+	}
+	base := collect(4800, 6000)
+	key := bytes.Repeat([]byte{'p'}, 32)
+	maximum, _ := base.Components[0].Attribute("maximum_transfer_rate_mts")
+	configured, _ := base.Components[0].Attribute("configured_transfer_rate_mts")
+	if maximum != "4800" || configured != "6000" {
+		t.Fatal("independent literal rates")
+	}
+	left, err := ObserveHardwareGraph(base, key, "memory-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	frozen, err := Build(base, ProfileQuick, "x86_64", key, "memory-test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name                string
+		maximum, configured uint16
+	}{{"maximum_value", 6400, 6000}, {"configured_value", 4800, 6400}, {"maximum_state", 0, 6000}, {"configured_state", 4800, 0}} {
+		t.Run(tc.name, func(t *testing.T) {
+			next := collect(tc.maximum, tc.configured)
+			right, err := ObserveHardwareGraph(next, key, "memory-test")
+			if err != nil || left.Value == right.Value {
+				t.Fatal("rate observation became volatile", err)
+			}
+			want := HardwareDelta{Changed: []HardwareComponentRef{{Type: inventory.ComponentMemoryDevice, ID: "memory_device:1"}}}
+			if got := CompareHardwareGraphs(left, right); !reflect.DeepEqual(got, want) {
+				t.Fatal("rate delta changed unrelated component", got)
+			}
+			nextPlan, err := Build(next, ProfileQuick, "x86_64", key, "memory-test")
+			if err != nil || nextPlan.ID == frozen.ID || nextPlan.DefinitionsDigest != frozen.DefinitionsDigest || !reflect.DeepEqual(nextPlan.Tests, frozen.Tests) || !reflect.DeepEqual(nextPlan.Capabilities, frozen.Capabilities) {
+				t.Fatal("rate binding or worker selection changed", err)
+			}
+		})
+	}
+}

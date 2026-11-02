@@ -106,7 +106,7 @@ func (f memoryCommandFixture) arguments(t *testing.T, output string) []string {
 	return args
 }
 func memoryCommandAttributes(capacity string) []inventory.Attribute {
-	return []inventory.Attribute{{Name: "capacity_bytes", Value: capacity}, {Name: "capacity_bytes_state", Value: "reported"}, {Name: "form_factor", Value: "dimm"}, {Name: "form_factor_state", Value: "reported"}, {Name: "memory_type", Value: "ddr5"}, {Name: "memory_type_state", Value: "reported"}, {Name: "observation_source", Value: "smbios_type17"}}
+	return []inventory.Attribute{{Name: "capacity_bytes", Value: capacity}, {Name: "capacity_bytes_state", Value: "reported"}, {Name: "configured_transfer_rate_mts_state", Value: "unavailable"}, {Name: "form_factor", Value: "dimm"}, {Name: "form_factor_state", Value: "reported"}, {Name: "maximum_transfer_rate_mts_state", Value: "unavailable"}, {Name: "memory_type", Value: "ddr5"}, {Name: "memory_type_state", Value: "reported"}, {Name: "observation_source", Value: "smbios_type17"}}
 }
 func requireMemoryCommandPayload(t *testing.T, p app.InventoryPayload, capacity string) {
 	t.Helper()
@@ -249,7 +249,7 @@ func TestMemoryDeviceRealFinalizerKeepsConfigurationDeltaAndIndependentParentTru
 						t.Fatal(err)
 					}
 					wantChanged := []plan.HardwareComponentRef{{Type: inventory.ComponentType("memory_device"), ID: "memory_device:1"}}
-					integrity = row.Status == app.TestFail && evidence.Status == "fail" && row.PlanID == f.frozen.ID && row.HardwareGraph == f.frozen.HardwareGraph.Value && evidence.PlannedHardwareGraph == "hmac-sha256:f179c2ad6fb61abc70288f1c70166dcc59c689627028dbe9cdd06e5151a94a02" && evidence.FinalHardwareGraph == "hmac-sha256:df39af0f073e62affc61f7c1885dc48dc31a2b1502ba1d04daffb8fd06aad6a1" && evidence.PlannedComponentCount == 2 && evidence.FinalComponentCount == 2 && len(evidence.AddedComponents) == 0 && len(evidence.RemovedComponents) == 0 && reflect.DeepEqual(evidence.ChangedComponents, wantChanged) && evidence.Session == nil
+					integrity = row.Status == app.TestFail && evidence.Status == "fail" && row.PlanID == f.frozen.ID && row.HardwareGraph == f.frozen.HardwareGraph.Value && evidence.PlannedHardwareGraph == "hmac-sha256:3408128d2aeacaed9694bcb934d24c52c9f8fdfcb89f4369e7cb955412a9ea32" && evidence.FinalHardwareGraph == "hmac-sha256:fa37232e173c650af916d5b0d7cd8324856184dfc0bcc2e54af346912a7f09d1" && evidence.PlannedComponentCount == 2 && evidence.FinalComponentCount == 2 && len(evidence.AddedComponents) == 0 && len(evidence.RemovedComponents) == 0 && reflect.DeepEqual(evidence.ChangedComponents, wantChanged) && evidence.Session == nil
 				}
 			}
 			if !integrity || payload.CoverageScope != app.CoverageFrozenPlan {
@@ -425,6 +425,215 @@ func TestMemoryDeviceOwnedCollectionFailureStopsFinalizerSigningAndOutput(t *tes
 			assertMemoryCommandPrivacy(t, stderr.Bytes())
 			if _, err := os.Stat(output); !os.IsNotExist(err) {
 				t.Fatal("failed inventory created report", err)
+			}
+		})
+	}
+}
+
+func memoryRateCommandRecord(configured uint16) []byte {
+	raw := make([]byte, 34)
+	raw[0], raw[1], raw[2], raw[3], raw[12], raw[13], raw[14], raw[18] = 17, 34, 0x71, 0x29, 0, 0x40, 9, 34
+	raw[21], raw[22], raw[32], raw[33] = 0xc0, 0x12, byte(configured), byte(configured>>8)
+	return append(raw, []byte("PRIVATE-RATE-STRING\x00\x00")...)
+}
+func memoryRateCommandFixture(t *testing.T) memoryCommandFixture {
+	t.Helper()
+	f := newMemoryCommandFixture(t)
+	if err := os.WriteFile(filepath.Join(f.root, filepath.FromSlash(memoryCommandRaw)), memoryRateCommandRecord(6000), 0600); err != nil {
+		t.Fatal(err)
+	}
+	var err error
+	f.snapshot, err = inventory.NewLinuxCollector(f.root).Collect(t.Context())
+	if err != nil {
+		t.Fatal(err)
+	}
+	excluded, err := plan.SelectableQuickTests("x86_64")
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.frozen, err = plan.BuildWithSelection(f.snapshot, plan.ProfileQuick, "x86_64", bytes.Repeat([]byte{0x39}, 32), "power-fixture", excluded)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if f.frozen.HardwareGraph.Value != "hmac-sha256:17a0a4640fa67cc08681c5c44ad1f8713811f2c7fd9295e3ae3ec7c3a3156681" {
+		t.Fatal("independent rate graph literal", f.frozen.HardwareGraph.Value)
+	}
+	for _, row := range f.frozen.Tests {
+		if row.Status == plan.TestScheduled {
+			t.Fatal("rate fixture scheduled a worker")
+		}
+	}
+	encoded, err := json.Marshal(f.frozen)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(f.planPath, encoded, 0600); err != nil {
+		t.Fatal(err)
+	}
+	return f
+}
+func memoryRateCommandAttributes(configured string) []inventory.Attribute {
+	return []inventory.Attribute{{Name: "capacity_bytes", Value: "17179869184"}, {Name: "capacity_bytes_state", Value: "reported"}, {Name: "configured_transfer_rate_mts", Value: configured}, {Name: "configured_transfer_rate_mts_state", Value: "reported"}, {Name: "form_factor", Value: "dimm"}, {Name: "form_factor_state", Value: "reported"}, {Name: "maximum_transfer_rate_mts", Value: "4800"}, {Name: "maximum_transfer_rate_mts_state", Value: "reported"}, {Name: "memory_type", Value: "ddr5"}, {Name: "memory_type_state", Value: "reported"}, {Name: "observation_source", Value: "smbios_type17"}}
+}
+func requireMemoryRateCommandPayload(t *testing.T, p app.InventoryPayload, configured string) {
+	t.Helper()
+	if len(p.Components) != 2 || !reflect.DeepEqual(p.Components[1].Attributes, memoryRateCommandAttributes(configured)) {
+		t.Fatal("literal rate payload", p.Components)
+	}
+	// Reuse the exact identity/count oracle without mutating the admitted payload.
+	owned := p
+	owned.Components = append([]app.ComponentRecord(nil), p.Components...)
+	owned.Components[1].Attributes = memoryCommandAttributes("17179869184")
+	requireMemoryCommandPayload(t, owned, "17179869184")
+}
+func TestMemoryDeviceTransferRatesRealFinalizeAndCompare(t *testing.T) {
+	for _, variant := range []string{"ordinary_unchanged", "ordinary_changed", "linked_changed"} {
+		t.Run(variant, func(t *testing.T) {
+			f := memoryRateCommandFixture(t)
+			finalize := func(name string, args []string, configured string, changed, linked bool) (bundle.Artifact, app.InventoryPayload) {
+				t.Helper()
+				calls := 0
+				var stdout, stderr bytes.Buffer
+				collect := func(ctx context.Context) (inventory.Snapshot, error) {
+					calls++
+					return inventory.NewLinuxCollector(f.root).Collect(ctx)
+				}
+				if code := runFinalizeWith(t.Context(), args, &stdout, &stderr, collect, bytes.NewReader(bytes.Repeat([]byte{0x45}, 64)), func() time.Time { return time.Unix(10, 0) }); code != 0 || calls != 1 {
+					t.Fatal("real rate finalizer", code, calls, stderr.String())
+				}
+				raw, err := os.ReadFile(name)
+				if err != nil {
+					t.Fatal(err)
+				}
+				artifact, err := bundle.VerifySelfIssued(bytes.NewReader(raw), int64(len(raw)))
+				if err != nil {
+					t.Fatal("signed rate artifact", err)
+				}
+				schema := "hhsoft.pc-tester.bundle-manifest/v3"
+				if linked {
+					schema = "hhsoft.pc-tester.bundle-manifest/v4"
+				}
+				if artifact.Manifest.Schema != schema || artifact.Manifest.ViewProfile != "hhsoft.pc-tester.memory-capacity-view/v1" || len(artifact.RenderedReport) == 0 || len(artifact.RenderedPDF) == 0 {
+					t.Fatal("current canonical rate views missing")
+				}
+				var payload app.InventoryPayload
+				if err := json.Unmarshal(artifact.InventoryJSON, &payload); err != nil {
+					t.Fatal(err)
+				}
+				requireMemoryRateCommandPayload(t, payload, configured)
+				found := false
+				for _, row := range payload.TestResults {
+					if strings.Contains(row.ID, "memory_device") {
+						t.Fatal("rate observation invented a functional test")
+					}
+					if row.ID == "run.integrity.quick" {
+						if !changed {
+							found = row.Status == app.TestPass
+						} else {
+							var e sessionevidence.IntegrityEvidence
+							if err := json.Unmarshal(row.Evidence, &e); err != nil {
+								t.Fatal(err)
+							}
+							want := []plan.HardwareComponentRef{{Type: inventory.ComponentMemoryDevice, ID: "memory_device:1"}}
+							found = row.Status == app.TestFail && e.Status == "fail" && row.PlanID == f.frozen.ID && e.PlannedHardwareGraph == "hmac-sha256:17a0a4640fa67cc08681c5c44ad1f8713811f2c7fd9295e3ae3ec7c3a3156681" && e.FinalHardwareGraph == "hmac-sha256:4d59817a95f7310eb978e05b458bc7076caa2d6e9f7d6fabf1696489898e8ac5" && e.PlannedComponentCount == 2 && e.FinalComponentCount == 2 && len(e.AddedComponents) == 0 && len(e.RemovedComponents) == 0 && reflect.DeepEqual(e.ChangedComponents, want)
+						}
+					}
+				}
+				if !found {
+					t.Fatal("independent rate graph did not remain signed integrity evidence")
+				}
+				for _, body := range [][]byte{artifact.InventoryJSON, artifact.RenderedReport, artifact.RenderedPDF, stdout.Bytes(), stderr.Bytes()} {
+					assertMemoryCommandPrivacy(t, body)
+				}
+				return artifact, payload
+			}
+			controlPath := filepath.Join(f.directory, "rate-control.hhpcr")
+			_, beforePayload := finalize(controlPath, f.arguments(t, controlPath), "6000", false, false)
+			linked := variant == "linked_changed"
+			changed := variant != "ordinary_unchanged"
+			output := filepath.Join(f.directory, "rate-final.hhpcr")
+			args := f.arguments(t, output)
+			verify := []string{"-self-issued"}
+			var parent bundle.Artifact
+			var parentRaw []byte
+			parentPath := ""
+			if linked {
+				private := ed25519.NewKeyFromSeed(bytes.Repeat([]byte{0x67}, 32))
+				public := private.Public().(ed25519.PublicKey)
+				var err error
+				parentRaw, err = captureBundle(f.snapshot, nil, bytes.Repeat([]byte{0x39}, 32), "power-fixture", private, "rate-parent-key", "rate-parent", time.Unix(1, 0), app.CoverageDirectCapture)
+				if err != nil {
+					t.Fatal(err)
+				}
+				parent, err = bundle.Verify(bytes.NewReader(parentRaw), int64(len(parentRaw)), report.Keyring{"rate-parent-key": public})
+				if err != nil {
+					t.Fatal("independent parent prerequisite", err)
+				}
+				parentPath = filepath.Join(f.directory, "rate-parent.hhpcr")
+				if err := os.WriteFile(parentPath, parentRaw, 0600); err != nil {
+					t.Fatal(err)
+				}
+				key := writeTestKey(t, f.directory, "rate-parent.pub", public)
+				binding := []string{"-previous-report", parentPath, "-previous-public-key", key, "-previous-key-id", "rate-parent-key"}
+				args = append(args, binding...)
+				verify = append(verify, binding...)
+			}
+			configured := "6000"
+			if changed {
+				configured = "6400"
+				if err := os.WriteFile(filepath.Join(f.root, filepath.FromSlash(memoryCommandRaw)), memoryRateCommandRecord(6400), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			artifact, afterPayload := finalize(output, args, configured, changed, linked)
+			if linked {
+				want := report.PreviousReport{ManifestDigest: parent.Envelope.ManifestDigest, BundleSHA256: fmt.Sprintf("sha256:%x", parent.BundleSHA256)}
+				if artifact.Manifest.PreviousReport == nil || *artifact.Manifest.PreviousReport != want {
+					t.Fatal("rate child lost authenticated original")
+				}
+				retained, err := os.ReadFile(parentPath)
+				if err != nil || !bytes.Equal(retained, parentRaw) {
+					t.Fatal("parent changed")
+				}
+			} else if artifact.Manifest.PreviousReport != nil {
+				t.Fatal("ordinary rate report invented a parent")
+			}
+			var out, diagnostic bytes.Buffer
+			if code := runVerify(t.Context(), append(verify, output), &out, &diagnostic); code != 0 {
+				t.Fatal("real current rate verification", code, diagnostic.String())
+			}
+			if !changed {
+				return
+			}
+			left, l, public := powerCommandSignedPayload(t, beforePayload, "rate-before", 1)
+			right, r, _ := powerCommandSignedPayload(t, afterPayload, "rate-after", 2)
+			leftPath, rightPath := filepath.Join(f.directory, "rate-before.hhpcr"), filepath.Join(f.directory, "rate-after.hhpcr")
+			if err := os.WriteFile(leftPath, left, 0600); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(rightPath, right, 0600); err != nil {
+				t.Fatal(err)
+			}
+			key := writeTestKey(t, f.directory, "rate-compare.pub", public)
+			compareArgs := []string{"-public-key", key, "-key-id", "power-compare-key", leftPath, rightPath}
+			out.Reset()
+			diagnostic.Reset()
+			if code := runCompare(t.Context(), compareArgs, &out, &diagnostic); code != 0 {
+				t.Fatal("real rate comparison", code, diagnostic.String())
+			}
+			var got comparison.Result
+			if json.Unmarshal(out.Bytes(), &got) != nil || got.Status != comparison.StatusInconclusive || got.Complete || !got.Comparable || got.Summary != (comparison.Summary{Matched: 1, Unresolved: 1}) || len(got.Unresolved) != 1 || len(got.Unresolved[0].Before) != 1 || len(got.Unresolved[0].After) != 1 {
+				t.Fatal("rate difference manufactured replacement or health", got)
+			}
+			if got.Before.ManifestDigest != l.Envelope.ManifestDigest || got.After.ManifestDigest != r.Envelope.ManifestDigest || !reflect.DeepEqual(got.Unresolved[0].Before[0].Attributes, memoryRateCommandAttributes("6000")) || !reflect.DeepEqual(got.Unresolved[0].After[0].Attributes, memoryRateCommandAttributes("6400")) {
+				t.Fatal("signed rate observations/references lost")
+			}
+			wrong := writeTestKey(t, f.directory, "rate-wrong.pub", ed25519.NewKeyFromSeed(bytes.Repeat([]byte{0x19}, 32)).Public().(ed25519.PublicKey))
+			compareArgs[1] = wrong
+			out.Reset()
+			diagnostic.Reset()
+			if code := runCompare(t.Context(), compareArgs, &out, &diagnostic); code != 1 || out.Len() != 0 {
+				t.Fatal("wrong signer admitted rate comparison")
 			}
 		})
 	}

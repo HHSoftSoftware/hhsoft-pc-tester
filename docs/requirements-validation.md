@@ -277,10 +277,11 @@ remain open where documented.
 
 ## Memory Device Inventory
 
-The finite Linux producer and its graph/report/comparison integration are
-implemented and have passed host tests and selected native Linux amd64/386
-software fixtures. The scope is three selected numeric observations from exposed
-SMBIOS Type 17 records; it does not complete the broader memory requirement.
+The finite Linux producer projects five selected observations from exposed
+SMBIOS Type 17 records: capacity, memory type, form factor, maximum transfer rate
+and configured transfer rate. The original three-field implementation passed host
+and selected native Linux amd64/386 software fixtures. The rate extension has
+separate host qualification below; neither completes the broader memory requirement.
 
 ### Acquisition and row contract
 
@@ -294,7 +295,7 @@ exported. Each eligible entry receives a one-based, nonpersistent
 rows and establishes no hardware absence.
 
 Ordinary scalar errors discard all returned bytes, including favorable bytes
-returned alongside an error, and produce a row with all three fields unavailable.
+returned alongside an error, and produce a row with all five fields unavailable.
 Existing ownership, protocol, bound, checked-close, directory and cancellation
 failures retain their stronger policy: the collector returns no partial snapshot.
 The existing 65,536-byte scalar bound is a product limit, not an SMBIOS ABI maximum.
@@ -305,12 +306,15 @@ The existing `memory:system` OS observation remains the RAM provider.
 | `capacity_bytes` | Decimal byte count, present only when reported. |
 | `memory_type` | One admitted type label, present only when reported. |
 | `form_factor` | One admitted form-factor label, present only when reported. |
+| `maximum_transfer_rate_mts` | Decimal firmware-reported maximum transfer rate in MT/s, present only when reported. |
+| `configured_transfer_rate_mts` | Decimal firmware-reported configured transfer rate in MT/s, present only when reported. |
 | Each field's `_state` | `reported`, `unknown`, `unavailable`, `malformed` or `unsupported`. |
 | `observation_source` | Always `smbios_type17` on an eligible row. |
 
 `unknown` describes a firmware field with no known value; `unavailable`
-describes an unobserved eligible entry. `malformed` describes failed structure;
-`unsupported` describes a value outside the admitted encoding policy. Only
+describes an unobserved eligible entry or an entirely absent selected rate field.
+`malformed` describes failed structure; `unsupported` describes a value outside
+the admitted encoding policy, not a claim of missing hardware capability. Only
 `reported` has a value. Missing, rejected and unknown capacity never becomes
 zero. The source label identifies the input family without authenticating it.
 
@@ -320,7 +324,7 @@ Parsing requires at least the four-byte header, Type 17, a formatted length from
 21 through 255 bytes, and at least two bytes after that formatted area. The first
 double NUL at or after the formatted boundary must end exactly at the end of the
 raw file. Missing terminators, trailing bytes, concatenated records, wrong type,
-short headers and incomplete formatted areas make all three fields malformed.
+short headers and incomplete formatted areas make all five fields malformed.
 Opaque string bytes, including non-UTF-8 bytes, are allowed when this framing is
 valid; they are never decoded or borrowed to complete a selected field. Handles,
 string indexes and unselected fields are ignored. This is a bounded projection,
@@ -343,7 +347,7 @@ little-endian 32-bit field at offset 28.
 
 For Size `0x7FFF`, a formatted length at most 28 means Extended Size is absent:
 capacity is `unknown`. Lengths 29 through 31 contain only part of that field:
-capacity is `malformed` while valid type and form-factor observations survive.
+capacity is `malformed` while valid type, form-factor and rate observations survive.
 At length 32 or greater, bit 31 set in Extended Size is `unsupported`.
 Values 0 through 32,766 are also `unsupported` under the product's conservative
 policy; values 32,767 through 2,147,483,647 report that many MiB in bytes.
@@ -353,8 +357,50 @@ The base `0x8000` and sub-threshold extension choices are product policies, not
 claims that every SMBIOS producer universally prohibits those encodings.
 Multiplication widens to `uint64` first. The largest admitted capacity is
 2,251,799,812,636,672 bytes; this boundary passed on native Linux 386.
-A reported zero does not prove a physical slot is empty. Capacities are not
-summed or substituted for usable OS RAM.
+A reported zero does not prove a physical slot is empty. The collector does not
+sum capacities or substitute them for usable OS RAM; the derived report summary
+is a separate projection.
+
+### Memory transfer rates
+
+Maximum Transfer Rate uses the little-endian 16-bit field at offset 21 and its
+32-bit extension at offset 84. Configured Transfer Rate uses the corresponding
+fields at offsets 32 and 88. All presence checks use the formatted length; string
+bytes and the other field's extension cannot complete a value.
+
+| Selected rate encoding | State and value |
+| --- | --- |
+| Base field entirely absent | `unavailable`, with no value. |
+| Base field partly present | `malformed`, with no value. |
+| Base `0` | `unknown`; ignore any extension. |
+| Base `1..65534` | `reported`, unchanged decimal MT/s; ignore any extension. |
+| Base `0xFFFF`, corresponding extension absent | `unsupported`: unresolved legacy/reserved encoding. |
+| Base `0xFFFF`, corresponding extension partly present | `malformed`. |
+| Complete selected extension with bit 31 set or value below 65,535 | `unsupported`. |
+| Complete selected extension `65535..2147483647` | `reported`, unchanged decimal MT/s. |
+
+The numeric grammar follows the
+[SMBIOS specification](https://www.dmtf.org/sites/default/files/standards/documents/DSP0134_3.9.0.pdf).
+No SMBIOS version is acquired or inferred from record length. Reported numeric
+rates are not doubled or otherwise scaled for older DDR or newer memory types.
+Zero and direct values ignore even incomplete or reserved extension bytes.
+
+Each rate is independent of the other rate, capacity, type and form factor.
+For example, maximum 4,800 and configured 6,000 MT/s remain two reported claims;
+there is no clamp or cross-field health verdict. A local rate error preserves
+valid peer observations. Nonzero rates on a capacity-zero entry do not change
+its empty-entry capacity interpretation or establish installed-device presence.
+There is no current-clock, performance, physical-identity or memory-health claim.
+The existing one owned raw read and acquisition/error/cancellation rules remain
+in force; no SPD, entry-point or other additional source is read.
+
+Older admitted records gain two rate states according to their actual formatted
+bytes. No-record snapshot, graph, payload and view vectors remain unchanged;
+historical signed reports retain their original bytes and verification rules.
+The current ordinary/linked report schema and view profile are unchanged. Rate
+attributes participate in the existing stable configuration graph, so changed
+claims can produce signed failed-integrity evidence without becoming a memory
+functional-test failure. The memory-capacity summary remains unchanged.
 
 ### Finite type and form-factor labels
 
@@ -424,12 +470,12 @@ increment, Quick v7 and Standard v8 retained their 12/13-worker schedules,
 
 ### Qualification and remaining requirements
 
-The complete source defines 34 new test roots and 691 required test/subtest names;
-the portable subset is 30 roots and 681 names. The host run separately confirmed
+The initial three-field source defined 34 new test roots and 691 required test/subtest names;
+its portable subset was 30 roots and 681 names. That host run separately confirmed
 all 691 new required names passed. Source requirements and measured outcomes are
 distinct.
 
-| Closed software validation | Measured outcome |
+| Initial three-field software validation | Measured outcome |
 | --- | --- |
 | Full host suite | 7,639 named test/subtest passes and 30 package passes; 17 test skips and one package skip. |
 | Selected native Linux amd64 and 386 suites | 5,268 named test/subtest passes across 14 package executions; no skips or failures. |
@@ -448,7 +494,26 @@ and [signed consumer fixtures](../cmd/hhpt/memory_device_report_test.go) define
 the executable coverage. See
 [the validation scope and remaining gates](test-strategy.md#memory-device-inventory-validation).
 
-SPD, ECC deltas, topology and slot locations, speed/rate/voltage/rank,
+The transfer-rate extension subsequently passed the full Windows amd64 and 386
+suites: each recorded 13,303 test/subtest passes and the same 18 retained skips
+across 35 packages. All 13,129 prior passing names were retained, and all 174 new
+names across 15 roots and 159 declared parent relationships passed. The selected
+cohort contained 865 names across 49 roots, with 816 verified parent relationships.
+All 31 commands passed, including formatting, vet and 24 Linux amd64/386/arm64
+compile-only artifacts. Those Linux artifacts were not executed; the earlier
+three-field native results do not qualify the rate extension.
+
+The [literal rate fixtures](../internal/inventory/memory_device_rate_test.go)
+cover field lengths, extension isolation, reserved encodings, unsigned 32-bit
+boundaries, DDR/DDR5 numeric equivalence and independent claims. Owned-read,
+326-entry late-failure, graph/plan, capacity-summary, current ordinary/linked
+bundle, re-signed view substitution and real CLI verification/comparison cases
+also passed. Existing no-record vectors and historical artifact checks remain
+separate compatibility requirements; no historical archive qualification is
+inferred from comparing newly generated canonical bytes.
+
+SPD acquisition and cross-checks, ECC deltas, topology and slot locations,
+rate-source cross-checks, measured operating rates, voltage and rank,
 independent physical capacity validation, RAM correctness beyond the bounded
 memory workers, broader working sets and pre-boot Memtest86+ remain open. Image/sysfs
 exposure and

@@ -59,7 +59,7 @@ func TestMemoryDeviceComparisonRetainsBothObservationsWithoutContinuity(t *testi
 	}
 }
 func TestMemoryDeviceEveryObservationAttributeStaysNonvolatile(t *testing.T) {
-	for _, name := range []string{"capacity_bytes", "capacity_bytes_state", "form_factor", "form_factor_state", "memory_type", "memory_type_state", "observation_source", "future_field"} {
+	for _, name := range []string{"capacity_bytes", "capacity_bytes_state", "form_factor", "form_factor_state", "memory_type", "memory_type_state", "observation_source", "future_field", "maximum_transfer_rate_mts", "maximum_transfer_rate_mts_state", "configured_transfer_rate_mts", "configured_transfer_rate_mts_state"} {
 		t.Run(name, func(t *testing.T) {
 			a := Component{Type: inventory.ComponentType("memory_device"), ID: "memory_device:1"}
 			b := a
@@ -108,6 +108,37 @@ func TestMemoryDeviceComparisonRejectsForgedIdentity(t *testing.T) {
 				if got, err := Compare(before, after); err == nil || !reflect.DeepEqual(got, Result{}) {
 					t.Fatal("forged memory identity accepted", side)
 				}
+			}
+		})
+	}
+}
+
+func memoryComparisonRateAttributes(capacity string) []inventory.Attribute {
+	return []inventory.Attribute{{Name: "capacity_bytes", Value: capacity}, {Name: "capacity_bytes_state", Value: "reported"}, {Name: "configured_transfer_rate_mts", Value: "6000"}, {Name: "configured_transfer_rate_mts_state", Value: "reported"}, {Name: "form_factor", Value: "dimm"}, {Name: "form_factor_state", Value: "reported"}, {Name: "maximum_transfer_rate_mts", Value: "4800"}, {Name: "maximum_transfer_rate_mts_state", Value: "reported"}, {Name: "memory_type", Value: "ddr5"}, {Name: "memory_type_state", Value: "reported"}, {Name: "observation_source", Value: "smbios_type17"}}
+}
+
+func TestMemoryDeviceRateComparisonKeepsIndependentUnidentifiedClaims(t *testing.T) {
+	for _, variant := range []string{"configured_above_maximum", "empty_capacity"} {
+		t.Run(variant, func(t *testing.T) {
+			before, after := memoryComparisonReport(t, false), memoryComparisonReport(t, true)
+			capacity := "17179869184"
+			if variant == "empty_capacity" {
+				capacity = "0"
+			}
+			before.Inventory.Components[1].Attributes = memoryComparisonRateAttributes(capacity)
+			after.Inventory.Components[1].Attributes = memoryComparisonRateAttributes(capacity)
+			after.Inventory.Components[1].Attributes[2].Value = "6400"
+			original, _ := json.Marshal([]Report{before, after})
+			got, err := Compare(before, after)
+			if err != nil || got.Status != StatusInconclusive || !got.Comparable || got.Complete || got.Summary != (Summary{Matched: 1, Unresolved: 1}) || len(got.Unresolved) != 1 || len(got.Unresolved[0].Before) != 1 || len(got.Unresolved[0].After) != 1 {
+				t.Fatal("rates manufactured continuity or verdict", err, got)
+			}
+			if !reflect.DeepEqual(got.Unresolved[0].Before[0].Attributes, before.Inventory.Components[1].Attributes) || !reflect.DeepEqual(got.Unresolved[0].After[0].Attributes, after.Inventory.Components[1].Attributes) || !reflect.DeepEqual(got.Before, before.Reference) || !reflect.DeepEqual(got.After, after.Reference) {
+				t.Fatal("rate observations or references were lost")
+			}
+			final, _ := json.Marshal([]Report{before, after})
+			if !bytes.Equal(final, original) {
+				t.Fatal("rate comparison mutated inputs")
 			}
 		})
 	}

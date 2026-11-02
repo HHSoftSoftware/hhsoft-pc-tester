@@ -382,3 +382,108 @@ func TestMemoryDeviceDecoratorCannotBypassRawOverride(t *testing.T) {
 		t.Fatal("underlying favorable bytes bypassed decorator", err)
 	}
 }
+
+func TestMemoryDeviceRatesUseOneOwnedRawRecord(t *testing.T) {
+	root := t.TempDir()
+	memoryTestWrite(t, root, memoryTestRaw, memoryRateTestRecord(92, 4800, 6000, 0, 0))
+	snapshot, err := NewLinuxCollector(root).Collect(t.Context())
+	want := NewSnapshot([]Component{NewComponent(ComponentMemoryDevice, "memory_device:1", memoryRateExpected("4800", "reported", "6000", "reported"))})
+	if err != nil || !reflect.DeepEqual(snapshot, want) {
+		t.Fatal("real owned raw projection", err, snapshot)
+	}
+	for _, variant := range []string{"complete", "read_error", "close_error", "cancel_close", "cancel_close_error"} {
+		t.Run(variant, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			record := memoryRateTestRecord(92, 4800, 6000, 0, 0)
+			owner := scalarBytes(record, 0, true)
+			var wantErr error
+			switch variant {
+			case "read_error":
+				owner.read = func(p []byte) (int, error) { return copy(p, record), fs.ErrPermission }
+			case "close_error":
+				owner.closeErr = fs.ErrPermission
+				wantErr = ErrScalarClose
+			case "cancel_close":
+				owner.onClose = cancel
+				wantErr = context.Canceled
+			case "cancel_close_error":
+				owner.onClose = cancel
+				owner.closeErr = fs.ErrPermission
+				wantErr = ErrScalarClose
+			}
+			opens := 0
+			raw, observed, err := readInventoryScalar(ctx, memoryTestRaw, func(name string) (inventoryScalar, error) {
+				opens++
+				if name != memoryTestRaw {
+					t.Fatal("unexpected acquisition")
+				}
+				return owner, nil
+			})
+			if opens != 1 || owner.closes != 1 || owner.stats != 1 || len(owner.requests) != 1 {
+				t.Fatal("single raw owner changed")
+			}
+			if variant != "complete" {
+				requireScalarFailure(t, raw, observed, err, wantErr)
+				return
+			}
+			if err != nil || !observed || !reflect.DeepEqual(parseMemoryDeviceRecord(raw), memoryRateExpected("4800", "reported", "6000", "reported")) {
+				t.Fatal("positive owner prerequisite", err)
+			}
+		})
+	}
+}
+
+func TestMemoryDeviceRatesRetainAllRowsAndLateFailures(t *testing.T) {
+	for _, variant := range []string{"complete", "ordinary_error", "cancel", "overflow"} {
+		t.Run(variant, func(t *testing.T) {
+			ctx, cancel := context.WithCancel(t.Context())
+			defer cancel()
+			const count = 326
+			names := make([]string, count)
+			for i := range names {
+				names[i] = fmt.Sprintf("17-%d", i)
+			}
+			reads := 0
+			source := memoryAcquisitionSource(t, enumerationEntries(names...), func(string) ([]byte, error) {
+				reads++
+				raw := memoryRateTestRecord(92, 4800, 6000, 0, 0)
+				if reads == count {
+					switch variant {
+					case "ordinary_error":
+						return raw, fs.ErrPermission
+					case "cancel":
+						cancel()
+					case "overflow":
+						return bytes.Repeat([]byte{'x'}, 65537), fs.ErrPermission
+					}
+				}
+				return raw, nil
+			})
+			snapshot, err := NewLinuxCollectorWithSource(source).Collect(ctx)
+			if reads != count {
+				t.Fatal("late boundary or enumeration not reached", reads)
+			}
+			if variant == "cancel" {
+				requireNoCollection(t, snapshot, err, context.Canceled)
+				return
+			}
+			if variant == "overflow" {
+				requireNoCollection(t, snapshot, err, ErrScalarLimit)
+				return
+			}
+			if err != nil || len(snapshot.Components) != count {
+				t.Fatal("rows capped or dropped", err)
+			}
+			for _, row := range snapshot.Components {
+				want := memoryRateExpected("4800", "reported", "6000", "reported")
+				if variant == "ordinary_error" && row.ID == "memory_device:326" {
+					want = memoryTestAttributes("", "unavailable", "", "unavailable", "", "unavailable")
+				}
+				if !reflect.DeepEqual(row, NewComponent(ComponentMemoryDevice, row.ID, want)) {
+					t.Fatal("late ordinary error borrowed favorable rate", row.ID)
+				}
+			}
+		})
+	}
+}

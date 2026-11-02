@@ -933,6 +933,17 @@ the alpha still requires the separate documented release gates.
   one package skip. Selected native runs recorded 5,268 named passes across
   14 package executions, with no skips or failures. Physical and release
   qualification remain separate.
+- [x] Add independent SMBIOS Type 17 maximum and configured transfer-rate
+  observations in MT/s, with explicit field states and no clock, identity or
+  health inference. Preserve the existing memory-capacity summary.
+- [x] Validate the rate extension and signed consumers with the full Windows
+  amd64/386 suites: 13,303 test/subtest passes and the same 18 retained skips
+  across 35 packages per architecture, including all 174 new names. Formatting,
+  vet and 24 Linux amd64/386/arm64 compile-only artifacts passed.
+- [ ] Qualify the rate extension on native Linux, installed images and physical
+  PCs. Earlier capacity/type/form-factor native results do not qualify this
+  extension; retain the pilot, security, licensing and release gates. See
+  [the rate contract](docs/requirements-validation.md#memory-transfer-rates).
 - [x] Add a derived memory-capacity summary to ordinary and linked HTML/PDF
   reports, using only the original recorded firmware entries and OS observation.
   Show exact bytes, distinct incomplete states and comparison eligibility;
@@ -944,8 +955,8 @@ the alpha still requires the separate documented release gates.
 - [ ] Qualify this profile on native Linux, installed images and physical PCs;
   retain the pilot and release gates. Earlier inventory or linked-report native
   results do not qualify this increment; see [the current scope](docs/requirements-validation.md#memory-capacity-report-view).
-- [ ] Cross-check memory topology, speed and exposed SPD data against firmware
-  and OS observations; monitor corrected and uncorrected ECC deltas. Independent
+- [ ] Cross-check memory topology, reported rates and exposed SPD data against
+  firmware and OS observations; monitor corrected and uncorrected ECC deltas. Independent
   physical capacity validation and broader memory coverage remain open.
 - [ ] Add the separate Memtest86+ boot entry for complete memory coverage.
 - [ ] Test audio output, microphone input, channels, volume, and jack behavior.

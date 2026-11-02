@@ -35,6 +35,12 @@ func memoryTestWrite(t *testing.T, root, name string, raw []byte) {
 }
 func memoryTestAttributes(capacity, capacityState, form, formState, kind, kindState string) map[string]string {
 	out := map[string]string{"observation_source": "smbios_type17", "capacity_bytes_state": capacityState, "form_factor_state": formState, "memory_type_state": kindState}
+	out["maximum_transfer_rate_mts_state"] = "unavailable"
+	out["configured_transfer_rate_mts_state"] = "unavailable"
+	if capacityState == "malformed" && formState == "malformed" && kindState == "malformed" {
+		out["maximum_transfer_rate_mts_state"] = "malformed"
+		out["configured_transfer_rate_mts_state"] = "malformed"
+	}
 	if capacityState == "reported" {
 		out["capacity_bytes"] = capacity
 	}
@@ -71,6 +77,13 @@ func TestMemoryDeviceCapacityLiteralBoundaries(t *testing.T) {
 			raw := memoryTestRecord(tc.length, tc.size, 9, 34, tc.extended, []byte{'x', 0, 0})
 			before := bytes.Clone(raw)
 			want := memoryTestAttributes(tc.value, tc.state, "dimm", "reported", "ddr5", "reported")
+			switch tc.length {
+			case 28, 29, 30, 31, 32:
+				want["maximum_transfer_rate_mts_state"] = "unknown"
+			case 255:
+				want["maximum_transfer_rate_mts_state"] = "unknown"
+				want["configured_transfer_rate_mts_state"] = "unknown"
+			}
 			got := parseMemoryDeviceRecord(raw)
 			if !reflect.DeepEqual(got, want) || !bytes.Equal(raw, before) {
 				t.Fatal("literal capacity/state boundary", got, want)
@@ -147,7 +160,8 @@ func TestMemoryDeviceWholeRecordFramingRejectsAllFields(t *testing.T) {
 func TestMemoryDeviceOpaqueFieldsAndStringAreaStayPrivate(t *testing.T) {
 	base := memoryTestRecord(32, 0x7fff, 13, 34, 32768, []byte("PRIVATE-SERIAL\x00PRIVATE-LOCATOR\x00\x00"))
 	want := memoryTestAttributes("34359738368", "reported", "sodimm", "reported", "ddr5", "reported")
-	for _, variant := range []string{"private_strings", "non_utf8_strings", "unselected_formatted", "string_bytes_are_not_extension", "unknown_with_valid_enums"} {
+	want["maximum_transfer_rate_mts_state"] = "unknown"
+	for _, variant := range []string{"private_strings", "non_utf8_strings", "unselected_formatted", "selected_maximum_rate", "string_bytes_are_not_extension", "unknown_with_valid_enums"} {
 		t.Run(variant, func(t *testing.T) {
 			raw := bytes.Clone(base)
 			expected := want
@@ -155,12 +169,18 @@ func TestMemoryDeviceOpaqueFieldsAndStringAreaStayPrivate(t *testing.T) {
 			case "non_utf8_strings":
 				raw = append(raw[:32], []byte{0xff, 0xfe, 0, 0}...)
 			case "unselected_formatted":
-				for _, i := range []int{2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 15, 16, 17, 19, 20, 21, 22, 23, 24, 25, 26, 27} {
+				for _, i := range []int{2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 15, 16, 17, 19, 20, 23, 24, 25, 26, 27} {
 					raw[i] = 0xff
 				}
+			case "selected_maximum_rate":
+				raw[21], raw[22] = 0x80, 0x0c
+				expected = memoryTestAttributes("34359738368", "reported", "sodimm", "reported", "ddr5", "reported")
+				expected["maximum_transfer_rate_mts_state"] = "reported"
+				expected["maximum_transfer_rate_mts"] = "3200"
 			case "string_bytes_are_not_extension":
 				raw = memoryTestRecord(28, 0x7fff, 13, 34, 0, []byte{0xff, 0x7f, 1, 1, 0, 0})
 				expected = memoryTestAttributes("", "unknown", "sodimm", "reported", "ddr5", "reported")
+				expected["maximum_transfer_rate_mts_state"] = "unknown"
 			case "unknown_with_valid_enums":
 				raw = memoryTestRecord(21, 0xffff, 13, 34, 0, []byte{0, 0})
 				expected = memoryTestAttributes("", "unknown", "sodimm", "reported", "ddr5", "reported")
@@ -205,7 +225,7 @@ func TestMemoryDeviceRealCollectorHasExactPrivateOrdinals(t *testing.T) {
 		t.Fatal(err)
 	}
 	raw, err := json.Marshal(snapshot)
-	const want = `{"schema_version":1,"components":[{"type":"memory_device","id":"memory_device:1","attributes":[{"name":"capacity_bytes","value":"0"},{"name":"capacity_bytes_state","value":"reported"},{"name":"form_factor","value":"dimm"},{"name":"form_factor_state","value":"reported"},{"name":"memory_type","value":"ddr5"},{"name":"memory_type_state","value":"reported"},{"name":"observation_source","value":"smbios_type17"}]},{"type":"memory_device","id":"memory_device:2","attributes":[{"name":"capacity_bytes_state","value":"unknown"},{"name":"form_factor_state","value":"unknown"},{"name":"memory_type_state","value":"unsupported"},{"name":"observation_source","value":"smbios_type17"}]}]}`
+	const want = `{"schema_version":1,"components":[{"type":"memory_device","id":"memory_device:1","attributes":[{"name":"capacity_bytes","value":"0"},{"name":"capacity_bytes_state","value":"reported"},{"name":"configured_transfer_rate_mts_state","value":"unavailable"},{"name":"form_factor","value":"dimm"},{"name":"form_factor_state","value":"reported"},{"name":"maximum_transfer_rate_mts_state","value":"unavailable"},{"name":"memory_type","value":"ddr5"},{"name":"memory_type_state","value":"reported"},{"name":"observation_source","value":"smbios_type17"}]},{"type":"memory_device","id":"memory_device:2","attributes":[{"name":"capacity_bytes_state","value":"unknown"},{"name":"configured_transfer_rate_mts_state","value":"unavailable"},{"name":"form_factor_state","value":"unknown"},{"name":"maximum_transfer_rate_mts_state","value":"unavailable"},{"name":"memory_type_state","value":"unsupported"},{"name":"observation_source","value":"smbios_type17"}]}]}`
 	if err != nil || string(raw) != want {
 		t.Fatal("exact collector bytes", err, string(raw))
 	}
@@ -248,7 +268,7 @@ func TestMemoryDeviceUnavailableDoesNotReplaceOSMemory(t *testing.T) {
 	snapshot, err := NewLinuxCollector(root).Collect(t.Context())
 	want := Snapshot{SchemaVersion: 1, Components: []Component{
 		{Type: ComponentMemory, ID: "memory:system", Attributes: []Attribute{{"available_kib", "4096"}, {"total_kib", "8192"}}},
-		{Type: ComponentType("memory_device"), ID: "memory_device:1", Attributes: []Attribute{{"capacity_bytes_state", "unavailable"}, {"form_factor_state", "unavailable"}, {"memory_type_state", "unavailable"}, {"observation_source", "smbios_type17"}}},
+		{Type: ComponentType("memory_device"), ID: "memory_device:1", Attributes: []Attribute{{"capacity_bytes_state", "unavailable"}, {"configured_transfer_rate_mts_state", "unavailable"}, {"form_factor_state", "unavailable"}, {"maximum_transfer_rate_mts_state", "unavailable"}, {"memory_type_state", "unavailable"}, {"observation_source", "smbios_type17"}}},
 	}}
 	if err != nil || !reflect.DeepEqual(snapshot, want) {
 		t.Fatal("OS memory or unavailable row changed", err, snapshot)

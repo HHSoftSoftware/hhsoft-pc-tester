@@ -75,7 +75,7 @@ func executionResultDefinitions(profile plan.Profile) ([]quickResultDefinition, 
 
 func runFinalize(ctx context.Context, arguments []string, stdout, stderr io.Writer) int {
 	collector := inventory.NewLinuxCollector("/")
-	return runFinalizeWith(ctx, arguments, stdout, stderr, collector.Collect, cryptorand.Reader, time.Now)
+	return runFinalizeWithDiagnostics(ctx, arguments, stdout, stderr, collector.CollectWithDiagnostics, cryptorand.Reader, time.Now)
 }
 
 func runFinalizeWith(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, random io.Reader, now func() time.Time) int {
@@ -95,6 +95,10 @@ func runFinalizeOwnedDestinationWithPrevious(ctx context.Context, arguments []st
 }
 
 func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, random io.Reader, now func() time.Time, gate sessionFinalGate, writeOutput destinationWriter, previous *verifiedPreviousReport, readInput retestInputReader, executionProfile plan.Profile) (result sessionFinalizationResult) {
+	return runFinalizeOwnedDestinationWithPreviousForProfileAndObservation(ctx, arguments, stdout, stderr, collect, random, now, gate, writeOutput, previous, readInput, executionProfile, nil)
+}
+
+func runFinalizeOwnedDestinationWithPreviousForProfileAndObservation(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect snapshotCollector, random io.Reader, now func() time.Time, gate sessionFinalGate, writeOutput destinationWriter, previous *verifiedPreviousReport, readInput retestInputReader, executionProfile plan.Profile, observeFinalInventory func() error) (result sessionFinalizationResult) {
 	resultDefinitions, profileErr := executionResultDefinitions(executionProfile)
 	if profileErr != nil || (executionProfile == plan.ProfileStandard || executionProfile == plan.ProfileExtended) && gate == nil {
 		fmt.Fprintln(stderr, "finalize: execution profile requires its live coordinator")
@@ -462,6 +466,22 @@ func runFinalizeOwnedDestinationWithPreviousForProfile(ctx context.Context, argu
 			}
 			if ctx.Err() != nil {
 				fmt.Fprintln(stderr, "touchpad finalization interrupted during final inventory")
+				return 1
+			}
+		}
+		// Keep the existing touchpad binding freeze ahead of every added
+		// context callback or observation-warning writer.
+		if observeFinalInventory != nil {
+			if ctx.Err() != nil {
+				fmt.Fprintln(stderr, "final inventory diagnostics interrupted")
+				return 1
+			}
+			if observeFinalInventory() != nil {
+				fmt.Fprintln(stderr, "final inventory observation warning could not be written")
+				return 1
+			}
+			if ctx.Err() != nil {
+				fmt.Fprintln(stderr, "final inventory diagnostics interrupted")
 				return 1
 			}
 		}

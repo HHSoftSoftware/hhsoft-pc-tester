@@ -378,10 +378,26 @@ names across eleven roots and 50 direct-parent intervals passed. Formatting,
 vet and 15 Linux amd64/386/arm64 compile-only artifacts passed. Native Linux,
 installed images, physical PCs, the ten-PC pilot and release gates remain open.
 
+Standalone finalization and the session coordinator now consume diagnostics from
+their existing final inventory pass. The snapshot is copied without normalization
+before new callbacks, and the retained touchpad freeze precedes warning delivery.
+Earlier admission, worker/evidence cleanup and optional session-ID entropy remain
+earlier; the warning precedes graph checks, the live gate, report entropy, clock
+use, signing and output. It describes final observations, not pre-worker protection.
+Clean absence and completed empty reads stay quiet; only fixed bounded counts
+reach stderr.
+
+The full Windows amd64 and 386 suites each passed 13,129 tests/subtests across
+35 packages, preserving all 13,026 prior passes and the same 18 skips. All 103
+new names across 18 roots and 85 direct-parent intervals passed. Formatting,
+vet and 15 Linux amd64/386/arm64 compile-only artifacts passed. Ordinary and
+linked signed bundles match the legacy adapters under fixed inputs; this does
+not qualify historical archives. Existing late coordinator journal rejection
+can retain an already signed report while withholding readiness. See the
+[finalization contract](requirements-validation.md#final-inventory-observation-diagnostics).
+
 Remaining parser expansion, aggregate/peak allocation and CPU time budgets,
-along with field-specific diagnostics and warning coverage for remaining
-inventory/report consumers, including finalization and sessions, remain open.
-These logical limits exclude
+along with field-specific diagnostics, remain open. These logical limits exclude
 allocator overhead, raw source storage, later downstream copies and provider
 allocations; they do not establish a whole-heap bound or kernel preemption.
 Cancellation cannot interrupt a blocked source call. This inventory increment

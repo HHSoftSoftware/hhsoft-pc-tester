@@ -767,10 +767,20 @@ the alpha still requires the separate documented release gates.
 - [ ] Qualify capture diagnostics on native Linux, in installed images and on
   physical PCs; retain the ten-PC beta pilot and release gates. See
   [the capture contract](docs/requirements-validation.md#capture-observation-diagnostics).
+- [x] Connect standalone finalization and the session coordinator's final inventory
+  to the same-pass diagnostics. Preserve exact snapshot ownership and the existing
+  touchpad freeze before added callbacks; deliver the fixed warning before graph
+  checks, the live gate, report signing and destination acquisition.
+- [x] Validate both final-inventory routes with the full Windows amd64 and 386
+  suites: 13,129 test/subtest passes and the same 18 retained skips across 35
+  packages per architecture. All 103 new names across 18 roots and 85 direct-parent
+  intervals passed. Formatting, vet and 15 Linux compile-only artifacts passed.
+- [ ] Qualify final-inventory warnings on native Linux, in installed images and
+  on physical PCs; retain the ten-PC beta pilot and security, licensing and release
+  gates. See [the finalization contract](docs/requirements-validation.md#final-inventory-observation-diagnostics).
 - [ ] Bound remaining parser expansion, aggregate/peak allocation and parser
-  CPU time; add field-specific diagnostics and warning coverage for remaining
-  inventory/report consumers, including finalization and sessions. Logical parser and
-  acquisition budgets do not establish a whole-heap bound or kernel preemption.
+  CPU time; add field-specific diagnostics. Logical parser and acquisition budgets
+  do not establish a whole-heap bound or kernel preemption.
   Legacy providers may allocate before returning, and cancellation cannot
   interrupt a blocked call. Broader Linux runtime, rebuilt-image, physical-device,
   pilot and release gates for this increment remain open.

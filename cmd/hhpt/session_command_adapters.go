@@ -66,7 +66,7 @@ func runSessionWorker(ctx context.Context, worker sessionWorker, input io.Reader
 
 func finalizeSession(ctx context.Context, request sessionFinalization, stdout, stderr io.Writer) sessionFinalizationResult {
 	collector := inventory.NewLinuxCollector("/")
-	return finalizeSessionWith(ctx, request, stdout, stderr, collector.Collect, cryptorand.Reader, time.Now)
+	return finalizeSessionWithDiagnostics(ctx, request, stdout, stderr, collector.CollectWithDiagnostics, cryptorand.Reader, time.Now)
 }
 
 func finalizeSessionWith(ctx context.Context, request sessionFinalization, stdout, stderr io.Writer, collect snapshotCollector, random io.Reader, now func() time.Time) sessionFinalizationResult {

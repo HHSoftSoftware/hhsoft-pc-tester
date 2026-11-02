@@ -1218,9 +1218,9 @@ closure; the 56-case Windows amd64 preflight also passed.
 
 Formatting and vet passed. Fifteen application and inventory, app, render and
 command test binaries compiled for Linux amd64, 386 and arm64; they were not
-executed. Field-specific diagnostics and finalization/session warning coverage
-remain separate work. Native Linux, installed-image, physical-PC, pilot and release
-qualification remain open.
+executed. Field-specific diagnostics remain separate work; the final-inventory
+connections are documented below. Native Linux, installed-image, physical-PC,
+pilot and release qualification remain open.
 
 ## Capture Observation Diagnostics
 
@@ -1254,9 +1254,58 @@ historical archives.
 
 Formatting and vet passed. Fifteen application and inventory, app, render and
 command test binaries compiled for Linux amd64, 386 and arm64; none were executed.
-Finalization/session warning coverage and field-specific diagnostics remain open.
-Native Linux, installed images, physical PCs, the ten-PC beta pilot and release,
-security and licensing gates remain separate requirements.
+Field-specific diagnostics remain open; the final-inventory connections are
+documented below. Native Linux, installed images, physical PCs, the ten-PC beta
+pilot and release, security and licensing gates remain separate requirements.
+
+## Final-inventory Observation Diagnostics
+
+Standalone `hhpt finalize` and coordinator-owned finalization consume the four
+bounded scalar, CPU, memory and input failure counters from their existing final
+inventory pass. Counts describe failed read attempts, not devices. Clean absence
+and completed empty reads remain quiet. Counters reset per invocation and stay
+outside canonical snapshots, identities, hardware graphs, views and signatures;
+collection is not repeated to obtain them.
+
+After successful collection and counter validation, a callback-free copy preserves
+the exact snapshot representation, including schema, order, duplicate attributes
+and nil versus empty slices. The retained touchpad input freeze completes before
+added context or warning-writer callbacks. Existing key, predecessor, plan,
+evidence and cleanup admission, worker completion and optional session-ID entropy
+remain earlier. The warning must finish before graph checks, the one-use live
+gate, report-key entropy, clock use, signing, destination acquisition and readiness.
+This final observation does not provide pre-worker protection.
+
+Fatal collection errors and invalid counters stop finalization. Warning errors,
+short or invalid write counts and observed cancellation stop the later report
+effects. Input and both monitor owners still join; uncertain cleanup retains
+exit code 12. Real provider errors do not invoke provider `Error`, `Is` or
+`Unwrap` callbacks. Arbitrary errors from injected collector functions retain
+legacy formatting, so this is not a blanket callback-safety claim.
+
+Later coordinator rejection has a separate boundary: a semantically valid but
+different returned journal can be detected after the real finalizer has signed
+and written its report. The signed report remains, while the coordinator rejects
+success and creates no readiness marker. A legacy-adapter control and the new
+adapter reproduce that behavior with identical canonical bundle bytes and the
+expected signer. This does not weaken the no-report assertions for warning
+failures or imply rollback of an already written artifact.
+
+The full Windows amd64 and 386 suites each passed 13,129 tests/subtests across
+35 packages. Each retained the exact 13,026 prior pass names and 18 skip names;
+all 103 new names across 18 roots and 85 direct-parent intervals passed without
+skips. Tests exercise real ordinary and linked signed finalizers, all three
+session profiles, actual fixture providers, reset and count bounds, snapshot
+ownership, live-gate and cleanup failures, entropy order and destination failures.
+Fixed-input bundle equality is relational compatibility with the legacy routes,
+not historical-archive qualification.
+
+Formatting and vet passed. Fifteen application/test artifacts compiled for Linux
+amd64, 386 and arm64; none were executed. These beta host results do not establish
+native Linux, installed-image or physical-device qualification. Field-specific
+diagnostics, broader parser/heap/time bounds, the ten-PC beta pilot, security,
+licensing and release gates remain open, including the initial alpha's separate
+release requirements.
 
 ## Small Regular-file Input Closure
 

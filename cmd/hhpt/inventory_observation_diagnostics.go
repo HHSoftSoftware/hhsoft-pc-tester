@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/inventory"
+	"github.com/HHSoftSoftware/hhsoft-pc-tester/internal/plan"
 )
 
 var errInventoryDiagnostics = errors.New("inventory: invalid observation diagnostics")
@@ -22,8 +23,8 @@ func runInventoryWithDiagnostics(ctx context.Context, arguments []string, stdout
 }
 
 // The existing command still owns key admission, fixture exclusions, payload
-// construction and destination closure. Inventory, plan and direct capture
-// consume the companion; finalization/session callers retain Collect.
+// construction and destination closure. Inventory, plan, capture and both
+// finalization routes consume the same-pass diagnostics companion.
 func runInventoryWithDiagnosticInput(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect inventoryDiagnosticCollector, writeOutput destinationWriter, readInput retestInputReader) int {
 	if stderr == nil {
 		return 1
@@ -127,6 +128,68 @@ func runCaptureWithDiagnosticDestination(ctx context.Context, arguments []string
 		return snapshot, nil
 	}
 	return runCaptureWithDestination(ctx, arguments, stdout, stderr, snapshotOnly, probeGraphics, probeCPU, probeMemory, probeInput, probeNetwork, probeStorage, probeUSB, random, now, writeOutput, readInput)
+}
+
+func runFinalizeWithDiagnostics(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect inventoryDiagnosticCollector, random io.Reader, now func() time.Time) int {
+	return runFinalizeWithDiagnosticInput(ctx, arguments, stdout, stderr, collect, random, now, nil, writeDestination, nil, readRetestInput, "").Code
+}
+
+func finalizeSessionWithDiagnostics(ctx context.Context, request sessionFinalization, stdout, stderr io.Writer, collect inventoryDiagnosticCollector, random io.Reader, now func() time.Time) sessionFinalizationResult {
+	arguments := []string{"-plan", request.PlanPath, "-fingerprint-key", request.FingerprintKeyPath,
+		"-key-epoch", request.KeyEpoch, "-evidence-dir", request.EvidenceDirectory, "-output", request.OutputPath}
+	if request.FixtureComponents != "" {
+		arguments = append(arguments, "-fixture-components", request.FixtureComponents)
+	}
+	for _, outcome := range request.Outcomes {
+		arguments = append(arguments, "-outcome", outcome)
+	}
+	return runFinalizeWithDiagnosticInput(ctx, arguments, stdout, stderr, collect, random, now, request.Gate, writeDestination, request.Previous, readRetestInput, request.Profile)
+}
+
+// Final collection follows existing admission, evidence and worker cleanup.
+// Copy without callbacks, then let the finalizer freeze its touchpad inputs
+// before the warning can call a writer or consult the context again.
+func runFinalizeWithDiagnosticInput(ctx context.Context, arguments []string, stdout, stderr io.Writer, collect inventoryDiagnosticCollector, random io.Reader, now func() time.Time, gate sessionFinalGate, writeOutput destinationWriter, previous *verifiedPreviousReport, readInput retestInputReader, executionProfile plan.Profile) sessionFinalizationResult {
+	if stderr == nil {
+		return sessionFinalizationResult{Code: 1}
+	}
+	var diagnostics inventory.CollectionDiagnostics
+	snapshotOnly := func(ctx context.Context) (inventory.Snapshot, error) {
+		if collect == nil {
+			return inventory.Snapshot{}, errInventoryDiagnostics
+		}
+		snapshot, observed, err := collect(ctx)
+		if err != nil {
+			return inventory.Snapshot{}, err
+		}
+		if !observed.Valid() {
+			return inventory.Snapshot{}, errInventoryDiagnostics
+		}
+		owned := copyFinalInventoryObservation(snapshot)
+		diagnostics = observed
+		return owned, nil
+	}
+	observe := func() error {
+		return writeInventoryObservationWarning(stderr, diagnostics)
+	}
+	return runFinalizeOwnedDestinationWithPreviousForProfileAndObservation(ctx, arguments, stdout, stderr, snapshotOnly, random, now, gate, writeOutput, previous, readInput, executionProfile, observe)
+}
+
+// Preserve the supplied representation, including nil versus empty slices,
+// component/attribute order, duplicate attributes and unnormalized values.
+func copyFinalInventoryObservation(snapshot inventory.Snapshot) inventory.Snapshot {
+	owned := snapshot
+	if snapshot.Components != nil {
+		owned.Components = make([]inventory.Component, len(snapshot.Components))
+		copy(owned.Components, snapshot.Components)
+		for index := range owned.Components {
+			if snapshot.Components[index].Attributes != nil {
+				owned.Components[index].Attributes = make([]inventory.Attribute, len(snapshot.Components[index].Attributes))
+				copy(owned.Components[index].Attributes, snapshot.Components[index].Attributes)
+			}
+		}
+	}
+	return owned
 }
 
 func writeInventoryObservationWarning(destination io.Writer, diagnostics inventory.CollectionDiagnostics) error {

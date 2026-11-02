@@ -1079,6 +1079,28 @@ test-binary compile checks passed. See the [current validation scope](requiremen
 Linux execution, installed images, physical-PC and release gates remain open;
 prior inventory or linked-report native results do not qualify this profile.
 
+### Maximum PCIe link capability inventory
+
+Existing PCI rows can now include the kernel-reported maximum link speed and
+width. Each field retains its own reported, unknown, unavailable, read-error,
+unsupported or malformed state. Both clean absences preserve the historical
+row. Raw input and provider error text are discarded; only finite states and
+canonical values reach the existing report and comparison paths.
+
+These observations participate in the frozen configuration graph. A maximum
+change affects plan binding and final integrity; current negotiated-link files
+are not collected. Stable identity, worker scheduling, report schemas and view
+profiles are unchanged. Capability values establish neither measured bandwidth,
+device health nor physical continuity.
+
+The full Windows amd64 and 386 suites each passed 12,909 test/subtest cases,
+including all 267 new cases without skips and the same 18 retained skips.
+Formatting, vet and 15 Linux application/test-binary compile checks passed.
+Native Linux execution, installed images, physical-PC and release qualification
+remain open. Negotiated links, broader topology, IOMMU/driver
+attachment and controlled hot-plug remain separate work. See the
+[field contract](requirements-validation.md#maximum-pcie-link-capability-inventory).
+
 ### Bounded standard CPU stress
 
 The consumed standard path is implemented and has passed host, selected native

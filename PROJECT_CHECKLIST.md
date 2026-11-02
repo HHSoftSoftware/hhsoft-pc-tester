@@ -1,6 +1,6 @@
 # HHSoft PC Tester Master Checklist
 
-Status date: 2026-10-31
+Status date: 2026-11-01
 
 This is the project-level source of truth derived from the original product
 requirements. Check an item only when implementation and applicable validation
@@ -37,6 +37,9 @@ the alpha still requires the separate documented release gates.
 - [x] Add project governance, maintainer, and merge-review rules.
 - [x] Create and verify the public repository under `HHSoftSoftware`.
 - [ ] Publish the first signed Semantic Version release.
+- [ ] Qualify ACL/attr source provenance, downstream security backports and
+  actual build-host and target-image consumers before release. Version labels
+  alone do not establish exposure or remediation.
 
 ## Boot platforms
 
@@ -955,8 +958,18 @@ the alpha still requires the separate documented release gates.
   and broader firmware-security assessment without changing firmware state or
   provisioning keys. Finite inventory does not establish a security verdict,
   attestation, TPM health or physical firmware qualification.
-- [ ] Test PCIe, Thunderbolt, and dock topology, link properties, and controlled
-  hot-plug behavior with appropriate fixtures.
+- [x] Implement finite maximum PCIe link speed/width observations on existing
+  PCI inventory rows, with independent field states and canonical numeric values.
+  Preserve clean-absence bytes, unavailable identity and existing acquisition
+  guards; add no functional worker or measured-bandwidth verdict.
+- [x] Qualify the maximum-capability increment with the full Windows amd64/386
+  suites: 12,909 test/subtest passes and 18 retained skips per architecture,
+  including all 267 new cases without skips. Formatting, vet and 15 Linux
+  application/test-binary compile checks passed.
+- [ ] Qualify maximum-capability collection on native Linux, installed images
+  and physical PCs. See [the finite contract](docs/requirements-validation.md#maximum-pcie-link-capability-inventory).
+- [ ] Add negotiated-link observations, broader PCIe/Thunderbolt/dock topology,
+  IOMMU/driver attachment and controlled hot-plug tests with suitable fixtures.
 - [ ] Measure RTC/monotonic discontinuities and drift against a trusted reference
   over a sufficient observation period.
 - [x] Implement the historical v1 bounded operator-reported exterior-enclosure observation,

@@ -725,6 +725,30 @@ installed-image and physical-PC qualification remain open; see the
 [current validation scope](requirements-validation.md#memory-capacity-report-view).
 The memory-device inventory tests above retain their original scope.
 
+### Read Maximum PCIe Link Observations
+
+A PCI inventory row may include `max_link_speed_mts` and `max_link_width_lanes`,
+with `max_link_speed_state` and `max_link_width_state` fields. Speed is in millions of transfers per second:
+`8000` means 8 GT/s. Width is the advertised lane count. These are kernel-reported
+device capabilities; they do not measure the negotiated link, usable throughput
+or the limits of the complete path through bridges and docks.
+
+A value appears only with `reported`. `unknown`, `unavailable`, `read_error`,
+`unsupported` and `malformed` retain different observation states. Neither an
+absent field nor an unreadable value becomes zero or a hardware failure. When
+both capability files are cleanly absent, the existing PCI row has no new fields;
+that absence does not prove whether the device supports PCIe.
+
+Maximum observations belong to the frozen configuration. A change before
+finalization retains the signed integrity diagnostic; prepare a new plan for
+later execution on the changed configuration. Current-link files are not read
+by this feature. PCI continuity remains inconclusive without stable identity,
+even when two reports show equal or different capabilities.
+
+The full Windows fixture suites passed. Native Linux, installed-image and
+physical-PC qualification remain separate; see the
+[current scope](requirements-validation.md#maximum-pcie-link-capability-inventory).
+
 ## Save the Signed Report
 
 The only authoritative artifact is the `.hhpcr` bundle. Its HTML and PDF views

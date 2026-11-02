@@ -664,6 +664,30 @@ The full host suite and selected native Linux amd64/386 fixtures passed for
 that inventory increment, which preserved Quick v7, Standard v8 and historical
 report behavior. Physical, image, durability and release gates remain separate.
 
+## Maximum PCIe Link Capability Assertions
+
+The Linux inventory producer can add `max_link_speed_state` and
+`max_link_width_state` to existing PCI rows. Only a reported field includes its
+`max_link_speed_mts` or `max_link_width_lanes` value. Both clean absences preserve
+the previous PCI component shape. The producer emits no raw capability text or
+provider error strings. The
+[finite contract](requirements-validation.md#maximum-pcie-link-capability-inventory)
+distinguishes unknown, unavailable, read-error, unsupported and malformed data.
+
+All emitted states and values remain configuration observations. Changes affect
+the graph and plan binding; the finalizer retains signed failed integrity and
+the exact changed component references. Uncollected current-link values do not
+change that binding. Maximum capabilities do not create a stable identity,
+functional test result, health verdict or proof of continuity. Signed comparison
+retains both observations while unresolved PCI identity remains inconclusive.
+
+Existing generic views, manifest versions and authenticated view profiles are
+unchanged. Signatures authenticate the recorded bytes and signer relationship,
+not the physical truth of a capability. This producer adds no generic strict
+semantic validator for arbitrary inventory attributes. Historical bundle/view
+compatibility remains part of regression qualification; Linux and physical
+qualification are separate from Windows fixture evidence.
+
 ## Memory Device Inventory Assertions
 
 The Linux producer emits `memory_device` components with finite

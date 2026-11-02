@@ -2483,3 +2483,40 @@ and render, bundle, correction and command test binaries compiled for each of
 Linux amd64, 386 and arm64; these 15 artifacts were not executed. Native Linux,
 installed-image, physical-PC, pilot and release gates remain separate. See
 [the field contract and evidence limits](requirements-validation.md#memory-capacity-report-view).
+
+## Maximum PCIe Link Capability Validation
+
+Use literal, independently specified parser expectations for every admitted rate,
+lane count and field state. Separate uint64 parse, multiplication and addition
+overflow, including the last representable fractional rate. Reject non-digit
+fraction bytes on both sides of the ASCII digit range. Exercise one optional LF,
+empty completed reads, CRLF, duplicate whitespace, Unicode and malformed suffixes.
+
+The actual collector fixtures distinguish clean absence from ordinary read
+failure, preserve a valid peer field and discard raw/error canaries. Cover
+unrelated earlier failure counters, fresh-collection reset, exact raw and
+aggregate byte limits, one remaining acquisition attempt, cancellation,
+close-failure precedence and a late failure after 326 devices. Linux-only
+fixtures additionally check owned descriptors, normal links, FIFO/directory
+rejection and cleanup; compilation does not execute those cases.
+
+Connected cases use actual collection through payload, graph and plan consumers,
+all eight unchanged legacy/current ordinary/linked HTML/PDF routes, current
+external/self-issued capture and full verification, wrong-signer rejection,
+real comparison and finalization. Valid prerequisites precede negative cases.
+Maximum changes affect configuration integrity without acquiring stable PCI
+identity or functional authority; current-only changes leave bindings exact.
+The fixed pre-capability PCI payload preserves the historical row. Equality
+through unchanged renderers is separate from the existing frozen legacy bundle
+fixtures, which remain part of full regression.
+
+The increment has 267 portable cases across 22 roots and 245 direct-parent
+relationships: 164 inventory, 15 app, 64 render and 24 command cases. All passed
+in both full Windows suites, which each recorded 12,909 test/subtest passes and
+18 retained skips. The prior pass and skip sets, exact new names and direct-parent
+completion intervals reconciled. The 103-case consumer preflight also passed.
+Formatting and vet passed; 15 application/test binaries compiled for Linux amd64,
+386 and arm64 without execution. Eight additional inventory names are Linux-only
+and remain unexecuted. Keep native Linux, installed-image, physical-PC, pilot and
+release qualification separate; see the
+[field contract](requirements-validation.md#maximum-pcie-link-capability-inventory).

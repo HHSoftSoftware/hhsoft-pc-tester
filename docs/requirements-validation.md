@@ -685,6 +685,65 @@ artifacts. These binaries were not executed. Linux execution and device behavior
 installed images, the physical-PC pilot and release qualification remain pending.
 Earlier inventory and linked-report native evidence does not qualify this profile.
 
+## Maximum PCIe Link Capability Inventory
+
+The Linux collector reads `max_link_speed` and `max_link_width` through the
+existing bounded scalar path for each enumerated PCI row. It does not read
+`current_link_speed`, `current_link_width`, PCI configuration or reset files for
+this feature. It preserves the existing PCI identifiers, sorting, canonical
+inventory schema and collection-wide resource limits.
+
+| Observation | Reported values |
+| --- | --- |
+| `max_link_speed_mts` | 2500, 5000, 8000, 16000, 32000, 64000 MT/s |
+| `max_link_width_lanes` | 1, 2, 4, 8, 12, 16, 32 lanes |
+
+Each field has its own `_state`: `reported`, `unknown`, `unavailable`,
+`read_error`, `unsupported` or `malformed`. Only `reported` carries a numeric
+value. The exact speed sentinel `Unknown` and width sentinel `255` are unknown;
+width zero is reserved and unsupported. Other canonical representable rates or
+lane counts are unsupported under this finite policy. They are not failures or
+invented measurements.
+
+Speed input uses the six literal rates from 2.5 through 64.0 with the exact
+` GT/s PCIe` suffix. Future rates must use a canonical ASCII unsigned integer,
+one decimal point and one fractional digit; checked uint64 parsing,
+multiplication and addition reject overflow. Width uses canonical unsigned
+decimal. At most one trailing LF is admitted. Empty completed reads, whitespace
+normalization, CRLF, signs, non-ASCII digits and other noncanonical input are
+malformed. The existing 64 KiB scalar bound and aggregate attempt/byte budgets
+remain enforced.
+
+Clean absence is unavailable; an ordinary failed read is `read_error`, determined
+from that read's failure-counter change. A valid peer field remains observable.
+If both files are cleanly absent, all four new attributes are omitted, retaining
+the historical PCI shape. Fatal acquisition, budget, cancellation and owned-close
+failures retain existing precedence and discard partial collection. Raw input,
+partial prefixes and provider error callbacks do not become report evidence.
+
+Maximum values describe a kernel-reported device capability. They do not measure
+negotiated speed, payload throughput, path bandwidth or health. Ordinary sysfs
+reads may involve kernel runtime power management; read-only application access
+is not a guarantee of zero device activity. Validation uses owned fixture files.
+No worker, stable identity algorithm, renderer implementation, report schema or
+view profile changes. All emitted observations affect the configuration graph
+and frozen-plan binding, while current-only changes do not. Signed comparison
+keeps the attributes without proving physical continuity.
+
+The complete increment passed the full Go 1.27.2 Windows amd64 and 386 suites.
+Each architecture recorded 12,909 test/subtest passes and 18 retained skips.
+All 267 new names passed without skips: 164 inventory, 15 app, 64 render and
+24 command cases. The exact 22 roots and 245 direct-parent completion intervals
+reconciled without missing, extra or duplicate new outcomes. The earlier 12,642
+pass outcomes and retained skip sets remained exact for each architecture,
+including the existing frozen historical bundle fixtures.
+
+Formatting and vet passed. The application and inventory, app, render and command
+test binaries compiled for Linux amd64, 386 and arm64: 15 compile-only artifacts.
+These binaries were not executed, and eight additional Linux-only inventory
+names remain unexecuted. Native Linux execution, installed images, physical PCs,
+the pilot and release gates remain open.
+
 ## Linked Retest Contract
 
 The linked retest implementation is an opt-in report relationship, not a

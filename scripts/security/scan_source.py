@@ -46,11 +46,26 @@ PATTERNS = {
 }
 
 
+def decode_source_name(raw):
+    try:
+        name = raw.decode("utf-8")
+    except UnicodeError:
+        raise RuntimeError("Unsupported source path encoding; publication blocked") from None
+    if any(ord(character) < 32 or ord(character) == 127 for character in name):
+        raise RuntimeError("Source path contains control characters; publication blocked")
+    return name
+
+
 def safe_relative_name(name):
+    try:
+        name.encode("utf-8")
+    except UnicodeError:
+        return False
     normalized = name.replace("\\", "/")
     # Reject host-absolute paths, traversal, Windows drive/ADS paths, and NULs
     # before any Git-supplied name is used to read or create a filesystem path.
-    return bool(normalized) and "\\" not in name and ":" not in normalized and "\0" not in normalized and all(
+    return bool(normalized) and "\\" not in name and ":" not in normalized and not any(
+        ord(character) < 32 or ord(character) == 127 for character in name) and all(
         part not in {"", ".", ".."} for part in normalized.split("/"))
 
 
@@ -164,6 +179,17 @@ def history_objects(root, outgoing=()):
     return objects
 
 
+def tree_entries(root, commit):
+    # -t retains directory entries under recursion, including empty trees whose
+    # names cannot be recovered from any descendant blob path.
+    tree = git(root, "ls-tree", "-r", "-t", "-z", "--full-tree", commit)
+    for entry in tree.split(b"\0"):
+        if entry:
+            metadata, name_raw = entry.split(b"\t", 1)
+            mode, kind, oid = metadata.decode("ascii").split()
+            yield mode, kind, oid, decode_source_name(name_raw)
+
+
 class Scanner:
     def __init__(self, root):
         self.root = root
@@ -207,7 +233,7 @@ class Scanner:
     def current(self):
         names = git(self.root, "ls-files", "-z", "--cached", "--others", "--exclude-standard")
         for raw in sorted(set(names.split(b"\0")) - {b""}):
-            name = os.fsdecode(raw)
+            name = decode_source_name(raw)
             self.path(name, name)
             try:
                 path = worktree_path(self.root, name)
@@ -224,7 +250,7 @@ class Scanner:
                 continue
             metadata, raw = entry.split(b"\t", 1)
             mode, oid, stage = metadata.decode("ascii").split()
-            name = os.fsdecode(raw)
+            name = decode_source_name(raw)
             if mode not in ("100644", "100755") or stage != "0":
                 self.fail("non-regular or unmerged index entry", name)
                 continue
@@ -239,15 +265,11 @@ class Scanner:
             if object_kind != "commit":
                 continue
             self.content(git(self.root, "cat-file", "commit", commit), "commit metadata:" + commit)
-            tree = git(self.root, "ls-tree", "-rz", "--full-tree", commit)
-            for entry in tree.split(b"\0"):
-                if not entry:
-                    continue
-                metadata, name_raw = entry.split(b"\t", 1)
-                mode, kind, oid = metadata.decode("ascii").split()
-                name = os.fsdecode(name_raw)
+            for mode, kind, oid, name in tree_entries(self.root, commit):
                 location = commit + ":" + name
                 self.path(name, location)
+                if mode == "040000" and kind == "tree":
+                    continue
                 if mode not in ("100644", "100755") or kind != "blob":
                     self.fail("non-regular history entry", location)
                 else:

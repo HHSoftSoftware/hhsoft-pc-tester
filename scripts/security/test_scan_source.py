@@ -8,6 +8,7 @@ import sys
 import tarfile
 import tempfile
 import unittest
+from unittest import mock
 
 import publication_check
 
@@ -44,6 +45,7 @@ class PublicationScanTests(unittest.TestCase):
         self.git("config", "user.name", "Fixture")
         self.git("config", "user.email", "fixture@example.invalid")
         self.git("config", "commit.gpgsign", "false")
+        self.git("config", "core.autocrlf", "false")
         (self.root / ".gitignore").write_text(".hhpt-source-denylist\nAGENTS.md\n__pycache__/\n")
         (self.root / "source.txt").write_text("public source\n")
 
@@ -359,6 +361,133 @@ class PublicationScanTests(unittest.TestCase):
         self.git("tag", "-d", "inner")
         self.assertEqual(self.run_scan().returncode, 1)
 
+    def empty_tree_commit(self, name):
+        """Create a reachable path without materializing it on the host filesystem."""
+        raw = name.encode("utf-8") if isinstance(name, str) else name
+        tree = self.git("mktree", input=b"").strip()
+        for component in reversed(raw.split(b"/")):
+            tree = self.git("mktree", "-z", input=b"040000 tree " + tree + b"\t" + component + b"\0").strip()
+        parent = self.git("rev-parse", "HEAD").strip()
+        commit = self.git("commit-tree", tree.decode("ascii"), "-p", parent.decode("ascii"),
+                          "-m", "Fixture empty subtree").decode().strip()
+        self.git("update-ref", "refs/heads/tree-fixture", commit)
+        return commit
+
+    def test_normal_directories_and_empty_trees_remain_allowed(self):
+        (self.root / "docs").mkdir()
+        (self.root / "docs/guide.txt").write_text("public source\n")
+        self.commit()
+        commit = self.empty_tree_commit("ordinary/nested")
+        self.assertEqual(self.git("ls-tree", "-rz", "--full-tree", commit), b"")
+        self.assertEqual(self.run_scan().returncode, 0)
+        entries = list(scanner.tree_entries(self.root, commit))
+        self.assertEqual([(mode, kind, name) for mode, kind, _, name in entries],
+                         [("040000", "tree", "ordinary"), ("040000", "tree", "ordinary/nested")])
+
+    def test_forbidden_empty_tree_paths_are_scanned(self):
+        self.commit()
+        for name in ("build", "nested/.codex", "nested/credentials", "_Reference_fixture",
+                     "nested/AGENTS.md", "nested/keys.pem"):
+            with self.subTest(name=name):
+                self.empty_tree_commit(name)
+                result = self.run_scan()
+                self.assertEqual(result.returncode, 1)
+                self.assertIn("forbidden artifact", result.stderr)
+
+    def test_removed_private_empty_tree_is_redacted_in_history(self):
+        self.commit()
+        term = "private" + "-empty-tree-fixture"
+        (self.root / ".hhpt-source-denylist").write_text(term)
+        hidden = self.empty_tree_commit("ordinary/" + term)
+        clean_tree = self.git("rev-parse", "HEAD^{tree}").decode().strip()
+        cleaned = self.git("commit-tree", clean_tree, "-p", hidden,
+                           "-m", "Fixture removed subtree").decode().strip()
+        self.git("update-ref", "refs/heads/tree-fixture", cleaned)
+        result = self.run_scan()
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("[redacted location]", result.stderr)
+        self.assertNotIn(term, result.stdout + result.stderr)
+
+    def test_history_path_encoding_and_controls_fail_closed(self):
+        self.commit()
+        for name in (b"invalid-\xff", b"line\nbreak", b"tab\tname", b"delete\x7fname"):
+            with self.subTest(name=name):
+                self.empty_tree_commit(name)
+                result = self.run_scan()
+                self.assertEqual(result.returncode, 2)
+                self.assertEqual(result.stderr.strip(), "source scan: inspection failed; publication blocked")
+                with tempfile.TemporaryDirectory() as directory:
+                    with self.assertRaises(RuntimeError):
+                        publication_check.snapshot_history(self.root, Path(directory))
+
+    def test_current_and_index_names_share_strict_encoding_policy(self):
+        for name in (b"invalid-\xff", b"line\nbreak", b"delete\x7fname"):
+            for domain in ("current", "index"):
+                with self.subTest(name=name, domain=domain):
+                    current = name + b"\0" if domain == "current" else b""
+                    index = b"100644 " + b"a" * 40 + b" 0\t" + name + b"\0"
+                    with mock.patch.object(scanner, "git", side_effect=[current, index]):
+                        with self.assertRaises(RuntimeError):
+                            scanner.Scanner(self.root).current()
+        for name in ("line\nbreak", "tab\tname", "delete\x7fname", "bad\udcff"):
+            self.assertFalse(scanner.safe_relative_name(name))
+
+    def test_unicode_tree_path_metadata_preserves_literal_utf8(self):
+        self.commit()
+        name = "ordinary/caf\u00e9-\u6587\u4ef6"
+        commit = self.empty_tree_commit(name)
+        self.assertEqual(self.run_scan().returncode, 0)
+        with tempfile.TemporaryDirectory() as directory:
+            snapshot = Path(directory)
+            publication_check.snapshot_history(self.root, snapshot)
+            self.assertEqual((snapshot / "history/paths" / commit).read_bytes(),
+                             ("ordinary\n" + name + "\n").encode("utf-8"))
+        self.assertEqual(scanner.decode_source_name(name.encode("utf-8")), name)
+        self.assertTrue(scanner.safe_relative_name(name))
+
+    def generic_secret_path(self):
+        value = "".join(("n7az5H0qk9", "DM2pw4vc8s", "Tf6JY1xb3L", "rNQ0UZd9Eo"))
+        return "api_" + "key = " + value
+
+    def test_snapshot_includes_generic_secret_only_in_empty_tree_name(self):
+        self.commit()
+        name = self.generic_secret_path()
+        commit = self.empty_tree_commit(name)
+        self.assertEqual(self.run_scan().returncode, 0)
+        with tempfile.TemporaryDirectory() as directory:
+            snapshot = Path(directory)
+            publication_check.snapshot_history(self.root, snapshot)
+            self.assertEqual((snapshot / "history/paths" / commit).read_bytes(), name.encode() + b"\n")
+
+    @unittest.skipUnless(GITLEAKS, "pinned Gitleaks executable is unavailable")
+    def test_gitleaks_rejects_generic_secret_only_in_empty_tree_name(self):
+        self.commit()
+        name = self.generic_secret_path()
+        self.empty_tree_commit(name)
+        self.assertEqual(self.run_scan().returncode, 0)
+        result = subprocess.run(self.publication_command(), capture_output=True, text=True)
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("Gitleaks found a secret", result.stderr)
+        self.assertNotIn(name, result.stdout + result.stderr)
+
+    @unittest.skipUnless(GITLEAKS, "pinned Gitleaks executable is unavailable")
+    def test_gitleaks_scans_current_and_index_path_names(self):
+        self.commit()
+        name = self.generic_secret_path()
+        path = self.root / name
+        path.write_text("public source\n")
+        command = self.publication_command()
+        for domain in ("current", "index"):
+            with self.subTest(domain=domain):
+                if domain == "index":
+                    self.git("add", "--", name)
+                    path.unlink()
+                self.assertEqual(self.run_scan().returncode, 0)
+                result = subprocess.run(command, capture_output=True, text=True)
+                self.assertEqual(result.returncode, 1)
+                self.assertIn("Gitleaks found a secret", result.stderr)
+                self.assertNotIn(name, result.stdout + result.stderr)
+
     def test_pre_push_protocol_uses_actual_oids_and_ignores_deletions(self):
         oid = "a" * 40
         zero = "0" * 40
@@ -383,7 +512,7 @@ class PublicationScanTests(unittest.TestCase):
         right = self.git("rev-parse", "HEAD").decode().strip()
         value = "".join(("n7az5H0qk9", "DM2pw4vc8s", "Tf6JY1xb3L", "rNQ0UZd9Eo"))
         payload = "api_" + "key = '" + value + "'\n"
-        (self.root / "source.txt").write_text(payload)
+        (self.root / "source.txt").write_bytes(payload.encode())
         self.git("add", "source.txt")
         tree = self.git("write-tree").decode().strip()
         merge = self.git("commit-tree", tree, "-p", left, "-p", right, "-m", "Fixture merge").decode().strip()

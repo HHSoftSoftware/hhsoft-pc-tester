@@ -22,8 +22,10 @@ below remain separate from source publication.
    publishable working files, actual index bytes, and the raw file blobs and
    commit/tag metadata reachable from every Git ref and `HEAD`. Both custom
    rules and Gitleaks inspect history; scanning raw blobs also covers secrets
-   introduced only by a merge. It does not scan the ignored local lab as if it
-   were source to publish.
+   introduced only by a merge. The custom policy checks every historical
+   directory entry, including empty trees. Literal current, staged and
+   historical path names are also scanned as text by Gitleaks. It does not
+   scan the ignored local lab as if it were source to publish.
 2. Keep additional private terms in ignored `.hhpt-source-denylist`. The
    project owner's private terms must stay local; no encoded copies belong in
    the scanner. Agent instructions and state are ignored and also rejected if
@@ -31,7 +33,9 @@ below remain separate from source publication.
    grafts, and refs or tags that do not resolve to commits. It reads original
    Git objects without applying local replacements. Symlinks, submodules, and
    unmerged index entries block publication; filesystem links in candidate
-   paths are rejected before reading their targets.
+   paths are rejected before reading their targets. Source path names must be
+   valid UTF-8 without ASCII control characters or DEL; ordinary Unicode names
+   are preserved without normalization or escaping in the path metadata scan.
 3. Use the approved identity `HHSoft Software <info.hhsoft@gmail.com>` for
    both author and committer. Make the initial signed-off source commit, then
    rerun the publication check. Before a first commit exists, its metadata

@@ -1,6 +1,6 @@
 # HHSoft PC Tester Master Checklist
 
-Status date: 2026-11-01
+Status date: 2026-11-05
 
 This is the project-level source of truth derived from the original product
 requirements. Check an item only when implementation and applicable validation
@@ -113,6 +113,14 @@ the alpha still requires the separate documented release gates.
   utilities, a signed checksum statement, and approval before attestation.
 - [x] Reject agent-instruction backup variants, outgoing unreferenced commits,
   replaced Git objects, and merge-only historical secrets in publication checks.
+- [x] Check every historical directory path, including empty trees, and scan
+  literal current, staged and historical filenames with both source policies.
+  Strict UTF-8/control-character checks preserve ordinary Unicode names.
+  The 36-test synthetic security suite completed with 35 passes and one retained
+  Windows filesystem-symlink capability skip; all nine new regressions and four
+  Gitleaks integration tests passed. Three focused build/source-archive policy
+  consumer tests also passed. Actual branch privacy scanning and source
+  publication remain separate gates; this does not qualify images or releases.
 - [ ] Configure GitHub release protections and validate the first complete
   publication run; image production and lab reviews remain external to CI.
 - [x] Publish reviewed source with passing GitHub CI, protect `main` and release

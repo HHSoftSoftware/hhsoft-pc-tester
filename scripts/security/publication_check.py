@@ -8,7 +8,9 @@ import subprocess
 import sys
 import tempfile
 
-from scan_source import Scanner, git, git_environment, history_objects, push_objects, safe_relative_name, worktree_path
+from scan_source import (Scanner, decode_source_name, git, git_environment,
+                         history_objects, push_objects, safe_relative_name,
+                         tree_entries, worktree_path)
 
 
 def snapshot_history(root, snapshot, outgoing=()):
@@ -20,6 +22,13 @@ def snapshot_history(root, snapshot, outgoing=()):
             target = snapshot / "history" / kind / oid
             target.parent.mkdir(parents=True, exist_ok=True)
             target.write_bytes(git(root, "cat-file", kind, oid))
+        if kind == "commit":
+            target = snapshot / "history" / "paths" / oid
+            target.parent.mkdir(parents=True, exist_ok=True)
+            # Gitleaks scans file contents, so also expose literal path names.
+            # The shared decoder rejects controls and preserves UTF-8 exactly.
+            target.write_bytes(b"".join(name.encode("utf-8") + b"\n"
+                                        for _, _, _, name in tree_entries(root, oid)))
     (snapshot / "git-reference-names.txt").write_bytes(git(root, "for-each-ref", "--format=%(refname)"))
     return bool(objects)
 
@@ -49,23 +58,30 @@ def main():
         workspace = Path(temporary)
         snapshot = workspace / "candidate"
         snapshot.mkdir()
-        for raw in set(git(root, "ls-files", "-z", "--cached", "--others", "--exclude-standard").split(b"\0")) - {b""}:
-            name = raw.decode("utf-8")
+        current_names = sorted(set(git(root, "ls-files", "-z", "--cached", "--others", "--exclude-standard").split(b"\0")) - {b""})
+        for raw in current_names:
+            name = decode_source_name(raw)
             source = worktree_path(root, name)
             if source.is_file():
                 target = snapshot / "worktree" / name
                 target.parent.mkdir(parents=True, exist_ok=True)
                 shutil.copyfile(source, target)
+        (snapshot / "worktree-paths.txt").write_bytes(b"".join(
+            decode_source_name(raw).encode("utf-8") + b"\n" for raw in current_names))
+        index_names = []
         for entry in git(root, "ls-files", "--stage", "-z").split(b"\0"):
             if entry:
                 metadata, raw = entry.split(b"\t", 1)
                 mode, oid, stage = metadata.decode("ascii").split()
-                name = raw.decode("utf-8")
+                name = decode_source_name(raw)
                 if mode not in {"100644", "100755"} or stage != "0" or not safe_relative_name(name):
                     raise RuntimeError("Unsupported index entry; publication blocked")
                 target = snapshot / "index" / name
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(git(root, "cat-file", "blob", oid))
+                index_names.append(name)
+        (snapshot / "index-paths.txt").write_bytes(b"".join(
+            name.encode("utf-8") + b"\n" for name in index_names))
         has_history = snapshot_history(root, snapshot, outgoing)
         (snapshot / "outgoing-reference-metadata.txt").write_text(push_metadata, encoding="utf-8")
         # Use built-in rules explicitly; candidate files cannot weaken this gate.

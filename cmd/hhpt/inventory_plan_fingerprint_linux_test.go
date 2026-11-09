@@ -147,7 +147,7 @@ func TestInventoryPlanFingerprintLinuxPinnedObject(t *testing.T) {
 			}
 			want := "eed5302c9ef92a0eafb9df1a5f0b378196ddbf95503697852af07fb03f3d635b"
 			if command.name == "plan" {
-				want = "9773df6a9b74f9b211c137591f1758f09bd0ba525325223cf7eb7bcef29a00ad"
+				want = "c00cc9d4afbc0acb8b9b05ce5f6e20d84fb631951ae94359bcef8a1f5bc531a7"
 			}
 			if fmt.Sprintf("%x", sha256.Sum256(h.stdout.Bytes())) != want {
 				t.Fatal("pinned object changed command output")

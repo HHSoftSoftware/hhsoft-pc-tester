@@ -1028,7 +1028,15 @@ the alpha still requires the separate documented release gates.
   application/test-binary compile checks passed.
 - [ ] Qualify maximum-capability collection on native Linux, installed images
   and physical PCs. See [the finite contract](docs/requirements-validation.md#maximum-pcie-link-capability-inventory).
-- [ ] Add negotiated-link observations, broader PCIe/Thunderbolt/dock topology,
+- [x] Implement finite negotiated PCIe observations with independent states,
+  unchanged maximum fields and absent-field bytes. Keep current telemetry in
+  authenticated inventory/views while excluding only the four PCI observation
+  names from stable graph/plan and comparison grouping. Focused Windows
+  collector, payload, eight-profile view, plan and comparison fixtures pass.
+- [ ] Qualify negotiated observations on native Linux, installed images and
+  physical PCs; fixture and compilation evidence do not close these gates.
+  See [the negotiated contract](docs/requirements-validation.md#negotiated-pcie-link-observations).
+- [ ] Add broader PCIe/Thunderbolt/dock topology,
   IOMMU/driver attachment and controlled hot-plug tests with suitable fixtures.
 - [ ] Measure RTC/monotonic discontinuities and drift against a trusted reference
   over a sufficient observation period.

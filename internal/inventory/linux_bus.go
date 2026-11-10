@@ -32,6 +32,10 @@ func (collector *linuxCollection) collectPCI() []Component {
 		if !collector.check() {
 			return nil
 		}
+		collector.addPCIeNegotiatedObservations(attributes, path.Join(pciRoot, address))
+		if !collector.check() {
+			return nil
+		}
 		components = append(components, NewComponent(ComponentPCI, "pci:"+address, attributes))
 	}
 	return components

@@ -676,7 +676,7 @@ distinguishes unknown, unavailable, read-error, unsupported and malformed data.
 
 All emitted states and values remain configuration observations. Changes affect
 the graph and plan binding; the finalizer retains signed failed integrity and
-the exact changed component references. Uncollected current-link values do not
+the exact changed component references. Negotiated current-link values do not
 change that binding. Maximum capabilities do not create a stable identity,
 functional test result, health verdict or proof of continuity. Signed comparison
 retains both observations while unresolved PCI identity remains inconclusive.
@@ -687,6 +687,27 @@ not the physical truth of a capability. This producer adds no generic strict
 semantic validator for arbitrary inventory attributes. Historical bundle/view
 compatibility remains part of regression qualification; Linux and physical
 qualification are separate from Windows fixture evidence.
+
+## Negotiated PCIe Observation Assertions
+
+The four finite `current_link_speed_state`, `current_link_speed_mts`,
+`current_link_width_state` and `current_link_width_lanes` attributes remain in
+the signed inventory and canonical HTML/PDF. Current values can change report
+bytes and authenticated digests without changing the configuration graph,
+per-component HMACs or frozen plan. Exclusion applies only to these exact names
+on PCI rows; maximum values and other configuration observations stay bound.
+
+Report verification still authenticates the complete observations and views.
+Removing or modifying them without a corresponding valid signature is not an
+allowed telemetry update. Even a valid signature cannot substitute a different
+canonical view for the signed inventory. Signatures authenticate issuer
+statements, not the physical truth or simultaneity of separate kernel reads.
+No generic strict PCI semantic validator is added for external reports.
+
+Both clean absences preserve historical bytes and view profiles. These fields
+do not create PCI identity, test results or a health verdict. Comparison retains
+the full observations and unresolved identity; ignoring changing telemetry in
+its grouping key does not prove a move, replacement or continuity.
 
 ## Memory Device Inventory Assertions
 

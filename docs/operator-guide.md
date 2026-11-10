@@ -742,12 +742,36 @@ that absence does not prove whether the device supports PCIe.
 Maximum observations belong to the frozen configuration. A change before
 finalization retains the signed integrity diagnostic; prepare a new plan for
 later execution on the changed configuration. Current-link files are not read
-by this feature. PCI continuity remains inconclusive without stable identity,
+as maximum capabilities; their separate observations are described below.
+PCI continuity remains inconclusive without stable identity,
 even when two reports show equal or different capabilities.
 
 The full Windows fixture suites passed. Native Linux, installed-image and
 physical-PC qualification remain separate; see the
 [current scope](requirements-validation.md#maximum-pcie-link-capability-inventory).
+
+### Read Negotiated PCIe Link Observations
+
+PCI rows can also show `current_link_speed_mts` and
+`current_link_width_lanes`, with an independent `_state` for each field. For
+example, `2500` MT/s and `1` lane are kernel-reported observations at collection
+time. They do not establish measured throughput, a simultaneous speed/width
+sample, the slowest bridge on a path, or a health result. A lower current value
+than the advertised maximum is not automatically classified as degradation.
+
+Only `reported` carries a number. Missing, unreadable, malformed and unsupported
+values stay distinct. Speed `Unknown` is unknown; current widths `0` and `255`
+are unsupported, not zero lanes or proof of an absent device. Two cleanly absent
+current files add no fields. Reading the attributes can involve kernel power
+management even though HHSoft does not write device controls.
+
+Current observations are signed with the report and remain visible in HTML/PDF
+and comparison. Changing current values alone does not change the frozen plan
+or configuration-integrity result. Maximum/configuration changes still do.
+These observations provide no stable PCI identity or continuity guarantee.
+Native Linux, installed-image and physical-PC qualification remain separate
+from fixture tests; see the
+[negotiated field contract](requirements-validation.md#negotiated-pcie-link-observations).
 
 ## Save the Signed Report
 

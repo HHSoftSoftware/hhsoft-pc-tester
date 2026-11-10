@@ -53,7 +53,7 @@ func pcieViewPayload(t *testing.T, speed, width *string, fail bool) app.Inventor
 			}
 		}
 	}
-	for _, name := range []string{"current_link_speed", "current_link_width", "config"} {
+	for _, name := range []string{"config", "reset"} {
 		if err := os.WriteFile(filepath.Join(directory, name), []byte(pcieViewCanary), 0600); err != nil {
 			t.Fatal(err)
 		}
@@ -166,7 +166,7 @@ func TestPCIeCapabilityAllViewProfilesRetainLiteralStatesAndNoHealthVerdict(t *t
 							t.Fatal("generic view lost exact PCI field/state", attribute.Name)
 						}
 					}
-					for _, forbidden := range []string{pcieViewCanary, "current_link_speed", "current_link_width", "PCIe healthy", "PCIe bandwidth passed"} {
+					for _, forbidden := range []string{pcieViewCanary, "PCIe healthy", "PCIe bandwidth passed"} {
 						if bytes.Contains(raw, []byte(forbidden)) {
 							t.Fatal("view exposed discarded data or invented a PCIe verdict")
 						}
@@ -195,7 +195,7 @@ func TestPCIeCapabilityAllViewProfilesRetainLiteralStatesAndNoHealthVerdict(t *t
 }
 
 func TestPCIeCleanAbsencePreservesAllExistingViewProfileBytes(t *testing.T) {
-	// Fixed pre-capability public PCI shape; neither current-link file is an observation.
+	// Fixed pre-capability public PCI shape; both current-link files are absent.
 	const legacy = "{\"schema_version\":1,\"components\":[{\"type\":\"pci\",\"id\":\"pci:fixture-pci\",\"attributes\":[{\"name\":\"address\",\"value\":\"fixture-pci\"}],\"identity\":{\"algorithm\":\"hmac-sha256\",\"key_epoch\":\"power-fixture\",\"confidence\":\"unavailable\"}}],\"system_fingerprint\":{\"algorithm\":\"hmac-sha256\",\"key_epoch\":\"power-fixture\",\"key_id\":\"hmac-sha256:ab836abf4fbfd5f5bbe333c0b65affd2ee378235d766d8f8f89e51225a543f44\",\"identified_parts\":0,\"unidentified_parts\":1}}"
 	var old app.InventoryPayload
 	if err := json.Unmarshal([]byte(legacy), &old); err != nil {

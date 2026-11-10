@@ -159,7 +159,7 @@ func pcieCommandPrivacy(t *testing.T, values ...[]byte) {
 	t.Helper()
 	for _, raw := range values {
 		assertFirmwareCommandPrivacy(t, raw)
-		for _, forbidden := range []string{pcieCommandCanary, "current_link_speed", "current_link_width"} {
+		for _, forbidden := range []string{pcieCommandCanary} {
 			if bytes.Contains(raw, []byte(forbidden)) {
 				t.Fatal("discarded PCI input escaped a consumer")
 			}
@@ -188,7 +188,12 @@ func TestPCIeCapabilityCurrentSignedConsumersKeepFiniteObservations(t *testing.T
 					raw, artifact, public := pcieCommandCapture(t, snapshot, trust == "self_issued", "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee", 1)
 					payload := pcieCommandPayload(t, artifact)
 					row := pcieCommandRow(t, payload)
-					want := []inventory.Attribute{{Name: "address", Value: "fixture-pci"}}
+					want := []inventory.Attribute{
+						{Name: "address", Value: "fixture-pci"},
+						{Name: "current_link_speed_state", Value: "malformed"},
+						{Name: "current_link_width_lanes", Value: "1"},
+						{Name: "current_link_width_state", Value: "reported"},
+					}
 					if tc.speedValue != "" {
 						want = append(want, inventory.Attribute{Name: "max_link_speed_mts", Value: tc.speedValue})
 					}
@@ -241,6 +246,10 @@ func TestPCIeCapabilityRealComparisonRemainsInconclusive(t *testing.T) {
 			for _, tc := range []struct{ name, field, value string }{
 				{"speed", "max_link_speed", "32.0 GT/s PCIe"},
 				{"width", "max_link_width", "16"},
+				{"current_speed", "current_link_speed", "8.0 GT/s PCIe"},
+				{"current_width", "current_link_width", "4"},
+				{"current_malformed", "current_link_speed", pcieCommandCanary},
+				{"current_reserved_width", "current_link_width", "255"},
 			} {
 				t.Run(tc.name, func(t *testing.T) {
 					f := pcieCommandFixture(t)
@@ -309,7 +318,7 @@ func TestPCIeCapabilityRealComparisonRemainsInconclusive(t *testing.T) {
 	}
 }
 
-func TestPCIeCapabilityRealFinalizerBindsMaximaButIgnoresCurrentLink(t *testing.T) {
+func TestPCIeCapabilityRealFinalizerBindsMaximaAndRetainsCurrentObservations(t *testing.T) {
 	for _, tc := range []struct {
 		name, field, value string
 		changed            bool
@@ -342,6 +351,19 @@ func TestPCIeCapabilityRealFinalizerBindsMaximaButIgnoresCurrentLink(t *testing.
 				}
 				memoryCapacityCommandProfile(t, artifact, true, false)
 				payload := pcieCommandPayload(t, artifact)
+				wantCurrent := map[string]string{
+					"current_link_speed_state": "reported", "current_link_speed_mts": "2500",
+					"current_link_width_state": "reported", "current_link_width_lanes": "1",
+				}
+				if name == "after.hhpcr" && !tc.changed {
+					wantCurrent = map[string]string{
+						"current_link_speed_state": "malformed",
+						"current_link_width_state": "reported", "current_link_width_lanes": "32",
+					}
+				}
+				if !reflect.DeepEqual(pcieNegotiatedCommandFields(pcieCommandRow(t, payload)), wantCurrent) {
+					t.Fatal("finalizer omitted or changed the final negotiated observations")
+				}
 				if payload.CoverageScope != app.CoverageFrozenPlan {
 					t.Fatal("finalizer lost frozen-plan scope")
 				}

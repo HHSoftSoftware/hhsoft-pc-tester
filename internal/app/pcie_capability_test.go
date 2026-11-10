@@ -70,7 +70,7 @@ func pcieAppJSON(t *testing.T, value any) []byte {
 func pcieAppNoForbiddenReads(t *testing.T, reads []string) {
 	t.Helper()
 	for _, name := range reads {
-		for _, forbidden := range []string{"current_link_speed", "current_link_width", "/config", "/reset"} {
+		for _, forbidden := range []string{"/config", "/reset", "/retrain"} {
 			if strings.Contains(name, forbidden) {
 				t.Fatal("consumer fixture caused forbidden acquisition", name)
 			}
@@ -109,7 +109,7 @@ func TestPCIeCapabilityCollectorPayloadPreservesLiteralStatesAndNoIdentity(t *te
 			if !tc.widthAbsent {
 				pcieAppPut(t, root, "max_link_width", tc.width)
 			}
-			for _, name := range []string{"current_link_speed", "current_link_width", "config", "reset"} {
+			for _, name := range []string{"config", "reset"} {
 				pcieAppPut(t, root, name, pcieAppCanary)
 			}
 			source := &pcieAppSource{PathSource: inventory.NewRootPathSource(root), failSpeed: tc.failSpeed}
@@ -150,7 +150,7 @@ func TestPCIeCapabilityCollectorPayloadPreservesLiteralStatesAndNoIdentity(t *te
 	}
 }
 
-func TestPCIeCurrentLinkFilesLeaveSnapshotPayloadGraphAndPlanExact(t *testing.T) {
+func TestPCIeCurrentLinkFilesChangePayloadButLeaveGraphAndPlanExact(t *testing.T) {
 	for _, state := range []string{"maxima_absent", "maxima_present"} {
 		t.Run(state, func(t *testing.T) {
 			root := pcieAppRoot(t)
@@ -167,12 +167,6 @@ func TestPCIeCurrentLinkFilesLeaveSnapshotPayloadGraphAndPlanExact(t *testing.T)
 				t.Fatal(err)
 			}
 			beforeReads := append([]string(nil), source.reads...)
-			if state == "maxima_absent" {
-				want := inventory.NewSnapshot([]inventory.Component{{Type: inventory.ComponentPCI, ID: "pci:fixture-pci", Attributes: []inventory.Attribute{{Name: "address", Value: "fixture-pci"}}}})
-				if !reflect.DeepEqual(before, want) {
-					t.Fatal("clean absence changed historical PCI component")
-				}
-			}
 			key := bytes.Repeat([]byte{0x39}, 32)
 			left, err := plan.ObserveHardwareGraph(before, key, "power-fixture")
 			if err != nil {
@@ -198,8 +192,12 @@ func TestPCIeCurrentLinkFilesLeaveSnapshotPayloadGraphAndPlanExact(t *testing.T)
 				t.Fatal(err)
 			}
 			pcieAppNoForbiddenReads(t, source.reads)
-			if !reflect.DeepEqual(beforeReads, source.reads) || !bytes.Equal(pcieAppJSON(t, before), pcieAppJSON(t, after)) || !bytes.Equal(pcieAppJSON(t, pcieAppPayload(t, before)), pcieAppJSON(t, pcieAppPayload(t, after))) || !reflect.DeepEqual(left, right) || !bytes.Equal(pcieAppJSON(t, oldPlan), pcieAppJSON(t, newPlan)) || !reflect.DeepEqual(plan.CompareHardwareGraphs(left, right), plan.HardwareDelta{}) {
-				t.Fatal("uncollected current-link telemetry changed a consumer binding")
+			if !reflect.DeepEqual(beforeReads, source.reads) || bytes.Equal(pcieAppJSON(t, before), pcieAppJSON(t, after)) || bytes.Equal(pcieAppJSON(t, pcieAppPayload(t, before)), pcieAppJSON(t, pcieAppPayload(t, after))) || !reflect.DeepEqual(left, right) || !bytes.Equal(pcieAppJSON(t, oldPlan), pcieAppJSON(t, newPlan)) || !reflect.DeepEqual(plan.CompareHardwareGraphs(left, right), plan.HardwareDelta{}) {
+				t.Fatal("current telemetry lost its observation or changed a configuration binding")
+			}
+			oldPayload, newPayload := pcieAppPayload(t, before), pcieAppPayload(t, after)
+			if !reflect.DeepEqual(oldPayload.SystemFingerprint, newPayload.SystemFingerprint) || oldPayload.Components[0].Identity != newPayload.Components[0].Identity || len(newPayload.TestResults) != 0 || bytes.Contains(pcieAppJSON(t, newPayload), []byte(pcieAppCanary)) {
+				t.Fatal("current observation acquired identity/test authority or exported malformed bytes")
 			}
 		})
 	}

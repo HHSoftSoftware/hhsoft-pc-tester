@@ -1166,8 +1166,8 @@ row. Raw input and provider error text are discarded; only finite states and
 canonical values reach the existing report and comparison paths.
 
 These observations participate in the frozen configuration graph. A maximum
-change affects plan binding and final integrity; current negotiated-link files
-are not collected. Stable identity, worker scheduling, report schemas and view
+change affects plan binding and final integrity; negotiated observations are
+handled separately below. Stable identity, worker scheduling, report schemas and view
 profiles are unchanged. Capability values establish neither measured bandwidth,
 device health nor physical continuity.
 
@@ -1175,9 +1175,26 @@ The full Windows amd64 and 386 suites each passed 12,909 test/subtest cases,
 including all 267 new cases without skips and the same 18 retained skips.
 Formatting, vet and 15 Linux application/test-binary compile checks passed.
 Native Linux execution, installed images, physical-PC and release qualification
-remain open. Negotiated links, broader topology, IOMMU/driver
+remain open. Broader topology, IOMMU/driver
 attachment and controlled hot-plug remain separate work. See the
 [field contract](requirements-validation.md#maximum-pcie-link-capability-inventory).
+
+### Negotiated PCIe link observations
+
+The Linux collector now records finite current speed/width values and their
+independent states on existing PCI rows. Missing fields preserve historical
+bytes, and maximum capability parsing is unchanged. Current width `255` is
+unsupported rather than an unknown sentinel. No raw input, retraining, inferred
+bandwidth, degradation verdict or new worker is introduced.
+
+The exact four current attributes remain authenticated report content while
+being excluded from PCI configuration fingerprints and comparison grouping.
+Current-only changes preserve graph/plan bytes; maximum and configuration
+changes remain bound. PCI continuity stays unresolved without stable identity.
+Focused Windows fixture tests cover collection, acquisition failures, public
+payloads, all eight views, stable plans and conservative comparison. Native
+Linux, installed-image and physical-PC qualification remain open; see the
+[negotiated contract](requirements-validation.md#negotiated-pcie-link-observations).
 
 ### Bounded standard CPU stress
 

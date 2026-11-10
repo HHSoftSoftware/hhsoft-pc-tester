@@ -789,9 +789,9 @@ Earlier inventory and linked-report native evidence does not qualify this profil
 ## Maximum PCIe Link Capability Inventory
 
 The Linux collector reads `max_link_speed` and `max_link_width` through the
-existing bounded scalar path for each enumerated PCI row. It does not read
-`current_link_speed`, `current_link_width`, PCI configuration or reset files for
-this feature. It preserves the existing PCI identifiers, sorting, canonical
+existing bounded scalar path for each enumerated PCI row. Negotiated observations
+are described separately below; PCI configuration and reset files remain outside
+the acquisition contract. It preserves the existing PCI identifiers, sorting, canonical
 inventory schema and collection-wide resource limits.
 
 | Observation | Reported values |
@@ -827,7 +827,7 @@ negotiated speed, payload throughput, path bandwidth or health. Ordinary sysfs
 reads may involve kernel runtime power management; read-only application access
 is not a guarantee of zero device activity. Validation uses owned fixture files.
 No worker, stable identity algorithm, renderer implementation, report schema or
-view profile changes. All emitted observations affect the configuration graph
+view profile changes. All maximum observations affect the configuration graph
 and frozen-plan binding, while current-only changes do not. Signed comparison
 keeps the attributes without proving physical continuity.
 
@@ -844,6 +844,65 @@ test binaries compiled for Linux amd64, 386 and arm64: 15 compile-only artifacts
 These binaries were not executed, and eight additional Linux-only inventory
 names remain unexecuted. Native Linux execution, installed images, physical PCs,
 the pilot and release gates remain open.
+
+## Negotiated PCIe Link Observations
+
+For each existing PCI row, the Linux collector also reads `current_link_speed`
+and `current_link_width` once through the same bounded scalar acquisition path.
+The two reads are independent; they are not an atomic link measurement. They do
+not depend on maximum fields being present, valid or greater than the current
+values. No configuration, reset or retraining operation is performed.
+
+| Public attribute | Finite reported values |
+| --- | --- |
+| `current_link_speed_mts` | 2500, 5000, 8000, 16000, 32000, 64000 MT/s |
+| `current_link_width_lanes` | 1, 2, 4, 8, 12, 16, 32 lanes |
+
+The corresponding `current_link_speed_state` and `current_link_width_state`
+distinguish `reported`, `unavailable`, `read_error`, `unsupported` and
+`malformed`. Speed additionally accepts exact `Unknown` as `unknown`. Current
+width has no unknown sentinel: canonical `0` and `255` are unsupported and emit
+no lane count. Maximum width retains its existing `255` unknown interpretation.
+Only a reported field has a numeric attribute. Empty completed input is
+malformed; a cleanly missing file is unavailable. If both current files are
+cleanly absent, all four attributes are omitted and historical inventory bytes
+remain unchanged.
+
+Current speed uses the maximum-speed text grammar and checked conversion;
+current width uses canonical unsigned decimal with its own finite policy.
+At most one trailing LF is framing. CRLF, extra whitespace, signs, non-ASCII
+digits, noncanonical precision, trailing bytes and uint64 overflow are rejected.
+Canonical unlisted values are unsupported. Raw strings and error callback text
+are discarded. The existing 64 KiB per-scalar, 64 MiB aggregate and 65,536-attempt
+limits are unchanged. Two missing files still consume two attempts. Fatal
+budget, protocol, cancellation and owned-close failures discard the collection.
+These limits cannot preempt a blocked kernel operation, and read-only access
+can involve kernel power management.
+
+Only these four names on PCI components are excluded from the configuration
+graph and comparison observation key. Changes to them preserve component HMACs
+and exact frozen-plan bytes. Maximum fields, PCI address/ID, other configuration
+fields and lookalike names remain bound. The same names on another component
+type retain that type's policy. Component addition, removal and count changes
+are not hidden.
+
+Current values and states remain in inventory, HTML/PDF and authenticated
+bundles. Their report bytes change even though their configuration binding does
+not. A current-only finalization change therefore preserves configuration
+integrity while retaining the final observations. PCI identity remains
+unavailable; comparison preserves the full before/after attributes and remains
+inconclusive about continuity or replacement, including repeated records and
+address changes. No new worker, functional result, bandwidth estimate, health
+verdict or automatic degradation classification is added.
+
+Focused Windows Go 1.27.2 fixtures pass through collection, public payloads,
+all eight view profiles, graph/plan projection and comparison. They include
+literal historical-byte/vector checks, finite parser boundaries, opaque errors,
+exact acquisition budgets, cancellation, owned cleanup and a final-width failure
+on device 326. Linux-specific owned-descriptor, symlink, special-file and
+disappearance fixtures are provided; native execution, installed-image checks,
+physical-PC evidence and release qualification remain open. Broader topology,
+IOMMU/driver attachment and controlled hot-plug tests remain separate work.
 
 ## Linked Retest Contract
 

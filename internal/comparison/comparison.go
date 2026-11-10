@@ -571,6 +571,10 @@ func observationKeyFor(component Component) observationKey {
 
 func volatileObservationAttribute(componentType inventory.ComponentType, name string) bool {
 	switch componentType {
+	case inventory.ComponentPCI:
+		if inventory.IsPCIeNegotiatedObservationAttribute(name) {
+			return true
+		}
 	case inventory.ComponentPowerSupply:
 		if inventory.IsPowerSupplyObservationAttribute(name) {
 			return true

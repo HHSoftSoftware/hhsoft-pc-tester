@@ -115,7 +115,7 @@ func TestPCIeMaximumCollectorIndependentFieldStates(t *testing.T) {
 	}
 }
 
-func TestPCIeMaximumRequestsExcludeCurrentLinkValues(t *testing.T) {
+func TestPCIeRequestsIncludeIndependentCurrentLinkValues(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
 		maxima bool
@@ -139,7 +139,7 @@ func TestPCIeMaximumRequestsExcludeCurrentLinkValues(t *testing.T) {
 			if err != nil {
 				t.Fatal("positive collection failed")
 			}
-			want := []string{"class", "vendor", "device", "subsystem_vendor", "subsystem_device", "revision", "irq", "numa_node", "modalias", "max_link_speed", "max_link_width"}
+			want := []string{"class", "vendor", "device", "subsystem_vendor", "subsystem_device", "revision", "irq", "numa_node", "modalias", "max_link_speed", "max_link_width", "current_link_speed", "current_link_width"}
 			if !reflect.DeepEqual(requests, want) {
 				t.Fatal("PCI attribute request set or order changed")
 			}
@@ -147,8 +147,11 @@ func TestPCIeMaximumRequestsExcludeCurrentLinkValues(t *testing.T) {
 			fields["current_link_width"] = []byte("32")
 			requests = nil
 			after, err := collector.Collect(t.Context())
-			if err != nil || !reflect.DeepEqual(before, after) || !reflect.DeepEqual(requests, want) {
-				t.Fatal("negotiated values affected maximum-only collection")
+			if err != nil || reflect.DeepEqual(before, after) || !reflect.DeepEqual(requests, want) || !reflect.DeepEqual(pcieTestAttributes(t, before, pcieTestAddress), pcieTestAttributes(t, after, pcieTestAddress)) {
+				t.Fatal("current observations were skipped or changed maximum fields")
+			}
+			if !reflect.DeepEqual(pcieCurrentAttributes(t, before, pcieTestAddress), map[string]string{"current_link_speed_state": "reported", "current_link_speed_mts": "2500", "current_link_width_state": "reported", "current_link_width_lanes": "1"}) || !reflect.DeepEqual(pcieCurrentAttributes(t, after, pcieTestAddress), map[string]string{"current_link_speed_state": "malformed", "current_link_width_state": "reported", "current_link_width_lanes": "32"}) {
+				t.Fatal("current independent literal fields changed or raw canary escaped")
 			}
 		})
 	}

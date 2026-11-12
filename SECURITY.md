@@ -22,10 +22,24 @@ redact private matches and escape control characters in filenames.
 Agent instructions and state are private local material, including when
 force-added or deleted in a later commit. See `docs/publication-readiness.md`.
 
-Until the repository has a private security-reporting route, contact the
-repository owner privately through GitHub. A security policy with a dedicated
-address will replace this before `0.1.0-alpha.1`.
+Report vulnerabilities through the repository's
+[private security advisory form](https://github.com/HHSoftSoftware/hhsoft-pc-tester/security/advisories/new)
+or email [info.hhsoft@gmail.com](mailto:info.hhsoft@gmail.com) with the subject
+`HHSoft PC Tester security report`. HHSoftSoftware receives reports, coordinates
+disclosure, and handles security incidents and suspected signing-key exposure.
+Include the affected version, architecture, reproduction steps, and impact.
+Remove credentials and private hardware identifiers from supporting evidence.
+Coordinate disclosure privately while a report is investigated and a fix is
+prepared.
 
-Supported versions and signed release-verification instructions will be listed
-here when public artifacts exist. No current development artifact is a signed
-or supported release.
+The initial `0.1.0-alpha.1` release accepts security reports but remains
+experimental. Fixes may require upgrading to a later prerelease; untagged
+development snapshots have no security-maintenance commitment. VM validation
+does not establish physical-PC qualification or suitability for critical use.
+
+Obtain downloads only from
+[HHSoftSoftware releases](https://github.com/HHSoftSoftware/hhsoft-pc-tester/releases).
+Verify the signed checksums and attestations using the
+[operator guide](docs/operator-guide.md). The approved source-tag and lab-evidence
+key fingerprints are listed in [project signing keys](security/signing-keys.md).
+The appliance does not update components during a test session.

@@ -32,6 +32,40 @@ separate minimal Buildroot/Linux base so that old non-SSE2 systems remain
 bootable. Prefer `x86_64` or `x86` whenever the machine supports it. Do not use
 `legacy-x86` merely because an x64 machine is booting through Legacy BIOS.
 
+## Verify Downloads
+
+Before preparing boot media, verify a published download on a trusted
+workstation. Obtain the selected ISO, `SHA256SUMS`, and
+`checksums.intoto.jsonl` from the same
+[official release](https://github.com/HHSoftSoftware/hhsoft-pc-tester/releases).
+Use the full commit identified by that release's signed source tag for
+`FULL_COMMIT`. The approved tag-signing fingerprint is in
+[project signing keys](../security/signing-keys.md).
+
+With GitHub CLI installed, authenticate the checksum manifest first. In
+PowerShell:
+
+```powershell
+gh attestation verify SHA256SUMS `
+  --repo HHSoftSoftware/hhsoft-pc-tester `
+  --bundle checksums.intoto.jsonl `
+  --signer-workflow HHSoftSoftware/hhsoft-pc-tester/.github/workflows/release.yml `
+  --signer-digest FULL_COMMIT --source-digest FULL_COMMIT `
+  --source-ref refs/heads/main --deny-self-hosted-runners `
+  --predicate-type https://github.com/HHSoftSoftware/hhsoft-pc-tester/release-validation/v1
+Get-FileHash -Algorithm SHA256 .\hhsoft-pc-tester-0.1.0-alpha.1-x86_64.iso
+```
+
+Replace the example ISO name with the image you downloaded and compare the
+hash with that exact filename in the authenticated manifest. Stop if either
+verification fails. On systems with GNU `sha256sum`,
+`sha256sum --ignore-missing --strict --check SHA256SUMS` checks the downloaded
+files present in the current directory; it does not verify omitted files.
+The checksum attestation records validation of externally built lab images.
+Companion utilities additionally have workflow build provenance in
+`utilities.intoto.jsonl`. See the
+[publication and verification procedure](publication-readiness.md) for details.
+
 ## Firmware Setup
 
 Current images require **Secure Boot disabled**.
@@ -64,8 +98,8 @@ Use separate physical media for each role:
    comparable return/parts-swap reports. It must not be used as the boot or
    report USB.
 
-Verify the ISO's SHA-256 against the release `.sha256` sidecar on a trusted
-workstation before writing it. Creating a boot USB normally erases that USB;
+Follow [Verify Downloads](#verify-downloads) on a trusted workstation before
+writing the ISO. Creating a boot USB normally erases that USB;
 check the selected target twice and never select a customer's internal drive.
 The appliance has no in-place updater, so a new product release means verifying
 and writing a new image to the boot USB.

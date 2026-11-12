@@ -164,7 +164,6 @@ func writeArchive(destination io.Writer, inventoryJSON []byte, envelope report.E
 		return fmt.Errorf("%w: envelope is unsigned", ErrInvalidBundle)
 	}
 
-	archive := zip.NewWriter(destination)
 	members := []sourceFile{
 		{name: ManifestName, mediaType: "application/json", data: manifestJSON},
 		{name: InventoryName, mediaType: "application/json", data: inventoryJSON},
@@ -179,6 +178,38 @@ func writeArchive(destination io.Writer, inventoryJSON []byte, envelope report.E
 		members = append(members, sourceFile{name: SelfIssuedKeyName, mediaType: SelfIssuedMediaType, data: selfIssuedKey})
 	}
 	members = append(members, sourceFile{name: EnvelopeName, mediaType: "application/json", data: envelopeJSON})
+	if err := validateWriteMembers(members); err != nil {
+		return err
+	}
+	return writeArchiveMembers(destination, members)
+}
+
+// Check every member and the exact canonical archive size before touching the
+// caller's destination. The counting pass retains no second archive buffer.
+func validateWriteMembers(members []sourceFile) error {
+	for _, member := range members {
+		limit, known := memberLimit(member.name)
+		if !known || int64(len(member.data)) > limit {
+			return fmt.Errorf("%w: %s exceeds permitted member size", ErrInvalidBundle, member.name)
+		}
+	}
+	return writeArchiveMembers(&archiveSizeWriter{}, members)
+}
+
+type archiveSizeWriter struct {
+	size int64
+}
+
+func (writer *archiveSizeWriter) Write(data []byte) (int, error) {
+	if int64(len(data)) > maxBundleBytes-writer.size {
+		return 0, errors.New("canonical archive exceeds permitted size")
+	}
+	writer.size += int64(len(data))
+	return len(data), nil
+}
+
+func writeArchiveMembers(destination io.Writer, members []sourceFile) error {
+	archive := zip.NewWriter(destination)
 	for _, member := range members {
 		if err := writeMember(archive, member.name, member.data); err != nil {
 			_ = archive.Close()

@@ -25,8 +25,20 @@ pull request.
 
 The release steward verifies the pinned inputs, checksums, SBOMs, test results,
 supported-platform gates, and final provenance before approving a protected
-Semantic Version tag. Release-signing, disclosure, and incident-response roles
-must be delegated before the first public alpha.
+Semantic Version tag. During the single-maintainer bootstrap, `@HHSoftSoftware`
+holds the following responsibilities:
+
+| Role | Responsibility |
+| --- | --- |
+| Release signer and steward | Protect the release key, review the complete candidate, sign the source tag, and approve protected publication |
+| Lab-evidence signer | Review completed validation records and sign their exact artifact bindings with the separate lab key |
+| Security disclosure coordinator | Receive private reports through the routes in [SECURITY.md](SECURITY.md) and coordinate fixes and disclosure |
+| Incident responder | Investigate suspected compromises, assess affected releases, and coordinate key revocation or replacement and public guidance |
+
+These assignments do not provide independent approval. The second deliberate
+review and protected release-environment approval remain required. Changes to
+these responsibilities require a reviewed update to this document; private-key
+custody is not transferred merely by assigning a role.
 
 ## Ownership
 
